@@ -3639,6 +3639,8 @@
                     msg.innerText = `❌ Falha ao conectar no servidor (${err.message}). Se for a primeira vez no Render, ele pode levar até 40s para acordar.`;
                 }
             }
+        });
+
         document.getElementById('btnGerarQrCodeWa')?.addEventListener('click', async () => {
             const btn = document.getElementById('btnGerarQrCodeWa');
             if (btn) {
