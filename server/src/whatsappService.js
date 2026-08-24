@@ -62,14 +62,14 @@ export async function iniciarWhatsApp(forceRestart = false) {
 
     try {
         const { state, saveCreds } = await useMultiFileAuthState(SESSIONS_DIR);
-        const { version } = await fetchLatestBaileysVersion().catch(() => ({ version: [2, 3000, 1015901307] }));
+        const { version } = await fetchLatestBaileysVersion().catch(() => ({ version: [2, 3000, 1043857760] }));
 
         sock = makeWASocket({
             version,
             logger: pino({ level: 'silent' }),
             printQRInTerminal: false,
             auth: state,
-            browser: Browsers.windows('Chrome'),
+            browser: Browsers.ubuntu('Chrome'),
             connectTimeoutMs: 60000,
             defaultQueryTimeoutMs: 60000,
             keepAliveIntervalMs: 25000,
@@ -116,9 +116,11 @@ export async function iniciarWhatsApp(forceRestart = false) {
 
                 if (shouldReconnect) {
                     status = 'connecting';
+                    // Se for 515 (restartRequired), reconecta imediatamente para concluir o pareamento
+                    const delay = statusCode === DisconnectReason.restartRequired ? 150 : 2000;
                     reconnectTimer = setTimeout(() => {
                         iniciarWhatsApp(false);
-                    }, 5000);
+                    }, delay);
                 } else {
                     status = 'disconnected';
                     qrCodeDataUrl = null;
