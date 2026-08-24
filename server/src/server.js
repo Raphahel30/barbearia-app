@@ -314,9 +314,9 @@ app.post('/api/auth/recuperar-senha', async (req, res) => {
 });
 
 // Initialize Mercado Pago SDK client
-let activeAccessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN || 'APP_USR-356528958695682-082013-7407bc73edb79b15fbed52829659559d-201897880';
+let activeAccessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN || '';
 let client = new MercadoPagoConfig({ 
-    accessToken: activeAccessToken,
+    accessToken: activeAccessToken || 'DUMMY_TOKEN',
     options: { timeout: 10000 }
 });
 let paymentClient = new Payment(client);
@@ -346,13 +346,23 @@ async function carregarConfiguracoesMercadoPagoFirestore() {
 
         if (data && data.fields && data.fields.mpAccessToken && data.fields.mpAccessToken.stringValue) {
             const tokenMp = data.fields.mpAccessToken.stringValue.trim();
-            if (tokenMp && tokenMp !== 'SEU_ACCESS_TOKEN_AQUI' && tokenMp !== activeAccessToken) {
+            if (tokenMp && tokenMp !== 'SEU_ACCESS_TOKEN_AQUI' && tokenMp.length > 20) {
                 activeAccessToken = tokenMp;
                 client = new MercadoPagoConfig({ accessToken: activeAccessToken, options: { timeout: 10000 } });
                 paymentClient = new Payment(client);
                 refundClient = new PaymentRefund(client);
                 console.log(`💳 [Mercado Pago] Token sincronizado com sucesso do Firestore: ${activeAccessToken.slice(0, 10)}...`);
+            } else {
+                activeAccessToken = '';
+                client = new MercadoPagoConfig({ accessToken: 'DUMMY_TOKEN', options: { timeout: 10000 } });
+                paymentClient = new Payment(client);
+                refundClient = new PaymentRefund(client);
             }
+        } else {
+            activeAccessToken = '';
+            client = new MercadoPagoConfig({ accessToken: 'DUMMY_TOKEN', options: { timeout: 10000 } });
+            paymentClient = new Payment(client);
+            refundClient = new PaymentRefund(client);
         }
     } catch (e) {
         console.warn("Aviso ao carregar token do Mercado Pago no Firestore:", e.message);

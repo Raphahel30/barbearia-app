@@ -2647,8 +2647,8 @@
                     adminWhatsappGlobal = data.whatsappAdmin;
                 }
 
-                // 1. Se já está salvo no Firestore
-                if (data.mpAccessToken && data.mpAccessToken.length > 20) {
+                // 1. Se está salvo no Firestore e tem token válido
+                if (data.mpAccessToken && data.mpAccessToken.length > 20 && data.mpAccessToken !== 'SEU_ACCESS_TOKEN_AQUI') {
                     const ehProducao = data.mpAccessToken.startsWith('APP_USR');
                     box.className = "p-4 rounded-xl border flex items-center justify-between bg-green-950/40 border-green-800";
                     icon.className = "w-3.5 h-3.5 rounded-full bg-green-400";
@@ -2662,25 +2662,7 @@
                     return;
                 }
 
-                // 2. Se não estiver no Firestore, consulta o backend no Render
-                try {
-                    const statusRes = await fetch(`${getBackendUrlAtivo()}/api/auth/mercadopago/status`);
-                    const backendStatus = await statusRes.json();
-                    if (backendStatus.connected) {
-                        box.className = "p-4 rounded-xl border flex items-center justify-between bg-green-950/40 border-green-800";
-                        icon.className = "w-3.5 h-3.5 rounded-full bg-green-400";
-                        texto.innerText = "Mercado Pago Conectado!";
-                        sub.innerText = "Pronto para receber pagamentos Pix automáticos";
-                        badge.className = `text-[10px] font-bold uppercase px-2.5 py-1 rounded ${backendStatus.tokenType === 'PROD' ? 'bg-green-600 text-white' : 'bg-amber-600 text-black'}`;
-                        badge.innerText = backendStatus.tokenType === 'PROD' ? "Produção Real" : "Modo Teste";
-
-                        if (blocoConectado) blocoConectado.classList.remove('hidden');
-                        if (blocoDesconectado) blocoDesconectado.classList.add('hidden');
-                        return;
-                    }
-                } catch(e) {}
-
-                // 3. Caso realmente esteja desconectado
+                // 2. Se estiver vazio ou desconectado
                 box.className = "p-4 rounded-xl border flex items-center justify-between bg-zinc-900 border-zinc-800";
                 icon.className = "w-3.5 h-3.5 rounded-full bg-zinc-600";
                 texto.innerText = "Nenhuma Conta Conectada";
