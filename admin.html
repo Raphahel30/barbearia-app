@@ -887,6 +887,15 @@
                                         <p id="msgFeedbackCopiaWa" class="text-xs text-zinc-400 text-center font-medium min-h-[18px]">
                                             Abra o seu WhatsApp > <strong>Aparelhos Conectados</strong> > <strong>Conectar com número de telefone</strong> e cole o código acima!
                                         </p>
+
+                                        <!-- Alternativa se o WhatsApp rejeitar o formato do 9º dígito -->
+                                        <div class="pt-3 border-t border-zinc-800 text-left bg-black/60 p-3 rounded-xl border space-y-1.5">
+                                            <p class="text-[11px] text-zinc-400 font-medium">⚠️ O WhatsApp acusou que o número está incorreto?</p>
+                                            <p class="text-[10px] text-zinc-500">Contas antigas do WhatsApp podem estar registradas sem o 9º dígito no servidor da Meta.</p>
+                                            <button id="btnAlternar9DigitoWa" type="button" class="w-full bg-zinc-800 hover:bg-zinc-700 text-dourado font-bold py-2 px-3 rounded-lg text-xs uppercase tracking-wider transition cursor-pointer border border-zinc-700 flex items-center justify-center gap-1.5">
+                                                <span>🔄</span> Gerar Código no Formato Alternativo (Sem o 9º dígito)
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -3840,6 +3849,25 @@
             }).catch(() => {
                 alert("Código de Conexão: " + codigo);
             });
+        });
+
+        // Alternar formato com/sem 9º dígito
+        document.getElementById('btnAlternar9DigitoWa')?.addEventListener('click', () => {
+            const inputTel = document.getElementById('inputTelefonePareamentoWa');
+            let tel = (inputTel?.value || whatsAppNumeroAtivo || '').replace(/\D/g, '');
+            
+            if (tel.startsWith('55') && tel.length > 11) tel = tel.substring(2);
+
+            if (tel.length === 11) {
+                // Remove o 9º dígito: Ex 11953789095 -> 1153789095
+                tel = tel.substring(0, 2) + tel.substring(3);
+            } else if (tel.length === 10) {
+                // Adiciona o 9º dígito: Ex 1153789095 -> 11953789095
+                tel = tel.substring(0, 2) + '9' + tel.substring(2);
+            }
+
+            if (inputTel) inputTel.value = tel;
+            document.getElementById('btnGerarCodigoPareamentoWa')?.click();
         });
 
         document.getElementById('btnGerarQrCodeWa')?.addEventListener('click', async () => {
