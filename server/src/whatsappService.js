@@ -69,7 +69,7 @@ export async function iniciarWhatsApp(forceRestart = false) {
             logger: pino({ level: 'silent' }),
             printQRInTerminal: false,
             auth: state,
-            browser: Browsers.macOS('Desktop'),
+            browser: Browsers.windows('Chrome'),
             connectTimeoutMs: 60000,
             defaultQueryTimeoutMs: 60000,
             keepAliveIntervalMs: 25000,
@@ -189,22 +189,34 @@ export async function gerarCodigoPareamentoWhatsApp(numeroTelefone) {
         return { success: true, status: 'connected', userNumber: connectedUserNumber, message: 'WhatsApp já conectado.' };
     }
 
-    // Inicia socket limpo se necessário
-    if (!sock || status === 'disconnected') {
-        await iniciarWhatsApp(true);
-    }
+    // Limpa credenciais não registradas anteriores para garantir par de chaves novas
+    try {
+        if (fs.existsSync(SESSIONS_DIR)) {
+            fs.rmSync(SESSIONS_DIR, { recursive: true, force: true });
+            fs.mkdirSync(SESSIONS_DIR, { recursive: true });
+        }
+    } catch (e) {}
 
-    // Aguarda o socket estabelecer o handshake inicial
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    // Inicia socket limpo
+    await iniciarWhatsApp(true);
 
-    if (sock && !sock.authState.creds.registered) {
+    // Aguarda o socket estabelecer o handshake inicial com os servidores do WhatsApp
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+
+    if (sock && !sock.authState?.creds?.registered) {
         try {
-            const code = await sock.requestPairingCode(cleanNumber);
-            console.log(`📲 [WhatsApp] Código de Pareamento gerado para +${cleanNumber}: ${code}`);
+            const rawCode = await sock.requestPairingCode(cleanNumber);
+            // Formata no padrao XXXX-XXXX para facil leitura se for 8 digitos
+            const formattedCode = (rawCode && rawCode.length === 8 && !rawCode.includes('-'))
+                ? `${rawCode.slice(0, 4)}-${rawCode.slice(4)}`
+                : rawCode;
+
+            console.log(`📲 [WhatsApp] Código de Pareamento gerado para +${cleanNumber}: ${formattedCode}`);
             return {
                 success: true,
                 status: 'pairing_code_ready',
-                pairingCode: code,
+                pairingCode: formattedCode,
+                rawCode: rawCode,
                 userNumber: cleanNumber
             };
         } catch (errCode) {
