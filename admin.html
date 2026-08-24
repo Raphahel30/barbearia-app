@@ -2621,7 +2621,6 @@
 
         async function carregarConfiguracoesMercadoPago() {
             try {
-                const configSnap = await getDoc(doc(db, "configuracoes", "pagamento"));
                 const box = document.getElementById('boxStatusMp');
                 const texto = document.getElementById('textoStatusMp');
                 const sub = document.getElementById('subtextoStatusMp');
@@ -2630,38 +2629,58 @@
                 const blocoConectado = document.getElementById('blocoMpConectado');
                 const blocoDesconectado = document.getElementById('blocoMpDesconectado');
 
-                if (configSnap.exists()) {
-                    const data = configSnap.data();
-                    if (data.mpAccessToken) {
-                        const inputManual = document.getElementById('inputMpAccessToken');
-                        if (inputManual) inputManual.value = data.mpAccessToken;
-                    }
-                    if (data.pixManual) {
-                        const inputPix = document.getElementById('inputPixManual');
-                        if (inputPix) inputPix.value = data.pixManual;
-                    }
-                    if (data.whatsappAdmin) {
-                        const inputWa = document.getElementById('inputWhatsappAdmin');
-                        if (inputWa) inputWa.value = data.whatsappAdmin;
-                        whatsAppNumeroAtivo = data.whatsappAdmin;
-                        adminWhatsappGlobal = data.whatsappAdmin;
-                    }
+                const configSnap = await getDoc(doc(db, "configuracoes", "pagamento"));
+                let data = configSnap.exists() ? configSnap.data() : {};
 
-                    if (data.mpAccessToken && data.mpAccessToken.length > 20) {
-                        const ehProducao = data.mpAccessToken.startsWith('APP_USR');
+                if (data.mpAccessToken) {
+                    const inputManual = document.getElementById('inputMpAccessToken');
+                    if (inputManual) inputManual.value = data.mpAccessToken;
+                }
+                if (data.pixManual) {
+                    const inputPix = document.getElementById('inputPixManual');
+                    if (inputPix) inputPix.value = data.pixManual;
+                }
+                if (data.whatsappAdmin) {
+                    const inputWa = document.getElementById('inputWhatsappAdmin');
+                    if (inputWa) inputWa.value = data.whatsappAdmin;
+                    whatsAppNumeroAtivo = data.whatsappAdmin;
+                    adminWhatsappGlobal = data.whatsappAdmin;
+                }
+
+                // 1. Se já está salvo no Firestore
+                if (data.mpAccessToken && data.mpAccessToken.length > 20) {
+                    const ehProducao = data.mpAccessToken.startsWith('APP_USR');
+                    box.className = "p-4 rounded-xl border flex items-center justify-between bg-green-950/40 border-green-800";
+                    icon.className = "w-3.5 h-3.5 rounded-full bg-green-400";
+                    texto.innerText = "Mercado Pago Conectado!";
+                    sub.innerText = data.mpUserId ? `Conta ativa (ID: ${data.mpUserId}) - Pix automático ativo` : "Pronto para receber pagamentos Pix automáticos";
+                    badge.className = `text-[10px] font-bold uppercase px-2.5 py-1 rounded ${ehProducao ? 'bg-green-600 text-white' : 'bg-amber-600 text-black'}`;
+                    badge.innerText = ehProducao ? "Produção Real" : "Modo Teste";
+
+                    if (blocoConectado) blocoConectado.classList.remove('hidden');
+                    if (blocoDesconectado) blocoDesconectado.classList.add('hidden');
+                    return;
+                }
+
+                // 2. Se não estiver no Firestore, consulta o backend no Render
+                try {
+                    const statusRes = await fetch(`${getBackendUrlAtivo()}/api/auth/mercadopago/status`);
+                    const backendStatus = await statusRes.json();
+                    if (backendStatus.connected) {
                         box.className = "p-4 rounded-xl border flex items-center justify-between bg-green-950/40 border-green-800";
                         icon.className = "w-3.5 h-3.5 rounded-full bg-green-400";
                         texto.innerText = "Mercado Pago Conectado!";
-                        sub.innerText = data.mpUserId ? `Conta ativa (ID: ${data.mpUserId}) - Pix automático ativo` : "Pronto para receber pagamentos Pix automáticos";
-                        badge.className = `text-[10px] font-bold uppercase px-2.5 py-1 rounded ${ehProducao ? 'bg-green-600 text-white' : 'bg-amber-600 text-black'}`;
-                        badge.innerText = ehProducao ? "Produção Real" : "Modo Teste";
+                        sub.innerText = "Pronto para receber pagamentos Pix automáticos";
+                        badge.className = `text-[10px] font-bold uppercase px-2.5 py-1 rounded ${backendStatus.tokenType === 'PROD' ? 'bg-green-600 text-white' : 'bg-amber-600 text-black'}`;
+                        badge.innerText = backendStatus.tokenType === 'PROD' ? "Produção Real" : "Modo Teste";
 
                         if (blocoConectado) blocoConectado.classList.remove('hidden');
                         if (blocoDesconectado) blocoDesconectado.classList.add('hidden');
                         return;
                     }
-                }
+                } catch(e) {}
 
+                // 3. Caso realmente esteja desconectado
                 box.className = "p-4 rounded-xl border flex items-center justify-between bg-zinc-900 border-zinc-800";
                 icon.className = "w-3.5 h-3.5 rounded-full bg-zinc-600";
                 texto.innerText = "Nenhuma Conta Conectada";
@@ -2833,12 +2852,32 @@
         const urlParamsMp = new URLSearchParams(window.location.search);
         if (urlParamsMp.has('mp_status')) {
             const mpStatus = urlParamsMp.get('mp_status');
+            const tokenRetornado = urlParamsMp.get('token');
+            const userIdRetornado = urlParamsMp.get('user_id');
+            const pubKeyRetornada = urlParamsMp.get('pub_key');
             const msg = document.getElementById('msgConfigMpStatus');
+
             if (mpStatus === 'sucesso') {
-                if (msg) {
-                    msg.className = "text-xs text-center font-bold text-green-400 bg-green-950/60 p-3 rounded-lg border border-green-700";
-                    msg.innerText = "🎉 Conta do Mercado Pago conectada com sucesso em 1 clique!";
-                }
+                (async () => {
+                    if (tokenRetornado && tokenRetornado.length > 15) {
+                        try {
+                            await setDoc(doc(db, "configuracoes", "pagamento"), {
+                                mpAccessToken: tokenRetornado,
+                                mpUserId: userIdRetornado || "",
+                                mpPublicKey: pubKeyRetornada || "",
+                                mpConectadoViaOAuth: true,
+                                atualizadoEm: new Date()
+                            }, { merge: true });
+                        } catch(err) { console.error("Erro ao sincronizar Firestore:", err); }
+                    }
+
+                    if (msg) {
+                        msg.className = "text-xs text-center font-bold text-green-400 bg-green-950/60 p-3 rounded-lg border border-green-700";
+                        msg.innerText = "🎉 Conta do Mercado Pago conectada com sucesso em 1 clique!";
+                    }
+
+                    await carregarConfiguracoesMercadoPago();
+                })();
             } else if (mpStatus === 'erro') {
                 const erroMsg = urlParamsMp.get('msg') || 'Erro ao autorizar conta no Mercado Pago.';
                 if (msg) {
@@ -2846,7 +2885,6 @@
                     msg.innerText = `❌ ${erroMsg}`;
                 }
             }
-            // Remove o parâmetro da URL de forma limpa
             window.history.replaceState({}, document.title, window.location.pathname);
         }
 

@@ -480,12 +480,21 @@ app.get('/api/auth/mercadopago/callback', async (req, res) => {
             console.warn("Aviso ao salvar OAuth no Firestore:", fsErr);
         }
 
-        return res.redirect(`https://emaus-barbearia.vercel.app/admin.html?mp_status=sucesso&user_id=${tokenData.user_id || ''}`);
+        return res.redirect(`https://emaus-barbearia.vercel.app/admin.html?mp_status=sucesso&user_id=${encodeURIComponent(tokenData.user_id || '')}&token=${encodeURIComponent(tokenData.access_token || '')}&pub_key=${encodeURIComponent(tokenData.public_key || '')}`);
 
     } catch (err) {
         console.error("Erro no processamento do callback OAuth:", err);
         return res.redirect(`https://emaus-barbearia.vercel.app/admin.html?mp_status=erro&msg=${encodeURIComponent(err.message)}`);
     }
+});
+
+// Status da conexão OAuth do Mercado Pago
+app.get('/api/auth/mercadopago/status', (req, res) => {
+    res.json({
+        connected: Boolean(activeAccessToken && activeAccessToken.length > 20 && activeAccessToken !== 'SEU_ACCESS_TOKEN_AQUI'),
+        tokenType: activeAccessToken.startsWith('TEST') ? 'TEST' : (activeAccessToken.startsWith('APP_USR') ? 'PROD' : 'NONE'),
+        tokenPreview: activeAccessToken && activeAccessToken.length > 10 ? activeAccessToken.slice(0, 10) + '...' : null
+    });
 });
 
 // Desconecta a conta do Mercado Pago
