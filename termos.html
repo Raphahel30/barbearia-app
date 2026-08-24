@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Termos e Condições de Agendamento | EMAÚS Barbearia</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dourado: '#D4AF37',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .bg-dourado { background-color: #D4AF37; }
+        .text-dourado { color: #D4AF37; }
+        .border-dourado { border-color: #D4AF37; }
+        .card-dark {
+            background-color: #18181b;
+            border: 1px solid #27272a;
+        }
+    </style>
+</head>
+<body class="bg-black text-white min-h-screen p-4 sm:p-8 flex flex-col items-center justify-start">
+
+    <div class="max-w-3xl w-full bg-zinc-900/95 backdrop-blur p-6 sm:p-10 rounded-2xl shadow-2xl border border-zinc-800 space-y-8 my-4">
+        
+        <!-- Cabeçalho com Logo Oficial -->
+        <div class="flex flex-col items-center justify-center text-center space-y-3 pb-4 border-b border-zinc-800">
+            <div class="relative mb-1">
+                <div class="absolute -inset-2 rounded-full bg-dourado/20 blur-xl"></div>
+                <img src="logo.jpg" alt="EMAÚS Logo" class="relative max-h-32 w-auto object-contain rounded-2xl drop-shadow-[0_0_20px_rgba(212,175,55,0.4)]" onerror="this.onerror=null; this.src='logo.png';" />
+            </div>
+            <div>
+                <span class="text-[10px] font-bold text-dourado uppercase tracking-widest bg-dourado/10 px-3.5 py-1 rounded-full border border-dourado/20">Políticas Oficiais</span>
+                <h1 class="text-2xl sm:text-3xl font-bold text-white uppercase tracking-wider mt-2">Termos e Condições de Reserva</h1>
+                <p class="text-xs text-zinc-400">Regras de Agendamento, Pagamentos, Cancelamentos e Planos Mensais</p>
+            </div>
+        </div>
+
+        <!-- Conteúdo dos Termos -->
+        <div class="space-y-6 text-xs sm:text-sm text-zinc-300 leading-relaxed">
+            
+            <!-- 1. Agendamento e Modalidades de Pagamento -->
+            <section class="space-y-3 bg-black/60 p-5 rounded-xl border border-zinc-800/80">
+                <h2 class="text-base font-bold text-dourado uppercase flex items-center gap-2">
+                    <span>1.</span> Modalidades de Pagamento da Reserva
+                </h2>
+                <p>Para garantir a exclusividade do seu horário e a disponibilidade da cadeira com o profissional, a <strong>EMAÚS Barbearia</strong> disponibiliza duas formas de reserva:</p>
+                <ul class="list-disc list-inside space-y-1.5 pl-2 text-zinc-300">
+                    <li><strong class="text-white">Taxa de Reserva (R$ 10,00):</strong> O cliente realiza o pagamento antecipado de R$ 10,00 via Pix ou Cartão para bloquear seu horário. O valor restante do serviço escolhido é pago presencialmente na barbearia ao finalizar o atendimento.</li>
+                    <li><strong class="text-white">Pagamento Total do Atendimento:</strong> O cliente pode optar por pagar 100% do valor integral do serviço antecipadamente pelo site, sem necessidade de pagamento adicional no local.</li>
+                </ul>
+            </section>
+
+            <!-- 2. Regras de Cancelamento e Reembolso -->
+            <section class="space-y-3 bg-black/60 p-5 rounded-xl border border-zinc-800/80">
+                <h2 class="text-base font-bold text-dourado uppercase flex items-center gap-2">
+                    <span>2.</span> Política de Cancelamento e Estorno / Reembolso
+                </h2>
+                
+                <div class="space-y-3">
+                    <div class="p-3.5 rounded-lg bg-green-950/40 border border-green-800/60 text-green-200 space-y-1">
+                        <p class="font-bold text-xs uppercase flex items-center gap-1.5 text-green-400">
+                            <span>✅</span> Cancelamento pelo Cliente com até 3 Horas de Antecedência:
+                        </p>
+                        <p class="text-xs">
+                            Caso o cliente precise cancelar o horário e solicite o cancelamento com <strong>no mínimo 3 horas de antecedência</strong> do horário agendado, o valor pago (seja a taxa de R$ 10,00 ou o valor total) será <strong>integralmente estornado/devolvido</strong>.
+                        </p>
+                    </div>
+
+                    <div class="p-3.5 rounded-lg bg-amber-950/40 border border-amber-800/60 text-amber-200 space-y-1">
+                        <p class="font-bold text-xs uppercase flex items-center gap-1.5 text-amber-400">
+                            <span>⚠️</span> Cancelamento pelo Cliente com Menos de 3 Horas:
+                        </p>
+                        <p class="text-xs">
+                            Cancelamentos realizados com <strong>menos de 3 horas de antecedência</strong> do atendimento <strong>não possuem direito a estorno ou reembolso</strong> do valor pago (taxa ou valor total), pois o horário ficou bloqueado para outros clientes, gerando custos de retenção de agenda do profissional.
+                        </p>
+                    </div>
+
+                    <div class="p-3.5 rounded-lg bg-blue-950/40 border border-blue-800/60 text-blue-200 space-y-1">
+                        <p class="font-bold text-xs uppercase flex items-center gap-1.5 text-blue-400">
+                            <span>🛡️</span> Cancelamento por parte da Barbearia / Profissional:
+                        </p>
+                        <p class="text-xs">
+                            Caso o barbeiro ou a barbearia precise cancelar ou desmarcar o atendimento por qualquer imprevisto ou motivo de força maior, o valor pago pelo cliente (taxa ou valor total) será <strong>estornado integralmente, sem importar quantas horas faltam</strong> para o atendimento.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. Tolerância e Não Comparecimento (Falta) -->
+            <section class="space-y-3 bg-black/60 p-5 rounded-xl border border-zinc-800/80">
+                <h2 class="text-base font-bold text-dourado uppercase flex items-center gap-2">
+                    <span>3.</span> Tolerância de Atraso e Não Comparecimento
+                </h2>
+                <ul class="list-disc list-inside space-y-1.5 pl-2">
+                    <li>Existe uma tolerância de <strong>15 minutos</strong> de atraso para o início do atendimento.</li>
+                    <li>Ultrapassado o limite de 15 minutos sem contato prévio do cliente, o agendamento poderá ser considerado como <strong>Falta (Não Comparecimento)</strong>, liberando a cadeira para a fila de espera sem devolução da taxa de reserva.</li>
+                </ul>
+            </section>
+
+            <!-- 4. Regras dos Planos Mensais VIP -->
+            <section id="planos" class="space-y-3 bg-black/60 p-5 rounded-xl border border-zinc-800/80">
+                <h2 class="text-base font-bold text-dourado uppercase flex items-center gap-2">
+                    <span>4.</span> Termos e Condições dos Planos Mensais (Pacote VIP)
+                </h2>
+                <p>Os clientes assinantes dos Planos Mensais da <strong>EMAÚS Barbearia</strong> regem-se pelas seguintes regras e condições:</p>
+                <ul class="list-disc list-inside space-y-2.5 pl-2 text-zinc-300">
+                    <li><strong class="text-white">Regra das 4 Semanas (1 Atendimento por Semana):</strong> O período de 30 dias de vigência do plano é automaticamente dividido em 4 semanas (1 corte/atendimento disponível por semana).</li>
+                    <li><strong class="text-white">Expiração Automática:</strong> Se a semana fechar e o cliente não tiver usado o corte daquela respectiva semana, ele perde o crédito daquela semana. Os cortes não usufruídos expiram automaticamente e não se acumulam para as semanas seguintes nem para o próximo ciclo.</li>
+                    <li><strong class="text-white">Ausência de Estorno Financeiro:</strong> O pacote mensal não possui estorno ou devolução em dinheiro sob nenhuma circunstância após sua contratação e ativação.</li>
+                    <li><strong class="text-white">Cancelamento pelo Barbeiro (Crédito Mantido):</strong> Caso o barbeiro precise cancelar o agendamento de um cliente do plano mensal, o crédito do corte da respectiva semana <strong>permanece 100% ativo</strong> e é liberado imediatamente no sistema para o cliente poder reagendar em outro horário daquela semana.</li>
+                    <li><strong class="text-white">Cancelamento pelo Cliente no Plano Mensal:</strong> Se o cliente cancelar com <strong>mais de 3 horas de antecedência</strong>, o corte da semana volta a ficar disponível no sistema para reagendamento. Caso o cliente cancele com <strong>3 horas ou menos de antecedência</strong> ou não compareça (falta), o crédito do corte daquela respectiva semana será <strong>automaticamente perdido/debitado</strong>.</li>
+                    <li><strong class="text-white">Isenção da Taxa de Reserva:</strong> Assinantes com plano ativo possuem taxa de reserva de R$ 0,00 (100% isenta) ao realizar seus agendamentos no sistema.</li>
+                </ul>
+            </section>
+
+        </div>
+
+        <!-- Botão de Voltar ao Site -->
+        <div class="pt-6 border-t border-zinc-800 text-center space-y-3">
+            <a href="index.html" class="inline-block w-full sm:w-auto bg-dourado hover:bg-[#C5A028] text-black font-bold px-8 py-3 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg">
+                ← Voltar para o Agendamento
+            </a>
+            <p class="text-[11px] text-zinc-500">EMAÚS Barbearia • CNPJ & Regras de Atendimento de Alta Performance</p>
+        </div>
+
+    </div>
+
+</body>
+</html>

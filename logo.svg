@@ -1,0 +1,52 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFE79A" />
+      <stop offset="30%" stop-color="#D4AF37" />
+      <stop offset="70%" stop-color="#AA7C11" />
+      <stop offset="100%" stop-color="#FFDF73" />
+    </linearGradient>
+    <linearGradient id="darkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1c1917" />
+      <stop offset="100%" stop-color="#09090b" />
+    </linearGradient>
+    <filter id="goldGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background Hexagon/Shield -->
+  <polygon points="100,6 186,52 186,148 100,194 14,148 14,52" fill="url(#darkGrad)" stroke="url(#goldGrad)" stroke-width="4" stroke-linejoin="round" />
+  <polygon points="100,14 178,56 178,144 100,186 22,144 22,56" fill="none" stroke="url(#goldGrad)" stroke-width="1.2" opacity="0.6" stroke-dasharray="4,3" />
+
+  <!-- Crown on Top -->
+  <path d="M78 52 L84 64 L100 50 L116 64 L122 52 L120 70 L80 70 Z" fill="url(#goldGrad)" />
+  <circle cx="78" cy="50" r="2.5" fill="#FFE79A" />
+  <circle cx="100" cy="47" r="3" fill="#FFE79A" />
+  <circle cx="122" cy="50" r="2.5" fill="#FFE79A" />
+
+  <!-- Crossed Scissors & Razor Icon in Gold -->
+  <!-- Scissor Blade 1 -->
+  <path d="M68 135 C68 142 62 148 55 148 C48 148 42 142 42 135 C42 128 48 122 55 122 C59 122 62 124 64 127 L96 95 L90 89 L60 119 C58 118 56 117 55 117 C45 117 37 125 37 135 C37 145 45 153 55 153 C65 153 73 145 73 135 L73 132 L138 67 L132 61 L68 125 Z" fill="url(#goldGrad)" />
+  
+  <!-- Scissor Blade 2 -->
+  <path d="M132 135 C132 142 138 148 145 148 C152 148 158 142 158 135 C158 128 152 122 145 122 C141 122 138 124 136 127 L104 95 L110 89 L140 119 C142 118 144 117 145 117 C155 117 163 125 163 135 C163 145 155 153 145 153 C135 153 127 145 127 135 L127 132 L62 67 L68 61 L132 125 Z" fill="url(#goldGrad)" />
+  
+  <!-- Pivot Point -->
+  <circle cx="100" cy="95" r="4" fill="#09090b" stroke="url(#goldGrad)" stroke-width="2" />
+
+  <!-- Central Emblem / Typography EMAUS -->
+  <rect x="42" y="108" width="116" height="24" rx="4" fill="#09090b" stroke="url(#goldGrad)" stroke-width="1.5" />
+  <text x="100" y="125" font-family="'Oswald', sans-serif, Arial" font-size="16" font-weight="bold" fill="url(#goldGrad)" text-anchor="middle" letter-spacing="3">EMAÚS</text>
+
+  <!-- Stars under text -->
+  <g fill="url(#goldGrad)" transform="translate(0, 5)">
+    <polygon points="100,136 102,141 107,141 103,144 105,149 100,146 95,149 97,144 93,141 98,141" />
+    <polygon points="82,137 83.5,141 87.5,141 84.5,143 86,147 82,144.5 78,147 79.5,143 76.5,141 80.5,141" />
+    <polygon points="118,137 119.5,141 123.5,141 120.5,143 122,147 118,144.5 114,147 115.5,143 112.5,141 116.5,141" />
+  </g>
+
+  <!-- BARBEARIA Subtext -->
+  <text x="100" y="166" font-family="'Montserrat', sans-serif, Arial" font-size="8" font-weight="600" fill="#FFE79A" text-anchor="middle" letter-spacing="4">BARBEARIA</text>
+</svg>

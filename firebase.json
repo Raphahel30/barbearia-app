@@ -1,0 +1,32 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      "firestore.rules",
+      "**/.*",
+      "**/node_modules/**",
+      "server/**",
+      "api/**"
+    ],
+    "cleanUrls": true,
+    "rewrites": [
+      {
+        "source": "/__/auth/action",
+        "destination": "/redefinir-senha.html"
+      },
+      {
+        "source": "/admin",
+        "destination": "/admin.html"
+      },
+      {
+        "source": "/redefinir-senha",
+        "destination": "/redefinir-senha.html"
+      }
+    ]
+  }
+}

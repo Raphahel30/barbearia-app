@@ -1,0 +1,3247 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Barbeiro | EMAUS Barbearia</title>
+    
+    <!-- PWA & Mobile Meta Tags -->
+    <link rel="manifest" href="manifest-admin.json">
+    <meta name="theme-color" content="#000000">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="EMAÚS Admin">
+    <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png">
+    <link rel="icon" type="image/jpeg" href="/logo.jpg">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="apple-touch-icon" href="/logo.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Montserrat', sans-serif; background-color: #09090b; color: #ffffff; }
+        h1, h2, h3, h4 { font-family: 'Oswald', sans-serif; letter-spacing: 0.5px; }
+        .text-dourado { color: #D4AF37; }
+        .bg-dourado { background-color: #D4AF37; }
+        .bg-dourado:hover { background-color: #C5A028; }
+        .border-dourado { border-color: #D4AF37; }
+        .card-dark { background-color: #121215; border: 1px solid #27272a; }
+        
+        /* Estilos do Menu Lateral (Sidebar) */
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            border-radius: 0.85rem;
+            font-size: 0.825rem;
+            font-weight: 700;
+            color: #a1a1aa;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border: 1px solid transparent;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .sidebar-link:hover {
+            color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+            transform: translateX(4px);
+        }
+        .sidebar-link.active {
+            color: #D4AF37;
+            background-color: rgba(212, 175, 55, 0.12);
+            border-color: rgba(212, 175, 55, 0.35);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-black text-zinc-100 min-h-screen flex flex-col">
+
+    <!-- TELA DE LOGIN DO ADMINISTRADOR / BARBEIRO -->
+    <div id="adminAuthScreen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="max-w-md w-full card-dark p-8 rounded-2xl shadow-2xl space-y-6 border border-zinc-800">
+            <div class="text-center space-y-2 flex flex-col items-center">
+                <div class="relative mb-1">
+                    <div class="absolute -inset-2 rounded-full bg-dourado/20 blur-xl"></div>
+                    <img src="logo.jpg" alt="EMAÚS Logo" class="relative max-h-32 w-auto object-contain rounded-2xl drop-shadow-[0_0_20px_rgba(212,175,55,0.4)]" onerror="this.onerror=null; this.src='logo.png';" />
+                </div>
+                <span class="text-[10px] font-bold text-dourado uppercase tracking-widest bg-dourado/10 px-3 py-1 rounded-full border border-dourado/20">Área Restrita</span>
+                <h1 class="text-xl font-bold text-white uppercase tracking-wider">Painel Administrativo</h1>
+                <p class="text-xs text-zinc-400">Acesso exclusivo do barbeiro e gestão</p>
+            </div>
+
+            <form id="formAdminLogin" class="space-y-4" onsubmit="event.preventDefault(); return false;" action="javascript:void(0);">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-zinc-300 mb-1">E-mail do Administrador</label>
+                    <input type="email" id="adminEmail" autocomplete="username" required placeholder="Ex: exemplo@gmail.com" class="w-full px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white text-sm focus:outline-none focus:border-dourado transition">
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-semibold uppercase text-zinc-300">Senha de Acesso</label>
+                        <button id="btnEsqueciSenhaAdmin" type="button" class="text-[11px] text-zinc-400 hover:text-dourado transition cursor-pointer">
+                            Esqueci minha senha
+                        </button>
+                    </div>
+                    <div class="relative">
+                        <input type="password" id="adminPassword" autocomplete="current-password" required placeholder="••••••••" class="w-full px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white text-sm focus:outline-none focus:border-dourado transition pr-10">
+                        <button type="button" id="btnToggleSenhaAdmin" class="absolute right-3 top-2.5 text-zinc-400 hover:text-white text-sm cursor-pointer">
+                            👁️
+                        </button>
+                    </div>
+                </div>
+
+                <button id="btnAdminLogin" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-bold py-3 rounded-lg uppercase tracking-wider text-xs transition duration-200 cursor-pointer shadow-lg flex items-center justify-center gap-2">
+                    <span id="labelBtnAdminAuth">Entrar no Painel</span>
+                </button>
+            </form>
+
+            <p id="adminAuthMsg" class="text-center text-xs font-medium text-red-400 min-h-[18px]"></p>
+
+            <div class="pt-4 border-t border-zinc-800 text-center">
+                <a href="index.html" class="text-xs text-zinc-400 hover:text-dourado transition inline-flex items-center gap-1">
+                    ← Voltar para o Portal do Cliente
+                </a>
+            </div>
+        </div>
+    </div>
+    <!-- CONTAINER DE TOASTS FLUTUANTES DE NOTIFICAÇÃO EM TEMPO REAL -->
+    <div id="toastNotificacoesContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2.5 pointer-events-none max-w-sm w-full"></div>
+
+    <!-- PAINEL PRINCIPAL DO BARBEIRO (COM MENU LATERAL RESPONSIVO) -->
+    <div id="adminPanel" class="hidden flex-1 flex flex-col lg:flex-row min-h-screen bg-black text-zinc-100 relative">
+        
+        <!-- BACKDROP PARA MOBILE (FUNDO ESCURECIDO AO ABRIR O MENU) -->
+        <div id="sidebarBackdrop" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-40 hidden lg:hidden transition-opacity duration-300"></div>
+
+        <!-- SIDEBAR / MENU LATERAL -->
+        <aside id="adminSidebar" class="fixed lg:sticky top-0 left-0 h-screen w-72 bg-zinc-950 border-r border-zinc-800/80 z-50 flex flex-col justify-between transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl flex-shrink-0">
+            
+            <!-- TOPO DO MENU -->
+            <div class="p-5 border-b border-zinc-800/80 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <img src="logo.jpg" alt="EMAÚS Logo" class="w-10 h-10 object-cover rounded-xl border border-dourado/40 p-0.5 bg-black shadow-[0_0_12px_rgba(212,175,55,0.25)] flex-shrink-0" onerror="this.onerror=null; this.src='logo.png';" />
+                    <div>
+                        <h1 class="text-base font-bold text-white uppercase tracking-wider flex items-center gap-1.5 leading-none">
+                            EMAÚS
+                            <span class="text-[9px] bg-dourado text-black font-extrabold px-1.5 py-0.5 rounded">ADMIN</span>
+                        </h1>
+                        <span class="text-[10px] text-zinc-400">Painel de Gestão</span>
+                    </div>
+                </div>
+
+                <!-- Botão de Fechar no Mobile -->
+                <button id="btnFecharSidebar" class="lg:hidden p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 text-lg cursor-pointer transition">
+                    ✕
+                </button>
+            </div>
+
+            <!-- LINKS DE NAVEGAÇÃO DO MENU LATERAL -->
+            <nav class="p-4 space-y-1.5 overflow-y-auto flex-1">
+                <div class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-3 py-1 mb-1">Navegação</div>
+                
+                <button id="tabNavOverview" class="sidebar-link active w-full text-left">
+                    <span class="text-lg">📊</span>
+                    <span>Visão Geral & Caixa</span>
+                </button>
+                <button id="tabNavSchedule" class="sidebar-link w-full text-left">
+                    <span class="text-lg">📅</span>
+                    <span>Agenda de Clientes</span>
+                </button>
+                <button id="tabNavVipClients" class="sidebar-link w-full text-left">
+                    <span class="text-lg">👑</span>
+                    <span>Clientes Mensalistas</span>
+                </button>
+                <button id="tabNavServices" class="sidebar-link w-full text-left">
+                    <span class="text-lg">✂️</span>
+                    <span>Serviços & Preços</span>
+                </button>
+                <button id="tabNavBlockDays" class="sidebar-link w-full text-left">
+                    <span class="text-lg">🚫</span>
+                    <span>Dias Fechados</span>
+                </button>
+                <button id="tabNavPayments" class="sidebar-link w-full text-left">
+                    <span class="text-lg">💳</span>
+                    <span>Mercado Pago</span>
+                </button>
+                <button id="tabNavWhatsApp" class="sidebar-link w-full text-left">
+                    <span class="text-lg">🤖</span>
+                    <span>WhatsApp Bot</span>
+                </button>
+                <button id="tabNavAdmins" class="sidebar-link w-full text-left">
+                    <span class="text-lg">👥</span>
+                    <span>Administradores</span>
+                </button>
+            </nav>
+
+            <!-- RODAPÉ DO MENU LATERAL -->
+            <div class="p-4 border-t border-zinc-800/80 bg-zinc-950/60 space-y-2.5">
+                <!-- Botão de Instalar App no Sidebar -->
+                <button id="btnInstalarAppAdminSidebar" class="w-full flex items-center justify-center gap-2 py-2.5 px-3 bg-amber-950/60 hover:bg-amber-900/60 text-amber-300 rounded-xl border border-amber-600/50 text-xs font-extrabold uppercase transition cursor-pointer shadow-md">
+                    <span>📲</span>
+                    <span id="labelInstalarSidebar">Instalar App do Barbeiro</span>
+                </button>
+
+                <div class="px-3 py-2 bg-zinc-900/90 rounded-xl border border-zinc-800/80 flex items-center justify-between">
+                    <div class="truncate mr-2">
+                        <p class="text-[10px] text-zinc-500 uppercase font-semibold">Conectado como</p>
+                        <p id="adminUserDisplaySidebar" class="text-xs text-dourado font-medium truncate">Admin</p>
+                    </div>
+                    <span class="w-2 h-2 rounded-full bg-green-500 flex-shrink-0 animate-pulse"></span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                    <a href="index.html" target="_blank" class="flex items-center justify-center gap-1.5 py-2 px-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-lg border border-zinc-800 text-xs font-semibold transition text-center">
+                        👁️ Site
+                    </a>
+                    <button id="btnAdminLogoutSidebar" class="flex items-center justify-center gap-1.5 py-2 px-2 bg-red-950/40 hover:bg-red-900/60 text-red-400 hover:text-red-300 rounded-lg border border-red-900/50 text-xs font-bold transition cursor-pointer text-center">
+                        🚪 Sair
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ÁREA DE CONTEÚDO PRINCIPAL (COM HEADER NO TOPO) -->
+        <div class="flex-1 flex flex-col min-w-0">
+            
+            <!-- HEADER TOPO (LIMPO E ELEGANTE) -->
+            <header class="bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800 sticky top-0 z-30 px-4 sm:px-6 lg:px-8 py-3.5 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <!-- Botão Hamburger para Abrir Menu -->
+                    <button id="btnAbrirSidebar" class="p-2 -ml-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-dourado rounded-xl flex items-center gap-2 text-xs font-bold transition cursor-pointer shadow-md">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                        <span class="uppercase">Menu</span>
+                    </button>
+
+                    <!-- Título da Seção Atual -->
+                    <div class="flex items-center gap-2">
+                        <span id="headerTituloAbaAtual" class="text-sm sm:text-base font-bold text-white uppercase tracking-wide">📊 Visão Geral & Caixa</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2.5">
+                    <!-- Botão de Instalar App no Header -->
+                    <button id="btnInstalarAppAdmin" class="text-xs bg-amber-950/80 hover:bg-amber-900/80 text-amber-300 border border-amber-600/70 px-3 py-1.5 rounded-lg transition font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-md" title="Instalar aplicativo do barbeiro no celular">
+                        <span>📲</span>
+                        <span id="labelInstalarHeader" class="hidden sm:inline">Instalar App</span>
+                    </button>
+
+                    <!-- Botão de Notificações / Som -->
+                    <button id="btnToggleNotificacoesAdmin" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-dourado px-3 py-1.5 rounded-lg border border-zinc-700 transition font-medium inline-flex items-center gap-1.5 cursor-pointer shadow-sm" title="Ativar Notificações no Celular e Som">
+                        <span id="iconeNotifAdmin">🔔</span>
+                        <span id="textoNotifAdmin" class="hidden sm:inline">Notificações</span>
+                    </button>
+                    <span id="adminUserDisplay" class="text-xs text-zinc-300 hidden md:inline bg-zinc-900 px-3 py-1.5 rounded-lg border border-zinc-800">
+                        Admin
+                    </span>
+                    <a href="index.html" target="_blank" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-dourado px-3 py-1.5 rounded-lg border border-zinc-700 transition font-medium inline-flex items-center gap-1">
+                        👁️ Ver Site
+                    </a>
+                    <button id="btnAdminLogout" class="bg-red-600/90 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">
+                        Sair
+                    </button>
+                </div>
+            </header>
+
+            <!-- CONTEÚDO PRINCIPAL -->
+            <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
+
+            <!-- BANNER DE ALERTA: ATENDIMENTOS PENDENTES APÓS 2 HORAS -->
+            <div id="bannerAlertasAdmin" class="hidden bg-amber-950/90 border border-amber-500 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 text-amber-200 shadow-2xl">
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl animate-bounce">⚠️</span>
+                    <div>
+                        <p id="textoAlerta2Horas" class="font-bold text-white text-sm">Existem atendimentos realizados há mais de 2 horas aguardando confirmação!</p>
+                        <p class="text-xs text-amber-300/80">Confirme se o cliente compareceu ou faltou para manter o controle dos planos e o faturamento atualizados.</p>
+                    </div>
+                </div>
+                <div>
+                    <button onclick="mudarAba('schedule')" class="bg-dourado hover:bg-[#C5A028] text-black font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap shadow-lg">
+                        Ver na Agenda
+                    </button>
+                </div>
+            </div>
+
+            <!-- 1. ABA: VISÃO GERAL & MÉTRICAS FINANCEIRAS -->
+            <section id="viewOverview" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="card-dark p-5 rounded-2xl border border-zinc-800 space-y-1">
+                        <span class="text-xs font-semibold uppercase text-zinc-400">Faturamento Futuro (Previsto)</span>
+                        <h3 id="statFaturamentoFuturo" class="text-3xl font-bold text-dourado">R$ 0,00</h3>
+                        <p class="text-[11px] text-zinc-500">Valor dos agendamentos confirmados a realizar</p>
+                    </div>
+
+                    <div class="card-dark p-5 rounded-2xl border border-zinc-800 space-y-1">
+                        <span class="text-xs font-semibold uppercase text-zinc-400">Faturamento Já Recebido</span>
+                        <h3 id="statFaturamentoRecebido" class="text-3xl font-bold text-green-400">R$ 0,00</h3>
+                        <p class="text-[11px] text-zinc-500">Valores de atendimentos e planos finalizados</p>
+                    </div>
+
+                    <div class="card-dark p-5 rounded-2xl border border-zinc-800 space-y-1">
+                        <span class="text-xs font-semibold uppercase text-zinc-400">Total de Agendamentos</span>
+                        <h3 id="statTotalAgendamentos" class="text-3xl font-bold text-white">0</h3>
+                        <p class="text-[11px] text-zinc-500">Histórico de reservas registradas no sistema</p>
+                    </div>
+                </div>
+
+                <div class="card-dark p-6 rounded-2xl border border-zinc-800 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-xl font-bold text-white uppercase">Próximos Clientes da Fila</h2>
+                        <button onclick="mudarAba('schedule')" class="text-xs text-dourado hover:underline cursor-pointer">Ver agenda completa →</button>
+                    </div>
+                    <div id="listaAtendimentosHoje" class="space-y-2 text-sm text-zinc-300">
+                        <p class="text-xs text-zinc-500">Carregando próximos clientes...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. ABA: AGENDA COMPLETA DE CLIENTES -->
+            <section id="viewSchedule" class="space-y-4 hidden">
+                <div class="flex flex-col md:flex-row justify-between md:items-center gap-3">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white uppercase">Agenda de Atendimentos</h2>
+                        <p class="text-xs text-zinc-400">Gerencie horários, confirme presenças, registre faltas ou cancele agendamentos.</p>
+                    </div>
+                    
+                    <div class="flex flex-wrap items-center gap-2">
+                        <!-- Busca rápida instantânea -->
+                        <div class="relative">
+                            <input id="inputBuscaAgendaAdmin" type="text" placeholder="🔍 Buscar cliente / telefone..." class="bg-black border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-dourado w-44 sm:w-52">
+                        </div>
+
+                        <!-- Filtros por status / data -->
+                        <div class="flex gap-1 bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs">
+                            <button id="btnFiltroFuturos" onclick="carregarAgendamentosAdmin('futuros')" class="bg-dourado text-black px-3 py-1.5 rounded-lg font-bold uppercase transition cursor-pointer">
+                                Próximos
+                            </button>
+                            <button id="btnFiltroHoje" onclick="carregarAgendamentosAdmin('hoje')" class="bg-transparent text-zinc-400 hover:text-white px-3 py-1.5 rounded-lg font-bold uppercase transition cursor-pointer">
+                                Hoje
+                            </button>
+                            <button id="btnFiltroPassados" onclick="carregarAgendamentosAdmin('passados')" class="bg-transparent text-zinc-400 hover:text-white px-3 py-1.5 rounded-lg font-bold uppercase transition cursor-pointer">
+                                Histórico
+                            </button>
+                        </div>
+
+                        <button onclick="buscarAgendamentosFirestore(true)" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1 border border-zinc-700" title="Recarregar dados do servidor">
+                            <span>🔄</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card-dark rounded-2xl border border-zinc-800 overflow-hidden shadow-xl">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-zinc-950/80 border-b border-zinc-800 text-xs font-bold text-dourado uppercase tracking-wider">
+                                <tr>
+                                    <th class="p-3.5">Cliente</th>
+                                    <th class="p-3.5">Contato (WhatsApp)</th>
+                                    <th class="p-3.5">Serviço & Preço</th>
+                                    <th class="p-3.5">Data & Horário</th>
+                                    <th class="p-3.5">Pagamento & Status</th>
+                                    <th class="p-3.5 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaAgendamentosAdmin" class="divide-y divide-zinc-800/60 text-xs">
+                                <tr>
+                                    <td colspan="6" class="p-6 text-center text-zinc-500">Carregando agendamentos...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ABA: CLIENTES MENSALISTAS (PACOTES VIP) -->
+            <section id="viewVipClients" class="space-y-6 hidden">
+                
+                <!-- CABEÇALHO DA SEÇÃO COM MÉTRICAS -->
+                <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 bg-gradient-to-r from-zinc-900 via-black to-zinc-900 p-6 rounded-3xl border border-amber-500/30 shadow-2xl">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-2xl">👑</span>
+                            <h2 class="text-2xl font-bold text-white uppercase tracking-wide">Clientes Mensalistas VIP</h2>
+                        </div>
+                        <p class="text-xs text-zinc-400 mt-1">Gestão de assinaturas ativas, contagem dos 30 dias, créditos das 4 semanas e avisos de expiração.</p>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button id="btnDispararLembretesLote" class="bg-amber-500 hover:bg-amber-600 text-black px-4 py-2.5 rounded-xl text-xs font-bold uppercase transition cursor-pointer shadow-lg flex items-center gap-2">
+                            <span>🤖</span>
+                            <span>Avisar Todos em Risco de Expirar</span>
+                        </button>
+                        <button id="btnRecarregarMensalistas" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3.5 py-2.5 rounded-xl text-xs font-bold uppercase transition cursor-pointer flex items-center gap-1.5 border border-zinc-700">
+                            <span>🔄</span>
+                            <span>Atualizar</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CARDS DE RESUMO FINANCEIRO E DE ATENDIMENTOS VIP -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="card-dark p-4 rounded-2xl border border-zinc-800 flex items-center justify-between">
+                        <div>
+                            <p class="text-[11px] text-zinc-400 uppercase font-semibold">Total de Assinantes</p>
+                            <h3 id="statTotalAssinantes" class="text-2xl font-bold text-white mt-0.5">0</h3>
+                        </div>
+                        <span class="text-3xl p-2.5 bg-zinc-900 rounded-xl border border-zinc-800">👥</span>
+                    </div>
+
+                    <div class="card-dark p-4 rounded-2xl border border-green-900/40 bg-green-950/10 flex items-center justify-between">
+                        <div>
+                            <p class="text-[11px] text-green-300 uppercase font-semibold">Assinaturas Ativas</p>
+                            <h3 id="statAssinaturasAtivas" class="text-2xl font-bold text-green-400 mt-0.5">0</h3>
+                        </div>
+                        <span class="text-3xl p-2.5 bg-green-950/40 rounded-xl border border-green-800/60">🟢</span>
+                    </div>
+
+                    <div class="card-dark p-4 rounded-2xl border border-dourado/40 bg-dourado/5 flex items-center justify-between">
+                        <div>
+                            <p class="text-[11px] text-dourado uppercase font-semibold">Cortes Disponíveis (Semana)</p>
+                            <h3 id="statCortesDisponiveisSemana" class="text-2xl font-bold text-dourado mt-0.5">0</h3>
+                        </div>
+                        <span class="text-3xl p-2.5 bg-amber-950/40 rounded-xl border border-amber-800/60">✂️</span>
+                    </div>
+
+                    <div class="card-dark p-4 rounded-2xl border border-red-900/50 bg-red-950/10 flex items-center justify-between">
+                        <div>
+                            <p class="text-[11px] text-red-300 uppercase font-semibold">Expirando em Breve (&le; 3 dias)</p>
+                            <h3 id="statCreditosExpirando" class="text-2xl font-bold text-red-400 mt-0.5">0</h3>
+                        </div>
+                        <span class="text-3xl p-2.5 bg-red-950/40 rounded-xl border border-red-800/60 animate-pulse">⚠️</span>
+                    </div>
+                </div>
+
+                <!-- BARRA DE BUSCA E FILTROS -->
+                <div class="card-dark p-4 rounded-2xl border border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div class="relative w-full sm:w-80">
+                        <input type="text" id="inputBuscaMensalista" placeholder="Buscar por cliente ou WhatsApp..." class="w-full pl-9 pr-4 py-2.5 bg-black rounded-xl border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                        <span class="absolute left-3 top-2.5 text-zinc-400 text-sm">🔍</span>
+                    </div>
+
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <label class="text-xs text-zinc-400 uppercase font-semibold whitespace-nowrap">Filtrar:</label>
+                        <select id="selectFiltroMensalista" class="w-full sm:w-auto bg-black text-white text-xs px-3.5 py-2.5 rounded-xl border border-zinc-700 focus:outline-none focus:border-dourado">
+                            <option value="todos">Todos os Mensalistas</option>
+                            <option value="ativos" selected>Apenas Assinaturas Ativas</option>
+                            <option value="expirando">Crédito da Semana Expirando (&le; 3 dias)</option>
+                            <option value="expirados">Planos Expirados / Inativos</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- LISTAGEM DE CLIENTES MENSALISTAS -->
+                <div id="listaClientesMensalistasAdmin" class="space-y-4">
+                    <div class="card-dark p-8 rounded-2xl border border-zinc-800 text-center text-zinc-500 text-xs">
+                        Carregando lista de assinantes mensalistas...
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- 3. ABA: SERVIÇOS & VALORES -->
+            <section id="viewServices" class="space-y-6 hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="card-dark p-6 rounded-2xl border border-zinc-800 space-y-4">
+                        <h2 class="text-xl font-bold text-white uppercase">Novo Serviço / Corte</h2>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">Nome do Serviço</label>
+                                <input type="text" id="inputNovoServicoNome" placeholder="Ex: Degradê Especial + Barba" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">Valor (R$)</label>
+                                <input type="number" id="inputNovoServicoPreco" placeholder="50.00" step="0.50" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                            </div>
+                            <button id="btnSalvarNovoServico" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-bold py-2.5 rounded-lg text-xs uppercase transition cursor-pointer">
+                                Adicionar Serviço
+                            </button>
+                            <p id="msgNovoServico" class="text-xs text-center font-medium"></p>
+                        </div>
+                    </div>
+
+                    <div class="card-dark p-6 rounded-2xl border border-zinc-800 space-y-4 lg:col-span-2">
+                        <h2 class="text-xl font-bold text-white uppercase">Serviços Cadastrados na Barbearia</h2>
+                        <div id="listaServicosAdmin" class="space-y-2.5">
+                            <p class="text-xs text-zinc-500">Carregando serviços...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gestão de Planos Mensais / Assinaturas VIP -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4 border-t border-zinc-800/80">
+                    <div class="card-dark p-6 rounded-2xl border border-zinc-800 space-y-4">
+                        <h2 class="text-xl font-bold text-white uppercase">Novo Plano Mensal</h2>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">Nome do Plano</label>
+                                <input type="text" id="inputNovoPlanoNome" placeholder="Ex: Plano VIP Mensal" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">Valor Mensal (R$)</label>
+                                <input type="number" id="inputNovoPlanoPreco" placeholder="120.00" step="1.00" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                            </div>
+                            <button id="btnSalvarNovoPlano" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-bold py-2.5 rounded-lg text-xs uppercase transition cursor-pointer">
+                                Adicionar Plano Mensal
+                            </button>
+                            <p id="msgNovoPlano" class="text-xs text-center font-medium"></p>
+                        </div>
+                    </div>
+
+                    <div class="card-dark p-6 rounded-2xl border border-zinc-800 space-y-4 lg:col-span-2">
+                        <h2 class="text-xl font-bold text-white uppercase">Planos Mensais Disponíveis para Clientes</h2>
+                        <div id="listaPlanosAdmin" class="space-y-2.5">
+                            <p class="text-xs text-zinc-500">Carregando planos...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. ABA: BLOQUEIO DE DIAS -->
+            <section id="viewBlockDays" class="space-y-6 hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="card-dark p-6 rounded-2xl border border-zinc-800 space-y-4">
+                        <h2 class="text-xl font-bold text-white uppercase">Bloquear Data</h2>
+                        <p class="text-xs text-zinc-400">Selecione dias de folga, feriados ou férias para impedir agendamentos no site.</p>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">Data para Bloquear</label>
+                                <input type="date" id="inputDataBloqueio" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">Motivo (Opcional)</label>
+                                <input type="text" id="inputMotivoBloqueio" placeholder="Ex: Feriado Nacional / Folga" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                            </div>
+                            <button id="btnSalvarBloqueio" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-lg text-xs uppercase transition cursor-pointer">
+                                🚫 Bloquear Esta Data
+                            </button>
+                            <p id="msgBloqueioStatus" class="text-xs text-center font-medium"></p>
+                        </div>
+                    </div>
+
+                    <div class="card-dark p-6 rounded-2xl border border-zinc-800 space-y-4 lg:col-span-2">
+                        <h2 class="text-xl font-bold text-white uppercase">Datas Atualmente Fechadas</h2>
+                        <div id="listaDiasBloqueadosAdmin" class="flex flex-wrap gap-2">
+                            <span class="text-xs text-zinc-500">Nenhuma data bloqueada.</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. ABA: CONFIGURAÇÕES DE PAGAMENTO (MERCADO PAGO) -->
+            <section id="viewPayments" class="space-y-6 hidden">
+                <div class="max-w-3xl mx-auto card-dark p-6 sm:p-8 rounded-2xl border border-zinc-800 space-y-6">
+                    <div>
+                        <span class="text-xs font-bold text-dourado uppercase tracking-widest bg-dourado/10 px-3 py-1 rounded-full border border-dourado/20">Configuração Rápida</span>
+                        <h2 class="text-2xl font-bold text-white uppercase mt-2">Conectar Conta Mercado Pago do Barbeiro</h2>
+                        <p class="text-xs text-zinc-400 mt-1">
+                            O dinheiro das taxas de reserva (Pix e Cartão) cairá <strong>diretamente na conta do Mercado Pago</strong> cadastrada abaixo.
+                        </p>
+                    </div>
+
+                    <div id="boxStatusMp" class="p-4 rounded-xl border flex items-center justify-between bg-zinc-900 border-zinc-800">
+                        <div class="flex items-center gap-3">
+                            <div id="iconStatusMp" class="w-3.5 h-3.5 rounded-full bg-amber-400 animate-pulse"></div>
+                            <div>
+                                <p id="textoStatusMp" class="text-xs font-bold text-white">Verificando status da conexão...</p>
+                                <p id="subtextoStatusMp" class="text-[11px] text-zinc-400">Aguardando verificação</p>
+                            </div>
+                        </div>
+                        <span id="badgeAmbienteMp" class="text-[10px] font-bold uppercase px-2.5 py-1 rounded bg-zinc-800 text-zinc-300">
+                            Ambiente
+                        </span>
+                    </div>
+
+                    <div class="space-y-4 pt-2">
+                        <div>
+                            <label class="block text-xs font-bold text-zinc-300 uppercase mb-1">
+                                Access Token do Mercado Pago
+                            </label>
+                            <input type="password" id="inputMpAccessToken" placeholder="APP_USR-0000000000000000-000000-..." class="w-full px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white text-xs font-mono focus:outline-none focus:border-dourado">
+                            <p class="text-[11px] text-zinc-500 mt-1">Cole aqui o token de produção ou de teste gerado no Mercado Pago Developers.</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-zinc-300 uppercase mb-1">
+                                Chave Pix Alternativa / Manual (InfinitePay ou Celular)
+                            </label>
+                            <input type="text" id="inputPixManual" placeholder="11953789095" class="w-full px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                            <p class="text-[11px] text-zinc-500 mt-1">Chave usada como backup caso o cliente prefira pagar direto pelo app bancário.</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-zinc-300 uppercase mb-1">
+                                WhatsApp para Notificações (com DDD)
+                            </label>
+                            <input type="text" id="inputWhatsappAdmin" placeholder="5511953789095" class="w-full px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                        </div>
+
+                        <div class="pt-2 flex flex-col sm:flex-row gap-3">
+                            <button id="btnSalvarConfigMp" type="button" class="flex-1 bg-dourado hover:bg-[#C5A028] text-black font-bold py-3 rounded-lg uppercase tracking-wider text-xs transition cursor-pointer shadow-lg">
+                                💾 Salvar Conexão Mercado Pago
+                            </button>
+                        </div>
+                        <p id="msgConfigMpStatus" class="text-xs text-center font-medium"></p>
+                    </div>
+
+                    <div class="bg-black/60 p-4 rounded-xl border border-zinc-800/80 space-y-2 text-xs text-zinc-300">
+                        <p class="font-bold text-dourado uppercase">📖 Como o barbeiro pega o Access Token (Passo a Passo):</p>
+                        <ol class="list-decimal list-inside space-y-1 text-[11px] text-zinc-400">
+                            <li>Acesse <a href="https://www.mercadopago.com.br/developers/panel" target="_blank" class="text-dourado underline">mercadopago.com.br/developers/panel</a> e entre na conta do Mercado Pago.</li>
+                            <li>Clique em <strong>Suas integrações</strong> e depois em <strong>Criar aplicação</strong>.</li>
+                            <li>No menu lateral esquerdo, clique em <strong>Credenciais de produção</strong> (ou teste).</li>
+                            <li>Copie o <strong>Access Token</strong> e cole no campo acima!</li>
+                        </ol>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 6. ABA: AUTOMAÇÃO DO WHATSAPP BOT -->
+            <section id="viewWhatsApp" class="space-y-6 hidden">
+                <div class="max-w-2xl mx-auto space-y-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white uppercase">Robô de WhatsApp Automático</h2>
+                        <p class="text-xs text-zinc-400">Envie mensagens de confirmação e lembretes automaticamente direto pelo seu WhatsApp sem precisar clicar em links.</p>
+                    </div>
+
+                    <!-- Card de Configuração do Servidor Render / Nuvem 24/7 -->
+                    <div class="card-dark p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-[10px] font-bold uppercase tracking-widest text-dourado bg-dourado/10 border border-dourado/30 px-2.5 py-0.5 rounded-full">
+                                    Conexão 24 Horas
+                                </span>
+                                <h3 class="text-base font-bold text-white uppercase tracking-wide mt-2">
+                                    🌐 Servidor do Robô WhatsApp (Render / Nuvem)
+                                </h3>
+                                <p class="text-xs text-zinc-400 mt-1">
+                                    Insira a URL do seu servidor contínuo (ex: <strong>Render.com</strong>) para manter o WhatsApp conectado 24 horas por dia sem quedas.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 pt-1">
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">
+                                    URL do Servidor no Render
+                                </label>
+                                <div class="flex flex-col sm:flex-row gap-2">
+                                    <input type="url" id="inputUrlServidorWa" placeholder="https://emaus-barbearia-bot.onrender.com" class="flex-1 px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white text-xs font-mono focus:outline-none focus:border-dourado transition">
+                                    <button id="btnSalvarUrlServidorWa" type="button" class="bg-dourado hover:bg-[#C5A028] text-black font-bold px-4 py-2.5 rounded-lg text-xs uppercase tracking-wider transition cursor-pointer shadow-lg whitespace-nowrap">
+                                        💾 Salvar URL
+                                    </button>
+                                    <button id="btnTestarConexaoServidorWa" type="button" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-bold px-4 py-2.5 rounded-lg text-xs uppercase tracking-wider transition cursor-pointer whitespace-nowrap">
+                                        ⚡ Testar Servidor
+                                    </button>
+                                </div>
+                            </div>
+                            <p id="msgUrlServidorWaStatus" class="text-xs text-center font-medium min-h-[16px]"></p>
+                        </div>
+                    </div>
+
+                    <!-- Card de Status do WhatsApp -->
+                    <div class="card-dark p-6 rounded-2xl border border-zinc-800 space-y-5">
+                        <div id="boxStatusWa" class="p-4 rounded-xl border flex items-center justify-between bg-zinc-900 border-zinc-800">
+                            <div class="flex items-center gap-3">
+                                <span id="iconStatusWa" class="w-3.5 h-3.5 rounded-full bg-amber-400 animate-pulse"></span>
+                                <div>
+                                    <h4 id="textoStatusWa" class="font-bold text-sm text-white">Verificando WhatsApp...</h4>
+                                    <p id="subtextoStatusWa" class="text-xs text-zinc-400">Consultando o servidor de automação</p>
+                                </div>
+                            </div>
+                            <span id="badgeAmbienteWa" class="text-[10px] font-bold uppercase px-2.5 py-1 rounded bg-zinc-800 text-zinc-300">
+                                Desconectado
+                            </span>
+                        </div>
+
+                        <!-- Área do QR Code -->
+                        <div id="containerQrCodeWa" class="flex flex-col items-center justify-center p-6 bg-black rounded-2xl border border-zinc-800 space-y-4">
+                            <div id="boxQrImagem" class="w-64 h-64 bg-zinc-900 rounded-xl flex items-center justify-center border border-zinc-800 p-2 overflow-hidden shadow-2xl">
+                                <p class="text-xs text-zinc-500 text-center px-4">Clique no botão abaixo para gerar o QR Code de conexão.</p>
+                            </div>
+                            <p class="text-xs text-zinc-400 text-center max-w-sm">
+                                Abra o WhatsApp no seu celular > <strong>Aparelhos Conectados</strong> > <strong>Conectar Aparelho</strong> e aponte a câmera para o QR Code acima.
+                            </p>
+                            <div class="flex flex-wrap items-center justify-center gap-3">
+                                <button id="btnGerarQrCodeWa" type="button" class="bg-dourado hover:bg-[#C5A028] text-black font-bold px-4 py-2.5 rounded-lg text-xs uppercase transition cursor-pointer flex items-center gap-1.5 shadow-lg">
+                                    🔄 Gerar / Conectar QR Code
+                                </button>
+                                <button id="btnDesconectarWa" type="button" class="hidden bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2.5 rounded-lg text-xs uppercase transition cursor-pointer flex items-center gap-1.5 shadow-lg">
+                                    🔌 Sair do Número Atual / Trocar de WhatsApp
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Teste de Envio Rápido -->
+                        <div class="pt-4 border-t border-zinc-800 space-y-3">
+                            <h4 class="text-xs font-bold uppercase text-zinc-300">🧪 Testar Disparo de Mensagem</h4>
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <input type="text" id="inputTesteWaNumero" placeholder="DDD + Número (ex: 11999999999)" class="flex-1 px-3 py-2 bg-zinc-900 rounded-lg border border-zinc-800 text-xs text-white focus:outline-none focus:border-dourado">
+                                <button id="btnEnviarTesteWa" type="button" class="bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2 rounded-lg text-xs uppercase transition cursor-pointer whitespace-nowrap">
+                                    Enviar Teste
+                                </button>
+                            </div>
+                            <p id="msgTesteWaStatus" class="text-xs text-center font-medium"></p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 7. ABA: GERENCIAR ADMINISTRADORES -->
+            <section id="viewAdmins" class="space-y-6 hidden">
+                <div class="max-w-3xl mx-auto space-y-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white uppercase">Gerenciar Administradores</h2>
+                        <p class="text-xs text-zinc-400">Adicione ou remova permissões de acesso ao painel para outros barbeiros e administradores.</p>
+                    </div>
+
+                    <!-- Card de Adicionar Novo Admin -->
+                    <div class="card-dark p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
+                        <h3 class="text-sm font-bold uppercase text-dourado tracking-wide">➕ Liberar Novo Administrador</h3>
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <input type="email" id="inputNovoAdminEmail" placeholder="Digite o e-mail do novo administrador (ex: barbeiro@gmail.com)" class="flex-1 px-4 py-2.5 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado transition">
+                            <button id="btnSalvarNovoAdmin" type="button" class="bg-dourado hover:bg-[#C5A028] text-black font-bold px-5 py-2.5 rounded-lg text-xs uppercase tracking-wider transition cursor-pointer shadow-lg whitespace-nowrap">
+                                Salvar Permissão
+                            </button>
+                        </div>
+                        <p id="msgNovoAdminStatus" class="text-xs text-center font-medium"></p>
+                    </div>
+
+                    <!-- Lista de Administradores Autorizados -->
+                    <div class="card-dark p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
+                        <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+                            <h3 class="text-sm font-bold uppercase text-white tracking-wide">👥 Administradores com Acesso Ativo</h3>
+                            <span id="badgeTotalAdmins" class="text-xs text-dourado font-bold bg-dourado/10 px-2.5 py-1 rounded-full border border-dourado/20">...</span>
+                        </div>
+                        <div id="listaAdminsCadastrados" class="space-y-2.5">
+                            <p class="text-xs text-zinc-500 text-center py-4">Carregando administradores...</p>
+                        </div>
+                    </div>
+
+                    <!-- Card de Renunciar ao Cargo de Administrador -->
+                    <div class="card-dark p-6 rounded-2xl border border-red-900/40 bg-red-950/10 space-y-3 shadow-xl">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                            <div>
+                                <h3 class="text-sm font-bold uppercase text-red-400 tracking-wide flex items-center gap-1.5">
+                                    🚪 Deixar de ser Administrador
+                                </h3>
+                                <p class="text-xs text-zinc-400 mt-0.5">Deseja remover o seu próprio acesso de administrador deste painel?</p>
+                            </div>
+                            <button id="btnAbrirModalSairAdmin" type="button" class="bg-red-600/90 hover:bg-red-600 text-white font-bold px-4 py-2 rounded-lg text-xs uppercase tracking-wider transition cursor-pointer shadow-lg whitespace-nowrap">
+                                Sair do Cargo
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Orientações -->
+                    <div class="bg-black/60 p-4 rounded-xl border border-zinc-800/80 space-y-2 text-xs text-zinc-300">
+                        <p class="font-bold text-dourado uppercase">💡 Como funciona o acesso de um novo admin:</p>
+                        <ol class="list-decimal list-inside space-y-1 text-[11px] text-zinc-400">
+                            <li>Adicione o e-mail dele no campo acima e clique em <strong>Salvar Permissão</strong>.</li>
+                            <li>O novo administrador pode criar a senha dele diretamente na tela de <strong>Criar Conta</strong> do site principal (<a href="index.html" target="_blank" class="text-dourado underline">index.html</a>) ou você pode cadastrar pelo Firebase Console.</li>
+                            <li>Assim que ele entrar na página do Admin (<a href="admin.html" class="text-dourado underline">admin.html</a>), o painel será liberado automaticamente para ele!</li>
+                        </ol>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+        </div>
+    </div>
+
+    <!-- MODAL CONFIRMAÇÃO DE SAÍDA DE ADMINISTRADOR COM SENHA -->
+    <div id="modalSairCargoAdmin" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50">
+        <div class="bg-zinc-900 border border-red-800 p-6 sm:p-7 rounded-3xl max-w-md w-full space-y-5 text-center shadow-2xl relative">
+            <div class="w-14 h-14 bg-red-950/80 border border-red-600 rounded-full flex items-center justify-center text-2xl mx-auto shadow-[0_0_20px_rgba(239,68,68,0.3)]">
+                ⚠️
+            </div>
+
+            <div class="space-y-1.5">
+                <span class="text-[10px] font-bold text-red-400 uppercase tracking-widest bg-red-950/80 px-3 py-1 rounded-full border border-red-800">Ação de Segurança</span>
+                <h2 class="text-xl font-bold text-white uppercase tracking-wide mt-2">Sair do Cargo de Administrador</h2>
+                <p class="text-xs text-zinc-300 leading-relaxed">
+                    Você perderá o acesso a este painel administrativo. Para confirmar sua identidade, digite a senha da sua conta abaixo:
+                </p>
+            </div>
+
+            <div class="text-left space-y-2">
+                <label class="block text-xs font-semibold uppercase text-zinc-300">Confirme sua Senha Atual:</label>
+                <div class="relative">
+                    <input type="password" id="inputSenhaConfirmarSairAdmin" placeholder="Digite sua senha de acesso" class="w-full px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-red-500 transition pr-10">
+                    <button type="button" id="btnToggleSenhaSairAdmin" class="absolute inset-y-0 right-0 pr-3 flex items-center text-xs text-zinc-400 hover:text-white cursor-pointer">👁️</button>
+                </div>
+            </div>
+
+            <p id="msgSairAdminStatus" class="text-xs text-center font-medium"></p>
+
+            <div class="grid grid-cols-2 gap-3 pt-2">
+                <button id="btnCancelarSairAdmin" type="button" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-2.5 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer">
+                    Cancelar
+                </button>
+                <button id="btnConfirmarSairAdmin" type="button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg">
+                    Confirmar Saída
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL INSTRUÇÕES DE INSTALAÇÃO NO IOS (IPHONE / IPAD) -->
+    <div id="modalInstalarIosAdmin" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div class="bg-zinc-900 border border-amber-500/80 p-6 sm:p-7 rounded-3xl max-w-sm w-full space-y-4 text-center shadow-2xl relative my-6 animate-fade-in">
+            <button id="btnFecharModalIosAdmin" type="button" class="absolute top-4 right-4 text-zinc-400 hover:text-white text-xl font-bold transition">&times;</button>
+            <div class="mx-auto w-14 h-14 bg-amber-950/70 border border-amber-500/60 rounded-2xl flex items-center justify-center text-3xl shadow-inner">
+                📲
+            </div>
+            
+            <div class="space-y-1">
+                <span class="text-[10px] font-extrabold text-amber-400 uppercase tracking-widest bg-amber-950/80 px-3 py-1 rounded-full border border-amber-600/50 inline-block">
+                    App no iPhone / iPad
+                </span>
+                <h3 class="text-lg font-extrabold text-white uppercase tracking-wide mt-1">Como Instalar o App do Barbeiro</h3>
+            </div>
+
+            <div class="bg-black/90 p-4 rounded-2xl border border-zinc-800 text-left space-y-3 text-xs text-zinc-300">
+                <div class="flex items-start gap-2.5">
+                    <span class="text-dourado font-bold bg-dourado/10 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0">1</span>
+                    <span>No navegador <strong>Safari</strong>, toque no botão <strong>Compartilhar</strong> (ícone com quadrado e seta para cima ⎋ na barra inferior).</span>
+                </div>
+                <div class="flex items-start gap-2.5">
+                    <span class="text-dourado font-bold bg-dourado/10 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0">2</span>
+                    <span>Role a lista para baixo e selecione <strong>"Adicionar à Tela de Início"</strong>.</span>
+                </div>
+                <div class="flex items-start gap-2.5">
+                    <span class="text-dourado font-bold bg-dourado/10 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0">3</span>
+                    <span>Toque em <strong>"Adicionar"</strong> no canto superior. Pronto! O app abrirá em tela cheia direto do seu celular.</span>
+                </div>
+            </div>
+
+            <button id="btnEntendiIosAdmin" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider cursor-pointer transition shadow-lg">
+                ✓ Entendi, Fechar
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL OPÇÃO DE REEMBOLSO PÓS-CANCELAMENTO -->
+    <div id="modalReembolsoPosCancelamento" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50">
+        <div class="bg-zinc-950 border border-zinc-700 p-6 sm:p-7 rounded-3xl max-w-md w-full space-y-5 text-center shadow-2xl relative animate-fade-in">
+            <div class="w-14 h-14 bg-amber-950/80 border border-amber-600 rounded-full flex items-center justify-center text-2xl mx-auto shadow-[0_0_20px_rgba(217,119,6,0.3)]">
+                💸
+            </div>
+
+            <div class="space-y-1.5">
+                <span class="text-[10px] font-bold text-amber-400 uppercase tracking-widest bg-amber-950/80 px-3 py-1 rounded-full border border-amber-800">Agendamento Cancelado</span>
+                <h2 class="text-xl font-bold text-white uppercase tracking-wide mt-2">Deseja Reembolsar o Pagamento?</h2>
+                <p id="descReembolsoCancelamento" class="text-xs text-zinc-300 leading-relaxed">
+                    O agendamento foi cancelado com sucesso. Este atendimento possui um pagamento registrado no Mercado Pago.
+                </p>
+            </div>
+
+            <div class="bg-black/80 border border-zinc-800 rounded-2xl p-4 text-left space-y-2 text-xs">
+                <div class="flex justify-between items-center text-zinc-400">
+                    <span>Cliente:</span>
+                    <strong id="reembolsoClienteNome" class="text-white"></strong>
+                </div>
+                <div class="flex justify-between items-center text-zinc-400">
+                    <span>Serviço:</span>
+                    <span id="reembolsoServicoNome" class="text-white"></span>
+                </div>
+                <div class="flex justify-between items-center text-zinc-400">
+                    <span>Valor Pago:</span>
+                    <strong id="reembolsoValorPago" class="text-dourado text-sm font-extrabold"></strong>
+                </div>
+                <div class="flex justify-between items-center text-zinc-500 text-[11px]">
+                    <span>ID do Pagamento:</span>
+                    <span id="reembolsoPaymentId" class="font-mono text-zinc-400"></span>
+                </div>
+            </div>
+
+            <p id="msgReembolsoStatus" class="text-xs text-center font-medium min-h-[16px]"></p>
+
+            <div class="flex flex-col sm:flex-row gap-3 pt-1">
+                <button id="btnFecharModalReembolso" type="button" class="w-full sm:w-1/2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-2.5 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer">
+                    Não Reembolsar Agora
+                </button>
+                <button id="btnExecutarEstornoModal" type="button" class="w-full sm:w-1/2 bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-1.5">
+                    <span>💸 Estornar / Reembolsar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT FIREBASE E CONTROLE DO ADMIN -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDGjisHwvyBNHoZvS0DP-BTcXYufU6b5YY",
+            authDomain: "agendamento-barbearia-e8ffb.firebaseapp.com",
+            projectId: "agendamento-barbearia-e8ffb",
+            storageBucket: "agendamento-barbearia-e8ffb.firebasestorage.app",
+            messagingSenderId: "399463668114",
+            appId: "1:399463668114:web:c9f20b3dbc80745891894b"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const MASTER_ADMIN_EMAILS = ["aldo540@outlook.com"];
+        const ADMIN_EMAILS = ["aldo540@outlook.com", "rafaelcassu@hotmail.com"];
+        const BACKEND_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:')
+            ? 'http://localhost:3000'
+            : '';
+
+        let configWhatsappUrlGlobal = "";
+
+        function getBackendUrlAtivo() {
+            if (configWhatsappUrlGlobal && configWhatsappUrlGlobal.trim()) {
+                return configWhatsappUrlGlobal.trim().replace(/\/+$/, '');
+            }
+            return BACKEND_URL;
+        }
+
+        let whatsAppNumeroAtivo = "5511953789095";
+
+        // ==========================================
+        // SISTEMA DE NOTIFICAÇÕES EM TEMPO REAL & SOM NATIVO
+        // ==========================================
+        let audioCtx = null;
+        let notificacoesAtivas = localStorage.getItem('emaus_notif_admin') !== 'false';
+
+        function atualizarBotaoNotificacoesUI() {
+            const icone = document.getElementById('iconeNotifAdmin');
+            const texto = document.getElementById('textoNotifAdmin');
+            const btn = document.getElementById('btnToggleNotificacoesAdmin');
+            if (!btn) return;
+
+            if (notificacoesAtivas) {
+                if (icone) icone.innerText = '🔔';
+                if (texto) texto.innerText = 'Notificações Ativas';
+                btn.className = "text-xs bg-green-950/80 hover:bg-green-900/90 text-green-300 px-3 py-1.5 rounded-lg border border-green-700 transition font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-sm";
+            } else {
+                if (icone) icone.innerText = '🔕';
+                if (texto) texto.innerText = 'Notificações Silenciadas';
+                btn.className = "text-xs bg-zinc-900 hover:bg-zinc-800 text-zinc-400 px-3 py-1.5 rounded-lg border border-zinc-700 transition font-medium inline-flex items-center gap-1.5 cursor-pointer shadow-sm";
+            }
+        }
+
+        async function alternarNotificacoesAdmin() {
+            if (!notificacoesAtivas) {
+                if ("Notification" in window && Notification.permission !== "granted") {
+                    try {
+                        const perm = await Notification.requestPermission();
+                        if (perm === "granted") {
+                            exibirToastNotificacao("Notificações Ativadas", "Você receberá pop-ups e avisos no celular/computador!", "info");
+                        }
+                    } catch (e) { console.warn(e); }
+                }
+                notificacoesAtivas = true;
+                localStorage.setItem('emaus_notif_admin', 'true');
+                tocarSomNotificacao('novo');
+                exibirToastNotificacao("🔔 Alertas Ativos", "Notificações e alertas sonoros foram ativados com sucesso!", "info");
+            } else {
+                notificacoesAtivas = false;
+                localStorage.setItem('emaus_notif_admin', 'false');
+                exibirToastNotificacao("🔕 Silenciado", "Alertas sonoros e pop-ups pausados.", "info");
+            }
+            atualizarBotaoNotificacoesUI();
+        }
+
+        document.getElementById('btnToggleNotificacoesAdmin')?.addEventListener('click', alternarNotificacoesAdmin);
+
+        function tocarSomNotificacao(tipo = 'novo') {
+            if (!notificacoesAtivas) return;
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                if (!audioCtx) audioCtx = new AudioContext();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (tipo === 'novo') {
+                    // Sino luxuoso ascendente
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.setValueAtTime(659.25, now + 0.1);
+                    osc.frequency.setValueAtTime(783.99, now + 0.2);
+                    osc.frequency.setValueAtTime(1046.50, now + 0.3);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+                    osc.start(now);
+                    osc.stop(now + 0.8);
+                } else if (tipo === 'cancelamento') {
+                    // Tom descendente
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.setValueAtTime(349.23, now + 0.15);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                    osc.start(now);
+                    osc.stop(now + 0.6);
+                } else if (tipo === 'vip') {
+                    // Fanfarra VIP
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(587.33, now);
+                    osc.frequency.setValueAtTime(880, now + 0.12);
+                    osc.frequency.setValueAtTime(1174.66, now + 0.25);
+                    gain.gain.setValueAtTime(0.35, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+                    osc.start(now);
+                    osc.stop(now + 1.2);
+                }
+            } catch (e) {
+                console.warn("Áudio não disponível:", e);
+            }
+        }
+
+        function exibirToastNotificacao(titulo, mensagem, tipo = 'info') {
+            const container = document.getElementById('toastNotificacoesContainer');
+            if (!container) return;
+
+            let borderClass = 'border-dourado bg-zinc-900/95 text-white';
+            let icone = '🔔';
+            if (tipo === 'cancelamento') {
+                borderClass = 'border-red-600 bg-red-950/90 text-red-100';
+                icone = '🚫';
+            } else if (tipo === 'vip') {
+                borderClass = 'border-purple-500 bg-purple-950/90 text-purple-100';
+                icone = '👑';
+            } else if (tipo === 'agendamento') {
+                borderClass = 'border-green-500 bg-green-950/90 text-green-100';
+                icone = '📅';
+            }
+
+            const toast = document.createElement('div');
+            toast.className = `p-4 rounded-2xl border shadow-2xl backdrop-blur-md flex items-start gap-3 pointer-events-auto transition-all duration-300 transform translate-y-2 opacity-0 ${borderClass}`;
+            toast.innerHTML = `
+                <span class="text-2xl">${icone}</span>
+                <div class="flex-1 space-y-0.5">
+                    <h4 class="font-bold text-xs uppercase tracking-wide">${titulo}</h4>
+                    <p class="text-xs text-zinc-300 leading-snug">${mensagem}</p>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-zinc-400 hover:text-white font-bold text-sm ml-1 cursor-pointer">&times;</button>
+            `;
+
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 50);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', '-translate-y-2');
+                setTimeout(() => toast.remove(), 400);
+            }, 7000);
+        }
+
+        function dispararNotificacaoNativa(titulo, corpo) {
+            if (!notificacoesAtivas) return;
+            if ("Notification" in window && Notification.permission === "granted") {
+                try {
+                    const notif = new Notification(titulo, {
+                        body: corpo,
+                        icon: "logo.jpg",
+                        badge: "logo.jpg",
+                        vibrate: [200, 100, 200]
+                    });
+                    notif.onclick = function() {
+                        window.focus();
+                        this.close();
+                    };
+                } catch (e) { console.warn("Erro ao disparar notificação nativa:", e); }
+            }
+        }
+
+        let monitoramentoIniciado = false;
+        let primeiroCarregamentoAgendamentos = true;
+        let primeiroCarregamentoMensalistas = true;
+
+        function iniciarMonitoramentoTempoRealAdmin() {
+            if (monitoramentoIniciado) return;
+            monitoramentoIniciado = true;
+            atualizarBotaoNotificacoesUI();
+
+            // 1. Monitora Agendamentos
+            onSnapshot(collection(db, "agendamentos"), (snapshot) => {
+                if (primeiroCarregamentoAgendamentos) {
+                    primeiroCarregamentoAgendamentos = false;
+                    return;
+                }
+
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === "added") {
+                        const ag = change.doc.data();
+                        const agoraIso = new Date().toISOString().slice(0, 16);
+                        if (ag.dataHora && ag.dataHora >= agoraIso) {
+                            const horaFmt = ag.dataHora.replace('T', ' às ');
+                            tocarSomNotificacao(ag.isPlano ? 'vip' : 'novo');
+                            exibirToastNotificacao(
+                                ag.isPlano ? '👑 Novo Agendamento VIP' : '📅 Novo Agendamento',
+                                `${ag.cliente || 'Cliente'} agendou ${ag.servico} para ${horaFmt}.`,
+                                ag.isPlano ? 'vip' : 'agendamento'
+                            );
+                            dispararNotificacaoNativa(
+                                `EMAÚS - ${ag.isPlano ? '👑 Agendamento VIP' : '📅 Novo Agendamento'}`,
+                                `${ag.cliente || 'Cliente'} • ${ag.servico || 'Corte'} • ${horaFmt}`
+                            );
+                            buscarAgendamentosFirestore(false);
+                        }
+                    } else if (change.type === "removed") {
+                        tocarSomNotificacao('cancelamento');
+                        exibirToastNotificacao(
+                            '🚫 Agendamento Cancelado',
+                            'Um agendamento foi cancelado na agenda.',
+                            'cancelamento'
+                        );
+                        dispararNotificacaoNativa(
+                            'EMAÚS - Agendamento Cancelado',
+                            'Um horário foi liberado na agenda.'
+                        );
+                        buscarAgendamentosFirestore(false);
+                    }
+                });
+            });
+
+            // 2. Monitora Mensalistas
+            onSnapshot(collection(db, "assinaturasClientes"), (snapshot) => {
+                if (primeiroCarregamentoMensalistas) {
+                    primeiroCarregamentoMensalistas = false;
+                    return;
+                }
+
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === "added") {
+                        const sub = change.doc.data();
+                        tocarSomNotificacao('vip');
+                        exibirToastNotificacao(
+                            '👑 Nova Assinatura VIP!',
+                            `${sub.cliente || 'Cliente'} assinou o plano ${sub.nomePlano || 'Mensal'}!`,
+                            'vip'
+                        );
+                        dispararNotificacaoNativa(
+                            'EMAÚS - 👑 Novo Assinante VIP!',
+                            `${sub.cliente || 'Cliente'} assinou ${sub.nomePlano}!`
+                        );
+                        carregarClientesMensalistasAdmin();
+                    }
+                });
+            });
+        }
+
+        const tabTitles = {
+            overview: "📊 Visão Geral & Caixa",
+            schedule: "📅 Agenda de Clientes",
+            vipClients: "👑 Clientes Mensalistas",
+            services: "✂️ Serviços & Preços",
+            blockDays: "🚫 Dias Fechados",
+            payments: "💳 Mercado Pago",
+            whatsapp: "🤖 WhatsApp Bot",
+            admins: "👥 Administradores"
+        };
+
+        const tabs = {
+            overview: { btn: document.getElementById('tabNavOverview'), view: document.getElementById('viewOverview') },
+            schedule: { btn: document.getElementById('tabNavSchedule'), view: document.getElementById('viewSchedule') },
+            vipClients: { btn: document.getElementById('tabNavVipClients'), view: document.getElementById('viewVipClients') },
+            services: { btn: document.getElementById('tabNavServices'), view: document.getElementById('viewServices') },
+            blockDays: { btn: document.getElementById('tabNavBlockDays'), view: document.getElementById('viewBlockDays') },
+            payments: { btn: document.getElementById('tabNavPayments'), view: document.getElementById('viewPayments') },
+            whatsapp: { btn: document.getElementById('tabNavWhatsApp'), view: document.getElementById('viewWhatsApp') },
+            admins: { btn: document.getElementById('tabNavAdmins'), view: document.getElementById('viewAdmins') }
+        };
+
+        function fecharSidebarMobile() {
+            const sidebar = document.getElementById('adminSidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            if (sidebar) sidebar.classList.add('-translate-x-full');
+            if (backdrop) backdrop.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        function abrirSidebarMobile() {
+            const sidebar = document.getElementById('adminSidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            if (sidebar) sidebar.classList.remove('-translate-x-full');
+            if (backdrop) backdrop.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        const btnAbrirSidebar = document.getElementById('btnAbrirSidebar');
+        const btnFecharSidebar = document.getElementById('btnFecharSidebar');
+        const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+
+        if (btnAbrirSidebar) btnAbrirSidebar.addEventListener('click', abrirSidebarMobile);
+        if (btnFecharSidebar) btnFecharSidebar.addEventListener('click', fecharSidebarMobile);
+        if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', fecharSidebarMobile);
+
+        window.mudarAba = function(nomeAba) {
+            Object.keys(tabs).forEach(k => {
+                if (k === nomeAba) {
+                    tabs[k].view.classList.remove('hidden');
+                    tabs[k].btn.classList.add('active');
+                } else {
+                    tabs[k].view.classList.add('hidden');
+                    tabs[k].btn.classList.remove('active');
+                }
+            });
+
+            const headerTitulo = document.getElementById('headerTituloAbaAtual');
+            if (headerTitulo && tabTitles[nomeAba]) {
+                headerTitulo.innerText = tabTitles[nomeAba];
+            }
+
+            // Fecha a barra lateral no mobile
+            fecharSidebarMobile();
+
+            // Atualização rápida sob demanda
+            if (nomeAba === 'schedule') {
+                carregarAgendamentosAdmin(filtroAgendamentosAtual);
+            } else if (nomeAba === 'overview') {
+                carregarMetricasOverview();
+            } else if (nomeAba === 'vipClients') {
+                carregarClientesMensalistasAdmin();
+            } else if (nomeAba === 'services') {
+                carregarServicosAdmin();
+                carregarPlanosAdmin();
+            } else if (nomeAba === 'blockDays') {
+                carregarDiasBloqueadosAdmin();
+            } else if (nomeAba === 'admins') {
+                carregarAdministradoresPainel();
+            }
+        };
+
+        Object.keys(tabs).forEach(k => {
+            if (tabs[k].btn) {
+                tabs[k].btn.addEventListener('click', () => window.mudarAba(k));
+            }
+        });
+
+        const adminAuthMsg = document.getElementById('adminAuthMsg');
+        const btnToggleSenhaAdmin = document.getElementById('btnToggleSenhaAdmin');
+        const adminPasswordInput = document.getElementById('adminPassword');
+        const btnEsqueciSenhaAdmin = document.getElementById('btnEsqueciSenhaAdmin');
+
+        if (btnToggleSenhaAdmin && adminPasswordInput) {
+            btnToggleSenhaAdmin.addEventListener('click', () => {
+                adminPasswordInput.type = adminPasswordInput.type === 'password' ? 'text' : 'password';
+            });
+        }
+
+        if (btnEsqueciSenhaAdmin) {
+            btnEsqueciSenhaAdmin.addEventListener('click', async () => {
+                const email = document.getElementById('adminEmail').value.trim();
+                if (!email) {
+                    if (adminAuthMsg) {
+                        adminAuthMsg.className = "text-center text-xs font-medium text-red-400";
+                        adminAuthMsg.innerText = "Preencha seu e-mail no campo acima para recuperar a senha!";
+                    }
+                    return;
+                }
+                try {
+                    if (adminAuthMsg) {
+                        adminAuthMsg.className = "text-center text-xs font-medium text-amber-300";
+                        adminAuthMsg.innerText = "Enviando link de redefinição para " + email + "...";
+                    }
+                    await sendPasswordResetEmail(auth, email);
+                    if (adminAuthMsg) {
+                        adminAuthMsg.className = "text-center text-xs font-medium text-green-400";
+                        adminAuthMsg.innerText = "✅ Link de redefinição enviado! Verifique seu e-mail (e lixo eletrônico/spam).";
+                    }
+                } catch (e) {
+                    if (adminAuthMsg) {
+                        adminAuthMsg.className = "text-center text-xs font-medium text-red-400";
+                        adminAuthMsg.innerText = "Erro ao enviar e-mail: " + traduzirErroAuth(e.code || e.message);
+                    }
+                }
+            });
+        }
+
+        function traduzirErroAuth(codigo) {
+            if (!codigo) return "Erro desconhecido ao entrar.";
+            if (codigo.includes('invalid-credential') || codigo.includes('wrong-password') || codigo.includes('INVALID_LOGIN_CREDENTIALS')) {
+                return "E-mail ou senha incorretos. Se esqueceu sua senha, clique em 'Esqueci minha senha'.";
+            }
+            if (codigo.includes('user-not-found')) {
+                return "Nenhuma conta encontrada com este e-mail.";
+            }
+            if (codigo.includes('weak-password')) {
+                return "A senha deve ter no mínimo 6 caracteres.";
+            }
+            if (codigo.includes('email-already-in-use')) {
+                return "Este e-mail já possui uma conta criada.";
+            }
+            if (codigo.includes('too-many-requests')) {
+                return "Muitas tentativas sem sucesso. Aguarde alguns minutos antes de tentar novamente.";
+            }
+            if (codigo.includes('invalid-email')) {
+                return "Digite um e-mail válido.";
+            }
+            return codigo;
+        }
+
+        async function isUsuarioAdmin(email) {
+            if (!email) return false;
+            const emailLimpo = email.trim().toLowerCase();
+            if (ADMIN_EMAILS.some(e => e.toLowerCase() === emailLimpo) || emailLimpo.includes('admin')) {
+                return true;
+            }
+            try {
+                const docId = emailLimpo.replace(/[^a-zA-Z0-9]/g, '_');
+                const docSnap = await getDoc(doc(db, "administradores", docId));
+                if (docSnap.exists()) return true;
+
+                const querySnap = await getDocs(collection(db, "administradores"));
+                let autoriz = false;
+                querySnap.forEach(d => {
+                    if (d.data().email && d.data().email.toLowerCase() === emailLimpo) autoriz = true;
+                });
+                return autoriz;
+            } catch (e) {
+                console.warn("Erro ao verificar admin:", e);
+                return false;
+            }
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+            const adminAuthScreen = document.getElementById('adminAuthScreen');
+            const adminPanel = document.getElementById('adminPanel');
+            const adminUserDisplay = document.getElementById('adminUserDisplay');
+            const adminUserDisplaySidebar = document.getElementById('adminUserDisplaySidebar');
+
+            if (user && user.email) {
+                const ehAdmin = await isUsuarioAdmin(user.email);
+                if (ehAdmin) {
+                    if (adminAuthScreen) adminAuthScreen.classList.add('hidden');
+                    if (adminPanel) adminPanel.classList.remove('hidden');
+                    if (adminUserDisplay) adminUserDisplay.innerText = user.email;
+                    if (adminUserDisplaySidebar) adminUserDisplaySidebar.innerText = user.email;
+
+                    try { buscarAgendamentosFirestore(false); } catch (e) { console.warn(e); }
+                    try { carregarClientesMensalistasAdmin(); } catch (e) { console.warn(e); }
+                    try { carregarServicosAdmin(); } catch (e) { console.warn(e); }
+                    try { carregarPlanosAdmin(); } catch (e) { console.warn(e); }
+                    try { carregarDiasBloqueadosAdmin(); } catch (e) { console.warn(e); }
+                    try { carregarConfiguracoesMercadoPago(); } catch (e) { console.warn(e); }
+                    try { await carregarConfiguracoesServidorWa(); } catch (e) { console.warn(e); }
+                    try { carregarStatusWhatsAppBot(); } catch (e) { console.warn(e); }
+                    try { carregarAdministradoresPainel(); } catch (e) { console.warn(e); }
+                    try { iniciarMonitoramentoTempoRealAdmin(); } catch (e) { console.warn(e); }
+                    return;
+                } else {
+                    if (adminAuthMsg) {
+                        adminAuthMsg.className = "text-center text-xs font-medium text-red-400";
+                        adminAuthMsg.innerText = "Acesso negado: O e-mail '" + user.email + "' não possui permissão de administrador.";
+                    }
+                    await signOut(auth);
+                }
+            }
+            if (adminAuthScreen) adminAuthScreen.classList.remove('hidden');
+            if (adminPanel) adminPanel.classList.add('hidden');
+        });
+
+        async function processarAuthAdmin(e) {
+            if (e && typeof e.preventDefault === 'function') {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            const emailInput = document.getElementById('adminEmail');
+            const passInput = document.getElementById('adminPassword');
+            const btn = document.getElementById('btnAdminLogin');
+
+            const email = emailInput ? emailInput.value.trim() : '';
+            const password = passInput ? passInput.value : '';
+
+            if (adminAuthMsg) adminAuthMsg.innerText = "";
+
+            if (!email || !password) {
+                if (adminAuthMsg) {
+                    adminAuthMsg.className = "text-center text-xs font-medium text-red-400";
+                    adminAuthMsg.innerText = "Preencha e-mail e senha!";
+                }
+                return false;
+            }
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<span>⏳ Entrando...</span>`;
+            }
+
+            try {
+                let userCredential;
+                try {
+                    userCredential = await signInWithEmailAndPassword(auth, email, password);
+                } catch (signInErr) {
+                    const errCode = (signInErr && signInErr.code) ? signInErr.code : (signInErr.message || '');
+                    const emailLimpo = email.toLowerCase();
+                    const ehAdminPreAutorizado = ADMIN_EMAILS.some(e => e.toLowerCase() === emailLimpo) || emailLimpo.includes('admin');
+
+                    // Se a conta ainda não foi criada no Firebase Auth e é um admin pré-autorizado, cria a conta automaticamente
+                    if (ehAdminPreAutorizado && (errCode.includes('invalid-credential') || errCode.includes('user-not-found') || errCode.includes('INVALID_LOGIN_CREDENTIALS'))) {
+                        if (password.length >= 6) {
+                            try {
+                                userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                            } catch (createErr) {
+                                if (createErr && createErr.code === 'auth/email-already-in-use') {
+                                    throw new Error("auth/wrong-password");
+                                } else {
+                                    throw createErr;
+                                }
+                            }
+                        } else {
+                            throw new Error("auth/weak-password");
+                        }
+                    } else {
+                        throw signInErr;
+                    }
+                }
+
+                const user = userCredential.user;
+                const ehAdmin = await isUsuarioAdmin(user.email);
+                if (!ehAdmin) {
+                    if (adminAuthMsg) {
+                        adminAuthMsg.className = "text-center text-xs font-medium text-red-400";
+                        adminAuthMsg.innerText = `Acesso negado: O e-mail "${user.email}" não possui permissão de administrador.`;
+                    }
+                    await signOut(auth);
+                }
+            } catch (err) {
+                console.error("Erro auth admin:", err);
+                if (adminAuthMsg) {
+                    adminAuthMsg.className = "text-center text-xs font-medium text-red-400";
+                    adminAuthMsg.innerText = traduzirErroAuth(err.code || err.message);
+                }
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<span>Entrar no Painel</span>`;
+                }
+            }
+            return false;
+        }
+
+        const formAdminLogin = document.getElementById('formAdminLogin');
+        if (formAdminLogin) {
+            formAdminLogin.addEventListener('submit', (e) => {
+                e.preventDefault();
+                processarAuthAdmin(e);
+                return false;
+            });
+        }
+        const btnAdminLogin = document.getElementById('btnAdminLogin');
+        if (btnAdminLogin) {
+            btnAdminLogin.addEventListener('click', (e) => {
+                e.preventDefault();
+                processarAuthAdmin(e);
+            });
+        }
+
+        // Suporte tecla Enter nos inputs de login
+        ['adminEmail', 'adminPassword'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        processarAuthAdmin(e);
+                    }
+                });
+            }
+        });
+
+        const btnAdminLogout = document.getElementById('btnAdminLogout');
+        const btnAdminLogoutSidebar = document.getElementById('btnAdminLogoutSidebar');
+        if (btnAdminLogout) btnAdminLogout.addEventListener('click', () => signOut(auth));
+        if (btnAdminLogoutSidebar) btnAdminLogoutSidebar.addEventListener('click', () => signOut(auth));
+
+        let adminWhatsappGlobal = "5511953789095";
+
+        // ==========================================
+        // GESTÃO DE CLIENTES MENSALISTAS (PACOTES VIP)
+        // ==========================================
+        let listaMensalistasCache = [];
+
+        function processarCicloMensalistaAdmin(sub) {
+            if (!sub || !sub.dataPagamento) return null;
+            const tInicio = new Date(sub.dataPagamento).getTime();
+            const dataFim = new Date(sub.dataFim || (tInicio + 30 * 86400000));
+            const agora = new Date();
+            const diasRestantes = Math.max(0, Math.ceil((dataFim - agora) / (1000 * 60 * 60 * 24)));
+            const ehAtivo = (dataFim >= agora);
+
+            const semanasSalvas = sub.semanas || {};
+            const semanasInfo = [];
+            let semanaAtualNumero = null;
+            let temCreditoExpirando = false;
+            let semanaExpirandoInfo = null;
+
+            for (let i = 1; i <= 4; i++) {
+                const semInicio = new Date(tInicio + (i - 1) * 7 * 86400000);
+                const semFim = (i === 4) ? dataFim : new Date(tInicio + i * 7 * 86400000 - 1000);
+                const ehSemanaAtual = (agora >= semInicio && agora <= semFim);
+                if (ehSemanaAtual) semanaAtualNumero = i;
+
+                let status = 'disponivel';
+                let agendamentoData = '';
+                let servicoInfo = '';
+
+                if (semanasSalvas[i]) {
+                    status = semanasSalvas[i].status || 'agendado';
+                    agendamentoData = semanasSalvas[i].agendamentoData || '';
+                    servicoInfo = semanasSalvas[i].servico || '';
+                } else {
+                    if (agora > semFim) {
+                        status = 'expirado'; // Passou a semana sem usar
+                    } else if (agora < semInicio) {
+                        status = 'bloqueado'; // Semana futura
+                    } else {
+                        status = 'disponivel'; // Semana atual disponível
+                    }
+                }
+
+                const diasAteFimSemana = Math.max(0, Math.ceil((semFim - agora) / (1000 * 60 * 60 * 24)));
+
+                if (ehSemanaAtual && status === 'disponivel') {
+                    if (diasAteFimSemana <= 3) {
+                        temCreditoExpirando = true;
+                        semanaExpirandoInfo = {
+                            semanaNumero: i,
+                            diasRestantes: diasAteFimSemana,
+                            dataLimite: semFim.toLocaleDateString('pt-BR')
+                        };
+                    }
+                }
+
+                semanasInfo.push({
+                    numero: i,
+                    inicio: semInicio,
+                    fim: semFim,
+                    inicioStr: semInicio.toLocaleDateString('pt-BR'),
+                    fimStr: semFim.toLocaleDateString('pt-BR'),
+                    status: status,
+                    agendamentoData: agendamentoData,
+                    servicoInfo: servicoInfo,
+                    ehSemanaAtual: ehSemanaAtual,
+                    diasAteFimSemana: diasAteFimSemana
+                });
+            }
+
+            return {
+                ...sub,
+                ehAtivo,
+                diasRestantes,
+                dataFimFormatada: dataFim.toLocaleDateString('pt-BR'),
+                dataPagtoFormatada: new Date(sub.dataPagamento).toLocaleDateString('pt-BR'),
+                semanas: semanasInfo,
+                semanaAtualNumero,
+                temCreditoExpirando,
+                semanaExpirandoInfo
+            };
+        }
+
+        window.carregarClientesMensalistasAdmin = async function() {
+            const container = document.getElementById('listaClientesMensalistasAdmin');
+            if (container) container.innerHTML = "<div class='card-dark p-8 rounded-2xl border border-zinc-800 text-center text-zinc-500 text-xs'>Carregando assinantes mensalistas...</div>";
+
+            try {
+                const querySnap = await getDocs(collection(db, "assinaturasClientes"));
+                const lista = [];
+
+                querySnap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const processado = processarCicloMensalistaAdmin({ id: docSnap.id, ...data });
+                    if (processado) lista.push(processado);
+                });
+
+                // Ordena: ativos primeiro, depois pelos que têm crédito expirando, depois por data
+                lista.sort((a, b) => {
+                    if (a.ehAtivo !== b.ehAtivo) return b.ehAtivo ? 1 : -1;
+                    if (a.temCreditoExpirando !== b.temCreditoExpirando) return b.temCreditoExpirando ? 1 : -1;
+                    return new Date(b.dataPagamento || 0) - new Date(a.dataPagamento || 0);
+                });
+
+                listaMensalistasCache = lista;
+                atualizarMetricasMensalistas(lista);
+                renderizarListaMensalistas(lista);
+
+            } catch (err) {
+                console.error("Erro ao carregar mensalistas:", err);
+                if (container) container.innerHTML = `<div class='card-dark p-6 rounded-2xl border border-red-800 text-center text-red-400 text-xs'>Erro ao carregar mensalistas: ${err.message}</div>`;
+            }
+        };
+
+        function atualizarMetricasMensalistas(lista) {
+            const total = lista.length;
+            const ativos = lista.filter(x => x.ehAtivo).length;
+            const disponiveisSemana = lista.filter(x => x.ehAtivo && x.semanas.some(s => s.ehSemanaAtual && s.status === 'disponivel')).length;
+            const expirando = lista.filter(x => x.ehAtivo && x.temCreditoExpirando).length;
+
+            const elTotal = document.getElementById('statTotalAssinantes');
+            const elAtivos = document.getElementById('statAssinaturasAtivas');
+            const elDisp = document.getElementById('statCortesDisponiveisSemana');
+            const elExp = document.getElementById('statCreditosExpirando');
+
+            if (elTotal) elTotal.innerText = total;
+            if (elAtivos) elAtivos.innerText = ativos;
+            if (elDisp) elDisp.innerText = disponiveisSemana;
+            if (elExp) elExp.innerText = expirando;
+        }
+
+        function renderizarListaMensalistas(lista) {
+            const container = document.getElementById('listaClientesMensalistasAdmin');
+            if (!container) return;
+
+            const termoBusca = (document.getElementById('inputBuscaMensalista')?.value || '').trim().toLowerCase();
+            const filtro = document.getElementById('selectFiltroMensalista')?.value || 'ativos';
+
+            let filtrados = lista.filter(item => {
+                const matchTexto = !termoBusca || 
+                    (item.cliente && item.cliente.toLowerCase().includes(termoBusca)) || 
+                    (item.telefone && item.telefone.replace(/\D/g, '').includes(termoBusca)) ||
+                    (item.nomePlano && item.nomePlano.toLowerCase().includes(termoBusca));
+
+                if (!matchTexto) return false;
+
+                if (filtro === 'ativos') return item.ehAtivo;
+                if (filtro === 'expirando') return item.ehAtivo && item.temCreditoExpirando;
+                if (filtro === 'expirados') return !item.ehAtivo;
+                return true;
+            });
+
+            if (filtrados.length === 0) {
+                container.innerHTML = `<div class="card-dark p-8 rounded-2xl border border-zinc-800 text-center text-zinc-500 text-xs">Nenhum cliente mensalista encontrado para este filtro.</div>`;
+                return;
+            }
+
+            let html = "";
+            filtrados.forEach(item => {
+                let telLimpo = item.telefone ? item.telefone.replace(/\D/g, '') : '';
+                if (telLimpo && !telLimpo.startsWith('55')) telLimpo = '55' + telLimpo;
+
+                const msgWhatsLembrete = encodeURIComponent(`Olá ${item.cliente || 'Cliente'}! 👑 Passando para avisar que você tem 1 corte disponível no seu plano mensal VIP esta semana na EMAÚS Barbearia. O corte da semana expira em breve, agende pelo site para não perder: https://emaus-barbearia.vercel.app`);
+                const linkWhatsDireto = telLimpo ? `https://wa.me/${telLimpo}?text=${msgWhatsLembrete}` : '#';
+
+                // Status Geral da Assinatura
+                let badgeStatusGeral = item.ehAtivo
+                    ? `<span class="bg-green-950 text-green-400 border border-green-800 px-3 py-1 rounded-full text-xs font-bold uppercase flex items-center gap-1.5 shadow-sm">
+                        <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                        Ativo (${item.diasRestantes} dias restantes)
+                       </span>`
+                    : `<span class="bg-red-950 text-red-400 border border-red-800 px-3 py-1 rounded-full text-xs font-bold uppercase">
+                        🔴 Expirou em ${item.dataFimFormatada}
+                       </span>`;
+
+                // Renderiza as 4 semanas
+                let semanasCardsHtml = "";
+                item.semanas.forEach(s => {
+                    let badgeSemana = "";
+                    let bordaCard = "border-zinc-800/80 bg-zinc-900/60";
+
+                    if (s.status === 'concluido') {
+                        badgeSemana = '<span class="bg-green-950 text-green-400 border border-green-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">✅ Concluído</span>';
+                        bordaCard = "border-green-900/40 bg-green-950/20";
+                    } else if (s.status === 'agendado') {
+                        const horaFmt = s.agendamentoData ? s.agendamentoData.replace('T', ' às ') : 'Agendado';
+                        badgeSemana = `<span class="bg-blue-950 text-blue-300 border border-blue-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">📅 ${horaFmt}</span>`;
+                        bordaCard = "border-blue-900/40 bg-blue-950/20";
+                    } else if (s.status === 'disponivel') {
+                        if (s.ehSemanaAtual && s.diasAteFimSemana <= 3) {
+                            badgeSemana = `<span class="bg-amber-950 text-amber-300 border border-amber-500 px-2 py-0.5 rounded text-[10px] font-bold uppercase animate-pulse">⚠️ Expira em ${s.diasAteFimSemana}d</span>`;
+                            bordaCard = "border-amber-500/50 bg-amber-950/30";
+                        } else {
+                            badgeSemana = '<span class="bg-green-900/60 text-green-300 border border-green-600 px-2 py-0.5 rounded text-[10px] font-bold uppercase">🟢 Disponível</span>';
+                            bordaCard = "border-green-600/40 bg-green-950/20";
+                        }
+                    } else if (s.status === 'falta') {
+                        badgeSemana = '<span class="bg-red-950 text-red-400 border border-red-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">🚫 Não Compareceu</span>';
+                        bordaCard = "border-red-900/30 bg-red-950/10";
+                    } else if (s.status === 'expirado') {
+                        badgeSemana = '<span class="bg-zinc-800 text-zinc-400 border border-zinc-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase">⚠️ Expirou</span>';
+                        bordaCard = "border-zinc-800 bg-zinc-950/40 opacity-70";
+                    } else {
+                        badgeSemana = '<span class="bg-zinc-900 text-zinc-500 border border-zinc-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">⏳ Em Breve</span>';
+                        bordaCard = "border-zinc-800/50 bg-zinc-950/30 opacity-60";
+                    }
+
+                    semanasCardsHtml += `
+                        <div class="p-3 rounded-xl border ${bordaCard} flex flex-col justify-between gap-1.5 transition">
+                            <div class="flex justify-between items-center">
+                                <span class="font-bold text-xs ${s.ehSemanaAtual ? 'text-dourado flex items-center gap-1' : 'text-zinc-300'}">
+                                    Semana ${s.numero} ${s.ehSemanaAtual ? '<span class="text-[9px] bg-dourado/20 text-dourado px-1 rounded">ATUAL</span>' : ''}
+                                </span>
+                                ${badgeSemana}
+                            </div>
+                            <p class="text-[10px] text-zinc-400 font-mono">${s.inicioStr} até ${s.fimStr}</p>
+                        </div>
+                    `;
+                });
+
+                // Alerta de expiração para o card
+                let alertaCardHtml = "";
+                if (item.ehAtivo && item.temCreditoExpirando && item.semanaExpirandoInfo) {
+                    alertaCardHtml = `
+                        <div class="bg-amber-950/60 border border-amber-500/60 p-3 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-amber-200">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xl animate-bounce">⚠️</span>
+                                <div class="text-xs">
+                                    <p class="font-bold text-amber-300">Crédito da Semana ${item.semanaExpirandoInfo.semanaNumero} expira em ${item.semanaExpirandoInfo.diasRestantes} dia(s) (${item.semanaExpirandoInfo.dataLimite})!</p>
+                                    <p class="text-[11px] text-zinc-300">O cliente ainda não agendou o corte semanal.</p>
+                                </div>
+                            </div>
+                            <button onclick="dispararLembreteUnicoMensalista('${item.id}', '${item.cliente || 'Cliente'}', '${telLimpo}', '${item.nomePlano || 'VIP'}', ${item.semanaExpirandoInfo.semanaNumero}, ${item.semanaExpirandoInfo.diasRestantes}, '${item.semanaExpirandoInfo.dataLimite}')" class="bg-dourado hover:bg-[#C5A028] text-black font-bold px-3.5 py-1.5 rounded-lg text-xs transition cursor-pointer shadow-md whitespace-nowrap flex items-center gap-1.5">
+                                <span>📲</span>
+                                <span>Enviar Aviso no WhatsApp</span>
+                            </button>
+                        </div>
+                    `;
+                }
+
+                html += `
+                    <div class="card-dark p-5 sm:p-6 rounded-3xl border border-zinc-800 hover:border-dourado/40 transition space-y-4 shadow-xl">
+                        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-zinc-800/80 pb-4">
+                            <div class="flex items-center gap-3.5">
+                                <div class="w-12 h-12 bg-amber-950/50 border border-dourado/40 rounded-2xl flex items-center justify-center text-2xl shadow-inner flex-shrink-0">
+                                    👑
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <h3 class="text-lg font-bold text-white uppercase tracking-wide">${item.cliente || 'Cliente'}</h3>
+                                        <span class="text-[10px] font-bold uppercase tracking-wider text-dourado bg-dourado/10 border border-dourado/30 px-2 py-0.5 rounded-md">
+                                            ${item.nomePlano || 'Pacote VIP'}
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center gap-3 text-xs text-zinc-400 mt-1 flex-wrap">
+                                        <span>📱 Tel: <strong class="text-white">${item.telefone || 'Não informado'}</strong></span>
+                                        <span>•</span>
+                                        <span>Início: <strong class="text-zinc-300">${item.dataPagtoFormatada}</strong></span>
+                                        <span>•</span>
+                                        <span>Término: <strong class="text-zinc-300">${item.dataFimFormatada}</strong></span>
+                                        <span>•</span>
+                                        <span>Valor: <strong class="text-dourado">R$ ${(item.preco || 0).toFixed(2)}</strong></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2.5 flex-wrap self-end lg:self-center">
+                                ${badgeStatusGeral}
+                                <a href="${linkWhatsDireto}" target="_blank" class="bg-green-600/90 hover:bg-green-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-md">
+                                    <span>💬</span>
+                                    <span>WhatsApp</span>
+                                </a>
+                            </div>
+                        </div>
+
+                        ${alertaCardHtml}
+
+                        <!-- Grade dos 4 Créditos Semanais -->
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-zinc-300 uppercase tracking-wider">Controle dos 4 Cortes Semanais:</span>
+                                <span class="text-[11px] text-zinc-400">1 atendimento por semana</span>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                                ${semanasCardsHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        window.dispararLembreteUnicoMensalista = async function(id, cliente, telefone, nomePlano, semanaNumero, diasRestantes, dataLimite) {
+            if (!telefone) {
+                alert("Telefone do cliente não cadastrado.");
+                return;
+            }
+
+            try {
+                const resp = await fetch(`${getBackendUrlAtivo()}/api/whatsapp/lembrete-expiracao-plano`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cliente,
+                        telefone,
+                        nomePlano,
+                        semanaNumero,
+                        diasRestantesSemana: diasRestantes,
+                        dataLimiteSemana: dataLimite
+                    })
+                });
+
+                const data = await resp.json();
+                if (data.success) {
+                    alert(`✅ Mensagem de aviso enviada com sucesso para ${cliente} (${telefone}) via WhatsApp!`);
+                } else {
+                    // Fallback para abrir WhatsApp Web / App diretamente
+                    const msgWhats = encodeURIComponent(`Olá ${cliente}! 👑 Passando para avisar que o seu corte da Semana ${semanaNumero} do plano ${nomePlano} na EMAÚS Barbearia expira em ${dataLimite} (${diasRestantes} dias restantes). Agende pelo site para garantir seu horário: https://emaus-barbearia.vercel.app`);
+                    window.open(`https://wa.me/${telefone}?text=${msgWhats}`, '_blank');
+                }
+            } catch (e) {
+                const msgWhats = encodeURIComponent(`Olá ${cliente}! 👑 Passando para avisar que o seu corte da Semana ${semanaNumero} do plano ${nomePlano} na EMAÚS Barbearia expira em ${dataLimite} (${diasRestantes} dias restantes). Agende pelo site para garantir seu horário: https://emaus-barbearia.vercel.app`);
+                window.open(`https://wa.me/${telefone}?text=${msgWhats}`, '_blank');
+            }
+        };
+
+        // Event listeners dos filtros de mensalistas
+        document.getElementById('inputBuscaMensalista')?.addEventListener('input', () => renderizarListaMensalistas(listaMensalistasCache));
+        document.getElementById('selectFiltroMensalista')?.addEventListener('change', () => renderizarListaMensalistas(listaMensalistasCache));
+        document.getElementById('btnRecarregarMensalistas')?.addEventListener('click', () => window.carregarClientesMensalistasAdmin());
+
+        document.getElementById('btnDispararLembretesLote')?.addEventListener('click', async () => {
+            const emRisco = listaMensalistasCache.filter(x => x.ehAtivo && x.temCreditoExpirando && x.semanaExpirandoInfo);
+            if (emRisco.length === 0) {
+                alert("Nenhum cliente com crédito semanal expirando nos próximos 3 dias.");
+                return;
+            }
+
+            if (!confirm(`Deseja enviar aviso automático via WhatsApp para ${emRisco.length} cliente(s) que estão com o corte da semana em risco de expirar?`)) {
+                return;
+            }
+
+            const btn = document.getElementById('btnDispararLembretesLote');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = "⏳ Enviando avisos...";
+
+            try {
+                const listaPayload = emRisco.map(x => ({
+                    cliente: x.cliente,
+                    telefone: x.telefone ? x.telefone.replace(/\D/g, '') : '',
+                    nomePlano: x.nomePlano,
+                    semanaNumero: x.semanaExpirandoInfo.semanaNumero,
+                    dataLimiteSemana: x.semanaExpirandoInfo.dataLimite
+                }));
+
+                const resp = await fetch(`${getBackendUrlAtivo()}/api/whatsapp/disparar-lembretes-expiracao-lote`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        clientes: listaPayload,
+                        whatsappBarbeiro: whatsAppNumeroAtivo
+                    })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    alert(`✅ ${data.enviados || listaPayload.length} aviso(s) de expiração enviados via WhatsApp com sucesso!`);
+                } else {
+                    alert(`Aviso: ${data.message || 'Não foi possível disparar todos os avisos.'}`);
+                }
+            } catch (errLote) {
+                console.warn("Erro ao disparar lote de avisos:", errLote);
+                alert("Erro ao conectar com o serviço de WhatsApp: " + errLote.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        });
+
+        // ==========================================
+        // GESTÃO CENTRALIZADA DA AGENDA & MÉTRICAS (ALTA PERFORMANCE)
+        // ==========================================
+        window.agendamentosCache = {};
+        window.listaAgendamentosMemoria = [];
+        let filtroAgendamentosAtual = 'futuros';
+        let termoBuscaAgenda = '';
+
+        window.buscarAgendamentosFirestore = async function(forcarAtualizar = false) {
+            const tabela = document.getElementById('tabelaAgendamentosAdmin');
+            if (forcarAtualizar && tabela) {
+                tabela.innerHTML = `<tr><td colspan='6' class='p-6 text-center text-zinc-400'>🔄 Atualizando dados do servidor...</td></tr>`;
+            }
+
+            try {
+                const querySnapshot = await getDocs(collection(db, "agendamentos"));
+                window.agendamentosCache = {};
+                const lista = [];
+
+                querySnapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    if (!data.dataHora) return;
+                    const item = { id: docSnap.id, ...data };
+                    window.agendamentosCache[docSnap.id] = item;
+                    lista.push(item);
+                });
+
+                window.listaAgendamentosMemoria = lista;
+
+                atualizarMetricasOverviewComDados(lista);
+                renderizarTabelaAgendamentos();
+            } catch (e) {
+                console.error("Erro ao buscar agendamentos:", e);
+                if (tabela) tabela.innerHTML = `<tr><td colspan='6' class='p-6 text-center text-red-400'>Erro ao carregar agendamentos: ${e.message}</td></tr>`;
+            }
+        };
+
+        function atualizarMetricasOverviewComDados(lista) {
+            const agora = new Date().toISOString().slice(0, 16);
+            const limite2Horas = new Date(Date.now() - 2 * 3600000).toISOString().slice(0, 16);
+            const hojeStr = new Date().toISOString().split('T')[0];
+
+            let faturamentoFuturo = 0;
+            let faturamentoRecebido = 0;
+            let total = 0;
+            let pendentes2Horas = 0;
+
+            const listaHojeDiv = document.getElementById('listaAtendimentosHoje');
+            let atendimentosHojeList = [];
+
+            lista.forEach(ag => {
+                total++;
+                const valor = Number(ag.preco || 40);
+                const ehFuturo = ag.dataHora >= agora;
+                const ehConcluido = ag.status === 'concluido';
+                const ehFalta = ag.status === 'falta';
+
+                if (ag.dataHora <= limite2Horas && ag.status === 'confirmado') {
+                    pendentes2Horas++;
+                }
+
+                if (ehConcluido || (!ehFuturo && !ehFalta)) {
+                    faturamentoRecebido += valor;
+                } else if (ehFuturo && !ehFalta) {
+                    faturamentoFuturo += valor;
+                }
+
+                if (ag.dataHora.startsWith(hojeStr)) {
+                    atendimentosHojeList.push(ag);
+                }
+            });
+
+            // Ordena atendimentos de hoje por hora cronológica crescente
+            atendimentosHojeList.sort((a, b) => a.dataHora.localeCompare(b.dataHora));
+
+            if (listaHojeDiv) {
+                if (atendimentosHojeList.length === 0) {
+                    listaHojeDiv.innerHTML = "<p class='text-xs text-zinc-500'>Nenhum atendimento agendado para hoje.</p>";
+                } else {
+                    let htmlHoje = "";
+                    atendimentosHojeList.forEach(ag => {
+                        const ehConcluido = ag.status === 'concluido';
+                        const ehFalta = ag.status === 'falta';
+                        const precoTotal = Number(ag.preco || 0);
+                        const valorPagoNum = Number(ag.taxaReservaPaga !== undefined ? ag.taxaReservaPaga : (ag.isPlano ? 0 : 10));
+                        const valorRestante = Math.max(0, precoTotal - valorPagoNum);
+
+                        let infoFinanceiraHoje = "";
+                        if (ag.isPlano) {
+                            infoFinanceiraHoje = '<span class="text-[10px] text-purple-300 font-bold bg-purple-950/80 px-1.5 py-0.5 rounded">👑 VIP (R$ 0,00)</span>';
+                        } else if (ag.modalidadePagamento === 'total' || valorRestante === 0) {
+                            infoFinanceiraHoje = '<span class="text-[10px] text-green-400 font-bold bg-green-950/80 px-1.5 py-0.5 rounded">✅ Quitado (R$ 0,00)</span>';
+                        } else {
+                            infoFinanceiraHoje = `<span class="text-[11px] text-amber-300 font-extrabold bg-amber-950/90 border border-amber-600/70 px-1.5 py-0.5 rounded">💵 Receber: <strong class="text-dourado font-mono">R$ ${valorRestante.toFixed(2)}</strong></span>`;
+                        }
+
+                        let statusBadge = "";
+                        if (ehConcluido) {
+                            statusBadge = '<span class="text-xs bg-green-950 text-green-400 border border-green-800 px-2.5 py-1 rounded font-semibold">✅ Concluído</span>';
+                        } else if (ehFalta) {
+                            statusBadge = '<span class="text-xs bg-red-950 text-red-400 border border-red-800 px-2.5 py-1 rounded font-semibold">🚫 Faltou</span>';
+                        } else {
+                            statusBadge = '<span class="text-xs bg-blue-950 text-blue-400 border border-blue-800 px-2.5 py-1 rounded font-semibold">📅 Agendado</span>';
+                        }
+
+                        htmlHoje += `
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-black p-3 rounded-xl border border-zinc-800 gap-2 shadow-md">
+                                <div>
+                                    <p class="font-bold text-white">${ag.cliente || 'Cliente'} ${ag.isPlano ? '<span class="text-dourado text-[11px] font-bold">(VIP)</span>' : ''}</p>
+                                    <p class="text-xs text-zinc-400">${ag.servico || 'Corte'} - <strong class="text-dourado">${ag.dataHora.split('T')[1]}</strong></p>
+                                    <div class="mt-1">${infoFinanceiraHoje}</div>
+                                </div>
+                                <div>${statusBadge}</div>
+                            </div>
+                        `;
+                    });
+                    listaHojeDiv.innerHTML = htmlHoje;
+                }
+            }
+
+            const bannerAlertas = document.getElementById('bannerAlertasAdmin');
+            const textoAlerta = document.getElementById('textoAlerta2Horas');
+            if (bannerAlertas) {
+                if (pendentes2Horas > 0) {
+                    bannerAlertas.classList.remove('hidden');
+                    if (textoAlerta) {
+                        textoAlerta.innerText = `Atenção: Existem ${pendentes2Horas} atendimento(s) realizados há mais de 2 horas aguardando confirmação de presença!`;
+                    }
+                } else {
+                    bannerAlertas.classList.add('hidden');
+                }
+            }
+
+            const statRec = document.getElementById('statFaturamentoRecebido');
+            const statFut = document.getElementById('statFaturamentoFuturo');
+            const statTot = document.getElementById('statTotalAgendamentos');
+
+            if (statRec) statRec.innerText = `R$ ${faturamentoRecebido.toFixed(2)}`;
+            if (statFut) statFut.innerText = `R$ ${faturamentoFuturo.toFixed(2)}`;
+            if (statTot) statTot.innerText = total;
+        }
+
+        window.carregarMetricasOverview = async function() {
+            if (window.listaAgendamentosMemoria.length > 0) {
+                atualizarMetricasOverviewComDados(window.listaAgendamentosMemoria);
+            } else {
+                await buscarAgendamentosFirestore(false);
+            }
+        };
+
+        window.carregarAgendamentosAdmin = async function(tipo = 'futuros') {
+            filtroAgendamentosAtual = tipo;
+
+            const btnFuturos = document.getElementById('btnFiltroFuturos');
+            const btnHoje = document.getElementById('btnFiltroHoje');
+            const btnPassados = document.getElementById('btnFiltroPassados');
+
+            const btnAtivoClass = "bg-dourado text-black px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase transition cursor-pointer shadow-sm";
+            const btnInativoClass = "bg-transparent text-zinc-400 hover:text-white px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase transition cursor-pointer";
+
+            if (btnFuturos) btnFuturos.className = tipo === 'futuros' ? btnAtivoClass : btnInativoClass;
+            if (btnHoje) btnHoje.className = tipo === 'hoje' ? btnAtivoClass : btnInativoClass;
+            if (btnPassados) btnPassados.className = tipo === 'passados' ? btnAtivoClass : btnInativoClass;
+
+            if (window.listaAgendamentosMemoria.length === 0) {
+                await buscarAgendamentosFirestore(false);
+            } else {
+                renderizarTabelaAgendamentos();
+            }
+        };
+
+        function renderizarTabelaAgendamentos() {
+            const tabela = document.getElementById('tabelaAgendamentosAdmin');
+            if (!tabela) return;
+
+            const tipo = filtroAgendamentosAtual;
+            const agora = new Date().toISOString().slice(0, 16);
+            const hojeStr = new Date().toISOString().split('T')[0];
+
+            let listaFiltrada = window.listaAgendamentosMemoria.filter(ag => {
+                const ehFuturo = ag.dataHora >= agora;
+                const ehConcluido = ag.status === 'concluido';
+                const ehFalta = ag.status === 'falta';
+
+                if (tipo === 'futuros') {
+                    return ehFuturo && !ehConcluido && !ehFalta;
+                } else if (tipo === 'hoje') {
+                    return ag.dataHora.startsWith(hojeStr);
+                } else if (tipo === 'passados') {
+                    return !ehFuturo || ehConcluido || ehFalta;
+                }
+                return true;
+            });
+
+            // Filtro de busca textual em tempo real
+            if (termoBuscaAgenda) {
+                const t = termoBuscaAgenda.toLowerCase();
+                listaFiltrada = listaFiltrada.filter(ag => {
+                    const c = (ag.cliente || '').toLowerCase();
+                    const tel = (ag.telefone || '').toLowerCase();
+                    const s = (ag.servico || '').toLowerCase();
+                    return c.includes(t) || tel.includes(t) || s.includes(t);
+                });
+            }
+
+            // Ordenação otimizada
+            if (tipo === 'passados') {
+                listaFiltrada.sort((a, b) => b.dataHora.localeCompare(a.dataHora)); // Mais recentes primeiro no histórico
+            } else {
+                listaFiltrada.sort((a, b) => a.dataHora.localeCompare(b.dataHora)); // Mais próximos primeiro na fila
+            }
+
+            if (listaFiltrada.length === 0) {
+                tabela.innerHTML = "<tr><td colspan='6' class='p-8 text-center text-zinc-500'>Nenhum agendamento encontrado nesta visualização.</td></tr>";
+                return;
+            }
+
+            let html = "";
+            listaFiltrada.forEach(ag => {
+                const id = ag.id;
+                const ehConcluido = ag.status === 'concluido';
+                const ehFalta = ag.status === 'falta';
+
+                let telLimpo = ag.telefone ? ag.telefone.replace(/\D/g, '') : '';
+                if (telLimpo && !telLimpo.startsWith('55')) telLimpo = '55' + telLimpo;
+
+                const msgZap = encodeURIComponent(`Olá ${ag.cliente || 'Cliente'}! Confirmando seu horário na EMAÚS Barbearia dia ${ag.dataHora.replace('T', ' às ')} (${ag.servico || 'Corte'}). Tudo certo?`);
+                const linkZap = telLimpo ? `https://wa.me/${telLimpo}?text=${msgZap}` : '#';
+
+                const dataFormatada = ag.dataHora.replace('T', ' às ');
+                const precoTotal = Number(ag.preco || 0);
+                const valorPagoNum = Number(ag.taxaReservaPaga !== undefined ? ag.taxaReservaPaga : (ag.isPlano ? 0 : 10));
+                const valorRestante = Math.max(0, precoTotal - valorPagoNum);
+
+                let tipoPagtoBadge = "";
+                let saldoRestanteBadge = "";
+
+                if (ag.isPlano) {
+                    tipoPagtoBadge = `<span class="bg-purple-950 text-purple-300 border border-purple-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">👑 VIP (Sem ${ag.semanaPlano || '1'})</span>`;
+                    saldoRestanteBadge = `<span class="text-[10px] text-purple-400 font-semibold">Isento (R$ 0,00)</span>`;
+                } else if (ag.modalidadePagamento === 'total' || valorRestante === 0) {
+                    tipoPagtoBadge = `<span class="bg-green-950 text-green-400 border border-green-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Total Pago Online (R$ ${valorPagoNum.toFixed(2)})</span>`;
+                    saldoRestanteBadge = `<span class="text-[10px] text-green-400 font-bold">Quitado (R$ 0,00)</span>`;
+                } else {
+                    tipoPagtoBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-zinc-800 text-zinc-300 border border-zinc-700">${ag.metodoPagamento || 'Pix'} (Taxa R$ ${valorPagoNum.toFixed(2)})</span>`;
+                    saldoRestanteBadge = `<span class="bg-amber-950/90 text-amber-300 border border-amber-600 px-2 py-0.5 rounded text-[11px] font-extrabold uppercase shadow-sm">💵 Receber: <strong class="text-dourado text-xs">R$ ${valorRestante.toFixed(2)}</strong></span>`;
+                }
+
+                let statusBadge = "";
+                if (ehConcluido) {
+                    statusBadge = '<span class="bg-green-950 text-green-400 border border-green-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">✅ Compareceu</span>';
+                } else if (ehFalta) {
+                    statusBadge = '<span class="bg-red-950 text-red-400 border border-red-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">🚫 Não Compareceu</span>';
+                } else {
+                    statusBadge = '<span class="bg-blue-950 text-blue-400 border border-blue-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">📅 Confirmado</span>';
+                }
+
+                html += `
+                    <tr id="linhaAgendamento_${id}" class="hover:bg-zinc-900/50 transition border-b border-zinc-800/40">
+                        <td class="p-3.5 font-bold text-white">${ag.cliente || 'Cliente'}</td>
+                        <td class="p-3.5">
+                            <span class="text-zinc-300 font-mono">${ag.telefone || 'N/A'}</span>
+                            ${telLimpo ? `<a href="${linkZap}" target="_blank" class="ml-2 inline-block bg-green-600 hover:bg-green-700 text-white px-2 py-0.5 rounded text-[11px] font-bold transition shadow-sm">📱 WhatsApp</a>` : ''}
+                        </td>
+                        <td class="p-3.5">
+                            <div class="font-bold text-white">${ag.servico || 'Corte'}</div>
+                            <div class="text-xs text-zinc-400">Total: <strong class="text-zinc-200 font-semibold">R$ ${precoTotal.toFixed(2)}</strong></div>
+                        </td>
+                        <td class="p-3.5 text-white font-medium">📅 ${dataFormatada}</td>
+                        <td class="p-3.5">
+                            <div class="flex flex-col gap-1 items-start">
+                                ${tipoPagtoBadge}
+                                ${saldoRestanteBadge}
+                                ${statusBadge}
+                            </div>
+                        </td>
+                        <td class="p-3.5 text-right whitespace-nowrap">
+                            <div id="botoesAcao_${id}" class="inline-flex items-center gap-1">
+                                ${(!ehConcluido && !ehFalta) ? `
+                                    <button onclick="confirmarPresencaAdmin('${id}')" id="btnPresenca_${id}" class="bg-green-600 hover:bg-green-700 text-white px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer" title="Confirmar comparecimento">✓ Compareceu</button>
+                                    <button onclick="marcarFaltaAdmin('${id}')" id="btnFalta_${id}" class="bg-amber-700 hover:bg-amber-800 text-white px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer" title="Marcar que o cliente não compareceu">✕ Faltou</button>
+                                ` : ''}
+                                <button onclick="excluirAgendamentoAdmin('${id}')" id="btnExcluir_${id}" class="bg-red-600/80 hover:bg-red-600 text-white px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer" title="Cancelar e excluir agendamento">
+                                    Excluir
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tabela.innerHTML = html;
+        }
+
+        // Listener da busca rápida
+        const inputBuscaAgendaAdmin = document.getElementById('inputBuscaAgendaAdmin');
+        if (inputBuscaAgendaAdmin) {
+            inputBuscaAgendaAdmin.addEventListener('input', (e) => {
+                termoBuscaAgenda = e.target.value.trim();
+                renderizarTabelaAgendamentos();
+            });
+        }
+
+        window.confirmarPresencaAdmin = async function(id) {
+            const ag = window.agendamentosCache[id];
+            const btn = document.getElementById(`btnPresenca_${id}`);
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = "⏳ Salvando...";
+            }
+
+            try {
+                await setDoc(doc(db, "agendamentos", id), { status: 'concluido' }, { merge: true });
+                if (ag && ag.userId && ag.semanaPlano && ag.semanaPlano !== 'undefined') {
+                    try {
+                        const updateObj = {};
+                        updateObj[`semanas.${ag.semanaPlano}.status`] = 'concluido';
+                        updateObj[`semanas.${ag.semanaPlano}.concluidoEm`] = new Date().toISOString();
+                        await updateDoc(doc(db, "assinaturasClientes", ag.userId), updateObj);
+                    } catch (errP) { console.warn("Erro ao atualizar assinatura:", errP); }
+                }
+
+                if (ag) ag.status = 'concluido';
+                atualizarMetricasOverviewComDados(window.listaAgendamentosMemoria);
+                renderizarTabelaAgendamentos();
+            } catch (e) {
+                alert("Erro ao confirmar presença: " + e.message);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = "✓ Compareceu";
+                }
+            }
+        };
+
+        window.marcarFaltaAdmin = async function(id) {
+            const ag = window.agendamentosCache[id];
+            if (!confirm("Marcar que o cliente NÃO compareceu ao horário? (Caso seja assinante VIP, o corte desta semana será debitado como perdido).")) {
+                return;
+            }
+
+            const btn = document.getElementById(`btnFalta_${id}`);
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = "⏳ Salvando...";
+            }
+
+            try {
+                await setDoc(doc(db, "agendamentos", id), { status: 'falta' }, { merge: true });
+                if (ag && ag.userId && ag.semanaPlano && ag.semanaPlano !== 'undefined') {
+                    try {
+                        const updateObj = {};
+                        updateObj[`semanas.${ag.semanaPlano}.status`] = 'falta';
+                        updateObj[`semanas.${ag.semanaPlano}.faltaEm`] = new Date().toISOString();
+                        await updateDoc(doc(db, "assinaturasClientes", ag.userId), updateObj);
+                    } catch (errP) { console.warn("Erro ao atualizar assinatura:", errP); }
+                }
+
+                if (ag) ag.status = 'falta';
+                atualizarMetricasOverviewComDados(window.listaAgendamentosMemoria);
+                renderizarTabelaAgendamentos();
+            } catch (e) {
+                alert("Erro ao marcar falta: " + e.message);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = "✕ Faltou";
+                }
+            }
+        };
+
+        let dadosReembolsoPendente = null;
+
+        const modalReembolsoPosCancelamento = document.getElementById('modalReembolsoPosCancelamento');
+        const btnFecharModalReembolso = document.getElementById('btnFecharModalReembolso');
+        const btnExecutarEstornoModal = document.getElementById('btnExecutarEstornoModal');
+        const msgReembolsoStatus = document.getElementById('msgReembolsoStatus');
+
+        function fecharModalReembolso() {
+            if (modalReembolsoPosCancelamento) modalReembolsoPosCancelamento.classList.add('hidden');
+            dadosReembolsoPendente = null;
+        }
+
+        if (btnFecharModalReembolso) {
+            btnFecharModalReembolso.addEventListener('click', fecharModalReembolso);
+        }
+
+        if (btnExecutarEstornoModal) {
+            btnExecutarEstornoModal.addEventListener('click', async () => {
+                if (!dadosReembolsoPendente) return;
+                const { paymentId, valor, cliente, servico, telefone } = dadosReembolsoPendente;
+
+                btnExecutarEstornoModal.disabled = true;
+                btnExecutarEstornoModal.innerHTML = `<span>⏳ Processando estorno...</span>`;
+                if (msgReembolsoStatus) {
+                    msgReembolsoStatus.className = "text-xs text-center font-medium text-amber-300";
+                    msgReembolsoStatus.innerText = "Conectando ao Mercado Pago para efetuar o reembolso...";
+                }
+
+                try {
+                    const resp = await fetch(`${getBackendUrlAtivo()}/api/pagamento/estorno`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            paymentId: paymentId,
+                            amount: valor,
+                            reason: `Reembolso autorizado pelo barbeiro (${cliente} - ${servico})`
+                        })
+                    });
+                    const resData = await resp.json();
+                    if (resData.success) {
+                        if (msgReembolsoStatus) {
+                            msgReembolsoStatus.className = "text-xs text-center font-bold text-green-400";
+                            msgReembolsoStatus.innerText = `✅ Reembolso de R$ ${valor.toFixed(2)} processado com sucesso no Mercado Pago!`;
+                        }
+                        btnExecutarEstornoModal.innerHTML = `<span>✅ Estorno Concluído</span>`;
+                        btnExecutarEstornoModal.className = "w-full sm:w-1/2 bg-zinc-800 text-green-400 font-bold py-2.5 rounded-xl uppercase tracking-wider text-xs cursor-default";
+
+                        // Notifica no WhatsApp sobre o estorno efetuado
+                        if (telefone) {
+                            fetch(`${getBackendUrlAtivo()}/api/whatsapp/notificar-cancelamento`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    cliente: cliente,
+                                    telefone: telefone,
+                                    servico: servico,
+                                    canceladoPor: 'barbeiro',
+                                    estornoRealizado: true,
+                                    valorEstornado: valor,
+                                    isPlano: false,
+                                    whatsappBarbeiro: whatsAppNumeroAtivo
+                                })
+                            }).catch(e => console.warn("Aviso WhatsApp estorno:", e));
+                        }
+
+                        setTimeout(() => {
+                            fecharModalReembolso();
+                        }, 2500);
+                    } else {
+                        throw new Error(resData.message || "Erro ao processar estorno.");
+                    }
+                } catch (errEst) {
+                    console.error("Erro no estorno:", errEst);
+                    if (msgReembolsoStatus) {
+                        msgReembolsoStatus.className = "text-xs text-center font-medium text-red-400";
+                        msgReembolsoStatus.innerText = "Erro ao efetuar estorno: " + errEst.message;
+                    }
+                    btnExecutarEstornoModal.disabled = false;
+                    btnExecutarEstornoModal.innerHTML = `<span>💸 Tentar Novamente</span>`;
+                }
+            });
+        }
+
+        window.excluirAgendamentoAdmin = async function(id) {
+            let ag = window.agendamentosCache[id];
+            if (!ag) {
+                try {
+                    const snap = await getDoc(doc(db, "agendamentos", id));
+                    if (snap.exists()) ag = { id: snap.id, ...snap.data() };
+                } catch (errG) { console.warn(errG); }
+            }
+
+            const cliente = ag?.cliente || 'Cliente';
+            const servico = ag?.servico || 'Corte';
+            const isPlano = !!ag?.isPlano;
+            const valorPago = Number(ag?.taxaReservaPaga !== undefined ? ag.taxaReservaPaga : (isPlano ? 0 : 10.00));
+            const idPagamento = ag?.idPagamento || '';
+            const userId = ag?.userId || '';
+            const semanaPlano = ag?.semanaPlano || '';
+            const telCliente = ag?.telefone || '';
+
+            let avisoMsg = "";
+            if (isPlano) {
+                avisoMsg = `\n\n👑 REGRA DO PACOTE VIP: O crédito do corte da semana voltará a ficar disponível para o cliente (${cliente}) reagendar.`;
+            } else if (valorPago > 0 && idPagamento && idPagamento !== 'manual' && idPagamento !== 'plano_vip') {
+                avisoMsg = `\n\n💳 Pagamento online detectado: R$ ${valorPago.toFixed(2)}. Após cancelar, você terá a opção de emitir o reembolso via Mercado Pago.`;
+            }
+
+            if (!confirm(`Deseja realmente cancelar este agendamento de ${cliente}?${avisoMsg}`)) {
+                return;
+            }
+
+            const btn = document.getElementById(`btnExcluir_${id}`);
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = "⏳ Excluindo...";
+            }
+
+            try {
+                // 1. Exclui do Firestore
+                await deleteDoc(doc(db, "agendamentos", id));
+
+                // 2. Se era do plano VIP, restaura o crédito da semana
+                if (isPlano && userId && semanaPlano && semanaPlano !== 'undefined') {
+                    try {
+                        const updateObj = {};
+                        updateObj[`semanas.${semanaPlano}.status`] = 'disponivel';
+                        updateObj[`semanas.${semanaPlano}.agendamentoId`] = null;
+                        updateObj[`semanas.${semanaPlano}.agendamentoData`] = null;
+                        await updateDoc(doc(db, "assinaturasClientes", userId), updateObj);
+                    } catch (errP) { console.warn("Erro ao restaurar semana na assinatura:", errP); }
+                }
+
+                // 3. Remove da memória e atualiza UI instantaneamente (0ms de espera)
+                window.listaAgendamentosMemoria = window.listaAgendamentosMemoria.filter(x => x.id !== id);
+                delete window.agendamentosCache[id];
+                atualizarMetricasOverviewComDados(window.listaAgendamentosMemoria);
+                renderizarTabelaAgendamentos();
+
+                // 4. Notifica o cancelamento no WhatsApp em segundo plano
+                if (telCliente) {
+                    const controllerZap = new AbortController();
+                    const timeoutIdZap = setTimeout(() => controllerZap.abort(), 5000);
+                    fetch(`${getBackendUrlAtivo()}/api/whatsapp/notificar-cancelamento`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        signal: controllerZap.signal,
+                        body: JSON.stringify({
+                            cliente: cliente,
+                            telefone: telCliente,
+                            servico: servico,
+                            canceladoPor: 'barbeiro',
+                            estornoRealizado: false,
+                            valorEstornado: 0,
+                            isPlano: isPlano,
+                            whatsappBarbeiro: whatsAppNumeroAtivo
+                        })
+                    }).catch(e => console.warn("Aviso WhatsApp cancelamento:", e.message));
+                }
+
+                // 5. Se foi pago online via Mercado Pago, abre o Modal com o Botão de Reembolso Manual
+                if (!isPlano && valorPago > 0 && idPagamento && idPagamento !== 'manual' && idPagamento !== 'plano_vip') {
+                    dadosReembolsoPendente = {
+                        paymentId: idPagamento,
+                        valor: valorPago,
+                        cliente: cliente,
+                        servico: servico,
+                        telefone: telCliente
+                    };
+                    const clienteEl = document.getElementById('reembolsoClienteNome');
+                    const servicoEl = document.getElementById('reembolsoServicoNome');
+                    const valorEl = document.getElementById('reembolsoValorPago');
+                    const idEl = document.getElementById('reembolsoPaymentId');
+                    const msgEl = document.getElementById('msgReembolsoStatus');
+                    const btnEstorno = document.getElementById('btnExecutarEstornoModal');
+
+                    if (clienteEl) clienteEl.innerText = cliente;
+                    if (servicoEl) servicoEl.innerText = servico;
+                    if (valorEl) valorEl.innerText = `R$ ${valorPago.toFixed(2)}`;
+                    if (idEl) idEl.innerText = idPagamento;
+                    if (msgEl) {
+                        msgEl.innerText = "";
+                        msgEl.className = "text-xs text-center font-medium min-h-[16px]";
+                    }
+                    if (btnEstorno) {
+                        btnEstorno.disabled = false;
+                        btnEstorno.className = "w-full sm:w-1/2 bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-1.5";
+                        btnEstorno.innerHTML = `<span>💸 Estornar / Reembolsar</span>`;
+                    }
+                    if (modalReembolsoPosCancelamento) {
+                        modalReembolsoPosCancelamento.classList.remove('hidden');
+                    }
+                }
+
+            } catch (e) {
+                alert("Erro ao excluir agendamento: " + e.message);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = "Excluir";
+                }
+            }
+        };
+
+        document.getElementById('btnSalvarNovoServico').addEventListener('click', async () => {
+            const nome = document.getElementById('inputNovoServicoNome').value.trim();
+            const preco = parseFloat(document.getElementById('inputNovoServicoPreco').value);
+            const msg = document.getElementById('msgNovoServico');
+
+            if (!nome || isNaN(preco)) {
+                msg.className = "text-xs text-center font-medium text-red-400";
+                msg.innerText = "Preencha o nome e o preço corretamente!";
+                return;
+            }
+
+            try {
+                await addDoc(collection(db, "servicos"), { nome, preco, criadoEm: new Date() });
+                document.getElementById('inputNovoServicoNome').value = "";
+                document.getElementById('inputNovoServicoPreco').value = "";
+                msg.className = "text-xs text-center font-medium text-green-400";
+                msg.innerText = "Serviço adicionado com sucesso!";
+                setTimeout(() => msg.innerText = "", 3000);
+                carregarServicosAdmin();
+            } catch (e) { msg.innerText = "Erro ao salvar serviço."; }
+        });
+
+        async function carregarServicosAdmin() {
+            const listaDiv = document.getElementById('listaServicosAdmin');
+            if (!listaDiv) return;
+            try {
+                const querySnapshot = await getDocs(collection(db, "servicos"));
+                if (querySnapshot.empty) {
+                    listaDiv.innerHTML = '<p class="text-xs text-zinc-500">Nenhum serviço cadastrado no momento.</p>';
+                    return;
+                }
+                listaDiv.innerHTML = "";
+                querySnapshot.forEach((docSnap) => {
+                    const serv = docSnap.data();
+                    const id = docSnap.id;
+                    listaDiv.innerHTML += `
+                        <div class="flex justify-between items-center bg-black p-3 rounded-xl border border-zinc-800 text-xs">
+                            <div>
+                                <span class="font-bold text-white text-sm">${serv.nome}</span>
+                                <p class="text-dourado font-bold">R$ ${(serv.preco || 0).toFixed(2)}</p>
+                            </div>
+                            <button onclick="excluirServicoAdmin('${id}')" class="bg-red-600/80 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">
+                                Excluir
+                            </button>
+                        </div>
+                    `;
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        window.excluirServicoAdmin = async function(id) {
+            if (confirm("Tem certeza que deseja apagar este serviço?")) {
+                try {
+                    await deleteDoc(doc(db, "servicos", id));
+                    carregarServicosAdmin();
+                } catch (e) { alert("Erro ao apagar serviço."); }
+            }
+        };
+
+        // GESTÃO DE PLANOS MENSAIS (ADMIN)
+        const btnSalvarNovoPlano = document.getElementById('btnSalvarNovoPlano');
+        if (btnSalvarNovoPlano) {
+            btnSalvarNovoPlano.addEventListener('click', async () => {
+                const nome = document.getElementById('inputNovoPlanoNome').value.trim();
+                const preco = parseFloat(document.getElementById('inputNovoPlanoPreco').value);
+                const msg = document.getElementById('msgNovoPlano');
+
+                if (!nome || isNaN(preco)) {
+                    msg.className = "text-xs text-center font-medium text-red-400";
+                    msg.innerText = "Preencha o nome do plano e o preço corretamente!";
+                    return;
+                }
+
+                try {
+                    await addDoc(collection(db, "planosMensais"), { nome, preco, duracaoDias: 30, criadoEm: new Date() });
+                    document.getElementById('inputNovoPlanoNome').value = "";
+                    document.getElementById('inputNovoPlanoPreco').value = "";
+                    msg.className = "text-xs text-center font-medium text-green-400";
+                    msg.innerText = "Plano mensal criado com sucesso!";
+                    setTimeout(() => msg.innerText = "", 3000);
+                    carregarPlanosAdmin();
+                } catch (e) { msg.innerText = "Erro ao salvar plano."; }
+            });
+        }
+
+        async function carregarPlanosAdmin() {
+            const listaDiv = document.getElementById('listaPlanosAdmin');
+            if (!listaDiv) return;
+            try {
+                const querySnapshot = await getDocs(collection(db, "planosMensais"));
+                if (querySnapshot.empty) {
+                    listaDiv.innerHTML = '<p class="text-xs text-zinc-500">Nenhum plano cadastrado no momento.</p>';
+                    return;
+                }
+                listaDiv.innerHTML = "";
+                querySnapshot.forEach((docSnap) => {
+                    const plano = docSnap.data();
+                    const id = docSnap.id;
+                    listaDiv.innerHTML += `
+                        <div class="flex justify-between items-center bg-black p-3 rounded-xl border border-zinc-800 text-xs">
+                            <div>
+                                <span class="font-bold text-white text-sm">${plano.nome}</span>
+                                <p class="text-dourado font-bold">R$ ${(plano.preco || 0).toFixed(2)} / mês</p>
+                            </div>
+                            <button onclick="excluirPlanoAdmin('${id}')" class="bg-red-600/80 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">
+                                Excluir
+                            </button>
+                        </div>
+                    `;
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        window.excluirPlanoAdmin = async function(id) {
+            if (confirm("Tem certeza que deseja apagar este plano mensal?")) {
+                try {
+                    await deleteDoc(doc(db, "planosMensais", id));
+                    carregarPlanosAdmin();
+                } catch (e) { alert("Erro ao apagar plano."); }
+            }
+        };
+
+        document.getElementById('btnSalvarBloqueio').addEventListener('click', async () => {
+            const dataBloq = document.getElementById('inputDataBloqueio').value;
+            const motivo = document.getElementById('inputMotivoBloqueio').value.trim() || 'Fechado';
+            const msg = document.getElementById('msgBloqueioStatus');
+
+            if (!dataBloq) {
+                msg.className = "text-xs text-center font-medium text-red-400";
+                msg.innerText = "Selecione a data para bloquear!";
+                return;
+            }
+
+            try {
+                await setDoc(doc(db, "diasBloqueados", dataBloq), { bloqueado: true, motivo });
+                document.getElementById('inputDataBloqueio').value = "";
+                document.getElementById('inputMotivoBloqueio').value = "";
+                msg.className = "text-xs text-center font-medium text-green-400";
+                msg.innerText = "Data bloqueada com sucesso!";
+                setTimeout(() => msg.innerText = "", 3000);
+                carregarDiasBloqueadosAdmin();
+            } catch (e) { msg.innerText = "Erro ao bloquear data."; }
+        });
+
+        async function carregarDiasBloqueadosAdmin() {
+            const listaDiv = document.getElementById('listaDiasBloqueadosAdmin');
+            if (!listaDiv) return;
+            try {
+                const querySnapshot = await getDocs(collection(db, "diasBloqueados"));
+                if (querySnapshot.empty) {
+                    listaDiv.innerHTML = '<span class="text-xs text-zinc-500">Nenhum dia bloqueado.</span>';
+                    return;
+                }
+                listaDiv.innerHTML = "";
+                querySnapshot.forEach((docSnap) => {
+                    const dataFormatada = docSnap.id.split('-').reverse().join('/');
+                    const motivo = docSnap.data().motivo || '';
+                    listaDiv.innerHTML += `
+                        <div class="inline-flex items-center gap-2 bg-red-950/60 border border-red-800 text-red-200 px-3 py-1.5 rounded-lg text-xs font-semibold">
+                            <span>📅 ${dataFormatada} ${motivo ? `(${motivo})` : ''}</span>
+                            <button onclick="desbloquearDataAdmin('${docSnap.id}')" class="text-red-400 hover:text-white font-bold cursor-pointer" title="Remover bloqueio">❌</button>
+                        </div>
+                    `;
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        window.desbloquearDataAdmin = async function(dataStr) {
+            if (confirm(`Deseja desbloquear o dia ${dataStr.split('-').reverse().join('/')}?`)) {
+                try {
+                    await deleteDoc(doc(db, "diasBloqueados", dataStr));
+                    carregarDiasBloqueadosAdmin();
+                } catch (e) { alert("Erro ao desbloquear data."); }
+            }
+        };
+
+        async function carregarConfiguracoesMercadoPago() {
+            try {
+                const configSnap = await getDoc(doc(db, "configuracoes", "pagamento"));
+                const box = document.getElementById('boxStatusMp');
+                const texto = document.getElementById('textoStatusMp');
+                const sub = document.getElementById('subtextoStatusMp');
+                const icon = document.getElementById('iconStatusMp');
+                const badge = document.getElementById('badgeAmbienteMp');
+
+                if (configSnap.exists()) {
+                    const data = configSnap.data();
+                    if (data.mpAccessToken) {
+                        document.getElementById('inputMpAccessToken').value = data.mpAccessToken;
+                    }
+                    if (data.pixManual) {
+                        document.getElementById('inputPixManual').value = data.pixManual;
+                    }
+                    if (data.whatsappAdmin) {
+                        document.getElementById('inputWhatsappAdmin').value = data.whatsappAdmin;
+                        whatsAppNumeroAtivo = data.whatsappAdmin;
+                        adminWhatsappGlobal = data.whatsappAdmin;
+                    }
+
+                    if (data.mpAccessToken && data.mpAccessToken.length > 20) {
+                        const ehProducao = data.mpAccessToken.startsWith('APP_USR');
+                        box.className = "p-4 rounded-xl border flex items-center justify-between bg-green-950/40 border-green-800";
+                        icon.className = "w-3.5 h-3.5 rounded-full bg-green-400";
+                        texto.innerText = "Mercado Pago Conectado!";
+                        sub.innerText = "Pronto para receber pagamentos Pix automáticos";
+                        badge.className = `text-[10px] font-bold uppercase px-2.5 py-1 rounded ${ehProducao ? 'bg-green-600 text-white' : 'bg-amber-600 text-black'}`;
+                        badge.innerText = ehProducao ? "Produção Real" : "Modo Teste";
+                        return;
+                    }
+                }
+
+                box.className = "p-4 rounded-xl border flex items-center justify-between bg-zinc-900 border-zinc-800";
+                icon.className = "w-3.5 h-3.5 rounded-full bg-amber-400";
+                texto.innerText = "Mercado Pago Pendente";
+                sub.innerText = "Insira o Access Token abaixo para ativar o Pix automático";
+                badge.innerText = "Não Configurado";
+
+            } catch (e) { console.error(e); }
+        }
+
+        document.getElementById('btnSalvarConfigMp').addEventListener('click', async () => {
+            const token = document.getElementById('inputMpAccessToken').value.trim();
+            const pixManual = document.getElementById('inputPixManual').value.trim();
+            const whatsappAdmin = document.getElementById('inputWhatsappAdmin').value.replace(/\D/g, '');
+            const msg = document.getElementById('msgConfigMpStatus');
+
+            msg.className = "text-xs text-center font-medium text-amber-300";
+            msg.innerText = "Salvando configurações...";
+
+            try {
+                await setDoc(doc(db, "configuracoes", "pagamento"), {
+                    mpAccessToken: token,
+                    pixManual: pixManual || '11953789095',
+                    whatsappAdmin: whatsappAdmin || '5511953789095',
+                    atualizadoEm: new Date()
+                });
+
+                try {
+                    await fetch(`${getBackendUrlAtivo()}/api/configuracoes/mercadopago`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ accessToken: token })
+                    });
+                } catch(err) {}
+
+                msg.className = "text-xs text-center font-medium text-green-400";
+                msg.innerText = "✅ Configurações salvas e ativadas com sucesso!";
+                carregarConfiguracoesMercadoPago();
+            } catch (e) {
+                msg.className = "text-xs text-center font-medium text-red-400";
+                msg.innerText = "Erro ao salvar: " + e.message;
+            }
+        });
+
+        // ==========================================
+        // GESTÃO DO WHATSAPP BOT (AUTOMAÇÃO)
+        // ==========================================
+        let waPollingInterval = null;
+
+        async function carregarConfiguracoesServidorWa() {
+            try {
+                const snap = await getDoc(doc(db, "configuracoes", "whatsapp"));
+                if (snap.exists()) {
+                    const data = snap.data();
+                    if (data.servidorUrl) {
+                        configWhatsappUrlGlobal = data.servidorUrl.trim().replace(/\/+$/, '');
+                        const input = document.getElementById('inputUrlServidorWa');
+                        if (input) input.value = configWhatsappUrlGlobal;
+                    }
+                }
+            } catch (e) {
+                console.warn("Aviso ao carregar config servidor WhatsApp:", e);
+            }
+        }
+
+        async function carregarStatusWhatsAppBot() {
+            const box = document.getElementById('boxStatusWa');
+            const texto = document.getElementById('textoStatusWa');
+            const sub = document.getElementById('subtextoStatusWa');
+            const icon = document.getElementById('iconStatusWa');
+            const badge = document.getElementById('badgeAmbienteWa');
+            const boxQr = document.getElementById('boxQrImagem');
+            const btnDesconectar = document.getElementById('btnDesconectarWa');
+
+            const backendUrlAtivo = getBackendUrlAtivo();
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 8000);
+                const res = await fetch(`${backendUrlAtivo}/api/whatsapp/status`, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                const data = await res.json();
+
+                if (data.status === 'connected') {
+                    box.className = "p-4 rounded-xl border flex items-center justify-between bg-green-950/40 border-green-800";
+                    icon.className = "w-3.5 h-3.5 rounded-full bg-green-400";
+                    texto.innerText = "WhatsApp Conectado 24h!";
+                    sub.innerText = data.userNumber ? `Aparelho ativo: +${data.userNumber}` : "Robô ativo e enviando mensagens automáticas";
+                    badge.className = "text-[10px] font-bold uppercase px-2.5 py-1 rounded bg-green-600 text-white";
+                    badge.innerText = "Online";
+
+                    boxQr.innerHTML = `
+                        <div class="text-center space-y-2">
+                            <span class="text-4xl">✅</span>
+                            <p class="font-bold text-green-400 text-sm">WhatsApp Conectado com Sucesso!</p>
+                            <p class="text-xs text-zinc-400">Todas as confirmações, lembretes de agendamento e alertas do plano VIP estão ativos.</p>
+                            ${data.userNumber ? `<p class="text-xs text-dourado font-mono font-bold">+${data.userNumber}</p>` : ''}
+                        </div>
+                    `;
+                    btnDesconectar.classList.remove('hidden');
+                } else if (data.status === 'qr_ready' && data.qrCode) {
+                    box.className = "p-4 rounded-xl border flex items-center justify-between bg-amber-950/40 border-amber-800";
+                    icon.className = "w-3.5 h-3.5 rounded-full bg-amber-400 animate-pulse";
+                    texto.innerText = "Aguardando Leitura do QR Code";
+                    sub.innerText = "Aponte a câmera do WhatsApp para conectar";
+                    badge.className = "text-[10px] font-bold uppercase px-2.5 py-1 rounded bg-amber-600 text-black";
+                    badge.innerText = "QR Code Pronto";
+
+                    boxQr.innerHTML = `<img src="${data.qrCode}" class="w-full h-full object-contain rounded-lg shadow-inner" alt="QR Code WhatsApp" />`;
+                    btnDesconectar.classList.add('hidden');
+                } else if (data.status === 'connecting') {
+                    box.className = "p-4 rounded-xl border flex items-center justify-between bg-zinc-900 border-zinc-800";
+                    icon.className = "w-3.5 h-3.5 rounded-full bg-blue-400 animate-pulse";
+                    texto.innerText = "Iniciando Conexão...";
+                    sub.innerText = "Preparando servidor de WhatsApp";
+                    badge.className = "text-[10px] font-bold uppercase px-2.5 py-1 rounded bg-blue-600 text-white";
+                    badge.innerText = "Conectando";
+
+                    boxQr.innerHTML = `<p class="text-xs text-zinc-400 text-center px-4 animate-pulse">Gerando novo QR Code...</p>`;
+                    btnDesconectar.classList.add('hidden');
+                } else {
+                    box.className = "p-4 rounded-xl border flex items-center justify-between bg-zinc-900 border-zinc-800";
+                    icon.className = "w-3.5 h-3.5 rounded-full bg-zinc-600";
+                    texto.innerText = "WhatsApp Desconectado";
+                    sub.innerText = configWhatsappUrlGlobal ? "Servidor configurado. Clique em 'Gerar / Conectar QR Code'" : "Insira a URL do Render acima e clique em 'Gerar / Conectar QR Code'";
+                    badge.className = "text-[10px] font-bold uppercase px-2.5 py-1 rounded bg-zinc-800 text-zinc-400";
+                    badge.innerText = "Desconectado";
+
+                    boxQr.innerHTML = `<p class="text-xs text-zinc-500 text-center px-4">Clique no botão abaixo para gerar o QR Code de conexão.</p>`;
+                    btnDesconectar.classList.add('hidden');
+                }
+            } catch (e) {
+                console.warn("Erro ao consultar status do WhatsApp:", e);
+                if (box) box.className = "p-4 rounded-xl border flex items-center justify-between bg-zinc-900 border-zinc-800";
+                if (icon) icon.className = "w-3.5 h-3.5 rounded-full bg-amber-500";
+                if (texto) texto.innerText = "Aguardando Servidor WhatsApp";
+                if (sub) sub.innerText = configWhatsappUrlGlobal ? "Servidor Render iniciando ou hibernando..." : "Configure a URL do Render no campo acima";
+                if (badge) {
+                    badge.className = "text-[10px] font-bold uppercase px-2.5 py-1 rounded bg-zinc-800 text-zinc-400";
+                    badge.innerText = "Standby";
+                }
+            }
+        }
+
+        document.getElementById('btnSalvarUrlServidorWa')?.addEventListener('click', async () => {
+            const input = document.getElementById('inputUrlServidorWa');
+            const msg = document.getElementById('msgUrlServidorWaStatus');
+            const url = input ? input.value.trim().replace(/\/+$/, '') : '';
+
+            if (msg) {
+                msg.className = "text-xs text-center font-medium text-amber-300";
+                msg.innerText = "Salvando URL do servidor...";
+            }
+
+            try {
+                await setDoc(doc(db, "configuracoes", "whatsapp"), {
+                    servidorUrl: url,
+                    atualizadoEm: new Date().toISOString()
+                }, { merge: true });
+
+                configWhatsappUrlGlobal = url;
+                if (msg) {
+                    msg.className = "text-xs text-center font-bold text-green-400";
+                    msg.innerText = "✅ URL do servidor salva com sucesso no banco de dados!";
+                    setTimeout(() => { if (msg.innerText.includes('sucesso')) msg.innerText = ""; }, 4000);
+                }
+                
+                await carregarStatusWhatsAppBot();
+            } catch (e) {
+                if (msg) {
+                    msg.className = "text-xs text-center font-medium text-red-400";
+                    msg.innerText = "Erro ao salvar URL: " + e.message;
+                }
+            }
+        });
+
+        document.getElementById('btnTestarConexaoServidorWa')?.addEventListener('click', async () => {
+            const input = document.getElementById('inputUrlServidorWa');
+            const msg = document.getElementById('msgUrlServidorWaStatus');
+            const url = (input?.value.trim() || configWhatsappUrlGlobal || BACKEND_URL).replace(/\/+$/, '');
+
+            if (!url) {
+                if (msg) {
+                    msg.className = "text-xs text-center font-medium text-red-400";
+                    msg.innerText = "Digite a URL do Render (ex: https://seu-app.onrender.com) para testar.";
+                }
+                return;
+            }
+
+            if (msg) {
+                msg.className = "text-xs text-center font-medium text-amber-300";
+                msg.innerText = "Conectando ao servidor...";
+            }
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 12000);
+                const resp = await fetch(`${url}/health`, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                const data = await resp.json();
+
+                if (data.status === 'ok' || data.status === 'online') {
+                    if (msg) {
+                        msg.className = "text-xs text-center font-bold text-green-400";
+                        msg.innerText = `✅ Servidor Online e Respondendo! (Status WhatsApp: ${data.whatsapp?.status || data.status})`;
+                    }
+                    await carregarStatusWhatsAppBot();
+                } else {
+                    if (msg) {
+                        msg.className = "text-xs text-center font-medium text-amber-300";
+                        msg.innerText = `Servidor respondeu com status: ${data.status || 'desconhecido'}`;
+                    }
+                }
+            } catch (err) {
+                if (msg) {
+                    msg.className = "text-xs text-center font-medium text-red-400";
+                    msg.innerText = `❌ Falha ao conectar no servidor (${err.message}). Se for a primeira vez no Render, ele pode levar até 40s para acordar.`;
+                }
+            }
+        });
+
+        document.getElementById('btnGerarQrCodeWa')?.addEventListener('click', async () => {
+            const btn = document.getElementById('btnGerarQrCodeWa');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = "⏳ Gerando QR Code...";
+            }
+
+            try {
+                const backendUrl = getBackendUrlAtivo();
+                await fetch(`${backendUrl}/api/whatsapp/conectar`, { method: 'POST' });
+                await carregarStatusWhatsAppBot();
+
+                if (waPollingInterval) clearInterval(waPollingInterval);
+                waPollingInterval = setInterval(async () => {
+                    await carregarStatusWhatsAppBot();
+                }, 4000);
+            } catch (err) {
+                alert("Erro ao solicitar QR Code: " + err.message);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = "🔄 Gerar / Conectar QR Code";
+                }
+            }
+        });
+
+        document.getElementById('btnDesconectarWa')?.addEventListener('click', async () => {
+            if (confirm("Deseja realmente desconectar a sessão do WhatsApp?")) {
+                try {
+                    const backendUrl = getBackendUrlAtivo();
+                    await fetch(`${backendUrl}/api/whatsapp/desconectar`, { method: 'POST' });
+                    if (waPollingInterval) clearInterval(waPollingInterval);
+                    await carregarStatusWhatsAppBot();
+                } catch (err) {
+                    alert("Erro ao desconectar: " + err.message);
+                }
+            }
+        });
+
+        document.getElementById('btnEnviarTesteWa')?.addEventListener('click', async () => {
+            const inputNumero = document.getElementById('inputTesteWaNumero');
+            const msgStatus = document.getElementById('msgTesteWaStatus');
+            const numero = inputNumero ? inputNumero.value.trim() : '';
+
+            if (!numero) {
+                if (msgStatus) {
+                    msgStatus.className = "text-xs text-center font-medium text-red-400";
+                    msgStatus.innerText = "Digite um número com DDD para o teste!";
+                }
+                return;
+            }
+
+            if (msgStatus) {
+                msgStatus.className = "text-xs text-center font-medium text-amber-300";
+                msgStatus.innerText = "Enviando mensagem de teste...";
+            }
+
+            try {
+                const backendUrl = getBackendUrlAtivo();
+                const res = await fetch(`${backendUrl}/api/whatsapp/enviar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        numero,
+                        mensagem: "💈 *EMAÚS BARBEARIA - TESTE DE AUTOMAÇÃO* 💈\n\nOlá! Seu robô de WhatsApp está conectado 24h e pronto para enviar confirmações e lembretes automáticos com sucesso! ✨"
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (msgStatus) {
+                        msgStatus.className = "text-xs text-center font-medium text-green-400";
+                        msgStatus.innerText = "✅ Mensagem de teste enviada com sucesso!";
+                        setTimeout(() => { if (msgStatus) msgStatus.innerText = ""; }, 4000);
+                    }
+                } else {
+                    if (msgStatus) {
+                        msgStatus.className = "text-xs text-center font-medium text-red-400";
+                        msgStatus.innerText = `Erro: ${data.message || data.error || 'WhatsApp não conectado'}`;
+                    }
+                }
+            } catch (err) {
+                if (msgStatus) {
+                    msgStatus.className = "text-xs text-center font-medium text-red-400";
+                    msgStatus.innerText = "Erro ao conectar com servidor: " + err.message;
+                }
+            }
+        });
+
+        // ==========================================
+        // GESTÃO DE ADMINISTRADORES
+        // ==========================================
+        async function carregarAdministradoresPainel() {
+            const listaDiv = document.getElementById('listaAdminsCadastrados');
+            const badgeTotal = document.getElementById('badgeTotalAdmins');
+            if (!listaDiv) return;
+
+            try {
+                const querySnapshot = await getDocs(collection(db, "administradores"));
+                const dbAdmins = [];
+                querySnapshot.forEach(d => {
+                    const data = d.data();
+                    if (data.email) dbAdmins.push({ docId: d.id, ...data });
+                });
+
+                const todosEmails = new Set([...ADMIN_EMAILS.map(e => e.toLowerCase()), ...dbAdmins.map(a => a.email.toLowerCase())]);
+                if (badgeTotal) badgeTotal.innerText = `${todosEmails.size} Administradores`;
+
+                let html = "";
+
+                // 1. Renderiza Master Admins e Administradores Padrão
+                MASTER_ADMIN_EMAILS.forEach(masterEmail => {
+                    html += `
+                        <div class="flex justify-between items-center bg-black p-3.5 rounded-xl border border-amber-800/60 text-xs">
+                            <div class="flex items-center gap-3">
+                                <span class="w-8 h-8 rounded-lg bg-amber-950/80 border border-amber-600 flex items-center justify-center text-sm">👑</span>
+                                <div>
+                                    <p class="font-bold text-white">${masterEmail}</p>
+                                    <p class="text-[11px] text-zinc-400">Administrador Master (Criador do Sistema)</p>
+                                </div>
+                            </div>
+                            <span class="bg-amber-950 text-dourado border border-amber-600 px-2.5 py-1 rounded text-[10px] font-bold uppercase">
+                                Master
+                            </span>
+                        </div>
+                    `;
+                });
+
+                // Renderiza Administrador Simples fixo (rafaelcassu@hotmail.com)
+                html += `
+                    <div class="flex justify-between items-center bg-black p-3.5 rounded-xl border border-zinc-800 text-xs hover:border-zinc-700 transition">
+                        <div class="flex items-center gap-3">
+                            <span class="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-700 flex items-center justify-center text-sm">✂️</span>
+                            <div>
+                                <p class="font-bold text-white">rafaelcassu@hotmail.com</p>
+                                <p class="text-[11px] text-zinc-400">Administrador Simples (Barbeiro / Gestão)</p>
+                            </div>
+                        </div>
+                        <span class="bg-zinc-800 text-zinc-300 border border-zinc-700 px-2.5 py-1 rounded text-[10px] font-bold uppercase">
+                            Admin
+                        </span>
+                    </div>
+                `;
+
+                // 2. Renderiza Admins cadastrados dinamicamente
+                dbAdmins.forEach(adm => {
+                    const emailMinusculo = adm.email.toLowerCase();
+                    if (ADMIN_EMAILS.some(m => m.toLowerCase() === emailMinusculo)) return;
+
+                    const dataCad = adm.criadoEm ? new Date(adm.criadoEm).toLocaleDateString('pt-BR') : '';
+
+                    html += `
+                        <div class="flex justify-between items-center bg-black p-3.5 rounded-xl border border-zinc-800 text-xs hover:border-zinc-700 transition">
+                            <div class="flex items-center gap-3">
+                                <span class="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-700 flex items-center justify-center text-sm">✂️</span>
+                                <div>
+                                    <p class="font-bold text-white">${adm.email}</p>
+                                    <p class="text-[11px] text-zinc-400">Adicionado por: ${adm.adicionadoPor || 'Admin'} ${dataCad ? `• Em ${dataCad}` : ''}</p>
+                                </div>
+                            </div>
+                            <button onclick="removerAdmin('${adm.docId}', '${adm.email}')" class="bg-red-600/80 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">
+                                Remover
+                            </button>
+                        </div>
+                    `;
+                });
+
+                listaDiv.innerHTML = html;
+
+            } catch (e) {
+                console.error("Erro ao carregar administradores:", e);
+                listaDiv.innerHTML = `<p class="text-xs text-red-400 text-center">Erro ao carregar administradores: ${e.message}</p>`;
+            }
+        }
+
+        document.getElementById('btnSalvarNovoAdmin').addEventListener('click', async () => {
+            const input = document.getElementById('inputNovoAdminEmail');
+            const msg = document.getElementById('msgNovoAdminStatus');
+            const email = input.value.trim().toLowerCase();
+
+            if (!email || !email.includes('@') || !email.includes('.')) {
+                msg.className = "text-xs text-center font-medium text-red-400";
+                msg.innerText = "Digite um e-mail válido!";
+                return;
+            }
+
+            msg.className = "text-xs text-center font-medium text-amber-300";
+            msg.innerText = "Salvando permissão de administrador...";
+
+            try {
+                const docId = email.replace(/[^a-zA-Z0-9]/g, '_');
+                await setDoc(doc(db, "administradores", docId), {
+                    email: email,
+                    adicionadoPor: auth.currentUser?.email || 'Admin',
+                    criadoEm: new Date().toISOString()
+                });
+
+                input.value = "";
+                msg.className = "text-xs text-center font-medium text-green-400";
+                msg.innerText = `✅ Permissão concedida para ${email}! Ele já pode acessar o painel admin.`;
+                setTimeout(() => msg.innerText = "", 4000);
+
+                carregarAdministradoresPainel();
+            } catch (e) {
+                msg.className = "text-xs text-center font-medium text-red-400";
+                msg.innerText = "Erro ao salvar permissão: " + e.message;
+            }
+        });
+
+        window.removerAdmin = async function(docId, email) {
+            if (confirm(`Deseja realmente remover o acesso de administrador de "${email}"?`)) {
+                try {
+                    await deleteDoc(doc(db, "administradores", docId));
+                    carregarAdministradoresPainel();
+                } catch (e) {
+                    alert("Erro ao remover permissão: " + e.message);
+                }
+            }
+        };
+
+        // ==========================================
+        // RENUNCIAR / SAIR DO CARGO DE ADMINISTRADOR
+        // ==========================================
+        const btnAbrirModalSairAdmin = document.getElementById('btnAbrirModalSairAdmin');
+        const modalSairCargoAdmin = document.getElementById('modalSairCargoAdmin');
+        const btnCancelarSairAdmin = document.getElementById('btnCancelarSairAdmin');
+        const btnToggleSenhaSairAdmin = document.getElementById('btnToggleSenhaSairAdmin');
+        const btnConfirmarSairAdmin = document.getElementById('btnConfirmarSairAdmin');
+        const inputSenhaConfirmarSairAdmin = document.getElementById('inputSenhaConfirmarSairAdmin');
+        const msgSairAdminStatus = document.getElementById('msgSairAdminStatus');
+
+        if (btnAbrirModalSairAdmin) {
+            btnAbrirModalSairAdmin.addEventListener('click', () => {
+                const user = auth.currentUser;
+                if (!user) return;
+                if (user.email && user.email.toLowerCase() === 'aldo540@outlook.com') {
+                    alert("O Administrador Master (aldo540@outlook.com) é o titular principal e não pode renunciar ao cargo.");
+                    return;
+                }
+                if (inputSenhaConfirmarSairAdmin) inputSenhaConfirmarSairAdmin.value = "";
+                if (msgSairAdminStatus) msgSairAdminStatus.innerText = "";
+                if (modalSairCargoAdmin) modalSairCargoAdmin.classList.remove('hidden');
+            });
+        }
+
+        if (btnCancelarSairAdmin) {
+            btnCancelarSairAdmin.addEventListener('click', () => {
+                if (modalSairCargoAdmin) modalSairCargoAdmin.classList.add('hidden');
+            });
+        }
+
+        if (btnToggleSenhaSairAdmin && inputSenhaConfirmarSairAdmin) {
+            btnToggleSenhaSairAdmin.addEventListener('click', () => {
+                inputSenhaConfirmarSairAdmin.type = inputSenhaConfirmarSairAdmin.type === 'password' ? 'text' : 'password';
+            });
+        }
+
+        if (btnConfirmarSairAdmin) {
+            btnConfirmarSairAdmin.addEventListener('click', async () => {
+                const senha = inputSenhaConfirmarSairAdmin ? inputSenhaConfirmarSairAdmin.value : "";
+                const user = auth.currentUser;
+
+                if (!senha) {
+                    if (msgSairAdminStatus) {
+                        msgSairAdminStatus.className = "text-xs text-center font-medium text-red-400";
+                        msgSairAdminStatus.innerText = "Digite a sua senha de acesso para confirmar!";
+                    }
+                    return;
+                }
+
+                if (!user || !user.email) {
+                    if (msgSairAdminStatus) {
+                        msgSairAdminStatus.className = "text-xs text-center font-medium text-red-400";
+                        msgSairAdminStatus.innerText = "Sessão inválida. Faça login novamente.";
+                    }
+                    return;
+                }
+
+                if (user.email.toLowerCase() === 'aldo540@outlook.com') {
+                    if (msgSairAdminStatus) {
+                        msgSairAdminStatus.className = "text-xs text-center font-medium text-red-400";
+                        msgSairAdminStatus.innerText = "O Administrador Master não pode renunciar ao cargo principal.";
+                    }
+                    return;
+                }
+
+                btnConfirmarSairAdmin.disabled = true;
+                btnConfirmarSairAdmin.innerHTML = "⏳ Verificando...";
+                if (msgSairAdminStatus) {
+                    msgSairAdminStatus.className = "text-xs text-center font-medium text-amber-300";
+                    msgSairAdminStatus.innerText = "Validando senha e processando saída...";
+                }
+
+                try {
+                    // 1. Reautentica o usuário com a senha digitada
+                    const credential = EmailAuthProvider.credential(user.email, senha);
+                    await reauthenticateWithCredential(user, credential);
+
+                    // 2. Remove o documento de permissão no Firestore
+                    const docId = user.email.toLowerCase().replace(/[^a-zA-Z0-9]/g, '_');
+                    await deleteDoc(doc(db, "administradores", docId));
+
+                    // 3. Desconecta o usuário do painel admin
+                    await signOut(auth);
+                    alert("Você renunciou ao cargo de administrador com sucesso. Redirecionando para o site...");
+                    window.location.href = "index.html";
+
+                } catch (err) {
+                    btnConfirmarSairAdmin.disabled = false;
+                    btnConfirmarSairAdmin.innerHTML = "Confirmar Saída";
+                    if (msgSairAdminStatus) {
+                        msgSairAdminStatus.className = "text-xs text-center font-medium text-red-400";
+                        if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' || err.code === 'auth/invalid-password') {
+                            msgSairAdminStatus.innerText = "❌ Senha incorreta! Digite a senha correta da sua conta.";
+                        } else {
+                            msgSairAdminStatus.innerText = "Erro ao validar: " + err.message;
+                        }
+                    }
+                }
+            });
+        }
+
+        // ==========================================
+        // INSTALAÇÃO DO APLICATIVO DO BARBEIRO (PWA)
+        // ==========================================
+        let deferredPromptAdmin = null;
+        const btnInstalarAdmin = document.getElementById('btnInstalarAppAdmin');
+        const btnInstalarAdminSidebar = document.getElementById('btnInstalarAppAdminSidebar');
+        const labelInstalarHeader = document.getElementById('labelInstalarHeader');
+        const labelInstalarSidebar = document.getElementById('labelInstalarSidebar');
+        const modalInstalarIosAdmin = document.getElementById('modalInstalarIosAdmin');
+
+        // Registra o Service Worker para cache e PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(() => console.log('✅ Service Worker PWA registrado com sucesso.'))
+                    .catch(err => console.warn('Aviso Service Worker:', err));
+            });
+        }
+
+        // Detecta se já está rodando como App instalado (Standalone)
+        const ehModoApp = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        if (ehModoApp) {
+            if (labelInstalarHeader) labelInstalarHeader.innerText = "App Ativo";
+            if (labelInstalarSidebar) labelInstalarSidebar.innerText = "App Instalado";
+            if (btnInstalarAdmin) btnInstalarAdmin.classList.add('opacity-70');
+            if (btnInstalarAdminSidebar) btnInstalarAdminSidebar.classList.add('opacity-70');
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPromptAdmin = e;
+            console.log('📲 Prompt de instalação do App do Barbeiro pronto!');
+        });
+
+        window.addEventListener('appinstalled', () => {
+            deferredPromptAdmin = null;
+            if (labelInstalarHeader) labelInstalarHeader.innerText = "App Ativo";
+            if (labelInstalarSidebar) labelInstalarSidebar.innerText = "App Instalado";
+            alert("🎉 Aplicativo do Barbeiro instalado com sucesso na tela do seu dispositivo!");
+        });
+
+        function dispararInstalacaoAppAdmin() {
+            const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            
+            if (ehModoApp) {
+                alert("Você já está utilizando o aplicativo do barbeiro em modo instalado!");
+                return;
+            }
+
+            if (deferredPromptAdmin) {
+                deferredPromptAdmin.prompt();
+                deferredPromptAdmin.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('Usuário aceitou instalar o App do Barbeiro');
+                    }
+                    deferredPromptAdmin = null;
+                });
+            } else if (isIos) {
+                if (modalInstalarIosAdmin) modalInstalarIosAdmin.classList.remove('hidden');
+            } else {
+                alert("Para instalar o aplicativo no seu celular ou computador, abra pelo Google Chrome ou Edge e toque no menu de 3 pontinhos > 'Instalar aplicativo' ou 'Adicionar à tela inicial'.");
+            }
+        }
+
+        btnInstalarAdmin?.addEventListener('click', dispararInstalacaoAppAdmin);
+        btnInstalarAdminSidebar?.addEventListener('click', dispararInstalacaoAppAdmin);
+
+        document.getElementById('btnFecharModalIosAdmin')?.addEventListener('click', () => {
+            if (modalInstalarIosAdmin) modalInstalarIosAdmin.classList.add('hidden');
+        });
+        document.getElementById('btnEntendiIosAdmin')?.addEventListener('click', () => {
+            if (modalInstalarIosAdmin) modalInstalarIosAdmin.classList.add('hidden');
+        });
+    </script>
+</body>
+</html>
