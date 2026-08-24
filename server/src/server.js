@@ -683,13 +683,13 @@ app.post('/api/pagamento/pix', async (req, res) => {
     }
 });
 
-// Endpoint to process Credit Card payment
+// Endpoint to process Card (Credit or Debit) payment
 app.post('/api/pagamento/cartao', async (req, res) => {
     try {
-        const { token, issuer_id, payment_method_id, transaction_amount, installments, description, email, cpf } = req.body;
+        let { token, cardNumber, cardholderName, cardExpirationMonth, cardExpirationYear, securityCode, issuer_id, payment_method_id, transaction_amount, installments, description, email, cpf, tipoCartao } = req.body;
 
-        if (!token || !transaction_amount || !payment_method_id) {
-            return res.status(400).json({ error: 'Dados incompletos para pagamento com cartao.' });
+        if (!transaction_amount || transaction_amount <= 0) {
+            return res.status(400).json({ error: 'Valor da transação inválido.' });
         }
 
         if (!activeAccessToken || activeAccessToken === 'SEU_ACCESS_TOKEN_AQUI') {
@@ -702,16 +702,77 @@ app.post('/api/pagamento/cartao', async (req, res) => {
             });
         }
 
+        // Se o frontend enviou dados do cartão em vez de token prévio, geramos o token no Mercado Pago
+        if (!token && cardNumber) {
+            const cleanCardNumber = String(cardNumber).replace(/\s/g, '');
+            const cleanCpf = cpf ? String(cpf).replace(/\D/g, '') : '';
+            const expMonth = Number(cardExpirationMonth);
+            const expYearRaw = String(cardExpirationYear).trim();
+            const expYear = Number(expYearRaw.length === 2 ? `20${expYearRaw}` : expYearRaw);
+
+            const cardTokenResp = await fetch(`https://api.mercadopago.com/v1/card_tokens`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${activeAccessToken}`
+                },
+                body: JSON.stringify({
+                    card_number: cleanCardNumber,
+                    expiration_month: expMonth,
+                    expiration_year: expYear,
+                    security_code: String(securityCode).trim(),
+                    cardholder: {
+                        name: (cardholderName || 'CLIENTE BARBEARIA').toUpperCase(),
+                        identification: cleanCpf ? { type: 'CPF', number: cleanCpf } : undefined
+                    }
+                })
+            });
+
+            const cardTokenData = await cardTokenResp.json();
+            if (cardTokenData && cardTokenData.id) {
+                token = cardTokenData.id;
+            } else {
+                console.error("Erro ao gerar card_token no Mercado Pago:", cardTokenData);
+                const msgErro = cardTokenData?.message || (cardTokenData?.cause && cardTokenData?.cause[0]?.description) || 'Dados do cartão inválidos.';
+                return res.status(400).json({ error: msgErro, details: cardTokenData });
+            }
+        }
+
+        if (!token) {
+            return res.status(400).json({ error: 'Token do cartão ou dados do cartão são obrigatórios.' });
+        }
+
+        // Detecta bandeira padrão se não enviada
+        if (!payment_method_id) {
+            const cleanNum = cardNumber ? String(cardNumber).replace(/\s/g, '') : '';
+            if (cleanNum.startsWith('4')) {
+                payment_method_id = tipoCartao === 'debito' ? 'debvisa' : 'visa';
+            } else if (/^(5[1-5]|2[2-7])/.test(cleanNum)) {
+                payment_method_id = tipoCartao === 'debito' ? 'debmaster' : 'master';
+            } else if (/^(4011|4312|4389|4514|4576|5041|5066|5090|6277|6362|6363|6500|6504|6505|6507|6509|6516|6550)/.test(cleanNum)) {
+                payment_method_id = tipoCartao === 'debito' ? 'debelo' : 'elo';
+            } else if (/^(606282|3841)/.test(cleanNum)) {
+                payment_method_id = 'hipercard';
+            } else if (/^(34|37)/.test(cleanNum)) {
+                payment_method_id = 'amex';
+            } else {
+                payment_method_id = tipoCartao === 'debito' ? 'debvisa' : 'visa';
+            }
+        }
+
+        const isDebito = tipoCartao === 'debito' || payment_method_id.startsWith('deb');
+        const numParcelas = isDebito ? 1 : (Number(installments) || 1);
+
         const paymentData = {
             token,
             issuer_id: issuer_id ? String(issuer_id) : undefined,
             payment_method_id,
             transaction_amount: Number(parseFloat(transaction_amount).toFixed(2)),
-            installments: Number(installments) || 1,
-            description: description || 'Agendamento - EMAUS Barbearia',
+            installments: numParcelas,
+            description: description || 'EMAÚS Barbearia',
             payer: {
                 email: email || 'cliente@barbearia.com',
-                ...(cpf ? { identification: { type: 'CPF', number: cpf.replace(/\D/g, '') } } : {})
+                ...(cpf ? { identification: { type: 'CPF', number: String(cpf).replace(/\D/g, '') } } : {})
             }
         };
 
@@ -720,12 +781,18 @@ app.post('/api/pagamento/cartao', async (req, res) => {
         return res.status(200).json({
             id: response.id,
             status: response.status,
-            status_detail: response.status_detail
+            status_detail: response.status_detail,
+            date_approved: response.date_approved
         });
     } catch (error) {
-        console.error('Erro ao processar cartao:', error);
+        console.error('Erro ao processar cartão:', error);
+        let userMessage = error.message || 'Erro ao processar pagamento com cartão.';
+        if (userMessage.includes('Unauthorized use of live credentials')) {
+            userMessage = 'O Mercado Pago recusou o token de produção (APP_USR). Ative suas credenciais de produção no painel do Mercado Pago Developers ou use o Token de Teste (iniciado em TEST-).';
+        }
         return res.status(500).json({ 
-            error: error.message || 'Erro ao processar pagamento com cartao.' 
+            error: userMessage,
+            details: error.cause || error.api_response || null
         });
     }
 });

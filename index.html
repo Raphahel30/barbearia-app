@@ -443,15 +443,18 @@
             <button id="btnFecharModalTopo" type="button" class="absolute top-4 right-4 text-zinc-400 hover:text-white text-xl font-bold transition">&times;</button>
             
             <h2 id="modalPixTitulo" class="text-xl font-bold text-dourado uppercase tracking-wide">Pagamento Seguro</h2>
-            <p id="modalPixDesc" class="text-xs text-zinc-300">Escolha a melhor forma para concluir o seu agendamento:</p>
+            <p id="modalPixDesc" class="text-xs text-zinc-300">Escolha a melhor forma para concluir o seu pagamento:</p>
             
-            <!-- Abas de Pagamento (Pix / Cartão) -->
-            <div class="flex border-b border-zinc-800 gap-2 pt-2">
-                <button id="tabPagamentoPix" type="button" class="flex-1 pb-2 font-bold text-xs text-dourado border-b-2 border-dourado uppercase transition cursor-pointer flex items-center justify-center gap-1">
-                    <span>📱</span> Pix Automático
+            <!-- Abas de Pagamento (Pix / Crédito / Débito) -->
+            <div class="flex border-b border-zinc-800 gap-1 pt-2">
+                <button id="tabPagamentoPix" type="button" class="flex-1 pb-2 font-bold text-[11px] sm:text-xs text-dourado border-b-2 border-dourado uppercase transition cursor-pointer flex items-center justify-center gap-1">
+                    <span>📱</span> Pix
                 </button>
-                <button id="tabPagamentoCartao" type="button" class="flex-1 pb-2 font-bold text-xs text-zinc-500 uppercase transition cursor-pointer flex items-center justify-center gap-1 hover:text-zinc-300">
-                    <span>💳</span> Cartão de Crédito
+                <button id="tabPagamentoCredito" type="button" class="flex-1 pb-2 font-bold text-[11px] sm:text-xs text-zinc-500 uppercase transition cursor-pointer flex items-center justify-center gap-1 hover:text-zinc-300">
+                    <span>💳</span> Crédito
+                </button>
+                <button id="tabPagamentoDebito" type="button" class="flex-1 pb-2 font-bold text-[11px] sm:text-xs text-zinc-500 uppercase transition cursor-pointer flex items-center justify-center gap-1 hover:text-zinc-300">
+                    <span>💳</span> Débito
                 </button>
             </div>
 
@@ -511,43 +514,96 @@
             </div>
 
             <!-- CONTEÚDO DA ABA CARTÃO DE CRÉDITO -->
-            <div id="viewPagamentoCartao" class="space-y-3 pt-2 text-left hidden">
+            <div id="viewPagamentoCredito" class="space-y-3 pt-2 text-left hidden">
                 <div class="bg-black p-4 rounded-xl border border-zinc-800 space-y-3">
                     <div class="flex justify-between items-center">
                         <span class="text-xs text-zinc-400 uppercase font-semibold">Total a Pagar:</span>
-                        <span id="cartaoValorDisplay" class="text-sm font-bold text-dourado">R$ 10,00</span>
+                        <span id="cartaoCreditoValorDisplay" class="text-sm font-bold text-dourado">R$ 10,00</span>
                     </div>
 
                     <div>
-                        <label class="block text-xs text-zinc-300 mb-1 font-medium">Número do Cartão</label>
-                        <input type="text" id="cartaoNumero" placeholder="0000 0000 0000 0000" maxlength="19" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono">
+                        <label class="block text-xs text-zinc-300 mb-1 font-medium">Número do Cartão de Crédito</label>
+                        <input type="text" id="cartaoCreditoNumero" placeholder="0000 0000 0000 0000" maxlength="19" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-cartao-format">
                     </div>
 
                     <div>
-                        <label class="block text-xs text-zinc-300 mb-1 font-medium">Nome do Titular (como no cartão)</label>
-                        <input type="text" id="cartaoNome" placeholder="NOME COMPLETO" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-700 text-white text-xs uppercase focus:outline-none focus:border-dourado">
+                        <label class="block text-xs text-zinc-300 mb-1 font-medium">Nome do Titular (como impresso)</label>
+                        <input type="text" id="cartaoCreditoNome" placeholder="NOME COMPLETO" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-700 text-white text-xs uppercase focus:outline-none focus:border-dourado">
                     </div>
 
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="block text-xs text-zinc-300 mb-1 font-medium">Validade (MM/AA)</label>
-                            <input type="text" id="cartaoValidade" placeholder="MM/AA" maxlength="5" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono">
+                            <input type="text" id="cartaoCreditoValidade" placeholder="MM/AA" maxlength="5" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-validade-format">
                         </div>
                         <div>
-                            <label class="block text-xs text-zinc-300 mb-1 font-medium">CVV / Cód. Segurança</label>
-                            <input type="password" id="cartaoCvv" placeholder="123" maxlength="4" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono">
+                            <label class="block text-xs text-zinc-300 mb-1 font-medium">CVV</label>
+                            <input type="password" id="cartaoCreditoCvv" placeholder="123" maxlength="4" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono">
                         </div>
                     </div>
 
                     <div>
                         <label class="block text-xs text-zinc-300 mb-1 font-medium">CPF do Titular</label>
-                        <input type="text" id="cartaoCpf" placeholder="000.000.000-00" maxlength="14" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono">
+                        <input type="text" id="cartaoCreditoCpf" placeholder="000.000.000-00" maxlength="14" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-cpf-format">
                     </div>
 
-                    <button id="btnPagarCartao" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-bold py-2.5 rounded text-xs uppercase transition cursor-pointer tracking-wide mt-2">
-                        Confirmar Pagamento com Cartão
+                    <div>
+                        <label class="block text-xs text-zinc-300 mb-1 font-medium">Parcelas</label>
+                        <select id="cartaoCreditoParcelas" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado cursor-pointer">
+                            <option value="1">1x à vista (Sem Juros)</option>
+                        </select>
+                    </div>
+
+                    <button id="btnPagarCartaoCredito" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-bold py-2.5 rounded text-xs uppercase transition cursor-pointer tracking-wide mt-2 shadow-lg flex items-center justify-center gap-1.5">
+                        <span>💳</span> Pagar no Cartão de Crédito
                     </button>
-                    <p id="msgCartaoStatus" class="text-xs text-center font-medium"></p>
+                    <p id="msgCartaoCreditoStatus" class="text-xs text-center font-medium min-h-[16px]"></p>
+                </div>
+            </div>
+
+            <!-- CONTEÚDO DA ABA CARTÃO DE DÉBITO -->
+            <div id="viewPagamentoDebito" class="space-y-3 pt-2 text-left hidden">
+                <div class="bg-black p-4 rounded-xl border border-zinc-800 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs text-zinc-400 uppercase font-semibold">Total a Pagar (Débito):</span>
+                        <span id="cartaoDebitoValorDisplay" class="text-sm font-bold text-dourado">R$ 10,00</span>
+                    </div>
+
+                    <div class="p-2.5 bg-zinc-900/90 rounded-lg border border-zinc-800 text-[11px] text-zinc-300 flex items-center gap-2">
+                        <span class="text-base">💳</span>
+                        <span>Pagamento via <strong>Cartão de Débito</strong> (Cobrança à vista 1x).</span>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-zinc-300 mb-1 font-medium">Número do Cartão de Débito</label>
+                        <input type="text" id="cartaoDebitoNumero" placeholder="0000 0000 0000 0000" maxlength="19" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-cartao-format">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-zinc-300 mb-1 font-medium">Nome do Titular (como impresso)</label>
+                        <input type="text" id="cartaoDebitoNome" placeholder="NOME COMPLETO" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-700 text-white text-xs uppercase focus:outline-none focus:border-dourado">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs text-zinc-300 mb-1 font-medium">Validade (MM/AA)</label>
+                            <input type="text" id="cartaoDebitoValidade" placeholder="MM/AA" maxlength="5" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-validade-format">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-zinc-300 mb-1 font-medium">CVV</label>
+                            <input type="password" id="cartaoDebitoCvv" placeholder="123" maxlength="4" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-zinc-300 mb-1 font-medium">CPF do Titular</label>
+                        <input type="text" id="cartaoDebitoCpf" placeholder="000.000.000-00" maxlength="14" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-cpf-format">
+                    </div>
+
+                    <button id="btnPagarCartaoDebito" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-bold py-2.5 rounded text-xs uppercase transition cursor-pointer tracking-wide mt-2 shadow-lg flex items-center justify-center gap-1.5">
+                        <span>💳</span> Pagar no Cartão de Débito
+                    </button>
+                    <p id="msgCartaoDebitoStatus" class="text-xs text-center font-medium min-h-[16px]"></p>
                 </div>
             </div>
 
@@ -644,14 +700,14 @@
         </div>
     </div>
 
-    <!-- MODAL DE COMPRA DIRETA DE PRODUTO VIA PIX (SEM TERMOS) -->
+    <!-- MODAL DE COMPRA DIRETA DE PRODUTO (PIX, CRÉDITO E DÉBITO - SEM TERMOS) -->
     <div id="modalComprarProdutoPix" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
         <div class="bg-zinc-900 border border-dourado p-6 sm:p-7 rounded-3xl max-w-md w-full space-y-4 text-center shadow-2xl relative my-6 animate-fade-in">
             <button id="btnFecharModalProdutoPix" type="button" class="absolute top-4 right-4 text-zinc-400 hover:text-white text-xl font-bold transition cursor-pointer">&times;</button>
             
             <div class="space-y-1">
                 <span class="text-[10px] font-bold text-dourado uppercase tracking-widest bg-dourado/10 px-3 py-1 rounded-full border border-dourado/20 inline-block">
-                    Loja da Barbearia • Pix Direto
+                    Loja da Barbearia • Pagamento Seguro
                 </span>
                 <h3 class="text-lg font-bold text-white uppercase tracking-wide mt-1">Comprar Produto</h3>
             </div>
@@ -697,36 +753,136 @@
                 </div>
             </div>
 
-            <!-- Botão Gerar Pix Direto (Estado Inicial) -->
-            <div id="containerBtnGerarPixProduto">
-                <button id="btnGerarPixProduto" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-2">
-                    <span>⚡</span> Pagar via Pix Imediato
+            <!-- Abas de Pagamento do Produto (Pix / Crédito / Débito) -->
+            <div class="flex border-b border-zinc-800 gap-1 pt-1">
+                <button id="tabProdPix" type="button" class="flex-1 pb-2 font-bold text-[11px] sm:text-xs text-dourado border-b-2 border-dourado uppercase transition cursor-pointer flex items-center justify-center gap-1">
+                    <span>📱</span> Pix
+                </button>
+                <button id="tabProdCredito" type="button" class="flex-1 pb-2 font-bold text-[11px] sm:text-xs text-zinc-500 uppercase transition cursor-pointer flex items-center justify-center gap-1 hover:text-zinc-300">
+                    <span>💳</span> Crédito
+                </button>
+                <button id="tabProdDebito" type="button" class="flex-1 pb-2 font-bold text-[11px] sm:text-xs text-zinc-500 uppercase transition cursor-pointer flex items-center justify-center gap-1 hover:text-zinc-300">
+                    <span>💳</span> Débito
                 </button>
             </div>
 
-            <!-- Estado de Carregamento / QR Code Ativo -->
-            <div id="containerPixAtivoProduto" class="space-y-3 hidden">
+            <!-- CONTEÚDO 1: PIX PRODUTO -->
+            <div id="viewProdPix" class="space-y-3 pt-1">
+                <!-- Botão Gerar Pix Direto (Estado Inicial) -->
+                <div id="containerBtnGerarPixProduto">
+                    <button id="btnGerarPixProduto" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-2">
+                        <span>⚡</span> Pagar via Pix Imediato
+                    </button>
+                </div>
+
+                <!-- Estado de Carregamento / QR Code Ativo -->
+                <div id="containerPixAtivoProduto" class="space-y-3 hidden">
+                    <div class="bg-black p-4 rounded-2xl border border-zinc-800 space-y-3">
+                        <p class="text-xs text-zinc-400">Escaneie o QR Code abaixo no app do seu banco:</p>
+                        
+                        <div class="bg-white p-2.5 rounded-xl inline-block mx-auto shadow-inner">
+                            <img id="imgPixQrProduto" src="" alt="QR Code Pix" class="w-44 h-44 object-contain mx-auto">
+                        </div>
+
+                        <div class="space-y-1 text-left">
+                            <label class="block text-[10px] font-semibold text-zinc-400 uppercase">Código Pix Copia e Cola:</label>
+                            <div class="flex gap-1.5">
+                                <input type="text" id="inputPixCodeProduto" readonly class="w-full px-2.5 py-2 bg-zinc-900 rounded-lg border border-zinc-700 text-[11px] text-zinc-200 focus:outline-none select-all font-mono">
+                                <button id="btnCopiarPixProduto" type="button" class="bg-dourado hover:bg-[#C5A028] text-black font-bold px-3 py-2 rounded-lg text-xs transition cursor-pointer whitespace-nowrap">
+                                    📋 Copiar
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-center gap-2 text-xs text-amber-300 bg-amber-950/40 p-2.5 rounded-lg border border-amber-800/60 font-medium">
+                            <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                            <span>Aguardando pagamento... (Baixa Instantânea)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONTEÚDO 2: CARTÃO DE CRÉDITO PRODUTO -->
+            <div id="viewProdCredito" class="space-y-3 pt-1 text-left hidden">
                 <div class="bg-black p-4 rounded-2xl border border-zinc-800 space-y-3">
-                    <p class="text-xs text-zinc-400">Escaneie o QR Code abaixo no app do seu banco:</p>
-                    
-                    <div class="bg-white p-2.5 rounded-xl inline-block mx-auto shadow-inner">
-                        <img id="imgPixQrProduto" src="" alt="QR Code Pix" class="w-44 h-44 object-contain mx-auto">
+                    <div>
+                        <label class="block text-xs text-zinc-300 mb-1 font-medium">Número do Cartão de Crédito</label>
+                        <input type="text" id="prodCartaoNumeroCredito" placeholder="0000 0000 0000 0000" maxlength="19" class="w-full px-3 py-2 bg-zinc-900 rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-cartao-format">
                     </div>
 
-                    <div class="space-y-1 text-left">
-                        <label class="block text-[10px] font-semibold text-zinc-400 uppercase">Código Pix Copia e Cola:</label>
-                        <div class="flex gap-1.5">
-                            <input type="text" id="inputPixCodeProduto" readonly class="w-full px-2.5 py-2 bg-zinc-900 rounded-lg border border-zinc-700 text-[11px] text-zinc-200 focus:outline-none select-all font-mono">
-                            <button id="btnCopiarPixProduto" type="button" class="bg-dourado hover:bg-[#C5A028] text-black font-bold px-3 py-2 rounded-lg text-xs transition cursor-pointer whitespace-nowrap">
-                                📋 Copiar
-                            </button>
+                    <div>
+                        <label class="block text-xs text-zinc-300 mb-1 font-medium">Nome do Titular (como impresso)</label>
+                        <input type="text" id="prodCartaoNomeCredito" placeholder="NOME COMPLETO" class="w-full px-3 py-2 bg-zinc-900 rounded-lg border border-zinc-700 text-white text-xs uppercase focus:outline-none focus:border-dourado">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs text-zinc-300 mb-1 font-medium">Validade (MM/AA)</label>
+                            <input type="text" id="prodCartaoValidadeCredito" placeholder="MM/AA" maxlength="5" class="w-full px-3 py-2 bg-zinc-900 rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-validade-format">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-zinc-300 mb-1 font-medium">CVV</label>
+                            <input type="password" id="prodCartaoCvvCredito" placeholder="123" maxlength="4" class="w-full px-3 py-2 bg-zinc-900 rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono">
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-center gap-2 text-xs text-amber-300 bg-amber-950/40 p-2.5 rounded-lg border border-amber-800/60 font-medium">
-                        <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
-                        <span>Aguardando pagamento... (Baixa Instantânea)</span>
+                    <div>
+                        <label class="block text-xs text-zinc-300 mb-1 font-medium">CPF do Titular</label>
+                        <input type="text" id="prodCartaoCpfCredito" placeholder="000.000.000-00" maxlength="14" class="w-full px-3 py-2 bg-zinc-900 rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-cpf-format">
                     </div>
+
+                    <div>
+                        <label class="block text-xs text-zinc-300 mb-1 font-medium">Parcelas</label>
+                        <select id="prodCartaoParcelasCredito" class="w-full px-3 py-2 bg-zinc-900 rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado cursor-pointer">
+                            <option value="1">1x à vista (Sem Juros)</option>
+                        </select>
+                    </div>
+
+                    <button id="btnPagarProdCredito" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-1.5 mt-2">
+                        <span>💳</span> Confirmar Compra no Crédito
+                    </button>
+                    <p id="msgProdCartaoCreditoStatus" class="text-xs text-center font-medium min-h-[16px]"></p>
+                </div>
+            </div>
+
+            <!-- CONTEÚDO 3: CARTÃO DE DÉBITO PRODUTO -->
+            <div id="viewProdDebito" class="space-y-3 pt-1 text-left hidden">
+                <div class="bg-black p-4 rounded-2xl border border-zinc-800 space-y-3">
+                    <div class="p-2.5 bg-zinc-900/90 rounded-lg border border-zinc-800 text-[11px] text-zinc-300 flex items-center gap-2">
+                        <span class="text-base">💳</span>
+                        <span>Pagamento via <strong>Cartão de Débito</strong> (Cobrança à vista 1x).</span>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-zinc-300 mb-1 font-medium">Número do Cartão de Débito</label>
+                        <input type="text" id="prodCartaoNumeroDebito" placeholder="0000 0000 0000 0000" maxlength="19" class="w-full px-3 py-2 bg-zinc-900 rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-cartao-format">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-zinc-300 mb-1 font-medium">Nome do Titular (como impresso)</label>
+                        <input type="text" id="prodCartaoNomeDebito" placeholder="NOME COMPLETO" class="w-full px-3 py-2 bg-zinc-900 rounded-lg border border-zinc-700 text-white text-xs uppercase focus:outline-none focus:border-dourado">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs text-zinc-300 mb-1 font-medium">Validade (MM/AA)</label>
+                            <input type="text" id="prodCartaoValidadeDebito" placeholder="MM/AA" maxlength="5" class="w-full px-3 py-2 bg-zinc-900 rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-validade-format">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-zinc-300 mb-1 font-medium">CVV</label>
+                            <input type="password" id="prodCartaoCvvDebito" placeholder="123" maxlength="4" class="w-full px-3 py-2 bg-zinc-900 rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-zinc-300 mb-1 font-medium">CPF do Titular</label>
+                        <input type="text" id="prodCartaoCpfDebito" placeholder="000.000.000-00" maxlength="14" class="w-full px-3 py-2 bg-zinc-900 rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-cpf-format">
+                    </div>
+
+                    <button id="btnPagarProdDebito" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-1.5 mt-2">
+                        <span>💳</span> Confirmar Compra no Débito
+                    </button>
+                    <p id="msgProdCartaoDebitoStatus" class="text-xs text-center font-medium min-h-[16px]"></p>
                 </div>
             </div>
 
@@ -2011,27 +2167,94 @@
         let pollingIntervalPix = null;
         let dadosPagamentoPendente = null;
 
-        // Alternância de Abas no Modal de Pagamento
-        const tabPagamentoPix = document.getElementById('tabPagamentoPix');
-        const tabPagamentoCartao = document.getElementById('tabPagamentoCartao');
-        const viewPagamentoPix = document.getElementById('viewPagamentoPix');
-        const viewPagamentoCartao = document.getElementById('viewPagamentoCartao');
-
-        if (tabPagamentoPix && tabPagamentoCartao) {
-            tabPagamentoPix.addEventListener('click', () => {
-                viewPagamentoPix.classList.remove('hidden');
-                viewPagamentoCartao.classList.add('hidden');
-                tabPagamentoPix.className = "flex-1 pb-2 font-bold text-xs text-dourado border-b-2 border-dourado uppercase transition cursor-pointer flex items-center justify-center gap-1";
-                tabPagamentoCartao.className = "flex-1 pb-2 font-bold text-xs text-zinc-500 uppercase transition cursor-pointer flex items-center justify-center gap-1 hover:text-zinc-300";
+        // Máscaras e Formatações para Cartões e CPF
+        function aplicarMascarasCartao() {
+            document.querySelectorAll('.input-cartao-format').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    let v = e.target.value.replace(/\D/g, '').slice(0, 16);
+                    v = v.replace(/(\d{4})(?=\d)/g, '$1 ');
+                    e.target.value = v;
+                });
             });
 
-            tabPagamentoCartao.addEventListener('click', () => {
-                viewPagamentoCartao.classList.remove('hidden');
-                viewPagamentoPix.classList.add('hidden');
-                tabPagamentoCartao.className = "flex-1 pb-2 font-bold text-xs text-dourado border-b-2 border-dourado uppercase transition cursor-pointer flex items-center justify-center gap-1";
-                tabPagamentoPix.className = "flex-1 pb-2 font-bold text-xs text-zinc-500 uppercase transition cursor-pointer flex items-center justify-center gap-1 hover:text-zinc-300";
+            document.querySelectorAll('.input-validade-format').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    let v = e.target.value.replace(/\D/g, '').slice(0, 4);
+                    if (v.length >= 3) {
+                        v = v.slice(0, 2) + '/' + v.slice(2);
+                    }
+                    e.target.value = v;
+                });
+            });
+
+            document.querySelectorAll('.input-cpf-format').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    let v = e.target.value.replace(/\D/g, '').slice(0, 11);
+                    if (v.length > 9) {
+                        v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+                    } else if (v.length > 6) {
+                        v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+                    } else if (v.length > 3) {
+                        v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+                    }
+                    e.target.value = v;
+                });
             });
         }
+        aplicarMascarasCartao();
+
+        function preencherOpcoesParcelas(selectElement, valorTotal) {
+            if (!selectElement) return;
+            selectElement.innerHTML = '';
+            const valor = Number(valorTotal || 10.00);
+            
+            // 1x sempre disponível
+            selectElement.add(new Option(`1x de R$ ${valor.toFixed(2)} à vista (Sem Juros)`, '1'));
+
+            // Parcelas adicionais de 2x a 12x
+            const maxParcelas = Math.min(12, Math.max(1, Math.floor(valor / 10)));
+            for (let i = 2; i <= maxParcelas; i++) {
+                const valorParcela = valor / i;
+                selectElement.add(new Option(`${i}x de R$ ${valorParcela.toFixed(2)} (Sem Juros)`, String(i)));
+            }
+        }
+
+        // Alternância de Abas no Modal de Pagamento Geral (Agendamento & Planos)
+        const tabPagamentoPix = document.getElementById('tabPagamentoPix');
+        const tabPagamentoCredito = document.getElementById('tabPagamentoCredito');
+        const tabPagamentoDebito = document.getElementById('tabPagamentoDebito');
+        const viewPagamentoPix = document.getElementById('viewPagamentoPix');
+        const viewPagamentoCredito = document.getElementById('viewPagamentoCredito');
+        const viewPagamentoDebito = document.getElementById('viewPagamentoDebito');
+
+        function alternarAbaPagamentoGeral(aba) {
+            if (!viewPagamentoPix || !viewPagamentoCredito || !viewPagamentoDebito) return;
+            viewPagamentoPix.classList.add('hidden');
+            viewPagamentoCredito.classList.add('hidden');
+            viewPagamentoDebito.classList.add('hidden');
+
+            const classAtiva = "flex-1 pb-2 font-bold text-[11px] sm:text-xs text-dourado border-b-2 border-dourado uppercase transition cursor-pointer flex items-center justify-center gap-1";
+            const classInativa = "flex-1 pb-2 font-bold text-[11px] sm:text-xs text-zinc-500 uppercase transition cursor-pointer flex items-center justify-center gap-1 hover:text-zinc-300";
+
+            if (tabPagamentoPix) tabPagamentoPix.className = classInativa;
+            if (tabPagamentoCredito) tabPagamentoCredito.className = classInativa;
+            if (tabPagamentoDebito) tabPagamentoDebito.className = classInativa;
+
+            if (aba === 'pix') {
+                viewPagamentoPix.classList.remove('hidden');
+                if (tabPagamentoPix) tabPagamentoPix.className = classAtiva;
+            } else if (aba === 'credito') {
+                viewPagamentoCredito.classList.remove('hidden');
+                if (tabPagamentoCredito) tabPagamentoCredito.className = classAtiva;
+            } else if (aba === 'debito') {
+                viewPagamentoDebito.classList.remove('hidden');
+                if (tabPagamentoDebito) tabPagamentoDebito.className = classAtiva;
+            }
+        }
+
+        tabPagamentoPix?.addEventListener('click', () => alternarAbaPagamentoGeral('pix'));
+        tabPagamentoCredito?.addEventListener('click', () => alternarAbaPagamentoGeral('credito'));
+        tabPagamentoDebito?.addEventListener('click', () => alternarAbaPagamentoGeral('debito'));
 
         function fecharModalPagamento() {
             if (pollingIntervalPix) {
@@ -2120,7 +2343,13 @@
             }
 
             document.getElementById('pixValorDisplay').innerText = `R$ ${valorPagar.toFixed(2)}`;
-            document.getElementById('cartaoValorDisplay').innerText = `R$ ${valorPagar.toFixed(2)}`;
+            const elCredVal = document.getElementById('cartaoCreditoValorDisplay');
+            const elDebVal = document.getElementById('cartaoDebitoValorDisplay');
+            if (elCredVal) elCredVal.innerText = `R$ ${valorPagar.toFixed(2)}`;
+            if (elDebVal) elDebVal.innerText = `R$ ${valorPagar.toFixed(2)}`;
+
+            preencherOpcoesParcelas(document.getElementById('cartaoCreditoParcelas'), valorPagar);
+            alternarAbaPagamentoGeral('pix');
 
             // Reseta telas
             document.getElementById('pixLoadingState').classList.remove('hidden');
@@ -2611,62 +2840,113 @@
             });
         }
 
-        // Processamento de Cartão de Crédito
-        const btnPagarCartao = document.getElementById('btnPagarCartao');
-        if (btnPagarCartao) {
-            btnPagarCartao.addEventListener('click', async () => {
-                const cartaoNumero = document.getElementById('cartaoNumero').value.replace(/\s/g, '');
-                const cartaoNome = document.getElementById('cartaoNome').value.trim();
-                const cartaoValidade = document.getElementById('cartaoValidade').value.trim();
-                const cartaoCvv = document.getElementById('cartaoCvv').value.trim();
-                const cartaoCpf = document.getElementById('cartaoCpf').value.replace(/\D/g, '');
-                const msgCartao = document.getElementById('msgCartaoStatus');
+        // Processamento de Cartão de Crédito e Débito (Agendamentos e Planos)
+        async function executarPagamentoCartaoGeral(tipoCartao) {
+            const isDebito = tipoCartao === 'debito';
+            const numEl = document.getElementById(isDebito ? 'cartaoDebitoNumero' : 'cartaoCreditoNumero');
+            const nomeEl = document.getElementById(isDebito ? 'cartaoDebitoNome' : 'cartaoCreditoNome');
+            const valEl = document.getElementById(isDebito ? 'cartaoDebitoValidade' : 'cartaoCreditoValidade');
+            const cvvEl = document.getElementById(isDebito ? 'cartaoDebitoCvv' : 'cartaoCreditoCvv');
+            const cpfEl = document.getElementById(isDebito ? 'cartaoDebitoCpf' : 'cartaoCreditoCpf');
+            const parcEl = document.getElementById('cartaoCreditoParcelas');
+            const msgEl = document.getElementById(isDebito ? 'msgCartaoDebitoStatus' : 'msgCartaoCreditoStatus');
+            const btnEl = document.getElementById(isDebito ? 'btnPagarCartaoDebito' : 'btnPagarCartaoCredito');
 
-                if (!cartaoNumero || !cartaoNome || !cartaoValidade || !cartaoCvv || !cartaoCpf) {
-                    msgCartao.className = "text-xs text-center font-medium text-red-400";
-                    msgCartao.innerText = "Preencha todos os campos do cartão!";
-                    return;
+            const cartaoNumero = numEl?.value.replace(/\s/g, '') || '';
+            const cartaoNome = nomeEl?.value.trim() || '';
+            const cartaoValidade = valEl?.value.trim() || '';
+            const cartaoCvv = cvvEl?.value.trim() || '';
+            const cartaoCpf = cpfEl?.value.replace(/\D/g, '') || '';
+            const parcelas = isDebito ? 1 : Number(parcEl?.value || 1);
+
+            if (!cartaoNumero || cartaoNumero.length < 13 || !cartaoNome || !cartaoValidade || cartaoValidade.length < 5 || !cartaoCvv || !cartaoCpf || cartaoCpf.length < 11) {
+                if (msgEl) {
+                    msgEl.className = "text-xs text-center font-medium text-red-400";
+                    msgEl.innerText = "Por favor, preencha todos os campos do cartão e CPF corretamente!";
                 }
+                return;
+            }
 
-                msgCartao.className = "text-xs text-center font-medium text-amber-300";
-                msgCartao.innerText = "Processando pagamento no cartão com segurança...";
+            const [expMonth, expYear] = cartaoValidade.split('/');
+            const user = auth.currentUser;
+            let valorPagar = 10.00;
+            let descricao = "";
 
-                try {
-                    const user = auth.currentUser;
-                    const valorPagar = tipoPagamentoAtual === 'agendamento' ? 10.00 : (dadosPagamentoPendente?.plano?.preco || 10.00);
+            if (tipoPagamentoAtual === 'agendamento' && dadosPagamentoPendente) {
+                valorPagar = dadosPagamentoPendente.valorCobrado !== undefined 
+                    ? dadosPagamentoPendente.valorCobrado 
+                    : (dadosPagamentoPendente.modalidade === 'total' ? dadosPagamentoPendente.preco : 10.00);
+                descricao = `${dadosPagamentoPendente.modalidade === 'total' ? 'Pagamento Total' : 'Taxa Reserva'} (${dadosPagamentoPendente.servico}) - EMAÚS`;
+            } else if (tipoPagamentoAtual === 'plano' && dadosPagamentoPendente) {
+                valorPagar = dadosPagamentoPendente.plano?.preco || 10.00;
+                descricao = `Assinatura ${dadosPagamentoPendente.plano?.nome} - EMAÚS`;
+            }
 
-                    const response = await fetch(`${getBackendUrlAtivo()}/api/pagamento/cartao`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            token: 'tok_test', // Token gerado no frontend via SDK
-                            payment_method_id: 'master',
-                            transaction_amount: valorPagar,
-                            email: user.email,
-                            cpf: cartaoCpf,
-                            description: tipoPagamentoAtual === 'agendamento' ? 'Taxa Reserva - EMAUS Barbearia' : 'Assinatura Plano - EMAUS Barbearia'
-                        })
-                    });
+            if (btnEl) {
+                btnEl.disabled = true;
+                btnEl.innerHTML = `<span>⏳ Processando ${isDebito ? 'Débito' : 'Crédito'}...</span>`;
+            }
+            if (msgEl) {
+                msgEl.className = "text-xs text-center font-medium text-amber-300";
+                msgEl.innerText = `Processando cobrança segura no cartão de ${isDebito ? 'débito' : 'crédito'}...`;
+            }
 
-                    const data = await response.json();
+            try {
+                const response = await fetch(`${getBackendUrlAtivo()}/api/pagamento/cartao`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cardNumber: cartaoNumero,
+                        cardholderName: cartaoNome,
+                        cardExpirationMonth: expMonth,
+                        cardExpirationYear: expYear,
+                        securityCode: cartaoCvv,
+                        cpf: cartaoCpf,
+                        transaction_amount: valorPagar,
+                        installments: parcelas,
+                        tipoCartao: isDebito ? 'debito' : 'credito',
+                        email: user?.email || 'cliente@barbearia.com',
+                        description: descricao
+                    })
+                });
 
-                    if (response.ok && data.status === 'approved') {
-                        msgCartao.className = "text-xs text-center font-medium text-green-400";
-                        msgCartao.innerText = "Pagamento com cartão aprovado!";
-                        setTimeout(async () => {
-                            fecharModalPagamento();
-                            await concluirPagamentoComSucesso(data.id, 'cartao_credito');
-                        }, 1200);
-                    } else {
-                        msgCartao.className = "text-xs text-center font-medium text-red-400";
-                        msgCartao.innerText = data.error || "Pagamento recusado ou credenciais de teste ativas.";
+                const data = await response.json();
+
+                if (response.ok && data.status === 'approved') {
+                    if (msgEl) {
+                        msgEl.className = "text-xs text-center font-bold text-green-400";
+                        msgEl.innerText = `✅ Pagamento no cartão de ${isDebito ? 'débito' : 'crédito'} aprovado com sucesso!`;
                     }
-                } catch (err) {
-                    msgCartao.className = "text-xs text-center font-medium text-red-400";
-                    msgCartao.innerText = "Erro de conexão com o servidor de pagamento.";
+                    setTimeout(async () => {
+                        fecharModalPagamento();
+                        await concluirPagamentoComSucesso(data.id, isDebito ? 'cartao_debito' : 'cartao_credito');
+                    }, 1200);
+                } else {
+                    const msgErro = data.error || (data.status === 'in_process' ? 'Pagamento em análise pela operadora.' : 'Pagamento recusado pela operadora do cartão.');
+                    if (msgEl) {
+                        msgEl.className = "text-xs text-center font-medium text-red-400";
+                        msgEl.innerText = msgErro;
+                    }
+                    if (btnEl) {
+                        btnEl.disabled = false;
+                        btnEl.innerHTML = `<span>💳</span> Tentar Novamente`;
+                    }
                 }
-            });
+            } catch (err) {
+                console.error("Erro no pagamento com cartão:", err);
+                if (msgEl) {
+                    msgEl.className = "text-xs text-center font-medium text-red-400";
+                    msgEl.innerText = "Erro ao conectar ao servidor de pagamento: " + err.message;
+                }
+                if (btnEl) {
+                    btnEl.disabled = false;
+                    btnEl.innerHTML = `<span>💳</span> Tentar Novamente`;
+                }
+            }
         }
+
+        document.getElementById('btnPagarCartaoCredito')?.addEventListener('click', () => executarPagamentoCartaoGeral('credito'));
+        document.getElementById('btnPagarCartaoDebito')?.addEventListener('click', () => executarPagamentoCartaoGeral('debito'));
 
         // ==========================================
         // CONTROLE DE AVISO: BARBEARIA FECHADA HOJE
@@ -2927,6 +3207,43 @@
         const btnFecharSucessoCompraProduto = document.getElementById('btnFecharSucessoCompraProduto');
         const modalSucessoCompraProduto = document.getElementById('modalSucessoCompraProduto');
 
+        // Alternância de Abas no Modal de Produtos
+        const tabProdPix = document.getElementById('tabProdPix');
+        const tabProdCredito = document.getElementById('tabProdCredito');
+        const tabProdDebito = document.getElementById('tabProdDebito');
+        const viewProdPix = document.getElementById('viewProdPix');
+        const viewProdCredito = document.getElementById('viewProdCredito');
+        const viewProdDebito = document.getElementById('viewProdDebito');
+
+        function alternarAbaProduto(aba) {
+            if (!viewProdPix || !viewProdCredito || !viewProdDebito) return;
+            viewProdPix.classList.add('hidden');
+            viewProdCredito.classList.add('hidden');
+            viewProdDebito.classList.add('hidden');
+
+            const classAtiva = "flex-1 pb-2 font-bold text-[11px] sm:text-xs text-dourado border-b-2 border-dourado uppercase transition cursor-pointer flex items-center justify-center gap-1";
+            const classInativa = "flex-1 pb-2 font-bold text-[11px] sm:text-xs text-zinc-500 uppercase transition cursor-pointer flex items-center justify-center gap-1 hover:text-zinc-300";
+
+            if (tabProdPix) tabProdPix.className = classInativa;
+            if (tabProdCredito) tabProdCredito.className = classInativa;
+            if (tabProdDebito) tabProdDebito.className = classInativa;
+
+            if (aba === 'pix') {
+                viewProdPix.classList.remove('hidden');
+                if (tabProdPix) tabProdPix.className = classAtiva;
+            } else if (aba === 'credito') {
+                viewProdCredito.classList.remove('hidden');
+                if (tabProdCredito) tabProdCredito.className = classAtiva;
+            } else if (aba === 'debito') {
+                viewProdDebito.classList.remove('hidden');
+                if (tabProdDebito) tabProdDebito.className = classAtiva;
+            }
+        }
+
+        tabProdPix?.addEventListener('click', () => alternarAbaProduto('pix'));
+        tabProdCredito?.addEventListener('click', () => alternarAbaProduto('credito'));
+        tabProdDebito?.addEventListener('click', () => alternarAbaProduto('debito'));
+
         function fecharModalCompraProduto() {
             if (modalComprarProdutoPix) modalComprarProdutoPix.classList.add('hidden');
             if (pollingIntervalPixProduto) {
@@ -2980,7 +3297,8 @@
 
             atualizarTotaisModalCompraProduto();
 
-            // Reseta telas de pix
+            // Reseta telas de pagamento
+            alternarAbaProduto('pix');
             document.getElementById('containerBtnGerarPixProduto')?.classList.remove('hidden');
             document.getElementById('containerPixAtivoProduto')?.classList.add('hidden');
             if (btnGerarPixProduto) {
@@ -3000,6 +3318,8 @@
             if (labelQtdCompraProduto) labelQtdCompraProduto.innerText = quantidadeCompraProduto;
             const total = Number(produtoSelecionadoCompra.preco || 0) * quantidadeCompraProduto;
             if (labelTotalCompraProduto) labelTotalCompraProduto.innerText = `R$ ${total.toFixed(2)}`;
+
+            preencherOpcoesParcelas(document.getElementById('prodCartaoParcelasCredito'), total);
         }
 
         if (btnDiminuirQtdCompra) {
@@ -3023,6 +3343,7 @@
             });
         }
 
+        // 1. Pagamento de Produto via Pix
         if (btnGerarPixProduto) {
             btnGerarPixProduto.addEventListener('click', async () => {
                 if (!produtoSelecionadoCompra) return;
@@ -3115,6 +3436,7 @@
                                             clienteEmail: emailComprador,
                                             paymentId: paymentId,
                                             status: 'pago',
+                                            metodoPagamento: 'Pix Mercado Pago',
                                             criadoEm: new Date().toISOString()
                                         });
                                     } catch (errComp) { console.warn("Aviso ao registrar compra:", errComp); }
@@ -3176,6 +3498,172 @@
                 }
             });
         }
+
+        // 2 & 3. Pagamento de Produto via Cartão de Crédito e Débito
+        async function executarPagamentoCartaoProduto(tipoCartao) {
+            if (!produtoSelecionadoCompra) return;
+
+            const nome = document.getElementById('inputNomeCompradorProduto')?.value.trim();
+            const telefone = document.getElementById('inputTelCompradorProduto')?.value.trim();
+            const isDebito = tipoCartao === 'debito';
+
+            const numEl = document.getElementById(isDebito ? 'prodCartaoNumeroDebito' : 'prodCartaoNumeroCredito');
+            const nomeEl = document.getElementById(isDebito ? 'prodCartaoNomeDebito' : 'prodCartaoNomeCredito');
+            const valEl = document.getElementById(isDebito ? 'prodCartaoValidadeDebito' : 'prodCartaoValidadeCredito');
+            const cvvEl = document.getElementById(isDebito ? 'prodCartaoCvvDebito' : 'prodCartaoCvvCredito');
+            const cpfEl = document.getElementById(isDebito ? 'prodCartaoCpfDebito' : 'prodCartaoCpfCredito');
+            const parcEl = document.getElementById('prodCartaoParcelasCredito');
+            const msgEl = document.getElementById(isDebito ? 'msgProdCartaoDebitoStatus' : 'msgProdCartaoCreditoStatus');
+            const btnEl = document.getElementById(isDebito ? 'btnPagarProdDebito' : 'btnPagarProdCredito');
+
+            if (!nome || !telefone) {
+                if (msgEl) {
+                    msgEl.className = "text-xs text-center font-medium text-red-400";
+                    msgEl.innerText = "Por favor, preencha seu Nome e WhatsApp no topo!";
+                }
+                return;
+            }
+
+            const cartaoNumero = numEl?.value.replace(/\s/g, '') || '';
+            const cartaoNome = nomeEl?.value.trim() || '';
+            const cartaoValidade = valEl?.value.trim() || '';
+            const cartaoCvv = cvvEl?.value.trim() || '';
+            const cartaoCpf = cpfEl?.value.replace(/\D/g, '') || '';
+            const parcelas = isDebito ? 1 : Number(parcEl?.value || 1);
+
+            if (!cartaoNumero || cartaoNumero.length < 13 || !cartaoNome || !cartaoValidade || cartaoValidade.length < 5 || !cartaoCvv || !cartaoCpf || cartaoCpf.length < 11) {
+                if (msgEl) {
+                    msgEl.className = "text-xs text-center font-medium text-red-400";
+                    msgEl.innerText = "Por favor, preencha todos os campos do cartão e CPF corretamente!";
+                }
+                return;
+            }
+
+            const [expMonth, expYear] = cartaoValidade.split('/');
+            const totalPagar = Number(produtoSelecionadoCompra.preco || 0) * quantidadeCompraProduto;
+            const user = auth.currentUser;
+            const emailComprador = user?.email || `${telefone.replace(/\D/g, '')}@cliente.emaus`;
+
+            if (btnEl) {
+                btnEl.disabled = true;
+                btnEl.innerHTML = `<span>⏳ Processando ${isDebito ? 'Débito' : 'Crédito'}...</span>`;
+            }
+            if (msgEl) {
+                msgEl.className = "text-xs text-center font-medium text-amber-300";
+                msgEl.innerText = `Processando cobrança segura no cartão de ${isDebito ? 'débito' : 'crédito'}...`;
+            }
+
+            try {
+                const response = await fetch(`${getBackendUrlAtivo()}/api/pagamento/cartao`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cardNumber: cartaoNumero,
+                        cardholderName: cartaoNome,
+                        cardExpirationMonth: expMonth,
+                        cardExpirationYear: expYear,
+                        securityCode: cartaoCvv,
+                        cpf: cartaoCpf,
+                        transaction_amount: totalPagar,
+                        installments: parcelas,
+                        tipoCartao: isDebito ? 'debito' : 'credito',
+                        email: emailComprador,
+                        description: `Compra: ${quantidadeCompraProduto}x ${produtoSelecionadoCompra.nome} - EMAÚS`
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.status === 'approved') {
+                    // 1. Baixa no estoque
+                    const novoEstoque = Math.max(0, Number(produtoSelecionadoCompra.estoque || 0) - quantidadeCompraProduto);
+                    try {
+                        await updateDoc(doc(db, "produtos", produtoSelecionadoCompra.id), {
+                            estoque: novoEstoque,
+                            atualizadoEm: new Date().toISOString()
+                        });
+                    } catch (errEst) { console.warn("Aviso ao baixar estoque:", errEst); }
+
+                    // 2. Registra compra
+                    try {
+                        await addDoc(collection(db, "comprasProdutos"), {
+                            produtoId: produtoSelecionadoCompra.id,
+                            produtoNome: produtoSelecionadoCompra.nome,
+                            volumeUnidade: produtoSelecionadoCompra.volumeUnidade || '',
+                            quantidade: quantidadeCompraProduto,
+                            precoUnitario: produtoSelecionadoCompra.preco,
+                            valorTotal: totalPagar,
+                            clienteNome: nome,
+                            clienteTelefone: telefone,
+                            clienteEmail: emailComprador,
+                            paymentId: data.id,
+                            metodoPagamento: isDebito ? 'Cartão de Débito' : 'Cartão de Crédito',
+                            status: 'pago',
+                            criadoEm: new Date().toISOString()
+                        });
+                    } catch (errComp) { console.warn("Aviso ao registrar compra:", errComp); }
+
+                    // 3. Notifica WhatsApp
+                    try {
+                        fetch(`${getBackendUrlAtivo()}/api/whatsapp/notificar-compra-produto`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                cliente: nome,
+                                telefone: telefone,
+                                produtos: [{
+                                    nome: produtoSelecionadoCompra.nome,
+                                    volumeUnidade: produtoSelecionadoCompra.volumeUnidade,
+                                    quantidade: quantidadeCompraProduto,
+                                    preco: produtoSelecionadoCompra.preco,
+                                    subtotal: totalPagar
+                                }],
+                                valorTotal: totalPagar,
+                                metodoPagamento: isDebito ? 'Cartão de Débito' : 'Cartão de Crédito',
+                                whatsappBarbeiro: MEU_WHATSAPP
+                            })
+                        }).catch(e => console.warn("Aviso WhatsApp compra produto:", e));
+                    } catch (eZap) { console.warn(eZap); }
+
+                    // 4. Modal de Sucesso
+                    fecharModalCompraProduto();
+                    const nomeQtdEl = document.getElementById('sucessoProdutoNomeQtd');
+                    const totalPagoEl = document.getElementById('sucessoProdutoTotalPago');
+                    const clienteEl = document.getElementById('sucessoProdutoCliente');
+
+                    if (nomeQtdEl) nomeQtdEl.innerText = `${quantidadeCompraProduto}x ${produtoSelecionadoCompra.nome} (${produtoSelecionadoCompra.volumeUnidade || ''})`;
+                    if (totalPagoEl) totalPagoEl.innerText = `R$ ${totalPagar.toFixed(2)}`;
+                    if (clienteEl) clienteEl.innerText = `${nome} (${telefone})`;
+
+                    if (modalSucessoCompraProduto) modalSucessoCompraProduto.classList.remove('hidden');
+
+                    carregarProdutosCliente();
+                } else {
+                    const msgErro = data.error || (data.status === 'in_process' ? 'Pagamento em análise pela operadora.' : 'Pagamento recusado pela operadora.');
+                    if (msgEl) {
+                        msgEl.className = "text-xs text-center font-medium text-red-400";
+                        msgEl.innerText = msgErro;
+                    }
+                    if (btnEl) {
+                        btnEl.disabled = false;
+                        btnEl.innerHTML = `<span>💳</span> Tentar Novamente`;
+                    }
+                }
+            } catch (err) {
+                console.error("Erro no pagamento com cartão do produto:", err);
+                if (msgEl) {
+                    msgEl.className = "text-xs text-center font-medium text-red-400";
+                    msgEl.innerText = "Erro de conexão: " + err.message;
+                }
+                if (btnEl) {
+                    btnEl.disabled = false;
+                    btnEl.innerHTML = `<span>💳</span> Tentar Novamente`;
+                }
+            }
+        }
+
+        document.getElementById('btnPagarProdCredito')?.addEventListener('click', () => executarPagamentoCartaoProduto('credito'));
+        document.getElementById('btnPagarProdDebito')?.addEventListener('click', () => executarPagamentoCartaoProduto('debito'));
 
         if (btnCopiarPixProduto) {
             btnCopiarPixProduto.addEventListener('click', () => {
