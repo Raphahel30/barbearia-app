@@ -535,13 +535,14 @@
             <section id="viewPayments" class="space-y-6 hidden">
                 <div class="max-w-3xl mx-auto card-dark p-6 sm:p-8 rounded-2xl border border-zinc-800 space-y-6">
                     <div>
-                        <span class="text-xs font-bold text-dourado uppercase tracking-widest bg-dourado/10 px-3 py-1 rounded-full border border-dourado/20">Configuração Rápida</span>
-                        <h2 class="text-2xl font-bold text-white uppercase mt-2">Conectar Conta Mercado Pago do Barbeiro</h2>
+                        <span class="text-xs font-bold text-dourado uppercase tracking-widest bg-dourado/10 px-3 py-1 rounded-full border border-dourado/20">Pagamentos & Recebimentos</span>
+                        <h2 class="text-2xl font-bold text-white uppercase mt-2">Conectar Conta Mercado Pago</h2>
                         <p class="text-xs text-zinc-400 mt-1">
-                            O dinheiro das taxas de reserva (Pix e Cartão) cairá <strong>diretamente na conta do Mercado Pago</strong> cadastrada abaixo.
+                            O dinheiro das taxas de reserva (Pix e Cartão) cairá <strong>diretamente no saldo da conta Mercado Pago</strong> conectada.
                         </p>
                     </div>
 
+                    <!-- Card de Status da Conexão -->
                     <div id="boxStatusMp" class="p-4 rounded-xl border flex items-center justify-between bg-zinc-900 border-zinc-800">
                         <div class="flex items-center gap-3">
                             <div id="iconStatusMp" class="w-3.5 h-3.5 rounded-full bg-amber-400 animate-pulse"></div>
@@ -555,15 +556,39 @@
                         </span>
                     </div>
 
-                    <div class="space-y-4 pt-2">
-                        <div>
-                            <label class="block text-xs font-bold text-zinc-300 uppercase mb-1">
-                                Access Token do Mercado Pago
-                            </label>
-                            <input type="password" id="inputMpAccessToken" placeholder="APP_USR-0000000000000000-000000-..." class="w-full px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white text-xs font-mono focus:outline-none focus:border-dourado">
-                            <p class="text-[11px] text-zinc-500 mt-1">Cole aqui o token de produção ou de teste gerado no Mercado Pago Developers.</p>
+                    <!-- Bloco 1: Conexão em 1 Clique (OAuth Oficial) -->
+                    <div id="blocoMpDesconectado" class="bg-blue-950/20 border border-blue-900/60 rounded-xl p-5 text-center space-y-4">
+                        <div class="space-y-1">
+                            <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center justify-center gap-2">
+                                <span class="text-blue-400 text-lg">⚡</span> Conectar em 1 Clique com o Mercado Pago
+                            </h3>
+                            <p class="text-xs text-zinc-400 max-w-lg mx-auto">
+                                Clique no botão abaixo para fazer login e autorizar o recebimento dos valores direto na sua conta do Mercado Pago, sem precisar copiar códigos ou tokens.
+                            </p>
                         </div>
+                        <button id="btnConectarMpOAuth" type="button" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#009EE3] hover:bg-[#0082ba] text-white font-bold py-3.5 px-8 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg hover:shadow-blue-500/20">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-6h2v6zm4 0h-2v-6h2v6zm-2-8c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/></svg>
+                            <span>🔵 Conectar Conta do Mercado Pago</span>
+                        </button>
+                    </div>
 
+                    <!-- Bloco 2: Ações quando Conectado -->
+                    <div id="blocoMpConectado" class="hidden space-y-3">
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <button id="btnTestarConfigMp" type="button" class="flex-1 bg-green-900/50 hover:bg-green-800 text-green-300 font-bold py-3 px-5 rounded-lg uppercase tracking-wider text-xs transition cursor-pointer border border-green-700">
+                                ⚡ Testar Pagamentos Pix
+                            </button>
+                            <button id="btnDesconectarMpOAuth" type="button" class="bg-red-950/40 hover:bg-red-900/60 text-red-400 font-bold py-3 px-5 rounded-lg uppercase tracking-wider text-xs transition cursor-pointer border border-red-800">
+                                ❌ Desconectar Conta
+                            </button>
+                        </div>
+                    </div>
+
+                    <p id="msgConfigMpStatus" class="text-xs text-center font-medium"></p>
+
+                    <!-- Bloco 3: Configurações Complementares (Chave Pix e WhatsApp) -->
+                    <div class="space-y-4 pt-2 border-t border-zinc-800/80">
+                        <h4 class="text-xs font-bold text-zinc-400 uppercase tracking-wider">Dados Adicionais de Recebimento & Contato</h4>
                         <div>
                             <label class="block text-xs font-bold text-zinc-300 uppercase mb-1">
                                 Chave Pix Alternativa / Manual (InfinitePay ou Celular)
@@ -579,26 +604,24 @@
                             <input type="text" id="inputWhatsappAdmin" placeholder="5511953789095" class="w-full px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
                         </div>
 
-                        <div class="pt-2 flex flex-col sm:flex-row gap-3">
-                            <button id="btnSalvarConfigMp" type="button" class="flex-1 bg-dourado hover:bg-[#C5A028] text-black font-bold py-3 rounded-lg uppercase tracking-wider text-xs transition cursor-pointer shadow-lg">
-                                💾 Salvar Conexão Mercado Pago
-                            </button>
-                            <button id="btnTestarConfigMp" type="button" class="bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3 px-5 rounded-lg uppercase tracking-wider text-xs transition cursor-pointer border border-zinc-700">
-                                ⚡ Testar Conexão MP
+                        <div class="pt-2">
+                            <button id="btnSalvarConfigMp" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-bold py-3 rounded-lg uppercase tracking-wider text-xs transition cursor-pointer shadow-lg">
+                                💾 Salvar Chave Pix & WhatsApp
                             </button>
                         </div>
-                        <p id="msgConfigMpStatus" class="text-xs text-center font-medium"></p>
                     </div>
 
-                    <div class="bg-black/60 p-4 rounded-xl border border-zinc-800/80 space-y-2 text-xs text-zinc-300">
-                        <p class="font-bold text-dourado uppercase">📖 Como o barbeiro pega o Access Token (Passo a Passo):</p>
-                        <ol class="list-decimal list-inside space-y-1 text-[11px] text-zinc-400">
-                            <li>Acesse <a href="https://www.mercadopago.com.br/developers/panel" target="_blank" class="text-dourado underline">mercadopago.com.br/developers/panel</a> e entre na conta do Mercado Pago.</li>
-                            <li>Clique em <strong>Suas integrações</strong> e depois em <strong>Criar aplicação</strong>.</li>
-                            <li>No menu lateral esquerdo, clique em <strong>Credenciais de produção</strong> (ou teste).</li>
-                            <li>Copie o <strong>Access Token</strong> e cole no campo acima!</li>
-                        </ol>
-                    </div>
+                    <!-- Bloco 4: Configuração Avançada (Opcional) -->
+                    <details class="bg-black/40 p-4 rounded-xl border border-zinc-800 text-xs text-zinc-400">
+                        <summary class="font-bold text-zinc-300 uppercase cursor-pointer hover:text-dourado">⚙️ Configuração Manual de Token (Avançado)</summary>
+                        <div class="space-y-3 pt-3">
+                            <p class="text-[11px] text-zinc-500">Se preferir inserir o Access Token manualmente, use o campo abaixo:</p>
+                            <input type="password" id="inputMpAccessToken" placeholder="APP_USR-0000000000000000-000000-..." class="w-full px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white text-xs font-mono focus:outline-none focus:border-dourado">
+                            <button id="btnSalvarTokenManual" type="button" class="bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2 px-4 rounded text-xs cursor-pointer">
+                                Salvar Token Manual
+                            </button>
+                        </div>
+                    </details>
                 </div>
             </section>
 
@@ -2604,17 +2627,22 @@
                 const sub = document.getElementById('subtextoStatusMp');
                 const icon = document.getElementById('iconStatusMp');
                 const badge = document.getElementById('badgeAmbienteMp');
+                const blocoConectado = document.getElementById('blocoMpConectado');
+                const blocoDesconectado = document.getElementById('blocoMpDesconectado');
 
                 if (configSnap.exists()) {
                     const data = configSnap.data();
                     if (data.mpAccessToken) {
-                        document.getElementById('inputMpAccessToken').value = data.mpAccessToken;
+                        const inputManual = document.getElementById('inputMpAccessToken');
+                        if (inputManual) inputManual.value = data.mpAccessToken;
                     }
                     if (data.pixManual) {
-                        document.getElementById('inputPixManual').value = data.pixManual;
+                        const inputPix = document.getElementById('inputPixManual');
+                        if (inputPix) inputPix.value = data.pixManual;
                     }
                     if (data.whatsappAdmin) {
-                        document.getElementById('inputWhatsappAdmin').value = data.whatsappAdmin;
+                        const inputWa = document.getElementById('inputWhatsappAdmin');
+                        if (inputWa) inputWa.value = data.whatsappAdmin;
                         whatsAppNumeroAtivo = data.whatsappAdmin;
                         adminWhatsappGlobal = data.whatsappAdmin;
                     }
@@ -2624,74 +2652,159 @@
                         box.className = "p-4 rounded-xl border flex items-center justify-between bg-green-950/40 border-green-800";
                         icon.className = "w-3.5 h-3.5 rounded-full bg-green-400";
                         texto.innerText = "Mercado Pago Conectado!";
-                        sub.innerText = "Pronto para receber pagamentos Pix automáticos";
+                        sub.innerText = data.mpUserId ? `Conta ativa (ID: ${data.mpUserId}) - Pix automático ativo` : "Pronto para receber pagamentos Pix automáticos";
                         badge.className = `text-[10px] font-bold uppercase px-2.5 py-1 rounded ${ehProducao ? 'bg-green-600 text-white' : 'bg-amber-600 text-black'}`;
                         badge.innerText = ehProducao ? "Produção Real" : "Modo Teste";
+
+                        if (blocoConectado) blocoConectado.classList.remove('hidden');
+                        if (blocoDesconectado) blocoDesconectado.classList.add('hidden');
                         return;
                     }
                 }
 
                 box.className = "p-4 rounded-xl border flex items-center justify-between bg-zinc-900 border-zinc-800";
-                icon.className = "w-3.5 h-3.5 rounded-full bg-amber-400";
-                texto.innerText = "Mercado Pago Pendente";
-                sub.innerText = "Insira o Access Token abaixo para ativar o Pix automático";
-                badge.innerText = "Não Configurado";
+                icon.className = "w-3.5 h-3.5 rounded-full bg-zinc-600";
+                texto.innerText = "Nenhuma Conta Conectada";
+                sub.innerText = "Clique no botão abaixo para conectar sua conta do Mercado Pago";
+                badge.className = "text-[10px] font-bold uppercase px-2.5 py-1 rounded bg-zinc-800 text-zinc-400";
+                badge.innerText = "Desconectado";
+
+                if (blocoConectado) blocoConectado.classList.add('hidden');
+                if (blocoDesconectado) blocoDesconectado.classList.remove('hidden');
 
             } catch (e) { console.error(e); }
         }
 
+        // 1. Botão Conectar com Mercado Pago em 1 Clique (OAuth)
+        const btnConectarOAuth = document.getElementById('btnConectarMpOAuth');
+        if (btnConectarOAuth) {
+            btnConectarOAuth.addEventListener('click', async () => {
+                btnConectarOAuth.disabled = true;
+                btnConectarOAuth.innerHTML = `<span>⏳ Abrindo Mercado Pago...</span>`;
+                try {
+                    const res = await fetch(`${getBackendUrlAtivo()}/api/auth/mercadopago/url`);
+                    const data = await res.json();
+                    if (data.url) {
+                        window.location.href = data.url;
+                    } else {
+                        alert("Não foi possível gerar o link de autorização. Verifique se o servidor está online.");
+                        btnConectarOAuth.disabled = false;
+                        btnConectarOAuth.innerHTML = `<span>🔵 Conectar Conta do Mercado Pago</span>`;
+                    }
+                } catch (e) {
+                    alert("Erro ao conectar com o servidor: " + e.message);
+                    btnConectarOAuth.disabled = false;
+                    btnConectarOAuth.innerHTML = `<span>🔵 Conectar Conta do Mercado Pago</span>`;
+                }
+            });
+        }
+
+        // 2. Botão Desconectar Conta do Mercado Pago
+        const btnDesconectarOAuth = document.getElementById('btnDesconectarMpOAuth');
+        if (btnDesconectarOAuth) {
+            btnDesconectarOAuth.addEventListener('click', async () => {
+                if (!confirm("Tem certeza que deseja desconectar esta conta do Mercado Pago?")) return;
+                btnDesconectarOAuth.disabled = true;
+                btnDesconectarOAuth.innerHTML = `<span>⏳ Desconectando...</span>`;
+
+                try {
+                    await fetch(`${getBackendUrlAtivo()}/api/auth/mercadopago/desconectar`, { method: 'POST' });
+                    await setDoc(doc(db, "configuracoes", "pagamento"), {
+                        mpAccessToken: "",
+                        mpUserId: "",
+                        mpPublicKey: "",
+                        mpConectadoViaOAuth: false,
+                        atualizadoEm: new Date()
+                    }, { merge: true });
+
+                    const inputManual = document.getElementById('inputMpAccessToken');
+                    if (inputManual) inputManual.value = "";
+
+                    const msg = document.getElementById('msgConfigMpStatus');
+                    if (msg) {
+                        msg.className = "text-xs text-center font-bold text-amber-400";
+                        msg.innerText = "Conta do Mercado Pago desconectada. Você pode conectar outra conta agora.";
+                    }
+
+                    await carregarConfiguracoesMercadoPago();
+                } catch (e) {
+                    alert("Erro ao desconectar: " + e.message);
+                } finally {
+                    btnDesconectarOAuth.disabled = false;
+                    btnDesconectarOAuth.innerHTML = `❌ Desconectar Conta`;
+                }
+            });
+        }
+
+        // 3. Botão Salvar Chave Pix Manual e WhatsApp
         document.getElementById('btnSalvarConfigMp').addEventListener('click', async () => {
-            const token = document.getElementById('inputMpAccessToken').value.trim();
             const pixManual = document.getElementById('inputPixManual').value.trim();
             const whatsappAdmin = document.getElementById('inputWhatsappAdmin').value.replace(/\D/g, '');
             const msg = document.getElementById('msgConfigMpStatus');
 
             msg.className = "text-xs text-center font-medium text-amber-300";
-            msg.innerText = "Salvando configurações...";
+            msg.innerText = "Salvando configurações de contato...";
 
             try {
                 await setDoc(doc(db, "configuracoes", "pagamento"), {
-                    mpAccessToken: token,
                     pixManual: pixManual || '11953789095',
                     whatsappAdmin: whatsappAdmin || '5511953789095',
                     atualizadoEm: new Date()
-                });
+                }, { merge: true });
 
-                try {
-                    await fetch(`${getBackendUrlAtivo()}/api/configuracoes/mercadopago`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ accessToken: token })
-                    });
-                } catch(err) {}
-
-                msg.className = "text-xs text-center font-medium text-green-400";
-                msg.innerText = "✅ Configurações salvas e ativadas com sucesso!";
-                carregarConfiguracoesMercadoPago();
+                msg.className = "text-xs text-center font-bold text-green-400";
+                msg.innerText = "✅ Dados de recebimento e WhatsApp salvos com sucesso!";
             } catch (e) {
                 msg.className = "text-xs text-center font-medium text-red-400";
                 msg.innerText = "Erro ao salvar: " + e.message;
             }
         });
 
+        // 4. Salvar Token Manual (Avançado)
+        const btnSalvarTokenManual = document.getElementById('btnSalvarTokenManual');
+        if (btnSalvarTokenManual) {
+            btnSalvarTokenManual.addEventListener('click', async () => {
+                const token = document.getElementById('inputMpAccessToken').value.trim();
+                const msg = document.getElementById('msgConfigMpStatus');
+                if (!token) return alert("Insira um token válido.");
+
+                msg.className = "text-xs text-center font-medium text-amber-300";
+                msg.innerText = "Salvando token manual...";
+
+                try {
+                    await setDoc(doc(db, "configuracoes", "pagamento"), {
+                        mpAccessToken: token,
+                        atualizadoEm: new Date()
+                    }, { merge: true });
+
+                    await fetch(`${getBackendUrlAtivo()}/api/configuracoes/mercadopago`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ accessToken: token })
+                    });
+
+                    msg.className = "text-xs text-center font-bold text-green-400";
+                    msg.innerText = "✅ Token manual salvo com sucesso!";
+                    carregarConfiguracoesMercadoPago();
+                } catch (e) {
+                    msg.className = "text-xs text-center font-medium text-red-400";
+                    msg.innerText = "Erro ao salvar: " + e.message;
+                }
+            });
+        }
+
+        // 5. Testar Pagamento Pix
         const btnTestarMp = document.getElementById('btnTestarConfigMp');
         if (btnTestarMp) {
             btnTestarMp.addEventListener('click', async () => {
-                const token = document.getElementById('inputMpAccessToken').value.trim();
                 const msg = document.getElementById('msgConfigMpStatus');
-
-                if (!token) {
-                    msg.className = "text-xs text-center font-medium text-amber-400";
-                    msg.innerText = "⚠️ Por favor, insira o Access Token no campo acima.";
-                    return;
-                }
-
                 btnTestarMp.disabled = true;
                 btnTestarMp.innerHTML = `<span>⏳ Testando...</span>`;
                 msg.className = "text-xs text-center font-medium text-amber-300";
                 msg.innerText = "Enviando requisição de teste para o Mercado Pago...";
 
                 try {
+                    const token = document.getElementById('inputMpAccessToken')?.value.trim() || '';
                     const resp = await fetch(`${getBackendUrlAtivo()}/api/pagamento/testar-token`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -2711,9 +2824,30 @@
                     msg.innerText = "❌ Erro ao conectar ao servidor de pagamento: " + e.message;
                 } finally {
                     btnTestarMp.disabled = false;
-                    btnTestarMp.innerHTML = `⚡ Testar Conexão MP`;
+                    btnTestarMp.innerHTML = `⚡ Testar Pagamentos Pix`;
                 }
             });
+        }
+
+        // 6. Verifica se retornou do fluxo de login OAuth do Mercado Pago
+        const urlParamsMp = new URLSearchParams(window.location.search);
+        if (urlParamsMp.has('mp_status')) {
+            const mpStatus = urlParamsMp.get('mp_status');
+            const msg = document.getElementById('msgConfigMpStatus');
+            if (mpStatus === 'sucesso') {
+                if (msg) {
+                    msg.className = "text-xs text-center font-bold text-green-400 bg-green-950/60 p-3 rounded-lg border border-green-700";
+                    msg.innerText = "🎉 Conta do Mercado Pago conectada com sucesso em 1 clique!";
+                }
+            } else if (mpStatus === 'erro') {
+                const erroMsg = urlParamsMp.get('msg') || 'Erro ao autorizar conta no Mercado Pago.';
+                if (msg) {
+                    msg.className = "text-xs text-center font-bold text-red-400 bg-red-950/60 p-3 rounded-lg border border-red-700";
+                    msg.innerText = `❌ ${erroMsg}`;
+                }
+            }
+            // Remove o parâmetro da URL de forma limpa
+            window.history.replaceState({}, document.title, window.location.pathname);
         }
 
         // ==========================================

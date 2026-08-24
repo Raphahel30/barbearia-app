@@ -380,6 +380,165 @@ app.get('/api/health', async (req, res) => {
     });
 });
 
+const MP_CLIENT_ID = process.env.MP_CLIENT_ID || '8388498048278269';
+const MP_CLIENT_SECRET = process.env.MP_CLIENT_SECRET || 'YZXrwo6Ye49ucWHenOGQggjylxUJXjCI';
+const MP_REDIRECT_URI = process.env.MP_REDIRECT_URI || 'https://barbearia-app-1bf5.onrender.com/api/auth/mercadopago/callback';
+
+// Retorna URL de autorização OAuth do Mercado Pago (Conectar com 1 Clique)
+app.get('/api/auth/mercadopago/url', (req, res) => {
+    const authUrl = `https://auth.mercadopago.com/authorization?client_id=${MP_CLIENT_ID}&response_type=code&platform_id=mp&state=emaus_admin&redirect_uri=${encodeURIComponent(MP_REDIRECT_URI)}`;
+    return res.json({ url: authUrl });
+});
+
+// Callback oficial do Mercado Pago para troca do código por Access Token
+app.get('/api/auth/mercadopago/callback', async (req, res) => {
+    const { code, state, error, error_description } = req.query;
+
+    if (error || !code) {
+        console.error("Erro no retorno do OAuth Mercado Pago:", error, error_description);
+        return res.redirect(`https://emaus-barbearia.vercel.app/admin.html?mp_status=erro&msg=${encodeURIComponent(error_description || error || 'Autorizacao cancelada')}`);
+    }
+
+    try {
+        const postData = JSON.stringify({
+            client_id: MP_CLIENT_ID,
+            client_secret: MP_CLIENT_SECRET,
+            grant_type: 'authorization_code',
+            code: code,
+            redirect_uri: MP_REDIRECT_URI
+        });
+
+        const tokenData = await new Promise((resolve, reject) => {
+            const tokenReq = https.request({
+                hostname: 'api.mercadopago.com',
+                path: '/oauth/token',
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(postData)
+                }
+            }, (tokenRes) => {
+                let body = '';
+                tokenRes.on('data', chunk => body += chunk);
+                tokenRes.on('end', () => {
+                    try { resolve(JSON.parse(body)); } catch (e) { resolve(null); }
+                });
+            });
+            tokenReq.on('error', reject);
+            tokenReq.write(postData);
+            tokenReq.end();
+        });
+
+        if (!tokenData || !tokenData.access_token) {
+            console.error("Erro ao obter access token no OAuth:", tokenData);
+            return res.redirect(`https://emaus-barbearia.vercel.app/admin.html?mp_status=erro&msg=${encodeURIComponent(tokenData?.message || 'Falha ao autenticar com o Mercado Pago')}`);
+        }
+
+        // Atualiza memória do servidor
+        activeAccessToken = tokenData.access_token;
+        client = new MercadoPagoConfig({ accessToken: activeAccessToken, options: { timeout: 10000 } });
+        paymentClient = new Payment(client);
+        refundClient = new PaymentRefund(client);
+
+        console.log(`✅ [Mercado Pago OAuth] Conta vinculada com sucesso! User ID: ${tokenData.user_id}`);
+
+        // Salva no Firestore
+        try {
+            const googleToken = await getGoogleAccessToken();
+            if (googleToken) {
+                const patchData = JSON.stringify({
+                    fields: {
+                        mpAccessToken: { stringValue: tokenData.access_token },
+                        mpUserId: { stringValue: String(tokenData.user_id || '') },
+                        mpPublicKey: { stringValue: tokenData.public_key || '' },
+                        mpConectadoViaOAuth: { booleanValue: true },
+                        atualizadoEm: { timestampValue: new Date().toISOString() }
+                    }
+                });
+
+                await new Promise((resolve) => {
+                    const fsReq = https.request({
+                        hostname: 'firestore.googleapis.com',
+                        path: `/v1/projects/${serviceAccount.project_id}/databases/(default)/documents/configuracoes/pagamento?updateMask.fieldPaths=mpAccessToken&updateMask.fieldPaths=mpUserId&updateMask.fieldPaths=mpPublicKey&updateMask.fieldPaths=mpConectadoViaOAuth&updateMask.fieldPaths=atualizadoEm`,
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': `Bearer ${googleToken}`,
+                            'Content-Type': 'application/json',
+                            'Content-Length': Buffer.byteLength(patchData)
+                        }
+                    }, (fsRes) => {
+                        let d = '';
+                        fsRes.on('data', c => d += c);
+                        fsRes.on('end', resolve);
+                    });
+                    fsReq.on('error', resolve);
+                    fsReq.write(patchData);
+                    fsReq.end();
+                });
+            }
+        } catch (fsErr) {
+            console.warn("Aviso ao salvar OAuth no Firestore:", fsErr);
+        }
+
+        return res.redirect(`https://emaus-barbearia.vercel.app/admin.html?mp_status=sucesso&user_id=${tokenData.user_id || ''}`);
+
+    } catch (err) {
+        console.error("Erro no processamento do callback OAuth:", err);
+        return res.redirect(`https://emaus-barbearia.vercel.app/admin.html?mp_status=erro&msg=${encodeURIComponent(err.message)}`);
+    }
+});
+
+// Desconecta a conta do Mercado Pago
+app.post('/api/auth/mercadopago/desconectar', async (req, res) => {
+    try {
+        activeAccessToken = '';
+        client = new MercadoPagoConfig({ accessToken: 'DUMMY_TOKEN', options: { timeout: 10000 } });
+        paymentClient = new Payment(client);
+        refundClient = new PaymentRefund(client);
+
+        try {
+            const googleToken = await getGoogleAccessToken();
+            if (googleToken) {
+                const patchData = JSON.stringify({
+                    fields: {
+                        mpAccessToken: { stringValue: '' },
+                        mpUserId: { stringValue: '' },
+                        mpPublicKey: { stringValue: '' },
+                        mpConectadoViaOAuth: { booleanValue: false },
+                        atualizadoEm: { timestampValue: new Date().toISOString() }
+                    }
+                });
+
+                await new Promise((resolve) => {
+                    const fsReq = https.request({
+                        hostname: 'firestore.googleapis.com',
+                        path: `/v1/projects/${serviceAccount.project_id}/databases/(default)/documents/configuracoes/pagamento?updateMask.fieldPaths=mpAccessToken&updateMask.fieldPaths=mpUserId&updateMask.fieldPaths=mpPublicKey&updateMask.fieldPaths=mpConectadoViaOAuth&updateMask.fieldPaths=atualizadoEm`,
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': `Bearer ${googleToken}`,
+                            'Content-Type': 'application/json',
+                            'Content-Length': Buffer.byteLength(patchData)
+                        }
+                    }, (fsRes) => {
+                        let d = '';
+                        fsRes.on('data', c => d += c);
+                        fsRes.on('end', resolve);
+                    });
+                    fsReq.on('error', resolve);
+                    fsReq.write(patchData);
+                    fsReq.end();
+                });
+            }
+        } catch (fsErr) {
+            console.warn("Aviso ao limpar Firestore no desconectar:", fsErr);
+        }
+
+        return res.json({ success: true, message: 'Mercado Pago desconectado com sucesso.' });
+    } catch (err) {
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // Endpoint to update or test Mercado Pago token from admin dashboard
 app.post('/api/configuracoes/mercadopago', (req, res) => {
     const { accessToken } = req.body;
