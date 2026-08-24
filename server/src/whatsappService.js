@@ -1,7 +1,8 @@
 import makeWASocket, {
     useMultiFileAuthState,
     DisconnectReason,
-    fetchLatestBaileysVersion
+    fetchLatestBaileysVersion,
+    Browsers
 } from '@whiskeysockets/baileys';
 import QRCode from 'qrcode';
 import pino from 'pino';
@@ -21,6 +22,7 @@ let status = 'disconnected'; // 'disconnected' | 'connecting' | 'qr_ready' | 'co
 let qrCodeDataUrl = null;
 let connectedUserNumber = null;
 let isInitializing = false;
+let reconnectTimer = null;
 
 try {
     if (!fs.existsSync(SESSIONS_DIR)) {
@@ -31,30 +33,57 @@ try {
 }
 
 export async function iniciarWhatsApp(forceRestart = false) {
-    if (isInitializing && !forceRestart) return { status, qrCode: qrCodeDataUrl };
+    // Se já estiver conectado e não for forçado, não recria socket para não derrubar a sessão ativa
     if (status === 'connected' && sock && !forceRestart) {
         return { status, qrCode: null, userNumber: connectedUserNumber };
     }
 
+    if (isInitializing && !forceRestart) {
+        return { status, qrCode: qrCodeDataUrl, userNumber: connectedUserNumber };
+    }
+
     isInitializing = true;
+    if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+    }
+
+    // Se já existia um socket antigo, fecha e remove todos os listeners para evitar conexões duplicadas
+    if (sock) {
+        try {
+            sock.ev.removeAllListeners();
+            sock.end(undefined);
+        } catch (e) {}
+        sock = null;
+    }
+
     status = 'connecting';
     qrCodeDataUrl = null;
 
     try {
         const { state, saveCreds } = await useMultiFileAuthState(SESSIONS_DIR);
-        const { version } = await fetchLatestBaileysVersion();
+        const { version } = await fetchLatestBaileysVersion().catch(() => ({ version: [2, 3000, 1015901307] }));
 
         sock = makeWASocket({
             version,
             logger: pino({ level: 'silent' }),
             printQRInTerminal: false,
             auth: state,
-            browser: ['EMAUS Barbearia', 'Chrome', '1.0.0'],
+            browser: Browsers.macOS('Desktop'),
             connectTimeoutMs: 60000,
-            defaultQueryTimeoutMs: 60000
+            defaultQueryTimeoutMs: 60000,
+            keepAliveIntervalMs: 25000,
+            generateHighQualityLinkPreview: true,
+            syncFullHistory: false
         });
 
-        sock.ev.on('creds.update', saveCreds);
+        sock.ev.on('creds.update', async () => {
+            try {
+                await saveCreds();
+            } catch (e) {
+                console.warn("Erro ao salvar credenciais WhatsApp:", e.message);
+            }
+        });
 
         sock.ev.on('connection.update', async (update) => {
             const { connection, lastDisconnect, qr } = update;
@@ -87,13 +116,18 @@ export async function iniciarWhatsApp(forceRestart = false) {
 
                 if (shouldReconnect) {
                     status = 'connecting';
-                    setTimeout(() => iniciarWhatsApp(), 3000);
+                    reconnectTimer = setTimeout(() => {
+                        iniciarWhatsApp(false);
+                    }, 5000);
                 } else {
                     status = 'disconnected';
                     qrCodeDataUrl = null;
                     connectedUserNumber = null;
                     try {
-                        fs.rmSync(SESSIONS_DIR, { recursive: true, force: true });
+                        if (fs.existsSync(SESSIONS_DIR)) {
+                            fs.rmSync(SESSIONS_DIR, { recursive: true, force: true });
+                            fs.mkdirSync(SESSIONS_DIR, { recursive: true });
+                        }
                     } catch (e) {}
                 }
             }
@@ -121,6 +155,7 @@ export function obterStatusWhatsApp() {
 export async function desconectarWhatsApp() {
     try {
         if (sock) {
+            try { sock.ev.removeAllListeners(); } catch (e) {}
             await sock.logout();
         }
     } catch (e) {
@@ -129,8 +164,12 @@ export async function desconectarWhatsApp() {
     status = 'disconnected';
     qrCodeDataUrl = null;
     connectedUserNumber = null;
+    sock = null;
     try {
-        fs.rmSync(SESSIONS_DIR, { recursive: true, force: true });
+        if (fs.existsSync(SESSIONS_DIR)) {
+            fs.rmSync(SESSIONS_DIR, { recursive: true, force: true });
+            fs.mkdirSync(SESSIONS_DIR, { recursive: true });
+        }
     } catch (e) {}
     return { success: true, message: 'WhatsApp desconectado com sucesso.' };
 }

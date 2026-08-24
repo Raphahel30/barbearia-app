@@ -2710,6 +2710,8 @@
                 clearTimeout(timeoutId);
                 const data = await res.json();
 
+                const btnGerar = document.getElementById('btnGerarQrCodeWa');
+
                 if (data.status === 'connected') {
                     box.className = "p-4 rounded-xl border flex items-center justify-between bg-green-950/40 border-green-800";
                     icon.className = "w-3.5 h-3.5 rounded-full bg-green-400";
@@ -2726,7 +2728,13 @@
                             ${data.userNumber ? `<p class="text-xs text-dourado font-mono font-bold">+${data.userNumber}</p>` : ''}
                         </div>
                     `;
-                    btnDesconectar.classList.remove('hidden');
+                    if (btnDesconectar) btnDesconectar.classList.remove('hidden');
+                    if (btnGerar) btnGerar.classList.add('hidden');
+
+                    if (waPollingInterval) {
+                        clearInterval(waPollingInterval);
+                        waPollingInterval = null;
+                    }
                 } else if (data.status === 'qr_ready' && data.qrCode) {
                     box.className = "p-4 rounded-xl border flex items-center justify-between bg-amber-950/40 border-amber-800";
                     icon.className = "w-3.5 h-3.5 rounded-full bg-amber-400 animate-pulse";
@@ -2736,7 +2744,8 @@
                     badge.innerText = "QR Code Pronto";
 
                     boxQr.innerHTML = `<img src="${data.qrCode}" class="w-full h-full object-contain rounded-lg shadow-inner" alt="QR Code WhatsApp" />`;
-                    btnDesconectar.classList.add('hidden');
+                    if (btnDesconectar) btnDesconectar.classList.add('hidden');
+                    if (btnGerar) btnGerar.classList.remove('hidden');
                 } else if (data.status === 'connecting') {
                     box.className = "p-4 rounded-xl border flex items-center justify-between bg-zinc-900 border-zinc-800";
                     icon.className = "w-3.5 h-3.5 rounded-full bg-blue-400 animate-pulse";
@@ -2746,7 +2755,8 @@
                     badge.innerText = "Conectando";
 
                     boxQr.innerHTML = `<p class="text-xs text-zinc-400 text-center px-4 animate-pulse">Gerando novo QR Code...</p>`;
-                    btnDesconectar.classList.add('hidden');
+                    if (btnDesconectar) btnDesconectar.classList.add('hidden');
+                    if (btnGerar) btnGerar.classList.remove('hidden');
                 } else {
                     box.className = "p-4 rounded-xl border flex items-center justify-between bg-zinc-900 border-zinc-800";
                     icon.className = "w-3.5 h-3.5 rounded-full bg-zinc-600";
@@ -2756,7 +2766,8 @@
                     badge.innerText = "Desconectado";
 
                     boxQr.innerHTML = `<p class="text-xs text-zinc-500 text-center px-4">Clique no botão abaixo para gerar o QR Code de conexão.</p>`;
-                    btnDesconectar.classList.add('hidden');
+                    if (btnDesconectar) btnDesconectar.classList.add('hidden');
+                    if (btnGerar) btnGerar.classList.remove('hidden');
                 }
             } catch (e) {
                 console.warn("Erro ao consultar status do WhatsApp:", e);

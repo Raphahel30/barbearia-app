@@ -567,7 +567,9 @@ app.get('/api/whatsapp/status', (req, res) => {
 // Inicia ou reinicia conexão para gerar QR Code
 app.post('/api/whatsapp/conectar', async (req, res) => {
     try {
-        const result = await iniciarWhatsApp(true);
+        const waStatus = obterStatusWhatsApp();
+        const force = waStatus.status !== 'connected';
+        const result = await iniciarWhatsApp(force);
         return res.json({ success: true, ...result });
     } catch (err) {
         return res.status(500).json({ success: false, error: err.message });
