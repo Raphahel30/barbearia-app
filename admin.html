@@ -73,7 +73,7 @@
                 <p class="text-xs text-zinc-400">Acesso exclusivo do barbeiro e gestão</p>
             </div>
 
-            <form id="formAdminLogin" class="space-y-4" onsubmit="event.preventDefault(); return false;" action="javascript:void(0);">
+            <form id="formAdminLogin" class="space-y-4">
                 <div>
                     <label class="block text-xs font-semibold uppercase text-zinc-300 mb-1">E-mail do Administrador</label>
                     <input type="email" id="adminEmail" autocomplete="username" required placeholder="Ex: exemplo@gmail.com" class="w-full px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white text-sm focus:outline-none focus:border-dourado transition">
@@ -93,7 +93,7 @@
                     </div>
                 </div>
 
-                <button id="btnAdminLogin" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-bold py-3 rounded-lg uppercase tracking-wider text-xs transition duration-200 cursor-pointer shadow-lg flex items-center justify-center gap-2">
+                <button id="btnAdminLogin" type="submit" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-bold py-3 rounded-lg uppercase tracking-wider text-xs transition duration-200 cursor-pointer shadow-lg flex items-center justify-center gap-2">
                     <span id="labelBtnAdminAuth">Entrar no Painel</span>
                 </button>
             </form>
