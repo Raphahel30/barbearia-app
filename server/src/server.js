@@ -6,7 +6,8 @@ import {
     iniciarWhatsApp, 
     obterStatusWhatsApp, 
     desconectarWhatsApp, 
-    enviarMensagemWhatsApp 
+    enviarMensagemWhatsApp,
+    gerarCodigoPareamentoWhatsApp
 } from './whatsappService.js';
 
 import fs from 'fs';
@@ -927,6 +928,21 @@ app.post('/api/whatsapp/conectar', async (req, res) => {
         const result = await iniciarWhatsApp(force);
         return res.json({ success: true, ...result });
     } catch (err) {
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Gera Código de Pareamento de 8 dígitos para conectar direto pelo celular (sem câmera)
+app.post('/api/whatsapp/codigo-pareamento', async (req, res) => {
+    try {
+        const { telefone } = req.body;
+        if (!telefone) {
+            return res.status(400).json({ success: false, error: 'Digite seu número de WhatsApp com DDD para gerar o código.' });
+        }
+        const resultado = await gerarCodigoPareamentoWhatsApp(telefone);
+        return res.json(resultado);
+    } catch (err) {
+        console.error('Erro na rota codigo-pareamento:', err);
         return res.status(500).json({ success: false, error: err.message });
     }
 });

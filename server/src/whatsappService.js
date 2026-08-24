@@ -174,6 +174,53 @@ export async function desconectarWhatsApp() {
     return { success: true, message: 'WhatsApp desconectado com sucesso.' };
 }
 
+export async function gerarCodigoPareamentoWhatsApp(numeroTelefone) {
+    if (!numeroTelefone) {
+        throw new Error('Número de WhatsApp é obrigatório para gerar o código.');
+    }
+
+    let cleanNumber = String(numeroTelefone).replace(/\D/g, '');
+    if (!cleanNumber.startsWith('55') && (cleanNumber.length === 10 || cleanNumber.length === 11)) {
+        cleanNumber = '55' + cleanNumber;
+    }
+
+    // Se já estiver conectado, avisa
+    if (status === 'connected' && sock) {
+        return { success: true, status: 'connected', userNumber: connectedUserNumber, message: 'WhatsApp já conectado.' };
+    }
+
+    // Inicia socket limpo se necessário
+    if (!sock || status === 'disconnected') {
+        await iniciarWhatsApp(true);
+    }
+
+    // Aguarda o socket estabelecer o handshake inicial
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    if (sock && !sock.authState.creds.registered) {
+        try {
+            const code = await sock.requestPairingCode(cleanNumber);
+            console.log(`📲 [WhatsApp] Código de Pareamento gerado para +${cleanNumber}: ${code}`);
+            return {
+                success: true,
+                status: 'pairing_code_ready',
+                pairingCode: code,
+                userNumber: cleanNumber
+            };
+        } catch (errCode) {
+            console.error('Erro ao solicitar pairing code do Baileys:', errCode);
+            throw new Error('Não foi possível gerar o código. Verifique se o número possui DDD (Ex: 11999999999) e tente novamente.');
+        }
+    } else {
+        return {
+            success: true,
+            status: 'connected',
+            userNumber: connectedUserNumber,
+            message: 'WhatsApp já está conectado.'
+        };
+    }
+}
+
 export async function enviarMensagemWhatsApp(numeroDestino, texto) {
     if (!numeroDestino || !texto) {
         return { success: false, error: 'Número de destino e texto são obrigatórios.' };
@@ -199,3 +246,4 @@ export async function enviarMensagemWhatsApp(numeroDestino, texto) {
         return { success: false, error: err.message };
     }
 }
+

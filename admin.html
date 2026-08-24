@@ -789,22 +789,97 @@
                             </span>
                         </div>
 
-                        <!-- Área do QR Code -->
-                        <div id="containerQrCodeWa" class="flex flex-col items-center justify-center p-6 bg-black rounded-2xl border border-zinc-800 space-y-4">
-                            <div id="boxQrImagem" class="w-64 h-64 bg-zinc-900 rounded-xl flex items-center justify-center border border-zinc-800 p-2 overflow-hidden shadow-2xl">
-                                <p class="text-xs text-zinc-500 text-center px-4">Clique no botão abaixo para gerar o QR Code de conexão.</p>
+                        <!-- SELETOR DE MODO DE CONEXÃO -->
+                        <div class="flex border-b border-zinc-800 gap-2">
+                            <button id="tabWaModoCodigo" type="button" class="flex-1 pb-2.5 font-bold text-xs text-dourado border-b-2 border-dourado uppercase transition cursor-pointer flex items-center justify-center gap-1.5">
+                                <span>📲</span> Conectar pelo Celular (Sem Câmera)
+                            </button>
+                            <button id="tabWaModoQr" type="button" class="flex-1 pb-2.5 font-bold text-xs text-zinc-500 uppercase transition cursor-pointer flex items-center justify-center gap-1.5 hover:text-zinc-300">
+                                <span>📷</span> Conectar via QR Code
+                            </button>
+                        </div>
+
+                        <!-- MODO 1: CÓDIGO DE PAREAMENTO DE 8 DÍGITOS (IDEAL PARA MESMO CELULAR) -->
+                        <div id="viewWaModoCodigo" class="space-y-4 pt-1">
+                            <div class="bg-black p-4 sm:p-5 rounded-2xl border border-zinc-800 space-y-3.5">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="text-2xl">📲</span>
+                                    <div>
+                                        <h4 class="text-xs font-bold text-white uppercase">Conexão Direta no Próprio Celular</h4>
+                                        <p class="text-[11px] text-zinc-400">Gere um código de 8 dígitos para colar direto no seu WhatsApp sem precisar de outro aparelho ou câmera.</p>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-2 pt-1">
+                                    <label class="block text-xs font-semibold text-zinc-300 uppercase">
+                                        Seu Número de WhatsApp (com DDD) *
+                                    </label>
+                                    <div class="flex flex-col sm:flex-row gap-2">
+                                        <input type="tel" id="inputTelefonePareamentoWa" placeholder="11953789095" class="flex-1 px-3.5 py-2.5 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs font-mono focus:outline-none focus:border-dourado">
+                                        <button id="btnGerarCodigoPareamentoWa" type="button" class="bg-dourado hover:bg-[#C5A028] text-black font-bold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition cursor-pointer shadow-lg flex items-center justify-center gap-1.5 whitespace-nowrap">
+                                            <span>📲</span> Gerar Código
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Box onde o código gerado aparece -->
+                                <div id="boxResultadoCodigoPareamento" class="hidden p-4 bg-zinc-900/90 rounded-xl border border-dourado/40 text-center space-y-3">
+                                    <span class="text-[10px] font-bold text-dourado uppercase tracking-widest bg-dourado/10 px-3 py-1 rounded-full border border-dourado/20 inline-block">
+                                        Seu Código de Conexão WhatsApp
+                                    </span>
+                                    
+                                    <div class="flex items-center justify-center gap-3">
+                                        <span id="textoCodigoPareamentoWa" class="text-2xl sm:text-3xl font-extrabold text-white tracking-widest font-mono bg-black px-4 py-2 rounded-xl border border-zinc-700 select-all">
+                                            ---- - ----
+                                        </span>
+                                        <button id="btnCopiarCodigoPareamentoWa" type="button" class="bg-zinc-800 hover:bg-zinc-700 text-dourado font-bold px-3.5 py-2.5 rounded-xl text-xs uppercase transition cursor-pointer border border-zinc-700">
+                                            📋 Copiar
+                                        </button>
+                                    </div>
+
+                                    <!-- Instruções Passo a Passo -->
+                                    <div class="text-left bg-black p-3.5 rounded-xl border border-zinc-800 space-y-2 text-xs text-zinc-300">
+                                        <p class="font-bold text-dourado text-[11px] uppercase">Como conectar no seu WhatsApp:</p>
+                                        <ol class="list-decimal list-inside space-y-1.5 text-[11px] text-zinc-300">
+                                            <li>Clique em <strong>Copiar</strong> no código acima.</li>
+                                            <li>Abra o <strong>WhatsApp</strong> no seu celular.</li>
+                                            <li>Toque nos <strong>3 pontinhos</strong> (ou Configurações) > <strong>Aparelhos Conectados</strong>.</li>
+                                            <li>Toque em <strong>Conectar um aparelho</strong> > Toque em <strong>"Conectar com número de telefone"</strong> (na parte inferior da tela).</li>
+                                            <li>Cole o código copiado e confirme!</li>
+                                        </ol>
+                                    </div>
+
+                                    <div class="pt-1 flex justify-center gap-2">
+                                        <a href="whatsapp://" class="bg-green-600 hover:bg-green-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs uppercase transition shadow-md inline-flex items-center gap-1.5">
+                                            <span>💬</span> Abrir WhatsApp
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
-                            <p class="text-xs text-zinc-400 text-center max-w-sm">
-                                Abra o WhatsApp no seu celular > <strong>Aparelhos Conectados</strong> > <strong>Conectar Aparelho</strong> e aponte a câmera para o QR Code acima.
-                            </p>
-                            <div class="flex flex-wrap items-center justify-center gap-3">
-                                <button id="btnGerarQrCodeWa" type="button" class="bg-dourado hover:bg-[#C5A028] text-black font-bold px-4 py-2.5 rounded-lg text-xs uppercase transition cursor-pointer flex items-center gap-1.5 shadow-lg">
-                                    🔄 Gerar / Conectar QR Code
-                                </button>
-                                <button id="btnDesconectarWa" type="button" class="hidden bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2.5 rounded-lg text-xs uppercase transition cursor-pointer flex items-center gap-1.5 shadow-lg">
-                                    🔌 Sair do Número Atual / Trocar de WhatsApp
-                                </button>
+                        </div>
+
+                        <!-- MODO 2: QR CODE TRADICIONAL (OCULTO POR PADRÃO) -->
+                        <div id="viewWaModoQr" class="space-y-4 pt-1 hidden">
+                            <!-- Área do QR Code -->
+                            <div id="containerQrCodeWa" class="flex flex-col items-center justify-center p-6 bg-black rounded-2xl border border-zinc-800 space-y-4">
+                                <div id="boxQrImagem" class="w-64 h-64 bg-zinc-900 rounded-xl flex items-center justify-center border border-zinc-800 p-2 overflow-hidden shadow-2xl">
+                                    <p class="text-xs text-zinc-500 text-center px-4">Clique no botão abaixo para gerar o QR Code de conexão.</p>
+                                </div>
+                                <p class="text-xs text-zinc-400 text-center max-w-sm">
+                                    Abra o WhatsApp no seu celular > <strong>Aparelhos Conectados</strong> > <strong>Conectar Aparelho</strong> e aponte a câmera para o QR Code acima.
+                                </p>
+                                <div class="flex flex-wrap items-center justify-center gap-3">
+                                    <button id="btnGerarQrCodeWa" type="button" class="bg-dourado hover:bg-[#C5A028] text-black font-bold px-4 py-2.5 rounded-lg text-xs uppercase transition cursor-pointer flex items-center gap-1.5 shadow-lg">
+                                        🔄 Gerar / Conectar QR Code
+                                    </button>
+                                </div>
                             </div>
+                        </div>
+
+                        <div class="flex justify-center pt-2">
+                            <button id="btnDesconectarWa" type="button" class="hidden bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2.5 rounded-lg text-xs uppercase transition cursor-pointer flex items-center gap-1.5 shadow-lg">
+                                🔌 Sair do Número Atual / Trocar de WhatsApp
+                            </button>
                         </div>
 
                         <!-- Teste de Envio Rápido -->
@@ -3619,6 +3694,104 @@
                     msg.innerText = `❌ Falha ao conectar no servidor (${err.message}). Se for a primeira vez no Render, ele pode levar até 40s para acordar.`;
                 }
             }
+        });
+
+        // Alternância de Abas: Conexão por Código vs QR Code
+        const tabWaCodigo = document.getElementById('tabWaModoCodigo');
+        const tabWaQr = document.getElementById('tabWaModoQr');
+        const viewWaCodigo = document.getElementById('viewWaModoCodigo');
+        const viewWaQr = document.getElementById('viewWaModoQr');
+
+        if (tabWaCodigo && tabWaQr && viewWaCodigo && viewWaQr) {
+            tabWaCodigo.addEventListener('click', () => {
+                tabWaCodigo.className = "flex-1 pb-2.5 font-bold text-xs text-dourado border-b-2 border-dourado uppercase transition cursor-pointer flex items-center justify-center gap-1.5";
+                tabWaQr.className = "flex-1 pb-2.5 font-bold text-xs text-zinc-500 uppercase transition cursor-pointer flex items-center justify-center gap-1.5 hover:text-zinc-300";
+                viewWaCodigo.classList.remove('hidden');
+                viewWaQr.classList.add('hidden');
+            });
+
+            tabWaQr.addEventListener('click', () => {
+                tabWaQr.className = "flex-1 pb-2.5 font-bold text-xs text-dourado border-b-2 border-dourado uppercase transition cursor-pointer flex items-center justify-center gap-1.5";
+                tabWaCodigo.className = "flex-1 pb-2.5 font-bold text-xs text-zinc-500 uppercase transition cursor-pointer flex items-center justify-center gap-1.5 hover:text-zinc-300";
+                viewWaQr.classList.remove('hidden');
+                viewWaCodigo.classList.add('hidden');
+            });
+        }
+
+        // Geração do Código de Pareamento de 8 dígitos para o Celular
+        document.getElementById('btnGerarCodigoPareamentoWa')?.addEventListener('click', async () => {
+            const inputTel = document.getElementById('inputTelefonePareamentoWa');
+            const boxRes = document.getElementById('boxResultadoCodigoPareamento');
+            const textoCodigo = document.getElementById('textoCodigoPareamentoWa');
+            const btn = document.getElementById('btnGerarCodigoPareamentoWa');
+
+            let tel = (inputTel?.value || whatsAppNumeroAtivo || '').replace(/\D/g, '');
+            if (!tel || tel.length < 10) {
+                alert("Por favor, digite seu número de WhatsApp completo com DDD (Ex: 11953789095) para gerar o código.");
+                if (inputTel) inputTel.focus();
+                return;
+            }
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = "⏳ Solicitando...";
+            }
+
+            try {
+                const backendUrl = getBackendUrlAtivo();
+                const resp = await fetch(`${backendUrl}/api/whatsapp/codigo-pareamento`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telefone: tel })
+                });
+
+                const data = await resp.json();
+
+                if (data.success && data.pairingCode) {
+                    if (boxRes) boxRes.classList.remove('hidden');
+                    if (textoCodigo) textoCodigo.innerText = data.pairingCode;
+
+                    // Inicia monitoramento automático para avisar assim que conectar
+                    if (waPollingInterval) clearInterval(waPollingInterval);
+                    waPollingInterval = setInterval(async () => {
+                        await carregarStatusWhatsAppBot();
+                    }, 3000);
+                } else if (data.status === 'connected') {
+                    alert("Seu WhatsApp já está conectado!");
+                    await carregarStatusWhatsAppBot();
+                } else {
+                    throw new Error(data.error || "Não foi possível obter o código de pareamento.");
+                }
+            } catch (err) {
+                alert("Erro ao gerar código: " + err.message);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = "<span>📲</span> Gerar Código";
+                }
+            }
+        });
+
+        // Copiar Código de Pareamento com 1 clique
+        document.getElementById('btnCopiarCodigoPareamentoWa')?.addEventListener('click', () => {
+            const textoCodigo = document.getElementById('textoCodigoPareamentoWa');
+            const btnCopiar = document.getElementById('btnCopiarCodigoPareamentoWa');
+            const codigo = textoCodigo ? textoCodigo.innerText.trim() : '';
+
+            if (!codigo || codigo.includes('- -')) return;
+
+            navigator.clipboard.writeText(codigo).then(() => {
+                if (btnCopiar) {
+                    btnCopiar.innerText = "✅ Copiado!";
+                    btnCopiar.className = "bg-green-600 text-white font-bold px-3.5 py-2.5 rounded-xl text-xs uppercase transition cursor-pointer";
+                    setTimeout(() => {
+                        btnCopiar.innerText = "📋 Copiar";
+                        btnCopiar.className = "bg-zinc-800 hover:bg-zinc-700 text-dourado font-bold px-3.5 py-2.5 rounded-xl text-xs uppercase transition cursor-pointer border border-zinc-700";
+                    }, 2500);
+                }
+            }).catch(() => {
+                alert("Código: " + codigo);
+            });
         });
 
         document.getElementById('btnGerarQrCodeWa')?.addEventListener('click', async () => {
