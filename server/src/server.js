@@ -278,6 +278,11 @@ if (!process.env.VERCEL) {
     } catch (e) {
         console.warn("Aviso WhatsApp:", e.message);
     }
+
+    // Keep-alive interno para manter o Render acordado 24/7
+    setInterval(() => {
+        https.get('https://barbearia-app-1bf5.onrender.com/health', () => {}).on('error', () => {});
+    }, 10 * 60 * 1000);
 }
 
 // Endpoint de Recuperação de Senha com Link Direto na Tela de Luxo

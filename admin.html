@@ -1221,9 +1221,9 @@
         const ADMIN_EMAILS = ["aldo540@outlook.com", "rafaelcassu@hotmail.com"];
         const BACKEND_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:')
             ? 'http://localhost:3000'
-            : '';
+            : 'https://barbearia-app-1bf5.onrender.com';
 
-        let configWhatsappUrlGlobal = "";
+        let configWhatsappUrlGlobal = "https://barbearia-app-1bf5.onrender.com";
 
         function getBackendUrlAtivo() {
             if (configWhatsappUrlGlobal && configWhatsappUrlGlobal.trim()) {
