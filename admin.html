@@ -885,10 +885,11 @@
                                     </div>
 
                                     <div class="pt-1 flex flex-col sm:flex-row justify-center items-center gap-2">
-                                        <a href="whatsapp://" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs uppercase transition shadow-md inline-flex items-center justify-center gap-2">
+                                        <button type="button" id="btnAbrirAppWhatsApp" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-extrabold px-6 py-3 rounded-xl text-xs uppercase tracking-wider transition cursor-pointer shadow-lg inline-flex items-center justify-center gap-2">
                                             <span>💬</span> Abrir WhatsApp para Colar o Código
-                                        </a>
+                                        </button>
                                     </div>
+                                    <p id="msgFeedbackAbrirWa" class="text-[11px] text-zinc-400 text-center font-medium min-h-[16px]"></p>
                                 </div>
                             </div>
                         </div>
@@ -3827,6 +3828,57 @@
             }).catch(() => {
                 alert("Código: " + codigo);
             });
+        });
+
+        // Abrir WhatsApp no dispositivo móvel ou web
+        document.getElementById('btnAbrirAppWhatsApp')?.addEventListener('click', () => {
+            const textoCodigo = document.getElementById('textoCodigoPareamentoWa');
+            const msgFeedback = document.getElementById('msgFeedbackAbrirWa');
+            const codigo = textoCodigo ? textoCodigo.innerText.trim() : '';
+
+            // 1. Copia o código para a área de transferência automaticamente
+            if (codigo && !codigo.includes('- -')) {
+                try {
+                    navigator.clipboard.writeText(codigo);
+                } catch (e) {
+                    console.warn("Erro ao copiar código:", e);
+                }
+            }
+
+            if (msgFeedback) {
+                msgFeedback.className = "text-[11px] text-green-400 text-center font-bold animate-pulse";
+                msgFeedback.innerText = "✅ Código copiado! Abrindo WhatsApp... Vá em Aparelhos Conectados > Conectar com número de telefone.";
+                setTimeout(() => {
+                    if (msgFeedback) msgFeedback.className = "text-[11px] text-zinc-400 text-center font-medium min-h-[16px]";
+                }, 5000);
+            }
+
+            // 2. Tenta abrir o WhatsApp nativo
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera || '';
+            const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+            const isAndroid = /Android/.test(userAgent);
+
+            if (isAndroid) {
+                // Tenta abrir pelo Intent nativo do Android
+                window.location.href = "intent://#Intent;package=com.whatsapp;scheme=whatsapp;end;";
+                setTimeout(() => {
+                    window.location.href = "whatsapp://";
+                }, 400);
+                setTimeout(() => {
+                    window.location.href = "https://wa.me";
+                }, 1200);
+            } else if (isIOS) {
+                window.location.href = "whatsapp://app";
+                setTimeout(() => {
+                    window.location.href = "whatsapp://";
+                }, 400);
+                setTimeout(() => {
+                    window.location.href = "https://wa.me";
+                }, 1200);
+            } else {
+                // No computador / Web
+                window.open("https://web.whatsapp.com", "_blank");
+            }
         });
 
         document.getElementById('btnGerarQrCodeWa')?.addEventListener('click', async () => {
