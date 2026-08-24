@@ -413,9 +413,9 @@ app.post('/api/pagamento/testar-token', async (req, res) => {
                 description: 'Verificacao de Conexao EMAUS Barbearia',
                 payment_method_id: 'pix',
                 payer: {
-                    email: 'verificacao_token_emaus@testuser.com',
-                    first_name: 'Teste',
-                    last_name: 'Barbearia'
+                    email: 'cliente.teste.emaus@gmail.com',
+                    first_name: 'Cliente',
+                    last_name: 'Teste'
                 }
             }
         });
