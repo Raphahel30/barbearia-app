@@ -2819,17 +2819,52 @@
         if (btnFecharModalProdutoAdmin) btnFecharModalProdutoAdmin.addEventListener('click', fecharModalProduto);
         if (btnCancelarProdutoAdmin) btnCancelarProdutoAdmin.addEventListener('click', fecharModalProduto);
 
-        // Preview da foto no upload
+        // Compressão automática e ultra-rápida de fotos para o banco de dados
+        function comprimirImagemProduto(file, maxDim = 500, qualidade = 0.8) {
+            return new Promise((resolve) => {
+                if (!file || !file.type.startsWith('image/')) {
+                    return resolve("");
+                }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        let w = img.width;
+                        let h = img.height;
+                        if (w > h) {
+                            if (w > maxDim) {
+                                h = Math.round((h * maxDim) / w);
+                                w = maxDim;
+                            }
+                        } else {
+                            if (h > maxDim) {
+                                w = Math.round((w * maxDim) / h);
+                                h = maxDim;
+                            }
+                        }
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        resolve(canvas.toDataURL('image/jpeg', qualidade));
+                    };
+                    img.onerror = () => resolve(e.target.result);
+                    img.src = e.target.result;
+                };
+                reader.onerror = () => resolve("");
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Preview da foto no upload com compressão instantânea
         if (inputFotoProdutoArquivo) {
-            inputFotoProdutoArquivo.addEventListener('change', function(e) {
+            inputFotoProdutoArquivo.addEventListener('change', async function(e) {
                 const file = e.target.files[0];
                 if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function(evt) {
-                        fotoProdutoBase64Temp = evt.target.result;
-                        previewFotoProduto.innerHTML = `<img src="${fotoProdutoBase64Temp}" class="w-full h-full object-cover rounded-xl" alt="Preview">`;
-                    };
-                    reader.readAsDataURL(file);
+                    previewFotoProduto.innerHTML = `<span class="text-xs animate-pulse">⏳</span>`;
+                    fotoProdutoBase64Temp = await comprimirImagemProduto(file, 500, 0.8);
+                    previewFotoProduto.innerHTML = `<img src="${fotoProdutoBase64Temp}" class="w-full h-full object-cover rounded-xl" alt="Preview">`;
                 }
             });
         }
@@ -2856,7 +2891,6 @@
                 const tipoUnidade = document.getElementById('selectTipoUnidadeProduto').value;
                 const volumeUnidade = document.getElementById('inputVolumeUnidadeProduto').value.trim();
                 const urlDigitada = document.getElementById('inputFotoProdutoUrl').value.trim();
-                const fotoUrl = fotoProdutoBase64Temp || urlDigitada || "";
                 const msg = document.getElementById('msgFormProdutoStatus');
                 const btnSalvar = document.getElementById('btnSalvarProdutoAdmin');
 
@@ -2869,13 +2903,22 @@
                 }
 
                 btnSalvar.disabled = true;
-                btnSalvar.innerHTML = "⏳ Salvando...";
+                btnSalvar.innerHTML = "⏳ Gravando...";
                 if (msg) {
                     msg.className = "text-xs text-center font-medium text-amber-300";
                     msg.innerText = "Gravando produto no banco de dados...";
                 }
 
                 try {
+                    // Garante compressão se selecionou arquivo mas ainda não concluiu
+                    let fotoUrl = fotoProdutoBase64Temp;
+                    if (!fotoUrl && inputFotoProdutoArquivo?.files?.[0]) {
+                        fotoUrl = await comprimirImagemProduto(inputFotoProdutoArquivo.files[0], 500, 0.8);
+                    }
+                    if (!fotoUrl && urlDigitada) {
+                        fotoUrl = urlDigitada;
+                    }
+
                     const dados = {
                         nome,
                         descricao,
@@ -2883,7 +2926,7 @@
                         estoque: Math.max(0, estoque),
                         tipoUnidade,
                         volumeUnidade: volumeUnidade || (tipoUnidade === 'ml' ? '150ml' : (tipoUnidade === 'g' ? '100g' : (tipoUnidade === 'L' ? '1L' : '1 un'))),
-                        fotoUrl,
+                        fotoUrl: fotoUrl || "",
                         ativo: true,
                         atualizadoEm: new Date().toISOString()
                     };
@@ -2895,16 +2938,9 @@
                         await addDoc(collection(db, "produtos"), dados);
                     }
 
-                    if (msg) {
-                        msg.className = "text-xs text-center font-bold text-green-400";
-                        msg.innerText = "✅ Produto salvo com sucesso!";
-                    }
-
-                    setTimeout(() => {
-                        fecharModalProduto();
-                        btnSalvar.disabled = false;
-                        btnSalvar.innerHTML = "💾 Salvar Produto";
-                    }, 800);
+                    fecharModalProduto();
+                    btnSalvar.disabled = false;
+                    btnSalvar.innerHTML = "💾 Salvar Produto";
 
                     await carregarProdutosAdmin();
 
