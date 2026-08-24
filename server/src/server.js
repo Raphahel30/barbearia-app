@@ -316,19 +316,63 @@ app.post('/api/auth/recuperar-senha', async (req, res) => {
 // Initialize Mercado Pago SDK client
 let activeAccessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN || '';
 let client = new MercadoPagoConfig({ 
-    accessToken: activeAccessToken,
+    accessToken: activeAccessToken || 'DUMMY_TOKEN',
     options: { timeout: 10000 }
 });
 let paymentClient = new Payment(client);
 let refundClient = new PaymentRefund(client);
 
+// Função para buscar e sincronizar token do Mercado Pago direto do Firestore
+async function carregarConfiguracoesMercadoPagoFirestore() {
+    try {
+        const token = await getGoogleAccessToken();
+        if (!token) return;
+        const data = await new Promise((resolve, reject) => {
+            const req = https.request({
+                hostname: 'firestore.googleapis.com',
+                path: `/v1/projects/${serviceAccount.project_id}/databases/(default)/documents/configuracoes/pagamento`,
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            }, (res) => {
+                let body = '';
+                res.on('data', chunk => body += chunk);
+                res.on('end', () => {
+                    try { resolve(JSON.parse(body)); } catch(e) { resolve(null); }
+                });
+            });
+            req.on('error', reject);
+            req.end();
+        });
+
+        if (data && data.fields && data.fields.mpAccessToken && data.fields.mpAccessToken.stringValue) {
+            const tokenMp = data.fields.mpAccessToken.stringValue.trim();
+            if (tokenMp && tokenMp !== 'SEU_ACCESS_TOKEN_AQUI' && tokenMp !== activeAccessToken) {
+                activeAccessToken = tokenMp;
+                client = new MercadoPagoConfig({ accessToken: activeAccessToken, options: { timeout: 10000 } });
+                paymentClient = new Payment(client);
+                refundClient = new PaymentRefund(client);
+                console.log(`💳 [Mercado Pago] Token sincronizado com sucesso do Firestore: ${activeAccessToken.slice(0, 10)}...`);
+            }
+        }
+    } catch (e) {
+        console.warn("Aviso ao carregar token do Mercado Pago no Firestore:", e.message);
+    }
+}
+
+// Inicializa o token do Mercado Pago na inicialização
+carregarConfiguracoesMercadoPagoFirestore();
+
 // Health check endpoint
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
+    if (!activeAccessToken || activeAccessToken === 'SEU_ACCESS_TOKEN_AQUI') {
+        await carregarConfiguracoesMercadoPagoFirestore();
+    }
     const waStatus = obterStatusWhatsApp();
     res.json({ 
         status: 'ok', 
         message: 'EMAUS Barbearia Backend Online',
         hasToken: Boolean(activeAccessToken && activeAccessToken !== 'SEU_ACCESS_TOKEN_AQUI'),
+        tokenType: activeAccessToken.startsWith('TEST') ? 'TEST' : (activeAccessToken.startsWith('APP_USR') ? 'PROD' : 'UNKNOWN'),
         whatsapp: {
             status: waStatus.status,
             connectedUser: waStatus.userNumber
@@ -350,6 +394,55 @@ app.post('/api/configuracoes/mercadopago', (req, res) => {
     return res.status(400).json({ error: 'Token invalido.' });
 });
 
+// Endpoint de Teste em tempo real do Token do Mercado Pago
+app.post('/api/pagamento/testar-token', async (req, res) => {
+    const { accessToken } = req.body;
+    const tokenParaTestar = (accessToken && accessToken.trim()) ? accessToken.trim() : activeAccessToken;
+
+    if (!tokenParaTestar || tokenParaTestar === 'SEU_ACCESS_TOKEN_AQUI') {
+        return res.status(400).json({ success: false, error: 'Nenhum token fornecido para teste.' });
+    }
+
+    try {
+        const testClient = new MercadoPagoConfig({ accessToken: tokenParaTestar, options: { timeout: 10000 } });
+        const testPayment = new Payment(testClient);
+
+        const resp = await testPayment.create({
+            body: {
+                transaction_amount: 1.00,
+                description: 'Verificacao de Conexao EMAUS Barbearia',
+                payment_method_id: 'pix',
+                payer: {
+                    email: 'verificacao_token_emaus@testuser.com',
+                    first_name: 'Teste',
+                    last_name: 'Barbearia'
+                }
+            }
+        });
+
+        const isTest = tokenParaTestar.startsWith('TEST');
+        return res.json({
+            success: true,
+            ambiente: isTest ? 'Modo Teste (Sandbox)' : 'Produção Real',
+            id: resp.id,
+            status: resp.status,
+            message: `Token válido e funcionando com sucesso em modo ${isTest ? 'Teste (TEST-)' : 'Produção (APP_USR-)'}!`
+        });
+
+    } catch (err) {
+        console.error("Erro no teste de token Mercado Pago:", err);
+        let errorMsg = err.message || 'Erro desconhecido ao validar token com o Mercado Pago.';
+        if (errorMsg.includes('Unauthorized use of live credentials')) {
+            errorMsg = 'O Mercado Pago recusou o token porque ele é de Produção (APP_USR) e sua conta de desenvolvedor ainda não ativou as credenciais de produção no painel do Mercado Pago. Para testar agora, use o Token de Teste (iniciado em TEST-).';
+        }
+        return res.status(400).json({
+            success: false,
+            error: errorMsg,
+            details: err.cause || err.api_response || null
+        });
+    }
+});
+
 // Endpoint to create Pix payment
 app.post('/api/pagamento/pix', async (req, res) => {
     try {
@@ -360,8 +453,12 @@ app.post('/api/pagamento/pix', async (req, res) => {
         }
 
         if (!activeAccessToken || activeAccessToken === 'SEU_ACCESS_TOKEN_AQUI') {
+            await carregarConfiguracoesMercadoPagoFirestore();
+        }
+
+        if (!activeAccessToken || activeAccessToken === 'SEU_ACCESS_TOKEN_AQUI') {
             return res.status(500).json({ 
-                error: 'Access Token do Mercado Pago nao configurado no servidor. Configure a variavel MERCADO_PAGO_ACCESS_TOKEN no arquivo .env.' 
+                error: 'Access Token do Mercado Pago não configurado no servidor. Salve as credenciais no painel admin.' 
             });
         }
 
@@ -397,8 +494,13 @@ app.post('/api/pagamento/pix', async (req, res) => {
         });
     } catch (error) {
         console.error('Erro ao criar pagamento Pix:', error);
+        let userMessage = error.message || 'Erro ao processar pagamento Pix no Mercado Pago.';
+        if (userMessage.includes('Unauthorized use of live credentials')) {
+            userMessage = 'O Mercado Pago recusou o token de produção (APP_USR). Ative suas credenciais de produção no painel do Mercado Pago Developers ou use o Token de Teste (iniciado em TEST-).';
+        }
         return res.status(500).json({ 
-            error: error.message || 'Erro ao processar pagamento Pix no Mercado Pago.' 
+            error: userMessage,
+            details: error.cause || error.api_response || null
         });
     }
 });
@@ -413,8 +515,12 @@ app.post('/api/pagamento/cartao', async (req, res) => {
         }
 
         if (!activeAccessToken || activeAccessToken === 'SEU_ACCESS_TOKEN_AQUI') {
+            await carregarConfiguracoesMercadoPagoFirestore();
+        }
+
+        if (!activeAccessToken || activeAccessToken === 'SEU_ACCESS_TOKEN_AQUI') {
             return res.status(500).json({ 
-                error: 'Access Token do Mercado Pago nao configurado no servidor.' 
+                error: 'Access Token do Mercado Pago não configurado no servidor. Salve as credenciais no painel admin.' 
             });
         }
 
@@ -475,9 +581,13 @@ app.post('/api/pagamento/estorno', async (req, res) => {
         }
 
         if (!activeAccessToken || activeAccessToken === 'SEU_ACCESS_TOKEN_AQUI') {
+            await carregarConfiguracoesMercadoPagoFirestore();
+        }
+
+        if (!activeAccessToken || activeAccessToken === 'SEU_ACCESS_TOKEN_AQUI') {
             return res.status(500).json({ 
                 success: false, 
-                error: 'Token do Mercado Pago não configurado no servidor.' 
+                error: 'Token do Mercado Pago não configurado no servidor. Salve as credenciais no painel admin.' 
             });
         }
 
