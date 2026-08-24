@@ -657,7 +657,42 @@
 
                     <p id="msgConfigMpStatus" class="text-xs text-center font-medium"></p>
 
-                    <!-- Bloco 3: Configurações Complementares (Chave Pix e WhatsApp) -->
+                    <!-- Bloco 3: Repasse de Taxas de Cartão para o Cliente -->
+                    <div class="space-y-4 pt-2 border-t border-zinc-800/80">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-dourado bg-dourado/10 border border-dourado/30 px-2.5 py-0.5 rounded-full">
+                                Lei nº 13.455/2017
+                            </span>
+                            <h4 class="text-xs font-bold text-white uppercase tracking-wider mt-2">💳 Repasse de Taxa de Cartão para o Cliente (Opcional)</h4>
+                            <p class="text-[11px] text-zinc-400 mt-0.5">Defina a porcentagem de taxa a ser repassada nas compras no cartão. O site calculará o valor e as parcelas automaticamente no checkout para que você receba o valor integral líquido.</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-zinc-300 uppercase mb-1">
+                                    Taxa no Crédito (%)
+                                </label>
+                                <div class="relative">
+                                    <input type="number" id="inputTaxaCartaoCredito" step="0.01" min="0" max="50" placeholder="Ex: 4.99" class="w-full px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado pr-8">
+                                    <span class="absolute inset-y-0 right-3 flex items-center text-xs font-bold text-zinc-500">%</span>
+                                </div>
+                                <p class="text-[10px] text-zinc-500 mt-1">Ex: 4.99 (ou 0 para não cobrar taxa no crédito).</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-zinc-300 uppercase mb-1">
+                                    Taxa no Débito (%)
+                                </label>
+                                <div class="relative">
+                                    <input type="number" id="inputTaxaCartaoDebito" step="0.01" min="0" max="50" placeholder="Ex: 1.99" class="w-full px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado pr-8">
+                                    <span class="absolute inset-y-0 right-3 flex items-center text-xs font-bold text-zinc-500">%</span>
+                                </div>
+                                <p class="text-[10px] text-zinc-500 mt-1">Ex: 1.99 (ou 0 para não cobrar taxa no débito).</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bloco 4: Configurações Complementares (Chave Pix e WhatsApp) -->
                     <div class="space-y-4 pt-2 border-t border-zinc-800/80">
                         <h4 class="text-xs font-bold text-zinc-400 uppercase tracking-wider">Dados Adicionais de Recebimento & Contato</h4>
                         <div>
@@ -677,7 +712,7 @@
 
                         <div class="pt-2">
                             <button id="btnSalvarConfigMp" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-bold py-3 rounded-lg uppercase tracking-wider text-xs transition cursor-pointer shadow-lg">
-                                💾 Salvar Chave Pix & WhatsApp
+                                💾 Salvar Taxas, Chave Pix & WhatsApp
                             </button>
                         </div>
                     </div>
@@ -3112,6 +3147,14 @@
                 const configSnap = await getDoc(doc(db, "configuracoes", "pagamento"));
                 let data = configSnap.exists() ? configSnap.data() : {};
 
+                if (data.taxaCartaoCredito !== undefined) {
+                    const inputTaxaCred = document.getElementById('inputTaxaCartaoCredito');
+                    if (inputTaxaCred) inputTaxaCred.value = data.taxaCartaoCredito;
+                }
+                if (data.taxaCartaoDebito !== undefined) {
+                    const inputTaxaDeb = document.getElementById('inputTaxaCartaoDebito');
+                    if (inputTaxaDeb) inputTaxaDeb.value = data.taxaCartaoDebito;
+                }
                 if (data.mpAccessToken) {
                     const inputManual = document.getElementById('inputMpAccessToken');
                     if (inputManual) inputManual.value = data.mpAccessToken;
@@ -3217,24 +3260,28 @@
             });
         }
 
-        // 3. Botão Salvar Chave Pix Manual e WhatsApp
+        // 3. Botão Salvar Taxas de Cartão, Chave Pix Manual e WhatsApp
         document.getElementById('btnSalvarConfigMp').addEventListener('click', async () => {
             const pixManual = document.getElementById('inputPixManual').value.trim();
             const whatsappAdmin = document.getElementById('inputWhatsappAdmin').value.replace(/\D/g, '');
+            const taxaCredito = parseFloat(document.getElementById('inputTaxaCartaoCredito')?.value || 0);
+            const taxaDebito = parseFloat(document.getElementById('inputTaxaCartaoDebito')?.value || 0);
             const msg = document.getElementById('msgConfigMpStatus');
 
             msg.className = "text-xs text-center font-medium text-amber-300";
-            msg.innerText = "Salvando configurações de contato...";
+            msg.innerText = "Salvando configurações...";
 
             try {
                 await setDoc(doc(db, "configuracoes", "pagamento"), {
                     pixManual: pixManual || '11953789095',
                     whatsappAdmin: whatsappAdmin || '5511953789095',
+                    taxaCartaoCredito: isNaN(taxaCredito) ? 0 : taxaCredito,
+                    taxaCartaoDebito: isNaN(taxaDebito) ? 0 : taxaDebito,
                     atualizadoEm: new Date()
                 }, { merge: true });
 
                 msg.className = "text-xs text-center font-bold text-green-400";
-                msg.innerText = "✅ Dados de recebimento e WhatsApp salvos com sucesso!";
+                msg.innerText = "✅ Taxas, Chave Pix e WhatsApp salvos com sucesso!";
             } catch (e) {
                 msg.className = "text-xs text-center font-medium text-red-400";
                 msg.innerText = "Erro ao salvar: " + e.message;
