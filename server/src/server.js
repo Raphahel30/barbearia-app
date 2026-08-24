@@ -314,9 +314,9 @@ app.post('/api/auth/recuperar-senha', async (req, res) => {
 });
 
 // Initialize Mercado Pago SDK client
-let activeAccessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN || '';
+let activeAccessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN || 'APP_USR-356528958695682-082013-7407bc73edb79b15fbed52829659559d-201897880';
 let client = new MercadoPagoConfig({ 
-    accessToken: activeAccessToken || 'DUMMY_TOKEN',
+    accessToken: activeAccessToken,
     options: { timeout: 10000 }
 });
 let paymentClient = new Payment(client);
