@@ -1129,6 +1129,62 @@ app.post('/api/whatsapp/notificar-compra-plano', async (req, res) => {
     }
 });
 
+// Notificação Instantânea de Compra de Produtos da Barbearia (Barbeiro + Cliente)
+app.post('/api/whatsapp/notificar-compra-produto', async (req, res) => {
+    try {
+        const {
+            cliente,
+            telefone,
+            produtos,
+            valorTotal,
+            metodoPagamento,
+            whatsappBarbeiro
+        } = req.body;
+
+        const numBarbeiro = whatsappBarbeiro || '5511953789095';
+        const totalNum = Number(valorTotal || 0);
+
+        let itensTexto = '';
+        if (Array.isArray(produtos)) {
+            itensTexto = produtos.map(p => `  ▫️ ${p.quantidade || 1}x ${p.nome} ${p.volumeUnidade ? '(' + p.volumeUnidade + ')' : ''} - R$ ${Number(p.subtotal || (p.preco * (p.quantidade || 1))).toFixed(2)}`).join('\n');
+        } else if (typeof produtos === 'string') {
+            itensTexto = `  ▫️ ${produtos}`;
+        } else {
+            itensTexto = `  ▫️ Produtos da Barbearia`;
+        }
+
+        // 1. Mensagem para o Barbeiro
+        const msgBarbeiro = `🛍️ *EMAÚS Barbearia - Nova Venda de Produto!*\n\n` +
+            `Temos um novo pedido pago pelo site:\n\n` +
+            `• *Cliente:* ${cliente || 'Cliente'}\n` +
+            `• *Telefone:* ${telefone || 'Não informado'}\n` +
+            `• *Itens Comprados:*\n${itensTexto}\n\n` +
+            `• *Total Pago:* R$ ${totalNum.toFixed(2)} (${metodoPagamento || 'Pix'})\n` +
+            `• *Status:* ✅ Pagamento Aprovado - Separar para Retirada!`;
+
+        const envioBarbeiro = await enviarMensagemWhatsApp(numBarbeiro, msgBarbeiro);
+
+        // 2. Mensagem de Confirmação para o Cliente
+        let envioCliente = null;
+        if (telefone) {
+            const msgCliente = `🛍️ *EMAÚS Barbearia - Compra Confirmada!*\n\n` +
+                `Olá, *${cliente || 'Cliente'}*!\n` +
+                `Recebemos o seu pedido e o seu pagamento via Pix foi *aprovado com sucesso*!\n\n` +
+                `• *Itens do seu Pedido:*\n${itensTexto}\n\n` +
+                `• *Valor Total Pago:* R$ ${totalNum.toFixed(2)}\n\n` +
+                `📍 *Retirada:* Seus produtos já estão reservados e podem ser retirados diretamente na Barbearia EMAÚS no seu próximo atendimento ou quando você passar por aqui.\n\n` +
+                `Agradecemos a sua preferência! 💈✨`;
+
+            envioCliente = await enviarMensagemWhatsApp(telefone, msgCliente);
+        }
+
+        return res.json({ success: true, barbeiro: envioBarbeiro, cliente: envioCliente });
+    } catch (err) {
+        console.error('Erro na rota notificar-compra-produto:', err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // Rota para disparar checagem e envio de lembretes 4h antes (pode ser chamada por Cron ou manualmente)
 app.all('/api/whatsapp/disparar-lembretes-4h', async (req, res) => {
     try {

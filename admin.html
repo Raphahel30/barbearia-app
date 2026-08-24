@@ -158,6 +158,10 @@
                     <span class="text-lg">✂️</span>
                     <span>Serviços & Preços</span>
                 </button>
+                <button id="tabNavProducts" class="sidebar-link w-full text-left">
+                    <span class="text-lg">📦</span>
+                    <span>Produtos & Estoque</span>
+                </button>
                 <button id="tabNavBlockDays" class="sidebar-link w-full text-left">
                     <span class="text-lg">🚫</span>
                     <span>Dias Fechados</span>
@@ -496,6 +500,73 @@
                         <div id="listaPlanosAdmin" class="space-y-2.5">
                             <p class="text-xs text-zinc-500">Carregando planos...</p>
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ABA: GESTÃO DE PRODUTOS & ESTOQUE (LOJA DA BARBEARIA) -->
+            <section id="viewProducts" class="space-y-6 hidden">
+                <!-- Resumo / Métricas de Estoque -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="card-dark p-5 rounded-2xl border border-zinc-800 flex items-center justify-between shadow-lg">
+                        <div>
+                            <p class="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Total de Produtos</p>
+                            <h3 id="statTotalProdutos" class="text-2xl font-bold text-white mt-1">0</h3>
+                        </div>
+                        <div class="w-11 h-11 rounded-xl bg-dourado/10 border border-dourado/20 flex items-center justify-center text-xl">
+                            📦
+                        </div>
+                    </div>
+                    <div class="card-dark p-5 rounded-2xl border border-zinc-800 flex items-center justify-between shadow-lg">
+                        <div>
+                            <p class="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Itens em Estoque</p>
+                            <h3 id="statEstoqueTotal" class="text-2xl font-bold text-green-400 mt-1">0</h3>
+                        </div>
+                        <div class="w-11 h-11 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center text-xl">
+                            ✅
+                        </div>
+                    </div>
+                    <div class="card-dark p-5 rounded-2xl border border-zinc-800 flex items-center justify-between shadow-lg">
+                        <div>
+                            <p class="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Produtos Esgotados</p>
+                            <h3 id="statProdutosEsgotados" class="text-2xl font-bold text-red-400 mt-1">0</h3>
+                        </div>
+                        <div class="w-11 h-11 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-xl">
+                            ⚠️
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Painel de Gestão e Lista de Produtos -->
+                <div class="card-dark p-6 rounded-2xl border border-zinc-800 space-y-5 shadow-xl">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-zinc-800 pb-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-white uppercase flex items-center gap-2">
+                                <span>🛍️</span> Produtos da Barbearia & Controle de Estoque
+                            </h2>
+                            <p class="text-xs text-zinc-400 mt-0.5">Cadastre pomadas, óleos, tônicos e minoxidil para venda no site ou direto no balcão.</p>
+                        </div>
+                        <button id="btnAbrirModalNovoProduto" type="button" class="bg-dourado hover:bg-[#C5A028] text-black font-bold py-2.5 px-4 rounded-xl text-xs uppercase tracking-wider transition cursor-pointer shadow-lg inline-flex items-center gap-2 whitespace-nowrap">
+                            <span>➕</span> Novo Produto
+                        </button>
+                    </div>
+
+                    <!-- Barra de Busca e Filtro de Estoque -->
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <div class="relative flex-1">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-zinc-400 text-xs">🔍</span>
+                            <input type="text" id="inputBuscarProdutoAdmin" placeholder="Buscar produto por nome..." class="w-full pl-9 pr-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                        </div>
+                        <select id="selectFiltroEstoqueAdmin" class="px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado cursor-pointer">
+                            <option value="todos">Todos os Produtos</option>
+                            <option value="disponivel">Apenas em Estoque</option>
+                            <option value="esgotado">Apenas Esgotados</option>
+                        </select>
+                    </div>
+
+                    <!-- Grid de Produtos Cadastrados -->
+                    <div id="gridProdutosAdmin" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pt-1">
+                        <p class="text-xs text-zinc-500 text-center col-span-full py-8">Carregando produtos...</p>
                     </div>
                 </div>
             </section>
@@ -897,6 +968,90 @@
         </div>
     </div>
 
+    <!-- MODAL DE CADASTRO E EDIÇÃO DE PRODUTO -->
+    <div id="modalProdutoAdmin" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div class="bg-zinc-900 border border-zinc-700 p-6 sm:p-7 rounded-3xl max-w-lg w-full space-y-4 shadow-2xl relative my-6 animate-fade-in">
+            <button id="btnFecharModalProdutoAdmin" type="button" class="absolute top-4 right-4 text-zinc-400 hover:text-white text-xl font-bold transition cursor-pointer">&times;</button>
+            
+            <div class="space-y-1">
+                <span class="text-[10px] font-bold text-dourado uppercase tracking-widest bg-dourado/10 px-3 py-1 rounded-full border border-dourado/20 inline-block">
+                    Gestão da Loja
+                </span>
+                <h3 id="tituloModalProduto" class="text-lg font-bold text-white uppercase tracking-wide mt-1">Cadastrar Novo Produto</h3>
+            </div>
+
+            <form id="formProdutoAdmin" class="space-y-3.5 text-left text-xs">
+                <input type="hidden" id="inputProdutoId">
+
+                <!-- Foto do Produto -->
+                <div>
+                    <label class="block font-semibold text-zinc-300 uppercase mb-1">Foto do Produto (Opcional)</label>
+                    <div class="flex items-center gap-3">
+                        <div id="previewFotoProduto" class="w-16 h-16 rounded-xl bg-black border border-zinc-700 flex items-center justify-center overflow-hidden flex-shrink-0 text-2xl shadow-md">
+                            🧴
+                        </div>
+                        <div class="flex-1 space-y-1.5">
+                            <input type="file" id="inputFotoProdutoArquivo" accept="image/*" class="w-full text-xs text-zinc-400 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-zinc-800 file:text-dourado hover:file:bg-zinc-700 cursor-pointer">
+                            <input type="url" id="inputFotoProdutoUrl" placeholder="Ou cole a URL da imagem (ex: https://...)" class="w-full px-3 py-1.5 bg-black rounded-lg border border-zinc-700 text-white text-[11px] focus:outline-none focus:border-dourado">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nome do Produto -->
+                <div>
+                    <label class="block font-semibold text-zinc-300 uppercase mb-1">Nome do Produto *</label>
+                    <input type="text" id="inputNomeProduto" required placeholder="Ex: Pomada Modeladora Efeito Matte" class="w-full px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white focus:outline-none focus:border-dourado">
+                </div>
+
+                <!-- Descrição Curta -->
+                <div>
+                    <label class="block font-semibold text-zinc-300 uppercase mb-1">Descrição / Benefícios (Opcional)</label>
+                    <textarea id="inputDescricaoProduto" rows="2" placeholder="Ex: Fixação forte com acabamento natural sem brilho. Ideal para o dia a dia." class="w-full px-3.5 py-2 bg-black rounded-lg border border-zinc-700 text-white focus:outline-none focus:border-dourado"></textarea>
+                </div>
+
+                <!-- Preço e Estoque Inicial -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-zinc-300 uppercase mb-1">Preço de Venda (R$) *</label>
+                        <input type="number" id="inputPrecoProduto" step="0.01" min="0" required placeholder="35.00" class="w-full px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white focus:outline-none focus:border-dourado">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-zinc-300 uppercase mb-1">Qtd. em Estoque *</label>
+                        <input type="number" id="inputEstoqueProduto" min="0" required placeholder="10" class="w-full px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white focus:outline-none focus:border-dourado">
+                    </div>
+                </div>
+
+                <!-- Tipo de Unidade e Volume -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-zinc-300 uppercase mb-1">Tipo de Unidade</label>
+                        <select id="selectTipoUnidadeProduto" class="w-full px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white focus:outline-none focus:border-dourado cursor-pointer">
+                            <option value="ml">Mililitros (ml)</option>
+                            <option value="g">Gramas (g)</option>
+                            <option value="L">Litros (L)</option>
+                            <option value="un">Unidade (un)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-zinc-300 uppercase mb-1">Volume / Conteúdo</label>
+                        <input type="text" id="inputVolumeUnidadeProduto" placeholder="Ex: 150ml, 100g, 1 un" class="w-full px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white focus:outline-none focus:border-dourado">
+                    </div>
+                </div>
+
+                <p id="msgFormProdutoStatus" class="text-xs text-center font-medium min-h-[16px]"></p>
+
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <button id="btnCancelarProdutoAdmin" type="button" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-3 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button id="btnSalvarProdutoAdmin" type="submit" class="bg-dourado hover:bg-[#C5A028] text-black font-bold py-3 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg">
+                        💾 Salvar Produto
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- SCRIPT FIREBASE E CONTROLE DO ADMIN -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -1168,6 +1323,7 @@
             schedule: "📅 Agenda de Clientes",
             vipClients: "👑 Clientes Mensalistas",
             services: "✂️ Serviços & Preços",
+            products: "🛍️ Loja & Estoque de Produtos",
             blockDays: "🚫 Dias Fechados",
             payments: "💳 Mercado Pago",
             whatsapp: "🤖 WhatsApp Bot",
@@ -1179,6 +1335,7 @@
             schedule: { btn: document.getElementById('tabNavSchedule'), view: document.getElementById('viewSchedule') },
             vipClients: { btn: document.getElementById('tabNavVipClients'), view: document.getElementById('viewVipClients') },
             services: { btn: document.getElementById('tabNavServices'), view: document.getElementById('viewServices') },
+            products: { btn: document.getElementById('tabNavProducts'), view: document.getElementById('viewProducts') },
             blockDays: { btn: document.getElementById('tabNavBlockDays'), view: document.getElementById('viewBlockDays') },
             payments: { btn: document.getElementById('tabNavPayments'), view: document.getElementById('viewPayments') },
             whatsapp: { btn: document.getElementById('tabNavWhatsApp'), view: document.getElementById('viewWhatsApp') },
@@ -1212,11 +1369,11 @@
         window.mudarAba = function(nomeAba) {
             Object.keys(tabs).forEach(k => {
                 if (k === nomeAba) {
-                    tabs[k].view.classList.remove('hidden');
-                    tabs[k].btn.classList.add('active');
+                    if (tabs[k].view) tabs[k].view.classList.remove('hidden');
+                    if (tabs[k].btn) tabs[k].btn.classList.add('active');
                 } else {
-                    tabs[k].view.classList.add('hidden');
-                    tabs[k].btn.classList.remove('active');
+                    if (tabs[k].view) tabs[k].view.classList.add('hidden');
+                    if (tabs[k].btn) tabs[k].btn.classList.remove('active');
                 }
             });
 
@@ -1238,6 +1395,8 @@
             } else if (nomeAba === 'services') {
                 carregarServicosAdmin();
                 carregarPlanosAdmin();
+            } else if (nomeAba === 'products') {
+                carregarProdutosAdmin();
             } else if (nomeAba === 'blockDays') {
                 carregarDiasBloqueadosAdmin();
             } else if (nomeAba === 'admins') {
@@ -1355,6 +1514,7 @@
                     try { carregarClientesMensalistasAdmin(); } catch (e) { console.warn(e); }
                     try { carregarServicosAdmin(); } catch (e) { console.warn(e); }
                     try { carregarPlanosAdmin(); } catch (e) { console.warn(e); }
+                    try { carregarProdutosAdmin(); } catch (e) { console.warn(e); }
                     try { carregarDiasBloqueadosAdmin(); } catch (e) { console.warn(e); }
                     try { carregarConfiguracoesMercadoPago(); } catch (e) { console.warn(e); }
                     try { await carregarConfiguracoesServidorWa(); } catch (e) { console.warn(e); }
@@ -2564,6 +2724,326 @@
                 } catch (e) { alert("Erro ao apagar plano."); }
             }
         };
+
+        // ==========================================
+        // GESTÃO DE PRODUTOS & LOJA (ESTOQUE)
+        // ==========================================
+        let listaProdutosMemoria = [];
+        let fotoProdutoBase64Temp = "";
+
+        const modalProdutoAdmin = document.getElementById('modalProdutoAdmin');
+        const btnAbrirModalNovoProduto = document.getElementById('btnAbrirModalNovoProduto');
+        const btnFecharModalProdutoAdmin = document.getElementById('btnFecharModalProdutoAdmin');
+        const btnCancelarProdutoAdmin = document.getElementById('btnCancelarProdutoAdmin');
+        const formProdutoAdmin = document.getElementById('formProdutoAdmin');
+        const inputFotoProdutoArquivo = document.getElementById('inputFotoProdutoArquivo');
+        const inputFotoProdutoUrl = document.getElementById('inputFotoProdutoUrl');
+        const previewFotoProduto = document.getElementById('previewFotoProduto');
+
+        function abrirModalProduto(produto = null) {
+            if (formProdutoAdmin) formProdutoAdmin.reset();
+            fotoProdutoBase64Temp = "";
+            const titulo = document.getElementById('tituloModalProduto');
+            const idInput = document.getElementById('inputProdutoId');
+            const msg = document.getElementById('msgFormProdutoStatus');
+            if (msg) msg.innerText = "";
+
+            if (produto) {
+                if (titulo) titulo.innerText = "Editar Produto";
+                if (idInput) idInput.value = produto.id;
+                document.getElementById('inputNomeProduto').value = produto.nome || "";
+                document.getElementById('inputDescricaoProduto').value = produto.descricao || "";
+                document.getElementById('inputPrecoProduto').value = produto.preco || "";
+                document.getElementById('inputEstoqueProduto').value = produto.estoque !== undefined ? produto.estoque : 0;
+                document.getElementById('selectTipoUnidadeProduto').value = produto.tipoUnidade || "ml";
+                document.getElementById('inputVolumeUnidadeProduto').value = produto.volumeUnidade || "";
+                document.getElementById('inputFotoProdutoUrl').value = produto.fotoUrl || "";
+
+                if (produto.fotoUrl) {
+                    previewFotoProduto.innerHTML = `<img src="${produto.fotoUrl}" class="w-full h-full object-cover rounded-xl" alt="${produto.nome}">`;
+                } else {
+                    previewFotoProduto.innerHTML = "🧴";
+                }
+            } else {
+                if (titulo) titulo.innerText = "Cadastrar Novo Produto";
+                if (idInput) idInput.value = "";
+                document.getElementById('inputVolumeUnidadeProduto').value = "150ml";
+                previewFotoProduto.innerHTML = "🧴";
+            }
+
+            if (modalProdutoAdmin) modalProdutoAdmin.classList.remove('hidden');
+        }
+
+        function fecharModalProduto() {
+            if (modalProdutoAdmin) modalProdutoAdmin.classList.add('hidden');
+            if (formProdutoAdmin) formProdutoAdmin.reset();
+            fotoProdutoBase64Temp = "";
+        }
+
+        if (btnAbrirModalNovoProduto) btnAbrirModalNovoProduto.addEventListener('click', () => abrirModalProduto());
+        if (btnFecharModalProdutoAdmin) btnFecharModalProdutoAdmin.addEventListener('click', fecharModalProduto);
+        if (btnCancelarProdutoAdmin) btnCancelarProdutoAdmin.addEventListener('click', fecharModalProduto);
+
+        // Preview da foto no upload
+        if (inputFotoProdutoArquivo) {
+            inputFotoProdutoArquivo.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        fotoProdutoBase64Temp = evt.target.result;
+                        previewFotoProduto.innerHTML = `<img src="${fotoProdutoBase64Temp}" class="w-full h-full object-cover rounded-xl" alt="Preview">`;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        if (inputFotoProdutoUrl) {
+            inputFotoProdutoUrl.addEventListener('input', function(e) {
+                const url = e.target.value.trim();
+                if (url) {
+                    fotoProdutoBase64Temp = "";
+                    previewFotoProduto.innerHTML = `<img src="${url}" class="w-full h-full object-cover rounded-xl" onerror="this.parentElement.innerHTML='🧴'" alt="Preview">`;
+                }
+            });
+        }
+
+        // Submissão do Formulário de Produto
+        if (formProdutoAdmin) {
+            formProdutoAdmin.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('inputProdutoId').value;
+                const nome = document.getElementById('inputNomeProduto').value.trim();
+                const descricao = document.getElementById('inputDescricaoProduto').value.trim();
+                const preco = parseFloat(document.getElementById('inputPrecoProduto').value);
+                const estoque = parseInt(document.getElementById('inputEstoqueProduto').value, 10);
+                const tipoUnidade = document.getElementById('selectTipoUnidadeProduto').value;
+                const volumeUnidade = document.getElementById('inputVolumeUnidadeProduto').value.trim();
+                const urlDigitada = document.getElementById('inputFotoProdutoUrl').value.trim();
+                const fotoUrl = fotoProdutoBase64Temp || urlDigitada || "";
+                const msg = document.getElementById('msgFormProdutoStatus');
+                const btnSalvar = document.getElementById('btnSalvarProdutoAdmin');
+
+                if (!nome || isNaN(preco) || isNaN(estoque)) {
+                    if (msg) {
+                        msg.className = "text-xs text-center font-medium text-red-400";
+                        msg.innerText = "Preencha todos os campos obrigatórios!";
+                    }
+                    return;
+                }
+
+                btnSalvar.disabled = true;
+                btnSalvar.innerHTML = "⏳ Salvando...";
+                if (msg) {
+                    msg.className = "text-xs text-center font-medium text-amber-300";
+                    msg.innerText = "Gravando produto no banco de dados...";
+                }
+
+                try {
+                    const dados = {
+                        nome,
+                        descricao,
+                        preco,
+                        estoque: Math.max(0, estoque),
+                        tipoUnidade,
+                        volumeUnidade: volumeUnidade || (tipoUnidade === 'ml' ? '150ml' : (tipoUnidade === 'g' ? '100g' : (tipoUnidade === 'L' ? '1L' : '1 un'))),
+                        fotoUrl,
+                        ativo: true,
+                        atualizadoEm: new Date().toISOString()
+                    };
+
+                    if (id) {
+                        await updateDoc(doc(db, "produtos", id), dados);
+                    } else {
+                        dados.criadoEm = new Date().toISOString();
+                        await addDoc(collection(db, "produtos"), dados);
+                    }
+
+                    if (msg) {
+                        msg.className = "text-xs text-center font-bold text-green-400";
+                        msg.innerText = "✅ Produto salvo com sucesso!";
+                    }
+
+                    setTimeout(() => {
+                        fecharModalProduto();
+                        btnSalvar.disabled = false;
+                        btnSalvar.innerHTML = "💾 Salvar Produto";
+                    }, 800);
+
+                    await carregarProdutosAdmin();
+
+                } catch (err) {
+                    console.error("Erro ao salvar produto:", err);
+                    btnSalvar.disabled = false;
+                    btnSalvar.innerHTML = "💾 Salvar Produto";
+                    if (msg) {
+                        msg.className = "text-xs text-center font-medium text-red-400";
+                        msg.innerText = "Erro ao salvar: " + err.message;
+                    }
+                }
+            });
+        }
+
+        window.carregarProdutosAdmin = async function() {
+            const grid = document.getElementById('gridProdutosAdmin');
+            if (grid) grid.innerHTML = "<p class='text-xs text-zinc-500 text-center col-span-full py-8'>Carregando produtos...</p>";
+
+            try {
+                const querySnap = await getDocs(collection(db, "produtos"));
+                const lista = [];
+                querySnap.forEach(d => {
+                    lista.push({ id: d.id, ...d.data() });
+                });
+
+                lista.sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+                listaProdutosMemoria = lista;
+
+                atualizarMetricasProdutos(lista);
+                renderizarProdutosAdmin();
+
+            } catch (e) {
+                console.error("Erro ao carregar produtos:", e);
+                if (grid) grid.innerHTML = `<p class='text-xs text-red-400 text-center col-span-full py-8'>Erro ao carregar produtos: ${e.message}</p>`;
+            }
+        };
+
+        function atualizarMetricasProdutos(lista) {
+            const total = lista.length;
+            const estoqueTotal = lista.reduce((acc, p) => acc + Number(p.estoque || 0), 0);
+            const esgotados = lista.filter(p => Number(p.estoque || 0) <= 0).length;
+
+            const elTotal = document.getElementById('statTotalProdutos');
+            const elEstoque = document.getElementById('statEstoqueTotal');
+            const elEsgotados = document.getElementById('statProdutosEsgotados');
+
+            if (elTotal) elTotal.innerText = total;
+            if (elEstoque) elEstoque.innerText = estoqueTotal;
+            if (elEsgotados) elEsgotados.innerText = esgotados;
+        }
+
+        function renderizarProdutosAdmin() {
+            const grid = document.getElementById('gridProdutosAdmin');
+            if (!grid) return;
+
+            const busca = (document.getElementById('inputBuscarProdutoAdmin')?.value || '').trim().toLowerCase();
+            const filtro = document.getElementById('selectFiltroEstoqueAdmin')?.value || 'todos';
+
+            let filtrados = listaProdutosMemoria.filter(p => {
+                const matchTexto = !busca || (p.nome && p.nome.toLowerCase().includes(busca)) || (p.descricao && p.descricao.toLowerCase().includes(busca));
+                if (!matchTexto) return false;
+
+                const qtd = Number(p.estoque || 0);
+                if (filtro === 'disponivel') return qtd > 0;
+                if (filtro === 'esgotado') return qtd <= 0;
+                return true;
+            });
+
+            if (filtrados.length === 0) {
+                grid.innerHTML = "<div class='col-span-full py-12 text-center text-zinc-500 text-xs'><p class='text-2xl mb-2'>📦</p>Nenhum produto encontrado. Clique em '+ Novo Produto' para cadastrar!</div>";
+                return;
+            }
+
+            let html = "";
+            filtrados.forEach(p => {
+                const qtd = Number(p.estoque || 0);
+                const ehEsgotado = qtd <= 0;
+                const precoFormatado = Number(p.preco || 0).toFixed(2);
+                const volumeBadge = p.volumeUnidade ? `<span class="bg-zinc-800 text-zinc-300 text-[10px] font-bold px-2 py-0.5 rounded border border-zinc-700">${p.volumeUnidade}</span>` : '';
+
+                html += `
+                    <div class="bg-black/80 border ${ehEsgotado ? 'border-red-900/60' : 'border-zinc-800'} rounded-2xl p-4.5 flex flex-col justify-between space-y-4 hover:border-zinc-700 transition shadow-lg relative overflow-hidden">
+                        
+                        ${ehEsgotado ? '<div class="absolute top-3 right-3 bg-red-600/90 text-white font-extrabold text-[9px] uppercase px-2.5 py-0.5 rounded-full tracking-wider shadow">Esgotado</div>' : ''}
+
+                        <div class="flex items-start gap-3.5">
+                            <div class="w-16 h-16 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center overflow-hidden flex-shrink-0 text-2xl shadow">
+                                ${p.fotoUrl ? `<img src="${p.fotoUrl}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='🧴'" alt="${p.nome}">` : '🧴'}
+                            </div>
+                            <div class="flex-1 min-w-0 pr-12">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <h4 class="font-bold text-white text-sm truncate">${p.nome}</h4>
+                                    ${volumeBadge}
+                                </div>
+                                <p class="text-[11px] text-zinc-400 line-clamp-2 mt-1">${p.descricao || 'Sem descrição cadastrada.'}</p>
+                                <p class="text-sm font-extrabold text-dourado mt-2">R$ ${precoFormatado}</p>
+                            </div>
+                        </div>
+
+                        <!-- Controle Rápido de Balcão e Estoque -->
+                        <div class="bg-zinc-900/80 p-3 rounded-xl border border-zinc-800 flex items-center justify-between">
+                            <span class="text-[11px] text-zinc-400 font-semibold uppercase">Estoque no Balcão:</span>
+                            <div class="flex items-center gap-2">
+                                <button onclick="alterarEstoqueRapido('${p.id}', -1)" title="Vendeu 1 no balcão" class="w-7 h-7 rounded-lg bg-zinc-800 hover:bg-red-900/80 text-zinc-300 hover:text-red-300 flex items-center justify-center font-bold text-sm transition cursor-pointer border border-zinc-700">
+                                    -
+                                </button>
+                                <span class="min-w-[32px] text-center font-extrabold text-xs px-2 py-1 rounded-md ${ehEsgotado ? 'bg-red-950 text-red-400 border border-red-800' : (qtd <= 3 ? 'bg-amber-950 text-amber-300 border border-amber-800' : 'bg-green-950 text-green-300 border border-green-800')}">
+                                    ${qtd}
+                                </span>
+                                <button onclick="alterarEstoqueRapido('${p.id}', 1)" title="Chegou +1 produto" class="w-7 h-7 rounded-lg bg-zinc-800 hover:bg-green-900/80 text-zinc-300 hover:text-green-300 flex items-center justify-center font-bold text-sm transition cursor-pointer border border-zinc-700">
+                                    +
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Ações -->
+                        <div class="grid grid-cols-2 gap-2 pt-1 border-t border-zinc-800/80">
+                            <button onclick="editarProdutoAdmin('${p.id}')" class="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white py-2 rounded-lg text-xs font-bold transition cursor-pointer border border-zinc-800 flex items-center justify-center gap-1.5">
+                                ✏️ Editar
+                            </button>
+                            <button onclick="excluirProdutoAdmin('${p.id}', '${p.nome.replace(/'/g, "\\'")}')" class="bg-red-950/30 hover:bg-red-900/50 text-red-400 hover:text-red-300 py-2 rounded-lg text-xs font-bold transition cursor-pointer border border-red-900/40 flex items-center justify-center gap-1.5">
+                                🗑️ Excluir
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            grid.innerHTML = html;
+        }
+
+        window.alterarEstoqueRapido = async function(id, delta) {
+            const prod = listaProdutosMemoria.find(x => x.id === id);
+            if (!prod) return;
+
+            const novoEstoque = Math.max(0, Number(prod.estoque || 0) + delta);
+            prod.estoque = novoEstoque;
+
+            atualizarMetricasProdutos(listaProdutosMemoria);
+            renderizarProdutosAdmin();
+
+            try {
+                await updateDoc(doc(db, "produtos", id), {
+                    estoque: novoEstoque,
+                    atualizadoEm: new Date().toISOString()
+                });
+            } catch (err) {
+                console.error("Erro ao alterar estoque:", err);
+                alert("Erro ao atualizar estoque: " + err.message);
+                carregarProdutosAdmin();
+            }
+        };
+
+        window.editarProdutoAdmin = function(id) {
+            const prod = listaProdutosMemoria.find(x => x.id === id);
+            if (prod) abrirModalProduto(prod);
+        };
+
+        window.excluirProdutoAdmin = async function(id, nome) {
+            if (!confirm(`Deseja realmente excluir o produto "${nome}"?`)) return;
+
+            try {
+                await deleteDoc(doc(db, "produtos", id));
+                listaProdutosMemoria = listaProdutosMemoria.filter(x => x.id !== id);
+                atualizarMetricasProdutos(listaProdutosMemoria);
+                renderizarProdutosAdmin();
+            } catch (e) {
+                alert("Erro ao excluir produto: " + e.message);
+            }
+        };
+
+        document.getElementById('inputBuscarProdutoAdmin')?.addEventListener('input', renderizarProdutosAdmin);
+        document.getElementById('selectFiltroEstoqueAdmin')?.addEventListener('change', renderizarProdutosAdmin);
 
         document.getElementById('btnSalvarBloqueio').addEventListener('click', async () => {
             const dataBloq = document.getElementById('inputDataBloqueio').value;

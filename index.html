@@ -192,6 +192,7 @@
 
         <div class="flex border-b border-zinc-800">
             <button id="btnTabClienteAgendamentos" class="flex-1 pb-2 font-semibold text-dourado border-b-2 border-dourado cursor-pointer text-sm uppercase">Agendamentos</button>
+            <button id="btnTabClienteProdutos" class="flex-1 pb-2 font-semibold text-zinc-500 cursor-pointer text-sm uppercase">🛍️ Produtos & Loja</button>
             <button id="btnTabClientePlanos" class="flex-1 pb-2 font-semibold text-zinc-500 cursor-pointer text-sm uppercase">Planos Mensais</button>
         </div>
 
@@ -230,6 +231,25 @@
                     <div class="flex justify-between items-center bg-black p-2.5 rounded-lg border border-zinc-800 text-xs">
                         <span class="text-zinc-400">Subtotal dos Adicionais:</span>
                         <span id="labelSubtotalExtras" class="font-bold text-white font-mono">R$ 0,00</span>
+                    </div>
+                </div>
+
+                <!-- SEÇÃO DE VENDA CASADA / PRODUTOS NO AGENDAMENTO (OPCIONAL) -->
+                <div id="secaoProdutosCrossSell" class="hidden bg-zinc-950/80 p-4 rounded-xl border border-zinc-800/90 space-y-2.5 transition-all">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-bold text-dourado uppercase tracking-wide flex items-center gap-1.5">
+                            <span>🧴</span> Levar um Produto junto no Corte? <span class="text-[10px] text-zinc-400 font-normal lowercase">(opcional)</span>
+                        </label>
+                        <span class="text-[10px] bg-amber-950 text-dourado px-2 py-0.5 rounded border border-amber-700 font-bold uppercase">Loja da Barbearia</span>
+                    </div>
+                    
+                    <div id="containerProdutosCrossSell" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <!-- Gerado dinamicamente com produtos disponíveis em estoque -->
+                    </div>
+
+                    <div class="flex justify-between items-center bg-black p-2.5 rounded-lg border border-zinc-800 text-xs">
+                        <span class="text-zinc-400">Total dos Produtos Escolhidos:</span>
+                        <span id="labelSubtotalProdutosCrossSell" class="font-bold text-dourado font-mono">R$ 0,00</span>
                     </div>
                 </div>
 
@@ -274,6 +294,25 @@
             <div>
                 <h2 class="text-sm font-semibold mb-2 text-zinc-400 uppercase">Horários já Ocupados na Agenda:</h2>
                 <div id="horariosOcupadosLista" class="text-xs text-dourado bg-black p-3 rounded border border-zinc-800 max-h-32 overflow-y-auto space-y-1"></div>
+            </div>
+        </div>
+
+        <!-- ABA: PRODUTOS & LOJA DA BARBEARIA -->
+        <div id="viewClienteProdutos" class="space-y-6 hidden">
+            <div class="bg-black p-4 sm:p-5 rounded-2xl border border-zinc-800 space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-zinc-800 pb-3">
+                    <div>
+                        <h2 class="text-md font-bold text-dourado uppercase tracking-wide flex items-center gap-2">
+                            <span>🛍️</span> Loja de Produtos da Barbearia
+                        </h2>
+                        <p class="text-xs text-zinc-400">Pomadas, óleos e cosméticos de alta performance. Compre online e retire no balcão!</p>
+                    </div>
+                </div>
+
+                <!-- Grid de Produtos para o Cliente -->
+                <div id="gridProdutosCliente" class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                    <p class="text-xs text-zinc-500 text-center col-span-full py-8">Carregando produtos...</p>
+                </div>
             </div>
         </div>
 
@@ -605,6 +644,135 @@
         </div>
     </div>
 
+    <!-- MODAL DE COMPRA DIRETA DE PRODUTO VIA PIX (SEM TERMOS) -->
+    <div id="modalComprarProdutoPix" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div class="bg-zinc-900 border border-dourado p-6 sm:p-7 rounded-3xl max-w-md w-full space-y-4 text-center shadow-2xl relative my-6 animate-fade-in">
+            <button id="btnFecharModalProdutoPix" type="button" class="absolute top-4 right-4 text-zinc-400 hover:text-white text-xl font-bold transition cursor-pointer">&times;</button>
+            
+            <div class="space-y-1">
+                <span class="text-[10px] font-bold text-dourado uppercase tracking-widest bg-dourado/10 px-3 py-1 rounded-full border border-dourado/20 inline-block">
+                    Loja da Barbearia • Pix Direto
+                </span>
+                <h3 class="text-lg font-bold text-white uppercase tracking-wide mt-1">Comprar Produto</h3>
+            </div>
+
+            <!-- Resumo do Produto Selecionado -->
+            <div class="bg-black p-4 rounded-2xl border border-zinc-800 flex items-center gap-3.5 text-left">
+                <div id="compraProdutoFoto" class="w-14 h-14 rounded-xl bg-zinc-900 border border-zinc-700 flex items-center justify-center overflow-hidden flex-shrink-0 text-2xl">
+                    🧴
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                        <h4 id="compraProdutoNome" class="font-bold text-white text-sm truncate">...</h4>
+                        <span id="compraProdutoVolume" class="text-[10px] bg-zinc-800 text-zinc-300 font-bold px-1.5 py-0.5 rounded"></span>
+                    </div>
+                    <p class="text-xs text-zinc-400 mt-0.5">Preço: <span id="compraProdutoPrecoUnit" class="text-dourado font-bold">R$ 0,00</span></p>
+                </div>
+            </div>
+
+            <!-- Seletor de Quantidade e Total -->
+            <div class="bg-zinc-950 p-3.5 rounded-xl border border-zinc-800 flex items-center justify-between">
+                <span class="text-xs text-zinc-300 font-semibold uppercase">Quantidade:</span>
+                <div class="flex items-center gap-3">
+                    <button id="btnDiminuirQtdCompra" type="button" class="w-8 h-8 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-base flex items-center justify-center cursor-pointer border border-zinc-700">-</button>
+                    <span id="labelQtdCompraProduto" class="font-extrabold text-sm text-white w-6 text-center">1</span>
+                    <button id="btnAumentarQtdCompra" type="button" class="w-8 h-8 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-base flex items-center justify-center cursor-pointer border border-zinc-700">+</button>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center px-1">
+                <span class="text-xs text-zinc-400 font-bold uppercase">Total a Pagar:</span>
+                <span id="labelTotalCompraProduto" class="text-lg font-extrabold text-dourado">R$ 0,00</span>
+            </div>
+
+            <!-- Dados do Cliente (Nome e Telefone) -->
+            <div class="space-y-2 text-left">
+                <div>
+                    <label class="block text-[11px] font-semibold text-zinc-300 uppercase mb-1">Seu Nome Completo *</label>
+                    <input type="text" id="inputNomeCompradorProduto" placeholder="Digite seu nome" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-zinc-300 uppercase mb-1">WhatsApp para Confirmação *</label>
+                    <input type="tel" id="inputTelCompradorProduto" placeholder="(11) 99999-9999" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                </div>
+            </div>
+
+            <!-- Botão Gerar Pix Direto (Estado Inicial) -->
+            <div id="containerBtnGerarPixProduto">
+                <button id="btnGerarPixProduto" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-2">
+                    <span>⚡</span> Pagar via Pix Imediato
+                </button>
+            </div>
+
+            <!-- Estado de Carregamento / QR Code Ativo -->
+            <div id="containerPixAtivoProduto" class="space-y-3 hidden">
+                <div class="bg-black p-4 rounded-2xl border border-zinc-800 space-y-3">
+                    <p class="text-xs text-zinc-400">Escaneie o QR Code abaixo no app do seu banco:</p>
+                    
+                    <div class="bg-white p-2.5 rounded-xl inline-block mx-auto shadow-inner">
+                        <img id="imgPixQrProduto" src="" alt="QR Code Pix" class="w-44 h-44 object-contain mx-auto">
+                    </div>
+
+                    <div class="space-y-1 text-left">
+                        <label class="block text-[10px] font-semibold text-zinc-400 uppercase">Código Pix Copia e Cola:</label>
+                        <div class="flex gap-1.5">
+                            <input type="text" id="inputPixCodeProduto" readonly class="w-full px-2.5 py-2 bg-zinc-900 rounded-lg border border-zinc-700 text-[11px] text-zinc-200 focus:outline-none select-all font-mono">
+                            <button id="btnCopiarPixProduto" type="button" class="bg-dourado hover:bg-[#C5A028] text-black font-bold px-3 py-2 rounded-lg text-xs transition cursor-pointer whitespace-nowrap">
+                                📋 Copiar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-center gap-2 text-xs text-amber-300 bg-amber-950/40 p-2.5 rounded-lg border border-amber-800/60 font-medium">
+                        <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                        <span>Aguardando pagamento... (Baixa Instantânea)</span>
+                    </div>
+                </div>
+            </div>
+
+            <p id="msgStatusCompraProduto" class="text-xs text-center font-medium min-h-[16px]"></p>
+        </div>
+    </div>
+
+    <!-- MODAL SUCESSO COMPRA DE PRODUTO -->
+    <div id="modalSucessoCompraProduto" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50">
+        <div class="bg-zinc-900 border border-green-500/80 p-6 sm:p-7 rounded-3xl max-w-md w-full text-center shadow-2xl space-y-4 relative my-8 animate-fade-in">
+            <div class="mx-auto w-14 h-14 bg-green-950/80 border border-green-500/60 rounded-2xl flex items-center justify-center text-3xl shadow-lg">
+                🛍️
+            </div>
+            
+            <div class="space-y-1">
+                <span class="text-[10px] font-extrabold text-green-400 uppercase tracking-widest bg-green-950 px-3 py-1 rounded-full border border-green-800">
+                    Pagamento Aprovado!
+                </span>
+                <h2 class="text-xl font-bold text-white uppercase tracking-wider mt-2">Compra Concluída com Sucesso</h2>
+                <p class="text-xs text-zinc-300">Seu pedido foi registrado e os produtos já estão reservados para você!</p>
+            </div>
+
+            <div class="bg-black p-4 rounded-2xl border border-zinc-800 space-y-2 text-left text-xs">
+                <div class="flex justify-between items-center border-b border-zinc-800 pb-2">
+                    <span class="text-zinc-400">Produto(s):</span>
+                    <span id="sucessoProdutoNomeQtd" class="font-bold text-white text-right">...</span>
+                </div>
+                <div class="flex justify-between items-center border-b border-zinc-800 pb-2">
+                    <span class="text-zinc-400">Valor Total Pago:</span>
+                    <span id="sucessoProdutoTotalPago" class="font-extrabold text-dourado text-right">...</span>
+                </div>
+                <div class="flex justify-between items-center border-b border-zinc-800 pb-2">
+                    <span class="text-zinc-400">Comprador:</span>
+                    <span id="sucessoProdutoCliente" class="font-medium text-white text-right">...</span>
+                </div>
+                <div class="pt-1 text-zinc-400 text-[11px] leading-relaxed">
+                    📍 <strong>Retirada na Barbearia EMAÚS:</strong> Seus itens ficam guardados com seu nome e você pode retirar no balcão no seu próximo horário ou a qualquer momento.
+                </div>
+            </div>
+
+            <button id="btnFecharSucessoCompraProduto" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg">
+                ✓ Concluir e Voltar
+            </button>
+        </div>
+    </div>
+
     <!-- RODAPÉ DO PORTAL DO CLIENTE -->
     <footer class="w-full text-center py-6 text-xs text-zinc-500 space-y-2 mt-auto border-t border-zinc-900/80">
         <p>© 2026 EMAÚS Barbearia - Atendimento de Alta Performance</p>
@@ -749,25 +917,41 @@
             }
         });
 
-        // Alternância de Abas na Visão do Cliente (Agendamentos vs Planos)
+        // Alternância de Abas na Visão do Cliente (Agendamentos vs Produtos vs Planos)
         const btnTabClienteAgendamentos = document.getElementById('btnTabClienteAgendamentos');
+        const btnTabClienteProdutos = document.getElementById('btnTabClienteProdutos');
         const btnTabClientePlanos = document.getElementById('btnTabClientePlanos');
         const viewClienteAgendamentos = document.getElementById('viewClienteAgendamentos');
+        const viewClienteProdutos = document.getElementById('viewClienteProdutos');
         const viewClientePlanos = document.getElementById('viewClientePlanos');
 
-        btnTabClienteAgendamentos.addEventListener('click', () => {
-            viewClienteAgendamentos.classList.remove('hidden');
-            viewClientePlanos.classList.add('hidden');
-            btnTabClienteAgendamentos.className = "flex-1 pb-2 font-semibold text-dourado border-b-2 border-dourado cursor-pointer text-sm uppercase";
-            btnTabClientePlanos.className = "flex-1 pb-2 font-semibold text-zinc-500 cursor-pointer text-sm uppercase";
+        btnTabClienteAgendamentos?.addEventListener('click', () => {
+            viewClienteAgendamentos?.classList.remove('hidden');
+            viewClienteProdutos?.classList.add('hidden');
+            viewClientePlanos?.classList.add('hidden');
+            if (btnTabClienteAgendamentos) btnTabClienteAgendamentos.className = "flex-1 pb-2 font-semibold text-dourado border-b-2 border-dourado cursor-pointer text-sm uppercase";
+            if (btnTabClienteProdutos) btnTabClienteProdutos.className = "flex-1 pb-2 font-semibold text-zinc-500 cursor-pointer text-sm uppercase";
+            if (btnTabClientePlanos) btnTabClientePlanos.className = "flex-1 pb-2 font-semibold text-zinc-500 cursor-pointer text-sm uppercase";
         });
 
-        btnTabClientePlanos.addEventListener('click', () => {
-            viewClientePlanos.classList.remove('hidden');
-            viewClienteAgendamentos.classList.add('hidden');
-            btnTabClientePlanos.className = "flex-1 pb-2 font-semibold text-dourado border-b-2 border-dourado cursor-pointer text-sm uppercase";
-            btnTabClienteAgendamentos.className = "flex-1 pb-2 font-semibold text-zinc-500 cursor-pointer text-sm uppercase";
-            carregarPainelPlanosCliente(auth.currentUser.uid);
+        btnTabClienteProdutos?.addEventListener('click', () => {
+            viewClienteProdutos?.classList.remove('hidden');
+            viewClienteAgendamentos?.classList.add('hidden');
+            viewClientePlanos?.classList.add('hidden');
+            if (btnTabClienteProdutos) btnTabClienteProdutos.className = "flex-1 pb-2 font-semibold text-dourado border-b-2 border-dourado cursor-pointer text-sm uppercase";
+            if (btnTabClienteAgendamentos) btnTabClienteAgendamentos.className = "flex-1 pb-2 font-semibold text-zinc-500 cursor-pointer text-sm uppercase";
+            if (btnTabClientePlanos) btnTabClientePlanos.className = "flex-1 pb-2 font-semibold text-zinc-500 cursor-pointer text-sm uppercase";
+            carregarProdutosCliente();
+        });
+
+        btnTabClientePlanos?.addEventListener('click', () => {
+            viewClientePlanos?.classList.remove('hidden');
+            viewClienteAgendamentos?.classList.add('hidden');
+            viewClienteProdutos?.classList.add('hidden');
+            if (btnTabClientePlanos) btnTabClientePlanos.className = "flex-1 pb-2 font-semibold text-dourado border-b-2 border-dourado cursor-pointer text-sm uppercase";
+            if (btnTabClienteAgendamentos) btnTabClienteAgendamentos.className = "flex-1 pb-2 font-semibold text-zinc-500 cursor-pointer text-sm uppercase";
+            if (btnTabClienteProdutos) btnTabClienteProdutos.className = "flex-1 pb-2 font-semibold text-zinc-500 cursor-pointer text-sm uppercase";
+            if (auth.currentUser) carregarPainelPlanosCliente(auth.currentUser.uid);
         });
 
         let configWhatsappUrlGlobal = "";
@@ -812,6 +996,7 @@
             carregarPainelCliente(user.uid);
             carregarPainelPlanosCliente(user.uid);
             carregarServicosCliente();
+            carregarProdutosCliente();
             carregarConfiguracoesGerais();
             verificarSeBarbeariaFechadaHoje();
         }
@@ -1366,23 +1551,42 @@
             atualizarLabelPrecoTotal();
         }
 
+        function obterProdutosCrossSellSelecionados() {
+            const checkboxes = document.querySelectorAll('.checkbox-produto-cross:checked');
+            const produtos = [];
+            let subtotal = 0;
+            checkboxes.forEach(cb => {
+                const id = cb.getAttribute('data-id');
+                const nome = cb.getAttribute('data-nome');
+                const volumeUnidade = cb.getAttribute('data-volume');
+                const preco = parseFloat(cb.getAttribute('data-preco') || 0);
+                produtos.push({ id, nome, volumeUnidade, preco, quantidade: 1 });
+                subtotal += preco;
+            });
+            return { produtos, subtotal };
+        }
+
         function atualizarLabelPrecoTotal() {
             const selectServico = document.getElementById('servico');
             const labelTotal = document.getElementById('labelValorTotalBotao');
             const labelSubtotal = document.getElementById('labelSubtotalExtras');
+            const labelSubtotalProd = document.getElementById('labelSubtotalProdutosCrossSell');
             if (!selectServico) return;
             const opt = selectServico.options[selectServico.selectedIndex];
             const precoBase = opt && opt.value !== "" ? parseFloat(opt.getAttribute('data-preco') || 0) : 0;
-            const { subtotal } = obterExtrasSelecionados();
-            const precoTotal = precoBase + subtotal;
+            const { subtotal: subtotalExtras } = obterExtrasSelecionados();
+            const { subtotal: subtotalProdutos } = obterProdutosCrossSellSelecionados();
+            const precoTotal = precoBase + subtotalExtras + subtotalProdutos;
 
-            if (labelSubtotal) labelSubtotal.innerText = `R$ ${subtotal.toFixed(2)}`;
+            if (labelSubtotal) labelSubtotal.innerText = `R$ ${subtotalExtras.toFixed(2)}`;
+            if (labelSubtotalProd) labelSubtotalProd.innerText = `R$ ${subtotalProdutos.toFixed(2)}`;
             if (labelTotal) labelTotal.innerText = `(R$ ${precoTotal.toFixed(2)})`;
 
             const btnPlanoVip = document.getElementById('btnAgendarPlanoVip');
             if (btnPlanoVip) {
-                if (subtotal > 0) {
-                    btnPlanoVip.innerHTML = `✨ Agendar com Plano VIP (+ R$ ${subtotal.toFixed(2)} adicionais)`;
+                const adicionaisTotais = subtotalExtras + subtotalProdutos;
+                if (adicionaisTotais > 0) {
+                    btnPlanoVip.innerHTML = `✨ Agendar com Plano VIP (+ R$ ${adicionaisTotais.toFixed(2)} adicionais)`;
                 } else {
                     btnPlanoVip.innerHTML = `✨ Agendar Gratuitamente com Plano VIP (R$ 0,00)`;
                 }
@@ -2323,15 +2527,25 @@
             const servicoBase = servicoSelect.value;
             const optSelected = servicoSelect.options[servicoSelect.selectedIndex];
             const precoBase = optSelected ? parseFloat(optSelected.getAttribute('data-preco') || 40) : 40;
-            const { extras, subtotal } = obterExtrasSelecionados();
-            const precoTotal = precoBase + subtotal;
-            const nomeServicoCompleto = extras.length > 0 ? `${servicoBase} (+ ${extras.map(e => e.nome).join(', ')})` : servicoBase;
+            const { extras, subtotal: subtotalExtras } = obterExtrasSelecionados();
+            const { produtos: produtosCross, subtotal: subtotalProdutos } = obterProdutosCrossSellSelecionados();
+            const precoTotal = precoBase + subtotalExtras + subtotalProdutos;
+            
+            let nomeServicoCompleto = servicoBase;
+            if (extras.length > 0) {
+                nomeServicoCompleto += ` (+ ${extras.map(e => e.nome).join(', ')})`;
+            }
+            if (produtosCross.length > 0) {
+                nomeServicoCompleto += ` [📦 + ${produtosCross.map(p => p.nome).join(', ')}]`;
+            }
 
             return { 
                 servico: nomeServicoCompleto,
                 servicoBase: servicoBase,
                 extras: extras.map(e => e.nome),
-                subtotalExtras: subtotal,
+                subtotalExtras: subtotalExtras,
+                produtos: produtosCross,
+                subtotalProdutos: subtotalProdutos,
                 preco: precoTotal, 
                 data, 
                 horario 
@@ -2586,6 +2800,400 @@
         document.getElementById('btnEntendiIosCliente')?.addEventListener('click', () => {
             if (modalInstalarIosCliente) modalInstalarIosCliente.classList.add('hidden');
         });
+
+        // ==========================================
+        // PRODUTOS & LOJA DA BARBEARIA (CLIENTE)
+        // ==========================================
+        let listaProdutosClienteGlobal = [];
+        let produtoSelecionadoCompra = null;
+        let quantidadeCompraProduto = 1;
+        let pollingIntervalPixProduto = null;
+
+        async function carregarProdutosCliente() {
+            const grid = document.getElementById('gridProdutosCliente');
+            const containerCrossSell = document.getElementById('containerProdutosCrossSell');
+            const secaoCrossSell = document.getElementById('secaoProdutosCrossSell');
+
+            if (grid && (!grid.children.length || grid.innerHTML.includes('Carregando'))) {
+                grid.innerHTML = "<p class='text-xs text-zinc-500 text-center col-span-full py-8'>Carregando produtos...</p>";
+            }
+
+            try {
+                const querySnap = await getDocs(collection(db, "produtos"));
+                const lista = [];
+                querySnap.forEach(d => {
+                    const data = d.data();
+                    if (data.ativo !== false) {
+                        lista.push({ id: d.id, ...data });
+                    }
+                });
+
+                lista.sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+                listaProdutosClienteGlobal = lista;
+
+                // 1. Renderiza no Grid da Aba de Produtos
+                if (grid) {
+                    if (lista.length === 0) {
+                        grid.innerHTML = "<div class='col-span-full py-10 text-center text-zinc-500 text-xs'><p class='text-2xl mb-2'>🧴</p>Em breve novos produtos disponíveis na nossa loja!</div>";
+                    } else {
+                        let html = "";
+                        lista.forEach(p => {
+                            const estoqueNum = Number(p.estoque || 0);
+                            const ehEsgotado = estoqueNum <= 0;
+                            const precoFormatado = Number(p.preco || 0).toFixed(2);
+                            const volumeBadge = p.volumeUnidade ? `<span class="bg-zinc-800 text-zinc-300 text-[10px] font-bold px-2 py-0.5 rounded border border-zinc-700">${p.volumeUnidade}</span>` : '';
+
+                            html += `
+                                <div class="bg-zinc-950 border ${ehEsgotado ? 'border-red-950/60 opacity-80' : 'border-zinc-800'} rounded-2xl p-4 flex flex-col justify-between space-y-3.5 hover:border-zinc-700 transition shadow-lg relative overflow-hidden">
+                                    
+                                    ${ehEsgotado ? '<div class="absolute top-3 right-3 bg-red-950 text-red-400 border border-red-800 font-extrabold text-[9px] uppercase px-2.5 py-0.5 rounded-full tracking-wider shadow">Esgotado</div>' : `<div class="absolute top-3 right-3 bg-green-950/80 text-green-400 border border-green-800 font-bold text-[9px] uppercase px-2 py-0.5 rounded-full tracking-wider">Disponível</div>`}
+
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-16 h-16 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center overflow-hidden flex-shrink-0 text-2xl shadow">
+                                            ${p.fotoUrl ? `<img src="${p.fotoUrl}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='🧴'" alt="${p.nome}">` : '🧴'}
+                                        </div>
+                                        <div class="flex-1 min-w-0 pr-10">
+                                            <div class="flex items-center gap-1.5 flex-wrap">
+                                                <h4 class="font-bold text-white text-sm truncate">${p.nome}</h4>
+                                                ${volumeBadge}
+                                            </div>
+                                            <p class="text-[11px] text-zinc-400 line-clamp-2 mt-1 leading-snug">${p.descricao || 'Produto oficial EMAÚS Barbearia.'}</p>
+                                            <p class="text-sm font-extrabold text-dourado mt-1.5">R$ ${precoFormatado}</p>
+                                        </div>
+                                    </div>
+
+                                    ${ehEsgotado ? `
+                                        <button type="button" disabled class="w-full bg-zinc-900 text-zinc-500 font-bold py-2.5 rounded-xl uppercase tracking-wider text-xs border border-zinc-800 cursor-not-allowed">
+                                            🚫 Produto Esgotado
+                                        </button>
+                                    ` : `
+                                        <button type="button" onclick="iniciarCompraProduto('${p.id}')" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-2.5 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-1.5">
+                                            <span>⚡</span> Comprar via Pix
+                                        </button>
+                                    `}
+                                </div>
+                            `;
+                        });
+                        grid.innerHTML = html;
+                    }
+                }
+
+                // 2. Renderiza no Cross-sell do Agendamento
+                if (containerCrossSell && secaoCrossSell) {
+                    const produtosDisponiveis = lista.filter(p => Number(p.estoque || 0) > 0);
+                    if (produtosDisponiveis.length === 0) {
+                        secaoCrossSell.classList.add('hidden');
+                        containerCrossSell.innerHTML = '';
+                    } else {
+                        secaoCrossSell.classList.remove('hidden');
+                        let htmlCross = '';
+                        produtosDisponiveis.forEach(p => {
+                            htmlCross += `
+                                <label class="flex items-center justify-between p-2.5 bg-zinc-900/90 hover:bg-zinc-900 border border-zinc-800 rounded-xl cursor-pointer transition select-none group">
+                                    <div class="flex items-center gap-2.5 min-w-0 pr-2">
+                                        <input type="checkbox" class="checkbox-produto-cross rounded bg-black border-zinc-700 text-dourado focus:ring-0 focus:ring-offset-0 cursor-pointer flex-shrink-0" data-id="${p.id}" data-nome="${p.nome}" data-preco="${p.preco}" data-volume="${p.volumeUnidade || ''}">
+                                        <div class="min-w-0">
+                                            <span class="font-bold text-white group-hover:text-amber-200 transition text-xs block truncate">🧴 ${p.nome}</span>
+                                            <p class="text-[10px] text-zinc-400">${p.volumeUnidade || 'Produto'}</p>
+                                        </div>
+                                    </div>
+                                    <span class="font-bold text-dourado font-mono text-xs whitespace-nowrap">+ R$ ${Number(p.preco || 0).toFixed(2)}</span>
+                                </label>
+                            `;
+                        });
+                        containerCrossSell.innerHTML = htmlCross;
+
+                        containerCrossSell.querySelectorAll('.checkbox-produto-cross').forEach(cb => {
+                            cb.addEventListener('change', atualizarLabelPrecoTotal);
+                        });
+                    }
+                }
+
+            } catch (e) {
+                console.error("Erro ao carregar produtos:", e);
+                if (grid) grid.innerHTML = `<p class='text-xs text-red-400 text-center col-span-full py-8'>Erro ao carregar produtos: ${e.message}</p>`;
+            }
+        }
+
+        // Modais de Compra Direta de Produto
+        const modalComprarProdutoPix = document.getElementById('modalComprarProdutoPix');
+        const btnFecharModalProdutoPix = document.getElementById('btnFecharModalProdutoPix');
+        const btnDiminuirQtdCompra = document.getElementById('btnDiminuirQtdCompra');
+        const btnAumentarQtdCompra = document.getElementById('btnAumentarQtdCompra');
+        const labelQtdCompraProduto = document.getElementById('labelQtdCompraProduto');
+        const labelTotalCompraProduto = document.getElementById('labelTotalCompraProduto');
+        const btnGerarPixProduto = document.getElementById('btnGerarPixProduto');
+        const btnCopiarPixProduto = document.getElementById('btnCopiarPixProduto');
+        const btnFecharSucessoCompraProduto = document.getElementById('btnFecharSucessoCompraProduto');
+        const modalSucessoCompraProduto = document.getElementById('modalSucessoCompraProduto');
+
+        function fecharModalCompraProduto() {
+            if (modalComprarProdutoPix) modalComprarProdutoPix.classList.add('hidden');
+            if (pollingIntervalPixProduto) {
+                clearInterval(pollingIntervalPixProduto);
+                pollingIntervalPixProduto = null;
+            }
+            produtoSelecionadoCompra = null;
+            quantidadeCompraProduto = 1;
+        }
+
+        if (btnFecharModalProdutoPix) btnFecharModalProdutoPix.addEventListener('click', fecharModalCompraProduto);
+
+        window.iniciarCompraProduto = async function(id) {
+            const prod = listaProdutosClienteGlobal.find(p => p.id === id);
+            if (!prod) return;
+
+            produtoSelecionadoCompra = prod;
+            quantidadeCompraProduto = 1;
+
+            const fotoEl = document.getElementById('compraProdutoFoto');
+            const nomeEl = document.getElementById('compraProdutoNome');
+            const volumeEl = document.getElementById('compraProdutoVolume');
+            const precoUnitEl = document.getElementById('compraProdutoPrecoUnit');
+            const msgEl = document.getElementById('msgStatusCompraProduto');
+            const inputNome = document.getElementById('inputNomeCompradorProduto');
+            const inputTel = document.getElementById('inputTelCompradorProduto');
+
+            if (fotoEl) {
+                fotoEl.innerHTML = prod.fotoUrl 
+                    ? `<img src="${prod.fotoUrl}" class="w-full h-full object-cover rounded-xl" onerror="this.parentElement.innerHTML='🧴'" alt="${prod.nome}">`
+                    : '🧴';
+            }
+            if (nomeEl) nomeEl.innerText = prod.nome;
+            if (volumeEl) volumeEl.innerText = prod.volumeUnidade || '';
+            if (precoUnitEl) precoUnitEl.innerText = `R$ ${Number(prod.preco || 0).toFixed(2)}`;
+            if (msgEl) msgEl.innerText = '';
+
+            // Preenche dados do usuário logado se disponíveis
+            const user = auth.currentUser;
+            if (user) {
+                if (inputNome && !inputNome.value) {
+                    try {
+                        const uDoc = await getDoc(doc(db, "usuarios", user.uid));
+                        if (uDoc.exists()) {
+                            inputNome.value = uDoc.data().nome || "";
+                            if (inputTel && !inputTel.value) inputTel.value = uDoc.data().telefone || "";
+                        }
+                    } catch (e) {}
+                }
+            }
+
+            atualizarTotaisModalCompraProduto();
+
+            // Reseta telas de pix
+            document.getElementById('containerBtnGerarPixProduto')?.classList.remove('hidden');
+            document.getElementById('containerPixAtivoProduto')?.classList.add('hidden');
+            if (btnGerarPixProduto) {
+                btnGerarPixProduto.disabled = false;
+                btnGerarPixProduto.innerHTML = `<span>⚡</span> Pagar via Pix Imediato`;
+            }
+
+            if (modalComprarProdutoPix) modalComprarProdutoPix.classList.remove('hidden');
+        };
+
+        function atualizarTotaisModalCompraProduto() {
+            if (!produtoSelecionadoCompra) return;
+            const estoqueMax = Number(produtoSelecionadoCompra.estoque || 1);
+            if (quantidadeCompraProduto > estoqueMax) quantidadeCompraProduto = estoqueMax;
+            if (quantidadeCompraProduto < 1) quantidadeCompraProduto = 1;
+
+            if (labelQtdCompraProduto) labelQtdCompraProduto.innerText = quantidadeCompraProduto;
+            const total = Number(produtoSelecionadoCompra.preco || 0) * quantidadeCompraProduto;
+            if (labelTotalCompraProduto) labelTotalCompraProduto.innerText = `R$ ${total.toFixed(2)}`;
+        }
+
+        if (btnDiminuirQtdCompra) {
+            btnDiminuirQtdCompra.addEventListener('click', () => {
+                if (quantidadeCompraProduto > 1) {
+                    quantidadeCompraProduto--;
+                    atualizarTotaisModalCompraProduto();
+                }
+            });
+        }
+
+        if (btnAumentarQtdCompra) {
+            btnAumentarQtdCompra.addEventListener('click', () => {
+                const estoqueMax = Number(produtoSelecionadoCompra?.estoque || 99);
+                if (quantidadeCompraProduto < estoqueMax) {
+                    quantidadeCompraProduto++;
+                    atualizarTotaisModalCompraProduto();
+                } else {
+                    alert(`Estoque máximo disponível: ${estoqueMax} unidades.`);
+                }
+            });
+        }
+
+        if (btnGerarPixProduto) {
+            btnGerarPixProduto.addEventListener('click', async () => {
+                if (!produtoSelecionadoCompra) return;
+
+                const nome = document.getElementById('inputNomeCompradorProduto')?.value.trim();
+                const telefone = document.getElementById('inputTelCompradorProduto')?.value.trim();
+                const msg = document.getElementById('msgStatusCompraProduto');
+
+                if (!nome || !telefone) {
+                    if (msg) {
+                        msg.className = "text-xs text-center font-medium text-red-400";
+                        msg.innerText = "Por favor, preencha seu nome e WhatsApp para confirmar!";
+                    }
+                    return;
+                }
+
+                const totalPagar = Number(produtoSelecionadoCompra.preco || 0) * quantidadeCompraProduto;
+                const user = auth.currentUser;
+                const emailComprador = user?.email || `${telefone.replace(/\D/g, '')}@cliente.emaus`;
+
+                btnGerarPixProduto.disabled = true;
+                btnGerarPixProduto.innerHTML = `<span>⏳ Gerando Pix...</span>`;
+                if (msg) {
+                    msg.className = "text-xs text-center font-medium text-amber-300";
+                    msg.innerText = "Conectando ao Mercado Pago para gerar seu Pix seguro...";
+                }
+
+                try {
+                    const response = await fetch(`${getBackendUrlAtivo()}/api/pagamento/pix`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            transaction_amount: totalPagar,
+                            description: `Compra: ${quantidadeCompraProduto}x ${produtoSelecionadoCompra.nome} - EMAÚS Barbearia`,
+                            email: emailComprador,
+                            nome: nome,
+                            external_reference: `PROD_${produtoSelecionadoCompra.id}_${Date.now()}`
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && (data.qr_code || data.qr_code_base64)) {
+                        const imgQr = document.getElementById('imgPixQrProduto');
+                        if (imgQr) {
+                            imgQr.src = data.qr_code_base64 
+                                ? `data:image/png;base64,${data.qr_code_base64}`
+                                : `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(data.qr_code)}`;
+                        }
+
+                        const codeInput = document.getElementById('inputPixCodeProduto');
+                        if (codeInput) codeInput.value = data.qr_code || '';
+
+                        document.getElementById('containerBtnGerarPixProduto')?.classList.add('hidden');
+                        document.getElementById('containerPixAtivoProduto')?.classList.remove('hidden');
+                        if (msg) msg.innerText = '';
+
+                        // Polling de aprovação em tempo real
+                        const paymentId = data.id;
+                        if (pollingIntervalPixProduto) clearInterval(pollingIntervalPixProduto);
+                        pollingIntervalPixProduto = setInterval(async () => {
+                            try {
+                                const statusRes = await fetch(`${getBackendUrlAtivo()}/api/pagamento/status/${paymentId}`);
+                                const statusData = await statusRes.json();
+
+                                if (statusData && statusData.status === 'approved') {
+                                    clearInterval(pollingIntervalPixProduto);
+                                    pollingIntervalPixProduto = null;
+
+                                    // 1. Atualiza estoque no Firestore
+                                    const novoEstoque = Math.max(0, Number(produtoSelecionadoCompra.estoque || 0) - quantidadeCompraProduto);
+                                    try {
+                                        await updateDoc(doc(db, "produtos", produtoSelecionadoCompra.id), {
+                                            estoque: novoEstoque,
+                                            atualizadoEm: new Date().toISOString()
+                                        });
+                                    } catch (errEst) { console.warn("Aviso ao baixar estoque:", errEst); }
+
+                                    // 2. Registra compra no Firestore
+                                    try {
+                                        await addDoc(collection(db, "comprasProdutos"), {
+                                            produtoId: produtoSelecionadoCompra.id,
+                                            produtoNome: produtoSelecionadoCompra.nome,
+                                            volumeUnidade: produtoSelecionadoCompra.volumeUnidade || '',
+                                            quantidade: quantidadeCompraProduto,
+                                            precoUnitario: produtoSelecionadoCompra.preco,
+                                            valorTotal: totalPagar,
+                                            clienteNome: nome,
+                                            clienteTelefone: telefone,
+                                            clienteEmail: emailComprador,
+                                            paymentId: paymentId,
+                                            status: 'pago',
+                                            criadoEm: new Date().toISOString()
+                                        });
+                                    } catch (errComp) { console.warn("Aviso ao registrar compra:", errComp); }
+
+                                    // 3. Notifica Barbeiro e Cliente no WhatsApp
+                                    try {
+                                        fetch(`${getBackendUrlAtivo()}/api/whatsapp/notificar-compra-produto`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                                cliente: nome,
+                                                telefone: telefone,
+                                                produtos: [{
+                                                    nome: produtoSelecionadoCompra.nome,
+                                                    volumeUnidade: produtoSelecionadoCompra.volumeUnidade,
+                                                    quantidade: quantidadeCompraProduto,
+                                                    preco: produtoSelecionadoCompra.preco,
+                                                    subtotal: totalPagar
+                                                }],
+                                                valorTotal: totalPagar,
+                                                metodoPagamento: 'Pix Mercado Pago',
+                                                whatsappBarbeiro: MEU_WHATSAPP
+                                            })
+                                        }).catch(e => console.warn("Aviso WhatsApp compra produto:", e));
+                                    } catch (eZap) { console.warn(eZap); }
+
+                                    // 4. Abre Modal de Sucesso
+                                    fecharModalCompraProduto();
+                                    const nomeQtdEl = document.getElementById('sucessoProdutoNomeQtd');
+                                    const totalPagoEl = document.getElementById('sucessoProdutoTotalPago');
+                                    const clienteEl = document.getElementById('sucessoProdutoCliente');
+
+                                    if (nomeQtdEl) nomeQtdEl.innerText = `${quantidadeCompraProduto}x ${produtoSelecionadoCompra.nome} (${produtoSelecionadoCompra.volumeUnidade || ''})`;
+                                    if (totalPagoEl) totalPagoEl.innerText = `R$ ${totalPagar.toFixed(2)}`;
+                                    if (clienteEl) clienteEl.innerText = `${nome} (${telefone})`;
+
+                                    if (modalSucessoCompraProduto) modalSucessoCompraProduto.classList.remove('hidden');
+
+                                    // Recarrega lista de produtos
+                                    carregarProdutosCliente();
+                                }
+                            } catch (errPoll) {
+                                console.warn("Polling compra produto:", errPoll);
+                            }
+                        }, 3000);
+
+                    } else {
+                        throw new Error(data.error || "Mercado Pago não retornou o código Pix.");
+                    }
+
+                } catch (errPix) {
+                    console.error("Erro ao gerar Pix do produto:", errPix);
+                    btnGerarPixProduto.disabled = false;
+                    btnGerarPixProduto.innerHTML = `<span>⚡</span> Tentar Novamente`;
+                    if (msg) {
+                        msg.className = "text-xs text-center font-medium text-red-400";
+                        msg.innerText = "Erro ao gerar Pix: " + errPix.message;
+                    }
+                }
+            });
+        }
+
+        if (btnCopiarPixProduto) {
+            btnCopiarPixProduto.addEventListener('click', () => {
+                const codeInput = document.getElementById('inputPixCodeProduto');
+                if (codeInput && codeInput.value) {
+                    codeInput.select();
+                    navigator.clipboard.writeText(codeInput.value);
+                    btnCopiarPixProduto.innerText = "✅ Copiado!";
+                    setTimeout(() => btnCopiarPixProduto.innerText = "📋 Copiar", 2500);
+                }
+            });
+        }
+
+        if (btnFecharSucessoCompraProduto) {
+            btnFecharSucessoCompraProduto.addEventListener('click', () => {
+                if (modalSucessoCompraProduto) modalSucessoCompraProduto.classList.add('hidden');
+            });
+        }
     </script>
 </body>
 </html>
