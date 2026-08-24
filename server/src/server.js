@@ -380,7 +380,7 @@ app.get('/api/health', async (req, res) => {
     });
 });
 
-const MP_CLIENT_ID = process.env.MP_CLIENT_ID || '8388498048278269';
+const MP_CLIENT_ID = process.env.MP_CLIENT_ID || '356528958695682';
 const MP_CLIENT_SECRET = process.env.MP_CLIENT_SECRET || 'YZXrwo6Ye49ucWHenOGQggjylxUJXjCI';
 const MP_REDIRECT_URI = process.env.MP_REDIRECT_URI || 'https://barbearia-app-1bf5.onrender.com/api/auth/mercadopago/callback';
 
