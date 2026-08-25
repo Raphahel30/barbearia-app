@@ -861,6 +861,58 @@ app.post('/api/pagamento/estorno', async (req, res) => {
 
         console.log(`[Estorno] Solicitando estorno para o pagamento ${cleanPaymentId}. Motivo: ${reason || 'Cancelamento de agendamento'}`);
 
+        // Consulta prévia do status do pagamento no Mercado Pago
+        let paymentInfo = null;
+        try {
+            const payRes = await fetch(`https://api.mercadopago.com/v1/payments/${cleanPaymentId}`, {
+                headers: { 'Authorization': `Bearer ${activeAccessToken}` }
+            });
+            if (payRes.ok) {
+                paymentInfo = await payRes.json();
+            }
+        } catch (e) {
+            console.warn("Consulta prévia do pagamento:", e.message);
+        }
+
+        if (paymentInfo) {
+            if (paymentInfo.status === 'refunded') {
+                return res.json({
+                    success: true,
+                    status: 'approved',
+                    refundId: paymentInfo.refunds?.[0]?.id || 'already_refunded',
+                    amount: paymentInfo.transaction_amount_refunded || amount,
+                    message: 'Este pagamento já havia sido estornado no Mercado Pago.'
+                });
+            }
+
+            if (paymentInfo.status === 'pending' || paymentInfo.status === 'in_process') {
+                try {
+                    await fetch(`https://api.mercadopago.com/v1/payments/${cleanPaymentId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${activeAccessToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ status: 'cancelled' })
+                    });
+                } catch (eCanc) {}
+
+                return res.json({
+                    success: true,
+                    status: 'cancelled',
+                    message: 'Pagamento pendente cancelado com sucesso no Mercado Pago.'
+                });
+            }
+
+            if (paymentInfo.status === 'cancelled') {
+                return res.json({
+                    success: true,
+                    status: 'cancelled',
+                    message: 'Pagamento já estava cancelado no Mercado Pago.'
+                });
+            }
+        }
+
         let refundResult = null;
 
         // Tenta primeiro via SDK
