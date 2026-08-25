@@ -231,42 +231,62 @@
                     </select>
                 </div>
 
-                <!-- SEÇÃO DE UPSELL / SERVIÇOS ADICIONAIS & COMBOS (SÓ APARECE APÓS SELECIONAR UM SERVIÇO) -->
-                <div id="secaoExtrasUpsell" class="hidden bg-zinc-950/80 p-4 rounded-xl border border-zinc-800/90 space-y-2.5 transition-all">
-                    <div class="flex items-center justify-between">
-                        <label class="text-xs font-bold text-dourado uppercase tracking-wide flex items-center gap-1.5">
-                            <span>✨</span> Deseja turbinar seu atendimento? <span class="text-[10px] text-zinc-400 font-normal lowercase">(opcional)</span>
-                        </label>
-                        <span class="text-[10px] bg-dourado/10 text-dourado px-2 py-0.5 rounded border border-dourado/20 font-bold uppercase">Combos & Extras</span>
-                    </div>
+                <!-- SEÇÃO DE UPSELL / SERVIÇOS ADICIONAIS & COMBOS (EXPANSÍVEL E COMPACTO) -->
+                <div id="secaoExtrasUpsell" class="hidden bg-zinc-950/90 rounded-xl border border-zinc-800 transition-all overflow-hidden">
+                    <button type="button" id="btnToggleExtrasAgendamento" class="w-full p-3.5 flex items-center justify-between gap-2 text-left hover:bg-zinc-900/80 transition cursor-pointer">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <span class="text-base flex-shrink-0">➕</span>
+                            <div class="truncate">
+                                <span class="text-xs font-bold text-zinc-200 uppercase tracking-wide block">Deseja adicionar outros serviços?</span>
+                                <span id="badgeStatusExtrasResumo" class="text-[11px] text-zinc-400 font-medium">Opcional • Nenhum adicional selecionado</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                            <span id="badgeContadorExtras" class="hidden bg-dourado/20 text-dourado border border-dourado/40 px-2 py-0.5 rounded text-[10px] font-bold uppercase whitespace-nowrap">+ R$ 0,00</span>
+                            <span id="iconeToggleExtras" class="text-[11px] text-zinc-400 font-bold bg-zinc-900 border border-zinc-700 px-2.5 py-1 rounded-lg transition hover:text-white">Ver Serviços ▾</span>
+                        </div>
+                    </button>
                     
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs" id="containerExtrasAgendamento">
-                        <!-- Gerado dinamicamente com todos os outros serviços cadastrados no site -->
-                    </div>
+                    <div id="conteudoExpansivelExtras" class="hidden p-3.5 pt-0 border-t border-zinc-800/80 space-y-3">
+                        <p class="text-[11px] text-zinc-400 pt-2">Selecione os adicionais que deseja realizar no mesmo atendimento:</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs max-h-48 overflow-y-auto pr-1" id="containerExtrasAgendamento">
+                            <!-- Gerado dinamicamente com todos os outros serviços cadastrados no site -->
+                        </div>
 
-                    <!-- Resumo Dinâmico do Total com os Adicionais -->
-                    <div class="flex justify-between items-center bg-black p-2.5 rounded-lg border border-zinc-800 text-xs">
-                        <span class="text-zinc-400">Subtotal dos Adicionais:</span>
-                        <span id="labelSubtotalExtras" class="font-bold text-white font-mono">R$ 0,00</span>
+                        <!-- Resumo Dinâmico do Total com os Adicionais -->
+                        <div class="flex justify-between items-center bg-black p-2.5 rounded-lg border border-zinc-800 text-xs">
+                            <span class="text-zinc-400">Subtotal dos Adicionais:</span>
+                            <span id="labelSubtotalExtras" class="font-bold text-dourado font-mono">R$ 0,00</span>
+                        </div>
                     </div>
                 </div>
 
-                <!-- SEÇÃO DE VENDA CASADA / PRODUTOS NO AGENDAMENTO (OPCIONAL) -->
-                <div id="secaoProdutosCrossSell" class="hidden bg-zinc-950/80 p-4 rounded-xl border border-zinc-800/90 space-y-2.5 transition-all">
-                    <div class="flex items-center justify-between">
-                        <label class="text-xs font-bold text-dourado uppercase tracking-wide flex items-center gap-1.5">
-                            <span>🧴</span> Levar um Produto junto no Corte? <span class="text-[10px] text-zinc-400 font-normal lowercase">(opcional)</span>
-                        </label>
-                        <span class="text-[10px] bg-amber-950 text-dourado px-2 py-0.5 rounded border border-amber-700 font-bold uppercase">Loja da Barbearia</span>
-                    </div>
+                <!-- SEÇÃO DE VENDA CASADA / PRODUTOS NO AGENDAMENTO (OPCIONAL & EXPANSÍVEL) -->
+                <div id="secaoProdutosCrossSell" class="hidden bg-zinc-950/90 rounded-xl border border-zinc-800 transition-all overflow-hidden">
+                    <button type="button" id="btnToggleProdutosCrossSell" class="w-full p-3.5 flex items-center justify-between gap-2 text-left hover:bg-zinc-900/80 transition cursor-pointer">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <span class="text-base flex-shrink-0">🧴</span>
+                            <div class="truncate">
+                                <span class="text-xs font-bold text-zinc-200 uppercase tracking-wide block">Levar um produto junto?</span>
+                                <span id="badgeStatusProdutosResumo" class="text-[11px] text-zinc-400 font-medium">Opcional • Pomadas, óleos e cosméticos</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                            <span id="badgeContadorProdutos" class="hidden bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded text-[10px] font-bold uppercase whitespace-nowrap">+ R$ 0,00</span>
+                            <span id="iconeToggleProdutos" class="text-[11px] text-zinc-400 font-bold bg-zinc-900 border border-zinc-700 px-2.5 py-1 rounded-lg transition hover:text-white">Ver Produtos ▾</span>
+                        </div>
+                    </button>
                     
-                    <div id="containerProdutosCrossSell" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                        <!-- Gerado dinamicamente com produtos disponíveis em estoque -->
-                    </div>
+                    <div id="conteudoExpansivelProdutos" class="hidden p-3.5 pt-0 border-t border-zinc-800/80 space-y-3">
+                        <p class="text-[11px] text-zinc-400 pt-2">Retire seu produto diretamente no balcão no dia do corte:</p>
+                        <div id="containerProdutosCrossSell" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs max-h-48 overflow-y-auto pr-1">
+                            <!-- Gerado dinamicamente com produtos disponíveis em estoque -->
+                        </div>
 
-                    <div class="flex justify-between items-center bg-black p-2.5 rounded-lg border border-zinc-800 text-xs">
-                        <span class="text-zinc-400">Total dos Produtos Escolhidos:</span>
-                        <span id="labelSubtotalProdutosCrossSell" class="font-bold text-dourado font-mono">R$ 0,00</span>
+                        <div class="flex justify-between items-center bg-black p-2.5 rounded-lg border border-zinc-800 text-xs">
+                            <span class="text-zinc-400">Total dos Produtos Escolhidos:</span>
+                            <span id="labelSubtotalProdutosCrossSell" class="font-bold text-dourado font-mono">R$ 0,00</span>
+                        </div>
                     </div>
                 </div>
 
@@ -2171,6 +2191,8 @@
             const selectServico = document.getElementById('servico');
             const secaoExtras = document.getElementById('secaoExtrasUpsell');
             const containerExtras = document.getElementById('containerExtrasAgendamento');
+            const conteudoExtras = document.getElementById('conteudoExpansivelExtras');
+            const iconeToggleExtras = document.getElementById('iconeToggleExtras');
             if (!selectServico || !secaoExtras || !containerExtras) return;
 
             const servicoPrincipalSelecionado = selectServico.value;
@@ -2179,6 +2201,8 @@
             if (!servicoPrincipalSelecionado) {
                 secaoExtras.classList.add('hidden');
                 containerExtras.innerHTML = '';
+                if (conteudoExtras) conteudoExtras.classList.add('hidden');
+                if (iconeToggleExtras) iconeToggleExtras.innerText = 'Ver Serviços ▾';
                 atualizarLabelPrecoTotal();
                 return;
             }
@@ -2189,11 +2213,12 @@
             if (outrosServicos.length === 0) {
                 secaoExtras.classList.add('hidden');
                 containerExtras.innerHTML = '';
+                if (conteudoExtras) conteudoExtras.classList.add('hidden');
                 atualizarLabelPrecoTotal();
                 return;
             }
 
-            // Exibe a seção de adicionais
+            // Exibe a barra de adicionais compacta
             secaoExtras.classList.remove('hidden');
 
             let html = '';
@@ -2222,6 +2247,41 @@
             atualizarLabelPrecoTotal();
         }
 
+        // Listeners de alternância (Toggle) para seções expansíveis
+        const btnToggleExtras = document.getElementById('btnToggleExtrasAgendamento');
+        const conteudoExtrasEl = document.getElementById('conteudoExpansivelExtras');
+        const iconeToggleExtrasEl = document.getElementById('iconeToggleExtras');
+
+        if (btnToggleExtras && conteudoExtrasEl) {
+            btnToggleExtras.addEventListener('click', () => {
+                const isHidden = conteudoExtrasEl.classList.contains('hidden');
+                if (isHidden) {
+                    conteudoExtrasEl.classList.remove('hidden');
+                    if (iconeToggleExtrasEl) iconeToggleExtrasEl.innerText = 'Recolher ▴';
+                } else {
+                    conteudoExtrasEl.classList.add('hidden');
+                    if (iconeToggleExtrasEl) iconeToggleExtrasEl.innerText = 'Ver Serviços ▾';
+                }
+            });
+        }
+
+        const btnToggleProdutos = document.getElementById('btnToggleProdutosCrossSell');
+        const conteudoProdutosEl = document.getElementById('conteudoExpansivelProdutos');
+        const iconeToggleProdutosEl = document.getElementById('iconeToggleProdutos');
+
+        if (btnToggleProdutos && conteudoProdutosEl) {
+            btnToggleProdutos.addEventListener('click', () => {
+                const isHidden = conteudoProdutosEl.classList.contains('hidden');
+                if (isHidden) {
+                    conteudoProdutosEl.classList.remove('hidden');
+                    if (iconeToggleProdutosEl) iconeToggleProdutosEl.innerText = 'Recolher ▴';
+                } else {
+                    conteudoProdutosEl.classList.add('hidden');
+                    if (iconeToggleProdutosEl) iconeToggleProdutosEl.innerText = 'Ver Produtos ▾';
+                }
+            });
+        }
+
         function obterProdutosCrossSellSelecionados() {
             const checkboxes = document.querySelectorAll('.checkbox-produto-cross:checked');
             const produtos = [];
@@ -2242,24 +2302,47 @@
             const labelTotal = document.getElementById('labelValorTotalBotao');
             const labelSubtotal = document.getElementById('labelSubtotalExtras');
             const labelSubtotalProd = document.getElementById('labelSubtotalProdutosCrossSell');
+            const badgeStatusExtras = document.getElementById('badgeStatusExtrasResumo');
+            const badgeContadorExtras = document.getElementById('badgeContadorExtras');
+            const badgeStatusProd = document.getElementById('badgeStatusProdutosResumo');
+            const badgeContadorProd = document.getElementById('badgeContadorProdutos');
+
             if (!selectServico) return;
             const opt = selectServico.options[selectServico.selectedIndex];
             const precoBase = opt && opt.value !== "" ? parseFloat(opt.getAttribute('data-preco') || 0) : 0;
-            const { subtotal: subtotalExtras } = obterExtrasSelecionados();
-            const { subtotal: subtotalProdutos } = obterProdutosCrossSellSelecionados();
+            const { extras, subtotal: subtotalExtras } = obterExtrasSelecionados();
+            const { produtos: produtosCross, subtotal: subtotalProdutos } = obterProdutosCrossSellSelecionados();
             const precoTotal = precoBase + subtotalExtras + subtotalProdutos;
 
             if (labelSubtotal) labelSubtotal.innerText = `R$ ${subtotalExtras.toFixed(2)}`;
             if (labelSubtotalProd) labelSubtotalProd.innerText = `R$ ${subtotalProdutos.toFixed(2)}`;
             if (labelTotal) labelTotal.innerText = `(R$ ${precoTotal.toFixed(2)})`;
 
-            const btnPlanoVip = document.getElementById('btnAgendarPlanoVip');
-            if (btnPlanoVip) {
-                const adicionaisTotais = subtotalExtras + subtotalProdutos;
-                if (adicionaisTotais > 0) {
-                    btnPlanoVip.innerHTML = `✨ Agendar com Plano VIP (+ R$ ${adicionaisTotais.toFixed(2)} adicionais)`;
+            // Atualiza badge de extras
+            if (badgeStatusExtras && badgeContadorExtras) {
+                if (extras.length > 0) {
+                    badgeStatusExtras.innerText = `${extras.length} serviço(s) adicional(is): ${extras.map(e => e.nome).join(', ')}`;
+                    badgeStatusExtras.className = "text-[11px] text-amber-300 font-semibold truncate block";
+                    badgeContadorExtras.innerText = `+ R$ ${subtotalExtras.toFixed(2)}`;
+                    badgeContadorExtras.classList.remove('hidden');
                 } else {
-                    btnPlanoVip.innerHTML = `✨ Agendar Gratuitamente com Plano VIP (R$ 0,00)`;
+                    badgeStatusExtras.innerText = "Opcional • Nenhum adicional selecionado";
+                    badgeStatusExtras.className = "text-[11px] text-zinc-400 font-medium";
+                    badgeContadorExtras.classList.add('hidden');
+                }
+            }
+
+            // Atualiza badge de produtos
+            if (badgeStatusProd && badgeContadorProd) {
+                if (produtosCross.length > 0) {
+                    badgeStatusProd.innerText = `${produtosCross.length} produto(s) adicionado(s)`;
+                    badgeStatusProd.className = "text-[11px] text-amber-300 font-semibold truncate block";
+                    badgeContadorProd.innerText = `+ R$ ${subtotalProdutos.toFixed(2)}`;
+                    badgeContadorProd.classList.remove('hidden');
+                } else {
+                    badgeStatusProd.innerText = "Opcional • Pomadas, óleos e cosméticos";
+                    badgeStatusProd.className = "text-[11px] text-zinc-400 font-medium";
+                    badgeContadorProd.classList.add('hidden');
                 }
             }
         }
