@@ -146,6 +146,10 @@
                     <span class="text-lg">📊</span>
                     <span>Visão Geral & Caixa</span>
                 </button>
+                <button id="tabNavBilling" class="sidebar-link w-full text-left">
+                    <span class="text-lg">💰</span>
+                    <span>Faturamento Mensal</span>
+                </button>
                 <button id="tabNavSchedule" class="sidebar-link w-full text-left">
                     <span class="text-lg">📅</span>
                     <span>Agenda de Clientes</span>
@@ -299,6 +303,134 @@
                     </div>
                     <div id="listaAtendimentosHoje" class="space-y-2 text-sm text-zinc-300">
                         <p class="text-xs text-zinc-500">Carregando próximos clientes...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 1.5 ABA: FATURAMENTO MENSAL & HISTÓRICO FINANCEIRO -->
+            <section id="viewBilling" class="space-y-6 hidden">
+                <!-- Cabeçalho e Filtro de Mês/Ano -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-zinc-950/90 p-4 rounded-2xl border border-zinc-800">
+                    <div>
+                        <h2 class="text-xl font-bold text-white uppercase flex items-center gap-2">
+                            <span>💰</span> Faturamento & Caixa Mensal
+                        </h2>
+                        <p class="text-xs text-zinc-400">Histórico financeiro consolidado de agendamentos, serviços adicionais, planos e estornos.</p>
+                    </div>
+
+                    <!-- Controles de Mês -->
+                    <div class="flex items-center gap-2 bg-black p-1.5 rounded-xl border border-zinc-800">
+                        <button id="btnMesAnteriorFaturamento" class="px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg text-xs font-bold transition cursor-pointer" title="Mês Anterior">
+                            ◀
+                        </button>
+                        <select id="selectMesFaturamento" class="bg-zinc-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-zinc-700 focus:outline-none focus:border-dourado cursor-pointer">
+                            <option value="0">Janeiro</option>
+                            <option value="1">Fevereiro</option>
+                            <option value="2">Março</option>
+                            <option value="3">Abril</option>
+                            <option value="4">Maio</option>
+                            <option value="5">Junho</option>
+                            <option value="6">Julho</option>
+                            <option value="7">Agosto</option>
+                            <option value="8">Setembro</option>
+                            <option value="9">Outubro</option>
+                            <option value="10">Novembro</option>
+                            <option value="11">Dezembro</option>
+                        </select>
+                        <select id="selectAnoFaturamento" class="bg-zinc-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-zinc-700 focus:outline-none focus:border-dourado cursor-pointer">
+                            <option value="2025">2025</option>
+                            <option value="2026">2026</option>
+                            <option value="2027">2027</option>
+                        </select>
+                        <button id="btnMesSeguinteFaturamento" class="px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg text-xs font-bold transition cursor-pointer" title="Mês Seguinte">
+                            ▶
+                        </button>
+                        <button id="btnRecarregarFaturamento" class="px-3 py-1.5 bg-dourado/20 hover:bg-dourado/30 text-dourado border border-dourado/40 rounded-lg text-xs font-bold transition cursor-pointer ml-1" title="Recarregar dados">
+                            🔄
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 4 Cards de Métricas do Mês -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="card-dark p-5 rounded-2xl border border-green-900/60 bg-gradient-to-br from-green-950/20 to-black space-y-1 shadow-lg">
+                        <span class="text-[11px] font-bold uppercase text-green-400 tracking-wider">Faturamento Líquido (Mês)</span>
+                        <h3 id="statMesFaturamentoLiquido" class="text-3xl font-extrabold text-green-400 font-mono">R$ 0,00</h3>
+                        <p class="text-[10px] text-zinc-500">Entradas aprovadas menos estornos</p>
+                    </div>
+
+                    <div class="card-dark p-5 rounded-2xl border border-purple-900/60 bg-gradient-to-br from-purple-950/20 to-black space-y-1 shadow-lg">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[11px] font-bold uppercase text-purple-300 tracking-wider">Planos Mensais Pagos</span>
+                            <span id="badgeMesQtdPlanos" class="text-[10px] bg-purple-900/80 text-purple-200 px-2 py-0.5 rounded font-bold">0 planos</span>
+                        </div>
+                        <h3 id="statMesTotalPlanos" class="text-3xl font-extrabold text-purple-300 font-mono">R$ 0,00</h3>
+                        <p class="text-[10px] text-zinc-500">Receita de assinaturas VIP no mês</p>
+                    </div>
+
+                    <div class="card-dark p-5 rounded-2xl border border-amber-900/60 bg-gradient-to-br from-amber-950/20 to-black space-y-1 shadow-lg">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[11px] font-bold uppercase text-amber-400 tracking-wider">Agendamentos & Extras</span>
+                            <span id="badgeMesQtdAgendamentos" class="text-[10px] bg-amber-900/80 text-amber-200 px-2 py-0.5 rounded font-bold">0 reservas</span>
+                        </div>
+                        <h3 id="statMesTotalAgendamentos" class="text-3xl font-extrabold text-amber-300 font-mono">R$ 0,00</h3>
+                        <p class="text-[10px] text-zinc-500">Taxas, serviços e extras recebidos</p>
+                    </div>
+
+                    <div class="card-dark p-5 rounded-2xl border border-red-900/60 bg-gradient-to-br from-red-950/20 to-black space-y-1 shadow-lg">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[11px] font-bold uppercase text-red-400 tracking-wider">Estornos & Devoluções</span>
+                            <span id="badgeMesQtdEstornos" class="text-[10px] bg-red-900/80 text-red-200 px-2 py-0.5 rounded font-bold">0 estornos</span>
+                        </div>
+                        <h3 id="statMesTotalEstornos" class="text-3xl font-extrabold text-red-400 font-mono">R$ 0,00</h3>
+                        <p class="text-[10px] text-zinc-500">Devolvido no Mercado Pago ou cancelado</p>
+                    </div>
+                </div>
+
+                <!-- Histórico Completo de Transações -->
+                <div class="card-dark p-6 rounded-2xl border border-zinc-800 space-y-4">
+                    <div class="flex flex-col md:flex-row justify-between md:items-center gap-3">
+                        <div>
+                            <h3 class="text-lg font-bold text-white uppercase">Histórico de Pagamentos & Transações</h3>
+                            <p class="text-xs text-zinc-400">Extrato detalhado de todas as transações registradas no mês selecionado.</p>
+                        </div>
+
+                        <!-- Filtros Rápidos -->
+                        <div class="flex flex-wrap items-center gap-2">
+                            <div class="relative flex-1 min-w-[200px]">
+                                <input type="text" id="inputBuscaFaturamento" placeholder="Buscar cliente, tel ou ID..." class="w-full pl-8 pr-3 py-1.5 bg-zinc-900 text-white text-xs rounded-xl border border-zinc-800 focus:outline-none focus:border-dourado">
+                                <span class="absolute left-2.5 top-2 text-zinc-500 text-xs">🔍</span>
+                            </div>
+
+                            <select id="selectFiltroTipoFaturamento" class="bg-zinc-900 text-white text-xs px-3 py-1.5 rounded-xl border border-zinc-800 focus:outline-none focus:border-dourado cursor-pointer">
+                                <option value="todos">Todos os Tipos</option>
+                                <option value="aprovados">✅ Aprovados</option>
+                                <option value="estornados">↩️ Estornados</option>
+                                <option value="planos">👑 Planos Mensais</option>
+                                <option value="agendamentos">✂️ Agendamentos & Extras</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Tabela de Transações -->
+                    <div class="overflow-x-auto rounded-xl border border-zinc-800">
+                        <table class="w-full text-left text-xs text-zinc-300">
+                            <thead class="bg-zinc-900/90 text-zinc-400 uppercase text-[10px] font-bold border-b border-zinc-800">
+                                <tr>
+                                    <th class="p-3.5">Data / Hora</th>
+                                    <th class="p-3.5">Tipo & Descrição</th>
+                                    <th class="p-3.5">Cliente</th>
+                                    <th class="p-3.5">Método / Transação</th>
+                                    <th class="p-3.5 text-right">Valor</th>
+                                    <th class="p-3.5 text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaHistoricoFaturamentoBody" class="divide-y divide-zinc-800/60 font-sans">
+                                <tr>
+                                    <td colspan="6" class="p-6 text-center text-zinc-500">Carregando histórico de transações...</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </section>
@@ -1459,6 +1591,7 @@
 
         const tabTitles = {
             overview: "📊 Visão Geral & Caixa",
+            billing: "💰 Faturamento & Caixa Mensal",
             schedule: "📅 Agenda de Clientes",
             vipClients: "👑 Clientes Mensalistas",
             services: "✂️ Serviços & Preços",
@@ -1471,6 +1604,7 @@
 
         const tabs = {
             overview: { btn: document.getElementById('tabNavOverview'), view: document.getElementById('viewOverview') },
+            billing: { btn: document.getElementById('tabNavBilling'), view: document.getElementById('viewBilling') },
             schedule: { btn: document.getElementById('tabNavSchedule'), view: document.getElementById('viewSchedule') },
             vipClients: { btn: document.getElementById('tabNavVipClients'), view: document.getElementById('viewVipClients') },
             services: { btn: document.getElementById('tabNavServices'), view: document.getElementById('viewServices') },
@@ -1525,7 +1659,9 @@
             fecharSidebarMobile();
 
             // Atualização rápida sob demanda
-            if (nomeAba === 'schedule') {
+            if (nomeAba === 'billing') {
+                carregarFaturamentoMensalAdmin();
+            } else if (nomeAba === 'schedule') {
                 carregarAgendamentosAdmin(filtroAgendamentosAtual);
             } else if (nomeAba === 'overview') {
                 carregarMetricasOverview();
@@ -2519,27 +2655,56 @@
             const listaHojeDiv = document.getElementById('listaAtendimentosHoje');
             let atendimentosHojeList = [];
 
+            // 1. Agendamentos
             lista.forEach(ag => {
                 total++;
-                const valor = Number(ag.preco || 40);
-                const ehFuturo = ag.dataHora >= agora;
+                const ehCanceladoOuEstornado = ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'reembolsado';
                 const ehConcluido = ag.status === 'concluido';
                 const ehFalta = ag.status === 'falta';
+                const ehFuturo = ag.dataHora >= agora;
 
                 if (ag.dataHora <= limite2Horas && ag.status === 'confirmado') {
                     pendentes2Horas++;
                 }
 
-                if (ehConcluido || (!ehFuturo && !ehFalta)) {
-                    faturamentoRecebido += valor;
-                } else if (ehFuturo && !ehFalta) {
-                    faturamentoFuturo += valor;
+                if (!ehCanceladoOuEstornado) {
+                    if (ag.isPlano) {
+                        // Mensalista: serviço coberto é R$ 0,00. Contabiliza apenas se pagou taxa de adicionais/produtos
+                        const taxaExtras = Number(ag.taxaReservaPaga || 0);
+                        if (taxaExtras > 0) {
+                            faturamentoRecebido += taxaExtras;
+                        }
+                    } else {
+                        // Cliente comum
+                        const precoTotal = Number(ag.preco || 40);
+                        const taxaPaga = Number(ag.taxaReservaPaga !== undefined ? ag.taxaReservaPaga : (ag.modalidadePagamento === 'total' ? precoTotal : 10));
+
+                        if (ehConcluido || (!ehFuturo && !ehFalta)) {
+                            faturamentoRecebido += precoTotal;
+                        } else if (ehFuturo && !ehFalta) {
+                            if (ag.modalidadePagamento === 'total') {
+                                faturamentoRecebido += precoTotal;
+                            } else {
+                                faturamentoRecebido += taxaPaga;
+                                faturamentoFuturo += Math.max(0, precoTotal - taxaPaga);
+                            }
+                        }
+                    }
                 }
 
                 if (ag.dataHora.startsWith(hojeStr)) {
                     atendimentosHojeList.push(ag);
                 }
             });
+
+            // 2. Planos Mensais Vendidos (Soma receita real de planos ao faturamento já recebido)
+            if (listaMensalistasCache && listaMensalistasCache.length > 0) {
+                listaMensalistasCache.forEach(sub => {
+                    if (sub.status !== 'cancelado' && sub.status !== 'reembolsado') {
+                        faturamentoRecebido += Number(sub.precoPlano || 0);
+                    }
+                });
+            }
 
             // Ordena atendimentos de hoje por hora cronológica crescente
             atendimentosHojeList.sort((a, b) => a.dataHora.localeCompare(b.dataHora));
@@ -2618,6 +2783,344 @@
                 await buscarAgendamentosFirestore(false);
             }
         };
+
+        // ==========================================
+        // GESTÃO DE FATURAMENTO MENSAL & EXTRATO FINANCEIRO
+        // ==========================================
+        let mesFaturamentoAtual = new Date().getMonth();
+        let anoFaturamentoAtual = new Date().getFullYear();
+        let listaTransacoesMesCache = [];
+
+        window.carregarFaturamentoMensalAdmin = async function(forcarRecarregar = false) {
+            const selectMes = document.getElementById('selectMesFaturamento');
+            const selectAno = document.getElementById('selectAnoFaturamento');
+            const tbody = document.getElementById('tabelaHistoricoFaturamentoBody');
+
+            if (selectMes) selectMes.value = mesFaturamentoAtual;
+            if (selectAno) {
+                if (selectAno.options.length <= 1) {
+                    selectAno.innerHTML = `
+                        <option value="2025">2025</option>
+                        <option value="2026">2026</option>
+                        <option value="2027">2027</option>
+                    `;
+                }
+                selectAno.value = anoFaturamentoAtual;
+            }
+
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan='6' class='p-6 text-center text-zinc-400'>🔄 Consolidando receitas e estornos do mês...</td></tr>`;
+            }
+
+            try {
+                if (forcarRecarregar || window.listaAgendamentosMemoria.length === 0) {
+                    await buscarAgendamentosFirestore(false);
+                }
+                if (forcarRecarregar || listaMensalistasCache.length === 0) {
+                    const querySnap = await getDocs(collection(db, "assinaturasClientes"));
+                    const lista = [];
+                    querySnap.forEach(docSnap => {
+                        const data = docSnap.data();
+                        const processado = processarCicloMensalistaAdmin({ id: docSnap.id, ...data });
+                        if (processado) lista.push(processado);
+                    });
+                    listaMensalistasCache = lista;
+                }
+
+                const transacoes = [];
+                let totalPlanos = 0;
+                let qtdPlanos = 0;
+                let totalAgendamentos = 0;
+                let qtdAgendamentos = 0;
+                let totalEstornos = 0;
+                let qtdEstornos = 0;
+
+                const pad = n => String(n).padStart(2, '0');
+                const prefixoMesAno = `${anoFaturamentoAtual}-${pad(mesFaturamentoAtual + 1)}`;
+
+                // 1. Processa Planos Mensais
+                listaMensalistasCache.forEach(sub => {
+                    const dataTransacao = sub.dataPagamento || sub.criadoEm || '';
+                    if (dataTransacao && dataTransacao.startsWith(prefixoMesAno)) {
+                        const valor = Number(sub.precoPlano || 0);
+                        const ehEstornado = sub.status === 'cancelado' || sub.status === 'reembolsado';
+
+                        if (ehEstornado) {
+                            totalEstornos += valor;
+                            qtdEstornos++;
+                            transacoes.push({
+                                dataHora: dataTransacao,
+                                tipo: 'plano',
+                                tipoLabel: '👑 Plano Mensal',
+                                descricao: sub.nomePlano || 'Assinatura VIP',
+                                cliente: sub.cliente || 'Cliente VIP',
+                                telefone: sub.telefone || '',
+                                metodo: sub.metodoPagamento || 'Pix Mercado Pago',
+                                transacaoId: sub.idPagamento || 'Assinatura',
+                                valor: valor,
+                                status: 'estornado',
+                                motivo: sub.motivoCancelamento || 'Assinatura Cancelada / Estornada'
+                            });
+                        } else {
+                            totalPlanos += valor;
+                            qtdPlanos++;
+                            transacoes.push({
+                                dataHora: dataTransacao,
+                                tipo: 'plano',
+                                tipoLabel: '👑 Plano Mensal',
+                                descricao: sub.nomePlano || 'Assinatura VIP',
+                                cliente: sub.cliente || 'Cliente VIP',
+                                telefone: sub.telefone || '',
+                                metodo: sub.metodoPagamento || 'Pix Mercado Pago',
+                                transacaoId: sub.idPagamento || 'Assinatura Ativa',
+                                valor: valor,
+                                status: 'aprovado',
+                                motivo: ''
+                            });
+                        }
+                    }
+                });
+
+                // 2. Processa Agendamentos e Extras
+                window.listaAgendamentosMemoria.forEach(ag => {
+                    const dataTransacao = ag.criadoEm || ag.dataHora || '';
+                    if (dataTransacao && dataTransacao.startsWith(prefixoMesAno)) {
+                        const ehEstornado = ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'reembolsado';
+
+                        if (ag.isPlano) {
+                            // Mensalista VIP: exibe apenas se contratou extras/produtos
+                            const taxaExtras = Number(ag.taxaReservaPaga || 0);
+                            if (taxaExtras > 0) {
+                                if (ehEstornado) {
+                                    totalEstornos += taxaExtras;
+                                    qtdEstornos++;
+                                    transacoes.push({
+                                        dataHora: dataTransacao,
+                                        tipo: 'extras',
+                                        tipoLabel: '➕ Extras Mensalista',
+                                        descricao: `${ag.servico || 'Corte'} + Adicionais`,
+                                        cliente: ag.cliente || 'Cliente VIP',
+                                        telefone: ag.telefone || '',
+                                        metodo: ag.metodoPagamento || 'Pix Mercado Pago',
+                                        transacaoId: ag.idPagamento || 'Extras VIP',
+                                        valor: taxaExtras,
+                                        status: 'estornado',
+                                        motivo: ag.motivoCancelamento || 'Agendamento Estornado'
+                                    });
+                                } else {
+                                    totalAgendamentos += taxaExtras;
+                                    qtdAgendamentos++;
+                                    transacoes.push({
+                                        dataHora: dataTransacao,
+                                        tipo: 'extras',
+                                        tipoLabel: '➕ Extras Mensalista',
+                                        descricao: `${ag.servico || 'Corte'} + Adicionais`,
+                                        cliente: ag.cliente || 'Cliente VIP',
+                                        telefone: ag.telefone || '',
+                                        metodo: ag.metodoPagamento || 'Pix Mercado Pago',
+                                        transacaoId: ag.idPagamento || 'Extras VIP',
+                                        valor: taxaExtras,
+                                        status: 'aprovado',
+                                        motivo: ''
+                                    });
+                                }
+                            }
+                        } else {
+                            // Cliente Comum
+                            const precoTotal = Number(ag.preco || 40);
+                            const taxaPaga = Number(ag.taxaReservaPaga !== undefined ? ag.taxaReservaPaga : (ag.modalidadePagamento === 'total' ? precoTotal : 10));
+                            const valorEntrada = (ag.status === 'concluido' || ag.modalidadePagamento === 'total') ? precoTotal : taxaPaga;
+
+                            if (ehEstornado) {
+                                totalEstornos += taxaPaga;
+                                qtdEstornos++;
+                                transacoes.push({
+                                    dataHora: dataTransacao,
+                                    tipo: 'agendamento',
+                                    tipoLabel: '✂️ Agendamento Geral',
+                                    descricao: ag.servico || 'Corte & Barba',
+                                    cliente: ag.cliente || 'Cliente',
+                                    telefone: ag.telefone || '',
+                                    metodo: ag.metodoPagamento || 'Pix Mercado Pago',
+                                    transacaoId: ag.idPagamento || 'Reserva',
+                                    valor: taxaPaga,
+                                    status: 'estornado',
+                                    motivo: ag.motivoCancelamento || 'Cancelado / Reembolsado'
+                                });
+                            } else {
+                                totalAgendamentos += valorEntrada;
+                                qtdAgendamentos++;
+                                transacoes.push({
+                                    dataHora: dataTransacao,
+                                    tipo: 'agendamento',
+                                    tipoLabel: '✂️ Agendamento Geral',
+                                    descricao: ag.servico || 'Corte & Barba',
+                                    cliente: ag.cliente || 'Cliente',
+                                    telefone: ag.telefone || '',
+                                    metodo: ag.metodoPagamento || (ag.modalidadePagamento === 'total' ? 'Pix Total' : 'Taxa Reserva'),
+                                    transacaoId: ag.idPagamento || 'Reserva Confirmada',
+                                    valor: valorEntrada,
+                                    status: 'aprovado',
+                                    motivo: ''
+                                });
+                            }
+                        }
+                    }
+                });
+
+                transacoes.sort((a, b) => (b.dataHora || '').localeCompare(a.dataHora || ''));
+                listaTransacoesMesCache = transacoes;
+
+                const faturamentoLiquido = (totalPlanos + totalAgendamentos) - totalEstornos;
+
+                const statLiq = document.getElementById('statMesFaturamentoLiquido');
+                const statPlan = document.getElementById('statMesTotalPlanos');
+                const badgePlan = document.getElementById('badgeMesQtdPlanos');
+                const statAg = document.getElementById('statMesTotalAgendamentos');
+                const badgeAg = document.getElementById('badgeMesQtdAgendamentos');
+                const statEst = document.getElementById('statMesTotalEstornos');
+                const badgeEst = document.getElementById('badgeMesQtdEstornos');
+
+                if (statLiq) statLiq.innerText = `R$ ${Math.max(0, faturamentoLiquido).toFixed(2)}`;
+                if (statPlan) statPlan.innerText = `R$ ${totalPlanos.toFixed(2)}`;
+                if (badgePlan) badgePlan.innerText = `${qtdPlanos} plano(s)`;
+                if (statAg) statAg.innerText = `R$ ${totalAgendamentos.toFixed(2)}`;
+                if (badgeAg) badgeAg.innerText = `${qtdAgendamentos} reserva(s)`;
+                if (statEst) statEst.innerText = `R$ ${totalEstornos.toFixed(2)}`;
+                if (badgeEst) badgeEst.innerText = `${qtdEstornos} estorno(s)`;
+
+                renderizarTabelaHistoricoFaturamento();
+
+            } catch (err) {
+                console.error("Erro ao processar faturamento mensal:", err);
+                if (tbody) tbody.innerHTML = `<tr><td colspan='6' class='p-6 text-center text-red-400'>Erro ao carregar faturamento: ${err.message}</td></tr>`;
+            }
+        };
+
+        function renderizarTabelaHistoricoFaturamento() {
+            const tbody = document.getElementById('tabelaHistoricoFaturamentoBody');
+            if (!tbody) return;
+
+            const termoBusca = (document.getElementById('inputBuscaFaturamento')?.value || '').trim().toLowerCase();
+            const filtroTipo = document.getElementById('selectFiltroTipoFaturamento')?.value || 'todos';
+
+            let filtradas = listaTransacoesMesCache.filter(item => {
+                const matchTexto = !termoBusca ||
+                    (item.cliente && item.cliente.toLowerCase().includes(termoBusca)) ||
+                    (item.telefone && item.telefone.replace(/\D/g, '').includes(termoBusca)) ||
+                    (item.transacaoId && item.transacaoId.toLowerCase().includes(termoBusca)) ||
+                    (item.descricao && item.descricao.toLowerCase().includes(termoBusca));
+
+                if (!matchTexto) return false;
+
+                if (filtroTipo === 'aprovados') return item.status === 'aprovado';
+                if (filtroTipo === 'estornados') return item.status === 'estornado';
+                if (filtroTipo === 'planos') return item.tipo === 'plano';
+                if (filtroTipo === 'agendamentos') return item.tipo === 'agendamento' || item.tipo === 'extras';
+
+                return true;
+            });
+
+            if (filtradas.length === 0) {
+                tbody.innerHTML = `<tr><td colspan='6' class='p-8 text-center text-zinc-500'>Nenhuma transação encontrada para os filtros selecionados.</td></tr>`;
+                return;
+            }
+
+            let html = "";
+            filtradas.forEach(tx => {
+                const dataFormatada = tx.dataHora ? tx.dataHora.replace('T', ' ').slice(0, 16) : '--';
+                const ehAprovado = tx.status === 'aprovado';
+
+                let badgeTipo = "";
+                if (tx.tipo === 'plano') {
+                    badgeTipo = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-950 text-purple-300 border border-purple-800 uppercase">👑 Plano Mensal</span>`;
+                } else if (tx.tipo === 'extras') {
+                    badgeTipo = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-800 uppercase">➕ Extras VIP</span>`;
+                } else {
+                    badgeTipo = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-950 text-blue-300 border border-blue-800 uppercase">✂️ Agendamento</span>`;
+                }
+
+                let badgeStatus = "";
+                if (ehAprovado) {
+                    badgeStatus = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-950/80 text-green-400 border border-green-800">✅ Confirmado</span>`;
+                } else {
+                    badgeStatus = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-950/80 text-red-400 border border-red-800" title="${tx.motivo || 'Estornado'}">↩️ Estornado</span>`;
+                }
+
+                const telLimpo = (tx.telefone || '').replace(/\D/g, '');
+                const zapLink = telLimpo ? `<a href="https://wa.me/55${telLimpo}" target="_blank" class="text-dourado hover:underline text-[11px] block">📲 ${tx.telefone}</a>` : '<span class="text-zinc-500 text-[11px] block">Sem tel</span>';
+
+                html += `
+                    <tr class="hover:bg-zinc-900/50 transition">
+                        <td class="p-3.5 whitespace-nowrap font-mono text-zinc-400 text-xs">
+                            ${dataFormatada}
+                        </td>
+                        <td class="p-3.5">
+                            <div class="space-y-0.5">
+                                ${badgeTipo}
+                                <p class="text-white font-medium text-xs mt-1">${tx.descricao}</p>
+                            </div>
+                        </td>
+                        <td class="p-3.5">
+                            <p class="font-bold text-white text-xs">${tx.cliente}</p>
+                            ${zapLink}
+                        </td>
+                        <td class="p-3.5">
+                            <p class="text-zinc-300 text-xs">${tx.metodo}</p>
+                            <p class="text-[10px] text-zinc-500 font-mono">ID: ${tx.transacaoId}</p>
+                        </td>
+                        <td class="p-3.5 text-right whitespace-nowrap">
+                            <span class="font-bold text-sm font-mono ${ehAprovado ? 'text-green-400' : 'text-red-400 line-through'}">
+                                R$ ${tx.valor.toFixed(2)}
+                            </span>
+                        </td>
+                        <td class="p-3.5 text-center whitespace-nowrap">
+                            ${badgeStatus}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        // Listeners dos controles de faturamento
+        document.getElementById('selectMesFaturamento')?.addEventListener('change', (e) => {
+            mesFaturamentoAtual = parseInt(e.target.value);
+            carregarFaturamentoMensalAdmin();
+        });
+
+        document.getElementById('selectAnoFaturamento')?.addEventListener('change', (e) => {
+            anoFaturamentoAtual = parseInt(e.target.value);
+            carregarFaturamentoMensalAdmin();
+        });
+
+        document.getElementById('btnMesAnteriorFaturamento')?.addEventListener('click', () => {
+            if (mesFaturamentoAtual === 0) {
+                mesFaturamentoAtual = 11;
+                anoFaturamentoAtual--;
+            } else {
+                mesFaturamentoAtual--;
+            }
+            carregarFaturamentoMensalAdmin();
+        });
+
+        document.getElementById('btnMesSeguinteFaturamento')?.addEventListener('click', () => {
+            if (mesFaturamentoAtual === 11) {
+                mesFaturamentoAtual = 0;
+                anoFaturamentoAtual++;
+            } else {
+                mesFaturamentoAtual++;
+            }
+            carregarFaturamentoMensalAdmin();
+        });
+
+        document.getElementById('btnRecarregarFaturamento')?.addEventListener('click', () => {
+            carregarFaturamentoMensalAdmin(true);
+        });
+
+        document.getElementById('inputBuscaFaturamento')?.addEventListener('input', renderizarTabelaHistoricoFaturamento);
+        document.getElementById('selectFiltroTipoFaturamento')?.addEventListener('change', renderizarTabelaHistoricoFaturamento);
 
         window.carregarAgendamentosAdmin = async function(tipo = 'futuros') {
             filtroAgendamentosAtual = tipo;
