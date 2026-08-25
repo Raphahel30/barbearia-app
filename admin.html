@@ -1937,6 +1937,7 @@
                     try { carregarPlanosAdmin(); } catch (e) { console.warn(e); }
                     try { carregarProdutosAdmin(); } catch (e) { console.warn(e); }
                     try { carregarDiasBloqueadosAdmin(); } catch (e) { console.warn(e); }
+                    try { carregarExpedienteAdmin(); } catch (e) { console.warn(e); }
                     try { carregarConfiguracoesMercadoPago(); } catch (e) { console.warn(e); }
                     try { await carregarConfiguracoesServidorWa(); } catch (e) { console.warn(e); }
                     try { carregarStatusWhatsAppBot(); } catch (e) { console.warn(e); }
@@ -3377,9 +3378,15 @@
                 const dataFormatadaPt = `${String(dia).padStart(2, '0')}/${String(mes).padStart(2, '0')}/${ano}`;
 
                 const ehHoje = dataFiltroAgendaSelecionada === hojeStr;
-                const textoData = ehHoje 
+                let textoData = ehHoje 
                     ? `📅 Agenda de Hoje • ${nomeDiaSemana}, ${dataFormatadaPt}` 
                     : `📅 Agenda de ${nomeDiaSemana}, ${dataFormatadaPt}`;
+
+                if (window.configExpedienteCache && window.configExpedienteCache.temPausa) {
+                    const pIni = window.configExpedienteCache.pausaInicio || '11:00';
+                    const pFim = window.configExpedienteCache.pausaFim || '12:00';
+                    textoData += ` <span class="text-[11px] text-amber-300 font-semibold bg-amber-950/80 border border-amber-800 px-2 py-0.5 rounded-lg ml-2 inline-flex items-center gap-1">⏸️ Almoço/Pausa: ${pIni} às ${pFim}</span>`;
+                }
 
                 if (labelResumo) labelResumo.innerHTML = textoData;
                 if (subtitulo) subtitulo.innerText = ehHoje ? "Atendimentos de Hoje" : `Atendimentos de ${dataFormatadaPt}`;
@@ -4371,6 +4378,7 @@
                 const configSnap = await getDoc(doc(db, "configuracoes", "expediente"));
                 if (configSnap.exists()) {
                     const cfg = configSnap.data();
+                    window.configExpedienteCache = cfg;
                     if (cfg.abertura) inputAbertura.value = cfg.abertura;
                     if (cfg.fechamento) inputFechamento.value = cfg.fechamento;
                     if (cfg.intervaloMin && selectIntervalo) selectIntervalo.value = String(cfg.intervaloMin);
