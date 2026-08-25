@@ -284,11 +284,6 @@
                     </div>
                 </div>
 
-                <div id="bannerPlanoBeneficio" class="hidden p-3 rounded-lg bg-green-950/80 border border-green-700 text-green-300 text-xs font-semibold flex items-center gap-2">
-                    <span class="text-base">✨</span>
-                    <span id="bannerPlanoBeneficioTexto">Você possui 1 corte disponível nesta semana com seu Plano VIP! (Taxa de Reserva: R$ 0,00)</span>
-                </div>
-
                 <div id="containerBotoesAgendamento" class="space-y-2.5">
                     <div id="botoesPagamentoNormal" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         <button id="btnPagarTaxaReserva" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-bold py-2.5 px-3 rounded-lg transition uppercase tracking-wide cursor-pointer text-xs flex flex-col items-center justify-center shadow-lg">
@@ -300,10 +295,6 @@
                             <span id="labelValorTotalBotao" class="text-[11px] font-normal text-zinc-300">(R$ 40,00)</span>
                         </button>
                     </div>
-                    
-                    <button id="btnAgendarPlanoVip" type="button" class="hidden w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition uppercase tracking-wide cursor-pointer text-xs flex items-center justify-center gap-2 shadow-lg">
-                        ✨ Agendar Gratuitamente com Plano VIP (R$ 0,00)
-                    </button>
                 </div>
                 <p id="msgStatus" class="mt-2 text-center text-sm font-medium"></p>
             </div>
@@ -638,6 +629,88 @@
             <div class="pt-2">
                 <button id="btnFecharModal" type="button" class="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-2 rounded text-xs font-bold uppercase transition cursor-pointer">
                     Voltar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE AGENDAMENTO EXCLUSIVO DO PLANO MENSAL VIP -->
+    <div id="modalAgendamentoMensalista" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div class="bg-zinc-900 border border-dourado/80 p-5 sm:p-7 rounded-3xl max-w-lg w-full shadow-2xl space-y-4 relative my-6 text-left">
+            <button id="btnFecharModalAgendamentoMensalista" type="button" class="absolute top-4 right-4 text-zinc-400 hover:text-white text-xl font-bold transition">&times;</button>
+            
+            <div class="space-y-1">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">👑</span>
+                    <span class="text-[10px] font-extrabold uppercase tracking-widest text-dourado bg-dourado/10 border border-dourado/30 px-2.5 py-0.5 rounded-full">Área do Mensalista</span>
+                </div>
+                <h2 class="text-lg sm:text-xl font-extrabold text-white uppercase tracking-wide">Agendar Horário do Plano Mensal</h2>
+                <p id="subtituloSemanaModalMensalista" class="text-xs text-zinc-400">Semana 1 de 4 • Plano VIP</p>
+            </div>
+
+            <!-- Card do Serviço Incluso no Plano -->
+            <div class="bg-black/90 p-4 rounded-2xl border border-dourado/40 space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold uppercase text-zinc-300">✂️ Serviço Incluso no Plano:</span>
+                    <span class="bg-green-950 text-green-400 border border-green-700 px-2 py-0.5 rounded text-[10px] font-extrabold uppercase">100% Isento (R$ 0,00)</span>
+                </div>
+                <h3 id="nomeServicoInclusoPlano" class="text-sm font-bold text-dourado">Apenas corte</h3>
+                <p class="text-[11px] text-zinc-400">Este atendimento já está 100% pago na sua assinatura mensal e consumirá o crédito da semana ativa.</p>
+            </div>
+
+            <!-- Adicionar Serviços Extras (Opcional) -->
+            <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <label class="text-xs font-bold text-zinc-200 uppercase tracking-wider">➕ Adicionar Serviços Extras (Opcional):</label>
+                    <span class="text-[10px] text-zinc-400">Cobrado à parte</span>
+                </div>
+                <p class="text-[11px] text-zinc-400">Deseja incluir outro serviço que não está no seu plano mensal? Selecione abaixo:</p>
+                <div id="containerServicosExtrasMensalista" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-44 overflow-y-auto pr-1">
+                    <p class="text-xs text-zinc-500 col-span-full">Carregando serviços...</p>
+                </div>
+            </div>
+
+            <!-- Seleção de Data e Horário -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                    <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">📅 Escolha a Data:</label>
+                    <input type="date" id="inputDataAgendamentoMensalista" class="w-full px-3 py-2.5 bg-black rounded-xl border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado cursor-pointer font-sans">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">⏰ Horário Disponível:</label>
+                    <select id="selectHorarioAgendamentoMensalista" class="w-full px-3 py-2.5 bg-black rounded-xl border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado cursor-pointer">
+                        <option value="">Selecione a data primeiro</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Resumo Financeiro em Tempo Real -->
+            <div class="bg-black/90 p-3.5 rounded-2xl border border-zinc-800 space-y-1.5 text-xs text-zinc-300">
+                <div class="flex justify-between items-center">
+                    <span>Serviço do Plano:</span>
+                    <span class="text-green-400 font-bold">R$ 0,00 (Incluso)</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span>Serviços Extras Selecionados:</span>
+                    <span id="valorExtrasDisplayMensalista" class="text-zinc-200 font-bold">R$ 0,00</span>
+                </div>
+                <div class="border-t border-zinc-800 pt-1.5 flex justify-between items-center font-bold text-sm">
+                    <span class="text-white">Total a Pagar Hoje:</span>
+                    <span id="valorTotalDisplayMensalista" class="text-dourado font-extrabold text-base">R$ 0,00</span>
+                </div>
+            </div>
+
+            <!-- Mensagem de Status / Erro -->
+            <p id="msgStatusModalMensalista" class="text-xs text-center font-medium min-h-[16px] hidden"></p>
+
+            <!-- Ações -->
+            <div class="flex flex-col sm:flex-row gap-2 pt-1">
+                <button id="btnCancelarModalMensalista" type="button" class="w-full sm:w-1/3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-3 rounded-xl text-xs uppercase transition cursor-pointer">
+                    Voltar
+                </button>
+                <button id="btnConfirmarAgendamentoMensalista" type="button" class="w-full sm:w-2/3 bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider transition cursor-pointer shadow-lg flex items-center justify-center gap-1.5">
+                    <span>✓</span>
+                    <span id="btnConfirmarTextoMensalista">Confirmar Agendamento (R$ 0,00)</span>
                 </button>
             </div>
         </div>
@@ -1492,7 +1565,7 @@
                     dadosAssinaturaAtiva = info;
 
                     if (info && info.ehAtivo) {
-                        // Atualiza banner de destaque VIP no topo dos agendamentos
+                        // Atualiza banner de status VIP no topo dos agendamentos informando sobre a assinatura
                         if (cardVipAg && lblNomeVipAg) {
                             cardVipAg.classList.remove('hidden');
                             lblNomeVipAg.innerText = `${info.nomePlano} • Válido até ${info.dataFimFormatada} (${info.diasRestantes} dias restantes)`;
@@ -1500,15 +1573,15 @@
                                 if (info.semanaAtualInfo.status === 'disponivel') {
                                     if (badgeSemanaVip) {
                                         badgeSemanaVip.className = "bg-green-500 text-black px-2.5 py-1 rounded-full font-extrabold text-[10px] uppercase shadow animate-pulse";
-                                        badgeSemanaVip.innerText = `Semana ${info.semanaAtualInfo.numero}: Corte Grátis Disponível`;
+                                        badgeSemanaVip.innerText = `Semana ${info.semanaAtualInfo.numero}: 1 Corte Disponível`;
                                     }
-                                    if (descSemanaVip) descSemanaVip.innerHTML = `✨ Você tem <strong>1 corte 100% isento (R$ 0,00)</strong> disponível nesta semana (expira em ${info.semanaAtualInfo.diasAteFimSemana}d). Escolha data e horário abaixo!`;
+                                    if (descSemanaVip) descSemanaVip.innerHTML = `👑 Você possui <strong>1 corte incluso no seu plano</strong> para esta semana. Para agendar os serviços do seu plano com <strong>R$ 0,00</strong> ou adicionar extras, clique na aba <strong>Planos Mensais</strong>.`;
                                 } else if (info.semanaAtualInfo.status === 'agendado') {
                                     if (badgeSemanaVip) {
                                         badgeSemanaVip.className = "bg-blue-500 text-white px-2.5 py-1 rounded-full font-extrabold text-[10px] uppercase shadow";
                                         badgeSemanaVip.innerText = `Semana ${info.semanaAtualInfo.numero}: Já Agendado`;
                                     }
-                                    if (descSemanaVip) descSemanaVip.innerHTML = `📅 Seu corte desta semana já está agendado (${info.semanaAtualInfo.agendamentoData ? info.semanaAtualInfo.agendamentoData.replace('T', ' às ') : ''}).`;
+                                    if (descSemanaVip) descSemanaVip.innerHTML = `📅 Seu corte da Semana ${info.semanaAtualInfo.numero} já está agendado (${info.semanaAtualInfo.agendamentoData ? info.semanaAtualInfo.agendamentoData.replace('T', ' às ') : ''}).`;
                                 } else {
                                     if (badgeSemanaVip) {
                                         badgeSemanaVip.className = "bg-zinc-700 text-zinc-300 px-2.5 py-1 rounded-full font-extrabold text-[10px] uppercase shadow";
@@ -1580,9 +1653,9 @@
                                                 </p>
                                             </div>
                                         </div>
-                                        <button onclick="document.getElementById('btnTabClienteAgendamentos').click();" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-2">
+                                        <button onclick="window.abrirModalAgendamentoMensalista();" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-2">
                                             <span>📅</span>
-                                            <span>Agendar Meu Corte da Semana ${semAtual.numero} Agora</span>
+                                            <span>Agendar horário</span>
                                         </button>
                                     </div>
                                 `;
@@ -1648,7 +1721,7 @@
 
                                 <div class="bg-black/80 p-3.5 rounded-xl border border-amber-500/40 text-[11px] text-zinc-300 space-y-1">
                                     <p class="font-bold text-amber-300 flex items-center gap-1">📌 Regra Oficial das 4 Semanas:</p>
-                                    <p>Cada semana dá direito a 1 atendimento exclusivo. O corte deve ser obrigatoriamente utilizado dentro da respectiva semana vigente. Caso a semana feche sem uso ou ocorra falta ao horário marcado, o crédito daquela semana é <strong>expirado e perdido</strong>.</p>
+                                    <p>Cada semana dá direito a 1 atendimento exclusivo. O corte deve ser utilizado dentro da respectiva semana vigente. Caso a semana feche sem uso ou ocorra falta, o crédito daquela semana é <strong>expirado e perdido</strong>.</p>
                                 </div>
                             </div>
                         `;
@@ -1685,50 +1758,367 @@
                     `;
                 });
 
-                // Atualiza botões do agendamento se já houver uma data selecionada
-                const dtAtend = document.getElementById('dataAtendimento')?.value;
-                if (dtAtend) atualizarBotoesAgendamentoParaData(dtAtend);
-
             } catch (e) {
                 console.error(e);
             }
         }
 
-        function verificarBeneficioPlanoParaData(dataSelecionadaStr) {
-            if (!dadosAssinaturaAtiva || !dadosAssinaturaAtiva.ehAtivo || !dadosAssinaturaAtiva.semanas) {
-                return { elegivel: false };
+        // ==========================================
+        // FLUXO EXCLUSIVO DE AGENDAMENTO PARA MENSALISTAS
+        // ==========================================
+        let listaServicosGeralCache = [];
+        let extrasMensalistaSelecionados = [];
+
+        function obterServicoPrincipalDoPlano(nomePlano = '') {
+            const p = (nomePlano || '').toLowerCase();
+            if (p.includes('corte, barba e sobrancelha') || p.includes('corte e barba e sobrancelha')) {
+                return 'Corte, barba e sobrancelha';
+            }
+            if (p.includes('corte e barba')) {
+                return 'Corte e barba';
+            }
+            if (p.includes('corte e sobrancelha')) {
+                return 'Corte e sobrancelha';
+            }
+            if (p.includes('corte') || p.includes('cabelo')) {
+                return 'Apenas corte';
+            }
+            return nomePlano || 'Atendimento do Plano Mensal';
+        }
+
+        function verificarSeServicoJaEstaInclusoNoPlano(nomeServico = '', nomePlano = '') {
+            const s = (nomeServico || '').toLowerCase().trim();
+            const p = (nomePlano || '').toLowerCase().trim();
+
+            if (p.includes('corte, barba e sobrancelha') || p.includes('corte e barba e sobrancelha')) {
+                if (s.includes('corte') || s.includes('barba') || s.includes('sobrancelha')) return true;
+            } else if (p.includes('corte e barba')) {
+                if (s.includes('corte') && !s.includes('sobrancelha') && !s.includes('progressiva') && !s.includes('coloração')) return true;
+                if (s === 'barba' || s === 'apenas corte') return true;
+            } else if (p.includes('corte e sobrancelha')) {
+                if (s.includes('corte') && !s.includes('barba') && !s.includes('progressiva') && !s.includes('coloração')) return true;
+                if (s === 'sobrancelha' || s === 'apenas corte') return true;
+            } else if (p.includes('corte') || p.includes('cabelo')) {
+                if (s === 'apenas corte' || s === 'corte') return true;
+            }
+            return false;
+        }
+
+        window.abrirModalAgendamentoMensalista = async function() {
+            const user = auth.currentUser;
+            if (!user) {
+                alert("Por favor, faça login para agendar.");
+                return;
             }
 
-            if (!dataSelecionadaStr) return { elegivel: false };
+            if (!dadosAssinaturaAtiva || !dadosAssinaturaAtiva.ehAtivo) {
+                alert("Você não possui um plano mensal ativo no momento.");
+                return;
+            }
 
-            const partes = dataSelecionadaStr.split('-').map(Number);
-            if (partes.length < 3) return { elegivel: false };
-            const targetTime = new Date(partes[0], partes[1] - 1, partes[2], 12, 0, 0).getTime();
+            const semDisponivel = dadosAssinaturaAtiva.semanas.find(s => s.ehSemanaAtual && s.status === 'disponivel') 
+                || dadosAssinaturaAtiva.semanas.find(s => s.status === 'disponivel');
 
-            for (let s of dadosAssinaturaAtiva.semanas) {
-                const tIni = s.inicio.getTime();
-                const tFim = s.fim.getTime();
+            if (!semDisponivel) {
+                alert("Você não possui nenhum corte disponível para agendamento no seu ciclo atual.");
+                return;
+            }
 
-                if (targetTime >= tIni && targetTime <= tFim) {
-                    if (s.status === 'disponivel') {
-                        return {
-                            elegivel: true,
-                            semana: s.numero,
-                            nomePlano: dadosAssinaturaAtiva.nomePlano,
-                            inicioStr: s.inicioStr,
-                            fimStr: s.fimStr
-                        };
+            const modal = document.getElementById('modalAgendamentoMensalista');
+            const subSemana = document.getElementById('subtituloSemanaModalMensalista');
+            const nomeServicoPlanoEl = document.getElementById('nomeServicoInclusoPlano');
+            const inputData = document.getElementById('inputDataAgendamentoMensalista');
+            const selectHora = document.getElementById('selectHorarioAgendamentoMensalista');
+            const msgStatus = document.getElementById('msgStatusModalMensalista');
+            const containerExtras = document.getElementById('containerServicosExtrasMensalista');
+
+            if (msgStatus) {
+                msgStatus.classList.add('hidden');
+                msgStatus.innerText = '';
+            }
+
+            const servicoPrincipal = obterServicoPrincipalDoPlano(dadosAssinaturaAtiva.nomePlano);
+            if (nomeServicoPlanoEl) nomeServicoPlanoEl.innerText = servicoPrincipal;
+            if (subSemana) subSemana.innerText = `Semana ${semDisponivel.numero} de 4 (${semDisponivel.inicioStr} a ${semDisponivel.fimStr}) • ${dadosAssinaturaAtiva.nomePlano}`;
+
+            // Define data padrão respeitando dias válidos
+            const hoje = new Date();
+            const ano = hoje.getFullYear();
+            const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+            const dia = String(hoje.getDate()).padStart(2, '0');
+            const hojeStr = `${ano}-${mes}-${dia}`;
+            
+            if (inputData) {
+                inputData.min = hojeStr;
+                inputData.value = hojeStr;
+            }
+
+            // Carrega os serviços da coleção servicos (mesmos da aba de agendamento)
+            extrasMensalistaSelecionados = [];
+            atualizarResumoFinanceiroMensalista();
+
+            if (containerExtras) {
+                containerExtras.innerHTML = "<p class='text-xs text-zinc-500 col-span-full'>Carregando serviços disponíveis...</p>";
+                try {
+                    const snap = await getDocs(collection(db, "servicos"));
+                    const servicos = [];
+                    snap.forEach(d => servicos.push({ id: d.id, ...d.data() }));
+                    listaServicosGeralCache = servicos;
+
+                    // Filtra serviços que NÃO são exatamente o que já está coberto
+                    const servicosExtras = servicos.filter(sv => !verificarSeServicoJaEstaInclusoNoPlano(sv.nome, dadosAssinaturaAtiva.nomePlano));
+
+                    if (servicosExtras.length === 0) {
+                        containerExtras.innerHTML = "<p class='text-xs text-zinc-500 col-span-full'>Todos os serviços principais já estão inclusos no seu plano!</p>";
                     } else {
-                        return {
-                            elegivel: false,
-                            motivo: `O corte da Semana ${s.numero} (${s.inicioStr} a ${s.fimStr}) já está como '${s.status}'.`
-                        };
+                        let htmlExtras = "";
+                        servicosExtras.forEach(sv => {
+                            const precoNum = Number(sv.preco || 0);
+                            htmlExtras += `
+                                <label class="flex items-center gap-2.5 p-2.5 rounded-xl bg-black/80 border border-zinc-800 hover:border-dourado/50 cursor-pointer transition text-xs">
+                                    <input type="checkbox" class="checkbox-extra-mensalista accent-amber-500 w-4 h-4 rounded" 
+                                           data-id="${sv.id}" data-nome="${sv.nome}" data-preco="${precoNum}">
+                                    <div class="flex-1 flex justify-between items-center">
+                                        <span class="text-zinc-200 font-medium">${sv.nome}</span>
+                                        <span class="text-dourado font-bold">+ R$ ${precoNum.toFixed(2)}</span>
+                                    </div>
+                                </label>
+                            `;
+                        });
+                        containerExtras.innerHTML = htmlExtras;
+
+                        // Adiciona listeners para atualizar total dinamicamente
+                        containerExtras.querySelectorAll('.checkbox-extra-mensalista').forEach(chk => {
+                            chk.addEventListener('change', () => {
+                                extrasMensalistaSelecionados = [];
+                                containerExtras.querySelectorAll('.checkbox-extra-mensalista:checked').forEach(c => {
+                                    extrasMensalistaSelecionados.push({
+                                        id: c.getAttribute('data-id'),
+                                        nome: c.getAttribute('data-nome'),
+                                        preco: parseFloat(c.getAttribute('data-preco') || 0)
+                                    });
+                                });
+                                atualizarResumoFinanceiroMensalista();
+                            });
+                        });
                     }
+                } catch (e) {
+                    console.error("Erro ao carregar serviços extras:", e);
+                    containerExtras.innerHTML = "<p class='text-xs text-red-400 col-span-full'>Erro ao carregar serviços extras.</p>";
                 }
             }
 
-            return { elegivel: false, motivo: "Data fora da vigência do plano ativo." };
+            // Atualiza horários da data selecionada
+            await carregarHorariosDisponiveisMensalista(hojeStr);
+
+            if (modal) modal.classList.remove('hidden');
+        };
+
+        function atualizarResumoFinanceiroMensalista() {
+            const elExtras = document.getElementById('valorExtrasDisplayMensalista');
+            const elTotal = document.getElementById('valorTotalDisplayMensalista');
+            const btnTexto = document.getElementById('btnConfirmarTextoMensalista');
+
+            const totalExtras = extrasMensalistaSelecionados.reduce((acc, curr) => acc + curr.preco, 0);
+
+            if (elExtras) elExtras.innerText = `R$ ${totalExtras.toFixed(2)}`;
+            if (elTotal) elTotal.innerText = `R$ ${totalExtras.toFixed(2)}`;
+
+            if (btnTexto) {
+                if (totalExtras === 0) {
+                    btnTexto.innerText = "Confirmar Agendamento (R$ 0,00)";
+                } else {
+                    btnTexto.innerText = `Pagar Extras e Confirmar (R$ ${totalExtras.toFixed(2)})`;
+                }
+            }
         }
+
+        async function carregarHorariosDisponiveisMensalista(dataStr) {
+            const selectHora = document.getElementById('selectHorarioAgendamentoMensalista');
+            if (!selectHora) return;
+
+            selectHora.innerHTML = "<option value=''>Carregando horários...</option>";
+
+            if (!dataStr) {
+                selectHora.innerHTML = "<option value=''>Selecione uma data</option>";
+                return;
+            }
+
+            try {
+                // Checa se a data está bloqueada
+                const bloqSnap = await getDoc(doc(db, "diasBloqueados", dataStr));
+                if (bloqSnap.exists()) {
+                    selectHora.innerHTML = "<option value=''>Barbearia fechada nesta data</option>";
+                    return;
+                }
+
+                // Obtém dia da semana
+                const [ano, mes, dia] = dataStr.split('-').map(Number);
+                const dtObj = new Date(ano, mes - 1, dia);
+                const diaSemana = dtObj.getDay(); // 0 = Domingo, 1 = Segunda, etc.
+
+                if (diaSemana === 0) { // Domingo
+                    selectHora.innerHTML = "<option value=''>Barbearia não abre aos domingos</option>";
+                    return;
+                }
+
+                // Gera grade padrão de horários (09:00 até 19:30, intervalos de 30m)
+                const todosHorarios = [];
+                for (let h = 9; h <= 19; h++) {
+                    const hStr = String(h).padStart(2, '0');
+                    todosHorarios.push(`${hStr}:00`);
+                    if (h < 19) todosHorarios.push(`${hStr}:30`);
+                }
+
+                // Busca horários já ocupados
+                const snapAg = await getDocs(query(
+                    collection(db, "agendamentos"),
+                    where("dataHora", ">=", `${dataStr}T00:00`),
+                    where("dataHora", "<=", `${dataStr}T23:59`)
+                ));
+
+                const horariosOcupados = new Set();
+                snapAg.forEach(docAg => {
+                    const ag = docAg.data();
+                    if (ag.status === 'confirmado' || ag.status === 'pendente') {
+                        const hora = ag.dataHora ? ag.dataHora.split('T')[1] : null;
+                        if (hora) horariosOcupados.add(hora);
+                    }
+                });
+
+                // Se for hoje, filtra horários que já passaram
+                const agora = new Date();
+                const hojeYMD = `${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-${String(agora.getDate()).padStart(2,'0')}`;
+                const horaAtualMinutos = agora.getHours() * 60 + agora.getMinutes();
+
+                let htmlHoras = "<option value=''>Selecione um horário...</option>";
+                let disponiveisContador = 0;
+
+                todosHorarios.forEach(hr => {
+                    if (horariosOcupados.has(hr)) return; // Ocupado
+
+                    if (dataStr === hojeYMD) {
+                        const [hh, mm] = hr.split(':').map(Number);
+                        if (hh * 60 + mm <= horaAtualMinutos + 20) return; // Passou
+                    }
+
+                    htmlHoras += `<option value="${hr}">${hr}</option>`;
+                    disponiveisContador++;
+                });
+
+                if (disponiveisContador === 0) {
+                    selectHora.innerHTML = "<option value=''>Nenhum horário disponível para esta data</option>";
+                } else {
+                    selectHora.innerHTML = htmlHoras;
+                }
+
+            } catch (e) {
+                console.error("Erro ao buscar horários mensalista:", e);
+                selectHora.innerHTML = "<option value=''>Erro ao carregar horários</option>";
+            }
+        }
+
+        window.fecharModalAgendamentoMensalista = function() {
+            const modal = document.getElementById('modalAgendamentoMensalista');
+            if (modal) modal.classList.add('hidden');
+        };
+
+        document.getElementById('btnFecharModalAgendamentoMensalista')?.addEventListener('click', window.fecharModalAgendamentoMensalista);
+        document.getElementById('btnCancelarModalMensalista')?.addEventListener('click', window.fecharModalAgendamentoMensalista);
+        document.getElementById('inputDataAgendamentoMensalista')?.addEventListener('change', (e) => {
+            carregarHorariosDisponiveisMensalista(e.target.value);
+        });
+
+        // Submissão do agendamento do mensalista
+        document.getElementById('btnConfirmarAgendamentoMensalista')?.addEventListener('click', async () => {
+            const user = auth.currentUser;
+            if (!user) return alert("Faça login para agendar.");
+
+            const data = document.getElementById('inputDataAgendamentoMensalista')?.value;
+            const horario = document.getElementById('selectHorarioAgendamentoMensalista')?.value;
+            const msgStatus = document.getElementById('msgStatusModalMensalista');
+            const btnConfirmar = document.getElementById('btnConfirmarAgendamentoMensalista');
+
+            if (!data || !horario) {
+                if (msgStatus) {
+                    msgStatus.className = "text-center text-xs p-2.5 rounded-xl bg-red-950 text-red-400 border border-red-800";
+                    msgStatus.innerText = "Selecione uma data e um horário disponível!";
+                    msgStatus.classList.remove('hidden');
+                }
+                return;
+            }
+
+            if (!dadosAssinaturaAtiva || !dadosAssinaturaAtiva.ehAtivo) {
+                alert("Plano mensal não encontrado ou expirado.");
+                return;
+            }
+
+            const semDisponivel = dadosAssinaturaAtiva.semanas.find(s => s.ehSemanaAtual && s.status === 'disponivel') 
+                || dadosAssinaturaAtiva.semanas.find(s => s.status === 'disponivel');
+
+            if (!semDisponivel) {
+                alert("Nenhum crédito semanal disponível no seu plano.");
+                return;
+            }
+
+            const servicoPrincipal = obterServicoPrincipalDoPlano(dadosAssinaturaAtiva.nomePlano);
+            const totalExtras = extrasMensalistaSelecionados.reduce((acc, curr) => acc + curr.preco, 0);
+            const nomesExtras = extrasMensalistaSelecionados.map(e => e.nome);
+
+            let nomeServicoCompleto = servicoPrincipal;
+            if (nomesExtras.length > 0) {
+                nomeServicoCompleto += ` (+ Extras: ${nomesExtras.join(', ')})`;
+            }
+
+            // CASO 1: Apenas o plano incluso (R$ 0,00)
+            if (totalExtras === 0) {
+                if (btnConfirmar) {
+                    btnConfirmar.disabled = true;
+                    btnConfirmar.innerText = "⏳ Confirmando Agendamento...";
+                }
+
+                try {
+                    await executarAgendamentoVipGratuito({
+                        servico: servicoPrincipal,
+                        data,
+                        horario,
+                        beneficio: { semana: semDisponivel.numero },
+                        subtotalExtras: 0,
+                        extras: []
+                    });
+                    window.fecharModalAgendamentoMensalista();
+                } catch (err) {
+                    if (msgStatus) {
+                        msgStatus.className = "text-center text-xs p-2.5 rounded-xl bg-red-950 text-red-400 border border-red-800";
+                        msgStatus.innerText = "Erro ao agendar: " + err.message;
+                        msgStatus.classList.remove('hidden');
+                    }
+                } finally {
+                    if (btnConfirmar) {
+                        btnConfirmar.disabled = false;
+                        btnConfirmar.innerHTML = "<span>✓</span> <span id='btnConfirmarTextoMensalista'>Confirmar Agendamento (R$ 0,00)</span>";
+                    }
+                }
+                return;
+            }
+
+            // CASO 2: Mensalista selecionou serviços extras (Cobra apenas o total dos extras)
+            window.fecharModalAgendamentoMensalista();
+            dadosPagamentoPendente = {
+                servico: `${nomeServicoCompleto} (Plano Mensal - Semana ${semDisponivel.numero})`,
+                preco: totalExtras,
+                data,
+                horario,
+                modalidade: 'total',
+                valorCobrado: totalExtras,
+                extras: nomesExtras,
+                isPlanoMensalistaComExtras: true,
+                semanaPlano: semDisponivel.numero,
+                servicoPrincipalPlano: servicoPrincipal
+            };
+
+            abrirModalTermos('agendamento', dadosPagamentoPendente);
+        });
 
         window.iniciarCompraPlano = function(id, nome, preco) {
             abrirModalTermos('plano', { plano: { id, nome, preco } });
@@ -1887,22 +2277,6 @@
         }
 
         function atualizarBotoesAgendamentoParaData(dataSelecionada) {
-            const bannerPlano = document.getElementById('bannerPlanoBeneficio');
-            const bannerPlanoTexto = document.getElementById('bannerPlanoBeneficioTexto');
-            const botoesNormais = document.getElementById('botoesPagamentoNormal');
-            const btnPlanoVip = document.getElementById('btnAgendarPlanoVip');
-
-            const beneficio = verificarBeneficioPlanoParaData(dataSelecionada);
-            if (beneficio.elegivel) {
-                if (bannerPlano) bannerPlano.classList.remove('hidden');
-                if (bannerPlanoTexto) bannerPlanoTexto.innerText = `Você possui 1 corte disponível na Semana ${beneficio.semana} (${beneficio.nomePlano}). Taxa de Reserva: R$ 0,00 (Isento)!`;
-                if (botoesNormais) botoesNormais.classList.add('hidden');
-                if (btnPlanoVip) btnPlanoVip.classList.remove('hidden');
-            } else {
-                if (bannerPlano) bannerPlano.classList.add('hidden');
-                if (botoesNormais) botoesNormais.classList.remove('hidden');
-                if (btnPlanoVip) btnPlanoVip.classList.add('hidden');
-            }
             atualizarLabelPrecoTotal();
         }
 
@@ -2667,6 +3041,61 @@
                         return;
                     }
 
+                    // Se for agendamento de mensalista com extras contratados
+                    if (dadosPagamentoPendente.isPlanoMensalistaComExtras) {
+                        const semanaPlanoNum = dadosPagamentoPendente.semanaPlano;
+                        const docRef = await addDoc(collection(db, "agendamentos"), {
+                            userId: user.uid,
+                            cliente: nomeCliente,
+                            telefone: telefoneCliente,
+                            servico: servico,
+                            preco: preco,
+                            taxaReservaPaga: valorEfetivoPago,
+                            modalidadePagamento: 'plano_vip_com_extras',
+                            idPagamento: paymentId,
+                            metodoPagamento: metodo,
+                            extras: extras || [],
+                            isPlano: true,
+                            semanaPlano: semanaPlanoNum,
+                            status: 'confirmado',
+                            dataHora: dataHoraCompleta,
+                            criadoEm: new Date()
+                        });
+
+                        const updateObj = {};
+                        updateObj[`semanas.${semanaPlanoNum}`] = {
+                            status: 'agendado',
+                            agendamentoId: docRef.id,
+                            agendamentoData: dataHoraCompleta,
+                            servico: dadosPagamentoPendente.servicoPrincipalPlano || servico,
+                            atualizadoEm: new Date().toISOString()
+                        };
+                        await updateDoc(doc(db, "assinaturasClientes", user.uid), updateObj);
+
+                        if (msgStatus) {
+                            msgStatus.className = "text-center text-sm text-green-400 font-bold";
+                            msgStatus.innerText = "Agendamento do plano com extras confirmado com sucesso!";
+                        }
+
+                        await carregarPainelCliente(user.uid);
+                        await carregarPainelPlanosCliente(user.uid);
+
+                        exibirModalSucessoAgendamento(servico, dataHoraCompleta, nomeCliente, precoTotalNum, valorEfetivoPago, true);
+
+                        dispararNotificacaoAutomaticaWhatsApp({
+                            cliente: nomeCliente,
+                            telefone: telefoneCliente,
+                            servico: servico,
+                            dataHora: dataHoraCompleta,
+                            preco: preco,
+                            taxaReservaPaga: valorEfetivoPago,
+                            isPlano: true,
+                            semanaPlano: semanaPlanoNum
+                        });
+
+                        return;
+                    }
+
                     await addDoc(collection(db, "agendamentos"), {
                         userId: user.uid,
                         cliente: nomeCliente,
@@ -2855,7 +3284,7 @@
                     console.warn("⚠️ Agendamento VIP já registrado no Firestore. Evitando duplicação.");
                     carregarPainelCliente(user.uid);
                     carregarPainelPlanosCliente(user.uid);
-                    exibirModalSucessoAgendamento(`${servico} (Plano VIP - Sem ${beneficio.semana})`, dataHoraCompleta, nomeCliente, valorCobrarExtras, 0, true);
+                    exibirModalSucessoAgendamento(`${servico} (Plano Mensal - Semana ${beneficio.semana})`, dataHoraCompleta, nomeCliente, valorCobrarExtras, 0, true);
                     return;
                 }
 
@@ -2863,7 +3292,7 @@
                     userId: user.uid,
                     cliente: nomeCliente,
                     telefone: telefoneCliente,
-                    servico: `${servico} (Plano VIP - Sem ${beneficio.semana})`,
+                    servico: `${servico} (Plano Mensal - Semana ${beneficio.semana})`,
                     preco: valorCobrarExtras,
                     taxaReservaPaga: 0.00,
                     modalidadePagamento: 'plano_vip',
@@ -2889,7 +3318,7 @@
 
                 if (msgStatus) {
                     msgStatus.className = "text-center text-sm text-green-400 font-bold";
-                    msgStatus.innerText = "✨ Agendamento VIP confirmado com sucesso sem cobrança de taxa!";
+                    msgStatus.innerText = "✨ Agendamento do plano confirmado com sucesso!";
                 }
 
                 document.getElementById('dataAtendimento').value = "";
@@ -2897,13 +3326,10 @@
                 document.getElementById('servico').value = "";
                 renderizarOpcoesExtras();
 
-                const bannerPlano = document.getElementById('bannerPlanoBeneficio');
-                if (bannerPlano) bannerPlano.classList.add('hidden');
-
                 await carregarPainelCliente(user.uid);
                 await carregarPainelPlanosCliente(user.uid);
 
-                exibirModalSucessoAgendamento(`${servico} (Plano VIP - Sem ${beneficio.semana})`, dataHoraCompleta, nomeCliente, valorCobrarExtras, 0, true);
+                exibirModalSucessoAgendamento(`${servico} (Plano Mensal - Semana ${beneficio.semana})`, dataHoraCompleta, nomeCliente, valorCobrarExtras, 0, true);
 
                 // Disparo automático via WhatsApp Bot (Sem abrir tela manual)
                 dispararNotificacaoAutomaticaWhatsApp({
@@ -2928,7 +3354,7 @@
             }
         }
 
-        // Função auxiliar para validar formulário de agendamento
+        // Função auxiliar para validar formulário de agendamento geral
         async function validarFormAgendamento() {
             const servicoSelect = document.getElementById('servico');
             const data = document.getElementById('dataAtendimento').value;
@@ -2983,22 +3409,12 @@
             };
         }
 
-        // Acionador do botão "Pagar Taxa de Reserva (R$ 10,00)" - Protegido com Isenção VIP
+        // Acionador do botão "Pagar Taxa de Reserva (R$ 10,00)" no fluxo geral (Cobra taxa normalmente para todos)
         const btnPagarTaxaReserva = document.getElementById('btnPagarTaxaReserva');
         if (btnPagarTaxaReserva) {
             btnPagarTaxaReserva.addEventListener('click', async () => {
                 const dadosForm = await validarFormAgendamento();
                 if (!dadosForm) return;
-
-                // Se o cliente for mensalista com semana disponível, agenda gratuitamente
-                const beneficio = verificarBeneficioPlanoParaData(dadosForm.data);
-                if (beneficio && beneficio.elegivel) {
-                    abrirModalTermos('vip', {
-                        ...dadosForm,
-                        beneficio
-                    });
-                    return;
-                }
 
                 abrirModalTermos('agendamento', {
                     ...dadosForm,
@@ -3008,47 +3424,17 @@
             });
         }
 
-        // Acionador do botão "Pagar Valor Total" - Protegido com Isenção VIP
+        // Acionador do botão "Pagar Valor Total" no fluxo geral (Cobra total normalmente para todos)
         const btnPagarValorTotal = document.getElementById('btnPagarValorTotal');
         if (btnPagarValorTotal) {
             btnPagarValorTotal.addEventListener('click', async () => {
                 const dadosForm = await validarFormAgendamento();
                 if (!dadosForm) return;
 
-                // Se o cliente for mensalista com semana disponível, agenda gratuitamente
-                const beneficio = verificarBeneficioPlanoParaData(dadosForm.data);
-                if (beneficio && beneficio.elegivel) {
-                    abrirModalTermos('vip', {
-                        ...dadosForm,
-                        beneficio
-                    });
-                    return;
-                }
-
                 abrirModalTermos('agendamento', {
                     ...dadosForm,
                     modalidade: 'total',
                     valorCobrado: dadosForm.preco
-                });
-            });
-        }
-
-        // Acionador do botão "Agendar com Plano VIP"
-        const btnAgendarPlanoVip = document.getElementById('btnAgendarPlanoVip');
-        if (btnAgendarPlanoVip) {
-            btnAgendarPlanoVip.addEventListener('click', async () => {
-                const dadosForm = await validarFormAgendamento();
-                if (!dadosForm) return;
-
-                const beneficio = verificarBeneficioPlanoParaData(dadosForm.data);
-                if (!beneficio.elegivel) {
-                    alert("Data não elegível para corte gratuito pelo plano VIP: " + (beneficio.motivo || "Verifique as datas do seu plano."));
-                    return;
-                }
-
-                abrirModalTermos('vip', {
-                    ...dadosForm,
-                    beneficio
                 });
             });
         }
