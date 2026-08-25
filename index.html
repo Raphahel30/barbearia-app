@@ -1203,7 +1203,8 @@
 
                 authMsg.className = "text-center text-xs text-green-400 font-bold bg-green-950/60 p-3 rounded-lg border border-green-700";
                 authMsg.innerText = "✅ E-mail de recuperação enviado com sucesso! Acesse a sua caixa de entrada para criar sua nova senha.";
-                document.getElementById('forgotEmail').value = "";
+                const forgotEl = document.getElementById('forgotEmail');
+                if (forgotEl) forgotEl.value = "";
                 btnEnviar.disabled = false;
                 btnEnviar.innerText = "Enviar E-mail de Recuperação";
             } catch (error) {
@@ -2889,6 +2890,8 @@
 
             let valorPagar = 10.00;
             let descricao = "";
+            const elTitulo = document.getElementById('modalPixTitulo');
+            const elDesc = document.getElementById('modalPixDesc');
 
             if (tipo === 'agendamento') {
                 valorPagar = dados.valorCobrado !== undefined ? dados.valorCobrado : (dados.modalidade === 'total' ? dados.preco : 10.00);
@@ -2896,143 +2899,151 @@
                     ? `Pagamento Total (${dados.servico}) - EMAÚS Barbearia`
                     : `Taxa Reserva (${dados.servico}) - EMAÚS Barbearia`;
 
-                document.getElementById('modalPixTitulo').innerText = dados.modalidade === 'total' 
+                if (elTitulo) elTitulo.innerText = dados.modalidade === 'total' 
                     ? `Pagamento Total - R$ ${valorPagar.toFixed(2)}` 
                     : "Taxa de Reserva - R$ 10,00";
-                document.getElementById('modalPixDesc').innerText = dados.modalidade === 'total'
+                if (elDesc) elDesc.innerText = dados.modalidade === 'total'
                     ? `Pague R$ ${valorPagar.toFixed(2)} pelo valor integral do serviço para garantir seu horário.`
                     : "Pague a taxa de reserva de R$ 10,00 para garantir seu horário instantaneamente.";
             } else {
                 valorPagar = dados.plano?.preco || 10.00;
                 descricao = `Assinatura ${dados.plano?.nome} - EMAÚS Barbearia`;
-                document.getElementById('modalPixTitulo').innerText = `Assinatura: ${dados.plano?.nome}`;
-                document.getElementById('modalPixDesc').innerText = `Pague R$ ${valorPagar.toFixed(2)} para ativar seu plano por 30 dias.`;
+                if (elTitulo) elTitulo.innerText = `Assinatura: ${dados.plano?.nome}`;
+                if (elDesc) elDesc.innerText = `Pague R$ ${valorPagar.toFixed(2)} para ativar seu plano por 30 dias.`;
             }
 
-            const valorCreditoTotal = configTaxaCartaoCredito > 0 
-                ? Number((valorPagar * (1 + configTaxaCartaoCredito / 100)).toFixed(2)) 
-                : valorPagar;
+                const valorCreditoTotal = configTaxaCartaoCredito > 0 
+                    ? Number((valorPagar * (1 + configTaxaCartaoCredito / 100)).toFixed(2)) 
+                    : valorPagar;
 
-            const valorDebitoTotal = configTaxaCartaoDebito > 0 
-                ? Number((valorPagar * (1 + configTaxaCartaoDebito / 100)).toFixed(2)) 
-                : valorPagar;
+                const valorDebitoTotal = configTaxaCartaoDebito > 0 
+                    ? Number((valorPagar * (1 + configTaxaCartaoDebito / 100)).toFixed(2)) 
+                    : valorPagar;
 
-            document.getElementById('pixValorDisplay').innerText = `R$ ${valorPagar.toFixed(2)}`;
-            const elCredVal = document.getElementById('cartaoCreditoValorDisplay');
-            const elDebVal = document.getElementById('cartaoDebitoValorDisplay');
-            if (elCredVal) elCredVal.innerText = `R$ ${valorCreditoTotal.toFixed(2)}`;
-            if (elDebVal) elDebVal.innerText = `R$ ${valorDebitoTotal.toFixed(2)}`;
+                const elPixVal = document.getElementById('pixValorDisplay');
+                if (elPixVal) elPixVal.innerText = `R$ ${valorPagar.toFixed(2)}`;
+                const elCredVal = document.getElementById('cartaoCreditoValorDisplay');
+                const elDebVal = document.getElementById('cartaoDebitoValorDisplay');
+                if (elCredVal) elCredVal.innerText = `R$ ${valorCreditoTotal.toFixed(2)}`;
+                if (elDebVal) elDebVal.innerText = `R$ ${valorDebitoTotal.toFixed(2)}`;
 
-            const badgeCred = document.getElementById('badgeTaxaCreditoInfo');
-            const spanCred = document.getElementById('spanTaxaCreditoPercent');
-            if (badgeCred && spanCred) {
-                if (configTaxaCartaoCredito > 0) {
-                    spanCred.innerText = `${configTaxaCartaoCredito}%`;
-                    badgeCred.classList.remove('hidden');
-                } else {
-                    badgeCred.classList.add('hidden');
-                }
-            }
-
-            const badgeDeb = document.getElementById('badgeTaxaDebitoInfo');
-            const spanDeb = document.getElementById('spanTaxaDebitoPercent');
-            if (badgeDeb && spanDeb) {
-                if (configTaxaCartaoDebito > 0) {
-                    spanDeb.innerText = `${configTaxaCartaoDebito}%`;
-                    badgeDeb.classList.remove('hidden');
-                } else {
-                    badgeDeb.classList.add('hidden');
-                }
-            }
-
-            preencherOpcoesParcelas(document.getElementById('cartaoCreditoParcelas'), valorCreditoTotal);
-            alternarAbaPagamentoGeral('pix');
-
-            // Reseta telas
-            document.getElementById('pixLoadingState').classList.remove('hidden');
-            document.getElementById('pixActiveState').classList.add('hidden');
-            document.getElementById('pixManualFallback').classList.add('hidden');
-            modalPix.classList.remove('hidden');
-
-            const user = auth.currentUser;
-            let nomeCliente = user.email;
-            let telefoneCliente = "";
-            try {
-                const uDoc = await getDoc(doc(db, "usuarios", user.uid));
-                if (uDoc.exists()) {
-                    nomeCliente = uDoc.data().nome || user.email;
-                    telefoneCliente = uDoc.data().telefone || "";
-                }
-            } catch (e) { console.error(e); }
-
-            try {
-                const response = await fetch(`${getBackendUrlAtivo()}/api/pagamento/pix`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        transaction_amount: valorPagar,
-                        description: descricao,
-                        email: user.email,
-                        nome: nomeCliente,
-                        external_reference: `${user.uid}_${Date.now()}`
-                    })
-                });
-
-                const data = await response.json();
-
-                if (response.ok && (data.qr_code || data.qr_code_base64)) {
-                    const imgQr = document.getElementById('pixQrImage');
-                    if (data.qr_code_base64) {
-                        imgQr.src = `data:image/png;base64,${data.qr_code_base64}`;
+                const badgeCred = document.getElementById('badgeTaxaCreditoInfo');
+                const spanCred = document.getElementById('spanTaxaCreditoPercent');
+                if (badgeCred && spanCred) {
+                    if (configTaxaCartaoCredito > 0) {
+                        spanCred.innerText = `${configTaxaCartaoCredito}%`;
+                        badgeCred.classList.remove('hidden');
                     } else {
-                        imgQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(data.qr_code)}`;
+                        badgeCred.classList.add('hidden');
                     }
-
-                    document.getElementById('pixCodeInput').value = data.qr_code || '';
-                    document.getElementById('pixLoadingState').classList.add('hidden');
-                    document.getElementById('pixActiveState').classList.remove('hidden');
-                    document.getElementById('pixManualFallback').classList.add('hidden');
-
-                    // Monitoramento em tempo real da aprovação do pagamento com trava anti-duplicação
-                    const paymentId = data.id;
-                    let pagamentoPixConcluido = false;
-                    pollingIntervalPix = setInterval(async () => {
-                        try {
-                            if (pagamentoPixConcluido) return;
-                            const statusRes = await fetch(`${getBackendUrlAtivo()}/api/pagamento/status/${paymentId}`);
-                            const statusData = await statusRes.json();
-
-                            if (statusData && statusData.status === 'approved' && !pagamentoPixConcluido) {
-                                pagamentoPixConcluido = true;
-                                if (pollingIntervalPix) {
-                                    clearInterval(pollingIntervalPix);
-                                    pollingIntervalPix = null;
-                                }
-
-                                const badge = document.getElementById('pixStatusBadge');
-                                if (badge) {
-                                    badge.className = "flex items-center justify-center gap-2 text-xs text-green-400 bg-green-950/60 p-2.5 rounded-lg border border-green-700 font-bold";
-                                    badge.innerHTML = "<span>✅ Pagamento Aprovado com Sucesso!</span>";
-                                }
-
-                                fecharModalPagamento();
-                                await concluirPagamentoComSucesso(paymentId, 'pix_mercadopago');
-                            }
-                        } catch (err) {
-                            console.warn("Monitoramento de pagamento:", err);
-                        }
-                    }, 3000);
-
-                } else {
-                    console.warn("Mercado Pago retornou sem QR Code:", data.error);
-                    document.getElementById('pixLoadingState').classList.add('hidden');
-                    document.getElementById('pixManualFallback').classList.remove('hidden');
                 }
-            } catch (err) {
-                console.warn("Servidor offline ou sem credenciais, exibindo chave manual:", err);
-                document.getElementById('pixLoadingState').classList.add('hidden');
-                document.getElementById('pixManualFallback').classList.remove('hidden');
-            }
+
+                const badgeDeb = document.getElementById('badgeTaxaDebitoInfo');
+                const spanDeb = document.getElementById('spanTaxaDebitoPercent');
+                if (badgeDeb && spanDeb) {
+                    if (configTaxaCartaoDebito > 0) {
+                        spanDeb.innerText = `${configTaxaCartaoDebito}%`;
+                        badgeDeb.classList.remove('hidden');
+                    } else {
+                        badgeDeb.classList.add('hidden');
+                    }
+                }
+
+                preencherOpcoesParcelas(document.getElementById('cartaoCreditoParcelas'), valorCreditoTotal);
+                alternarAbaPagamentoGeral('pix');
+
+                // Reseta telas
+                const elLoading = document.getElementById('pixLoadingState');
+                const elActive = document.getElementById('pixActiveState');
+                const elFallback = document.getElementById('pixManualFallback');
+
+                if (elLoading) elLoading.classList.remove('hidden');
+                if (elActive) elActive.classList.add('hidden');
+                if (elFallback) elFallback.classList.add('hidden');
+                if (modalPix) modalPix.classList.remove('hidden');
+
+                const user = auth.currentUser;
+                let nomeCliente = user.email;
+                let telefoneCliente = "";
+                try {
+                    const uDoc = await getDoc(doc(db, "usuarios", user.uid));
+                    if (uDoc.exists()) {
+                        nomeCliente = uDoc.data().nome || user.email;
+                        telefoneCliente = uDoc.data().telefone || "";
+                    }
+                } catch (e) { console.error(e); }
+
+                try {
+                    const response = await fetch(`${getBackendUrlAtivo()}/api/pagamento/pix`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            transaction_amount: valorPagar,
+                            description: descricao,
+                            email: user.email,
+                            nome: nomeCliente,
+                            external_reference: `${user.uid}_${Date.now()}`
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && (data.qr_code || data.qr_code_base64)) {
+                        const imgQr = document.getElementById('pixQrImage');
+                        if (imgQr) {
+                            if (data.qr_code_base64) {
+                                imgQr.src = `data:image/png;base64,${data.qr_code_base64}`;
+                            } else {
+                                imgQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(data.qr_code)}`;
+                            }
+                        }
+
+                        const elCode = document.getElementById('pixCodeInput');
+                        if (elCode) elCode.value = data.qr_code || '';
+                        if (elLoading) elLoading.classList.add('hidden');
+                        if (elActive) elActive.classList.remove('hidden');
+                        if (elFallback) elFallback.classList.add('hidden');
+
+                        // Monitoramento em tempo real da aprovação do pagamento com trava anti-duplicação
+                        const paymentId = data.id;
+                        let pagamentoPixConcluido = false;
+                        pollingIntervalPix = setInterval(async () => {
+                            try {
+                                if (pagamentoPixConcluido) return;
+                                const statusRes = await fetch(`${getBackendUrlAtivo()}/api/pagamento/status/${paymentId}`);
+                                const statusData = await statusRes.json();
+
+                                if (statusData && statusData.status === 'approved' && !pagamentoPixConcluido) {
+                                    pagamentoPixConcluido = true;
+                                    if (pollingIntervalPix) {
+                                        clearInterval(pollingIntervalPix);
+                                        pollingIntervalPix = null;
+                                    }
+
+                                    const badge = document.getElementById('pixStatusBadge');
+                                    if (badge) {
+                                        badge.className = "flex items-center justify-center gap-2 text-xs text-green-400 bg-green-950/60 p-2.5 rounded-lg border border-green-700 font-bold";
+                                        badge.innerHTML = "<span>✅ Pagamento Aprovado com Sucesso!</span>";
+                                    }
+
+                                    fecharModalPagamento();
+                                    await concluirPagamentoComSucesso(paymentId, 'pix_mercadopago');
+                                }
+                            } catch (err) {
+                                console.warn("Monitoramento de pagamento:", err);
+                            }
+                        }, 3000);
+
+                    } else {
+                        console.warn("Mercado Pago retornou sem QR Code:", data.error);
+                        if (elLoading) elLoading.classList.add('hidden');
+                        if (elFallback) elFallback.classList.remove('hidden');
+                    }
+                } catch (err) {
+                    console.warn("Servidor offline ou sem credenciais, exibindo chave manual:", err);
+                    if (elLoading) elLoading.classList.add('hidden');
+                    if (elFallback) elFallback.classList.remove('hidden');
+                }
         }
 
         function exibirModalSucessoAgendamento(servico, dataHora, cliente, precoTotal = 0, valorPago = 0, isPlano = false) {
@@ -3215,9 +3226,12 @@
                         msgStatus.innerText = "Agendamento confirmado com sucesso!";
                     }
 
-                    document.getElementById('dataAtendimento').value = "";
-                    document.getElementById('horarioGrade').innerHTML = "<option value=''>Selecione a data primeiro</option>";
-                    document.getElementById('servico').value = "";
+                    const elData = document.getElementById('dataAtendimento');
+                    const elGrade = document.getElementById('horarioGrade');
+                    const elServ = document.getElementById('servico');
+                    if (elData) elData.value = "";
+                    if (elGrade) elGrade.innerHTML = "<option value=''>Selecione a data primeiro</option>";
+                    if (elServ) elServ.value = "";
                     renderizarOpcoesExtras();
                     carregarPainelCliente(user.uid);
 
@@ -3419,9 +3433,12 @@
                     msgStatus.innerText = "✨ Agendamento do plano confirmado com sucesso!";
                 }
 
-                document.getElementById('dataAtendimento').value = "";
-                document.getElementById('horarioGrade').innerHTML = "<option value=''>Selecione a data primeiro</option>";
-                document.getElementById('servico').value = "";
+                const elDataV = document.getElementById('dataAtendimento');
+                const elGradeV = document.getElementById('horarioGrade');
+                const elServV = document.getElementById('servico');
+                if (elDataV) elDataV.value = "";
+                if (elGradeV) elGradeV.innerHTML = "<option value=''>Selecione a data primeiro</option>";
+                if (elServV) elServV.value = "";
                 renderizarOpcoesExtras();
 
                 await carregarPainelCliente(user.uid);

@@ -1878,7 +1878,7 @@
         async function isUsuarioAdmin(email) {
             if (!email) return false;
             const emailLimpo = email.trim().toLowerCase();
-            if (ADMIN_EMAILS.some(e => e.toLowerCase() === emailLimpo) || emailLimpo.includes('admin')) {
+            if (ADMIN_EMAILS.some(e => e.toLowerCase() === emailLimpo)) {
                 return true;
             }
             try {
@@ -1893,7 +1893,7 @@
                 });
                 return autoriz;
             } catch (e) {
-                console.warn("Erro ao verificar admin:", e);
+                console.warn("[EMAÚS:ERRO:AUTH_ADMIN] Erro ao verificar admin:", e);
                 return false;
             }
         }
@@ -3790,13 +3790,15 @@
 
             try {
                 await addDoc(collection(db, "servicos"), { nome, preco, criadoEm: new Date() });
-                document.getElementById('inputNovoServicoNome').value = "";
-                document.getElementById('inputNovoServicoPreco').value = "";
+                const elNome = document.getElementById('inputNovoServicoNome');
+                const elPreco = document.getElementById('inputNovoServicoPreco');
+                if (elNome) elNome.value = "";
+                if (elPreco) elPreco.value = "";
                 msg.className = "text-xs text-center font-medium text-green-400";
                 msg.innerText = "Serviço adicionado com sucesso!";
-                setTimeout(() => msg.innerText = "", 3000);
+                setTimeout(() => { if (msg) msg.innerText = ""; }, 3000);
                 carregarServicosAdmin();
-            } catch (e) { msg.innerText = "Erro ao salvar serviço."; }
+            } catch (e) { if (msg) msg.innerText = "Erro ao salvar serviço."; }
         });
 
         async function carregarServicosAdmin() {
@@ -3840,25 +3842,31 @@
         const btnSalvarNovoPlano = document.getElementById('btnSalvarNovoPlano');
         if (btnSalvarNovoPlano) {
             btnSalvarNovoPlano.addEventListener('click', async () => {
-                const nome = document.getElementById('inputNovoPlanoNome').value.trim();
-                const preco = parseFloat(document.getElementById('inputNovoPlanoPreco').value);
+                const nome = (document.getElementById('inputNovoPlanoNome')?.value || '').trim();
+                const preco = parseFloat(document.getElementById('inputNovoPlanoPreco')?.value || '0');
                 const msg = document.getElementById('msgNovoPlano');
 
-                if (!nome || isNaN(preco)) {
-                    msg.className = "text-xs text-center font-medium text-red-400";
-                    msg.innerText = "Preencha o nome do plano e o preço corretamente!";
+                if (!nome || isNaN(preco) || preco <= 0) {
+                    if (msg) {
+                        msg.className = "text-xs text-center font-medium text-red-400";
+                        msg.innerText = "Preencha o nome do plano e o preço corretamente!";
+                    }
                     return;
                 }
 
                 try {
                     await addDoc(collection(db, "planosMensais"), { nome, preco, duracaoDias: 30, criadoEm: new Date() });
-                    document.getElementById('inputNovoPlanoNome').value = "";
-                    document.getElementById('inputNovoPlanoPreco').value = "";
-                    msg.className = "text-xs text-center font-medium text-green-400";
-                    msg.innerText = "Plano mensal criado com sucesso!";
-                    setTimeout(() => msg.innerText = "", 3000);
+                    const elNomeP = document.getElementById('inputNovoPlanoNome');
+                    const elPrecoP = document.getElementById('inputNovoPlanoPreco');
+                    if (elNomeP) elNomeP.value = "";
+                    if (elPrecoP) elPrecoP.value = "";
+                    if (msg) {
+                        msg.className = "text-xs text-center font-medium text-green-400";
+                        msg.innerText = "Plano mensal criado com sucesso!";
+                        setTimeout(() => { if (msg) msg.innerText = ""; }, 3000);
+                    }
                     carregarPlanosAdmin();
-                } catch (e) { msg.innerText = "Erro ao salvar plano."; }
+                } catch (e) { if (msg) msg.innerText = "Erro ao salvar plano."; }
             });
         }
 
@@ -3925,24 +3933,35 @@
             if (produto) {
                 if (titulo) titulo.innerText = "Editar Produto";
                 if (idInput) idInput.value = produto.id;
-                document.getElementById('inputNomeProduto').value = produto.nome || "";
-                document.getElementById('inputDescricaoProduto').value = produto.descricao || "";
-                document.getElementById('inputPrecoProduto').value = produto.preco || "";
-                document.getElementById('inputEstoqueProduto').value = produto.estoque !== undefined ? produto.estoque : 0;
-                document.getElementById('selectTipoUnidadeProduto').value = produto.tipoUnidade || "ml";
-                document.getElementById('inputVolumeUnidadeProduto').value = produto.volumeUnidade || "";
-                document.getElementById('inputFotoProdutoUrl').value = produto.fotoUrl || "";
+                const elNome = document.getElementById('inputNomeProduto');
+                const elDesc = document.getElementById('inputDescricaoProduto');
+                const elPreco = document.getElementById('inputPrecoProduto');
+                const elEstoque = document.getElementById('inputEstoqueProduto');
+                const elTipo = document.getElementById('selectTipoUnidadeProduto');
+                const elVol = document.getElementById('inputVolumeUnidadeProduto');
+                const elFoto = document.getElementById('inputFotoProdutoUrl');
 
-                if (produto.fotoUrl) {
-                    previewFotoProduto.innerHTML = `<img src="${produto.fotoUrl}" class="w-full h-full object-cover rounded-xl" alt="${produto.nome}">`;
-                } else {
-                    previewFotoProduto.innerHTML = "🧴";
+                if (elNome) elNome.value = produto.nome || "";
+                if (elDesc) elDesc.value = produto.descricao || "";
+                if (elPreco) elPreco.value = produto.preco || "";
+                if (elEstoque) elEstoque.value = produto.estoque !== undefined ? produto.estoque : 0;
+                if (elTipo) elTipo.value = produto.tipoUnidade || "ml";
+                if (elVol) elVol.value = produto.volumeUnidade || "";
+                if (elFoto) elFoto.value = produto.fotoUrl || "";
+
+                if (previewFotoProduto) {
+                    if (produto.fotoUrl) {
+                        previewFotoProduto.innerHTML = `<img src="${produto.fotoUrl}" class="w-full h-full object-cover rounded-xl" alt="${produto.nome}">`;
+                    } else {
+                        previewFotoProduto.innerHTML = "🧴";
+                    }
                 }
             } else {
                 if (titulo) titulo.innerText = "Cadastrar Novo Produto";
                 if (idInput) idInput.value = "";
-                document.getElementById('inputVolumeUnidadeProduto').value = "150ml";
-                previewFotoProduto.innerHTML = "🧴";
+                const elVol = document.getElementById('inputVolumeUnidadeProduto');
+                if (elVol) elVol.value = "150ml";
+                if (previewFotoProduto) previewFotoProduto.innerHTML = "🧴";
             }
 
             if (modalProdutoAdmin) modalProdutoAdmin.classList.remove('hidden');
@@ -4255,26 +4274,32 @@
         document.getElementById('inputBuscarProdutoAdmin')?.addEventListener('input', renderizarProdutosAdmin);
         document.getElementById('selectFiltroEstoqueAdmin')?.addEventListener('change', renderizarProdutosAdmin);
 
-        document.getElementById('btnSalvarBloqueio').addEventListener('click', async () => {
-            const dataBloq = document.getElementById('inputDataBloqueio').value;
-            const motivo = document.getElementById('inputMotivoBloqueio').value.trim() || 'Fechado';
+        document.getElementById('btnSalvarBloqueio')?.addEventListener('click', async () => {
+            const dataBloq = document.getElementById('inputDataBloqueio')?.value;
+            const motivo = (document.getElementById('inputMotivoBloqueio')?.value || '').trim() || 'Fechado';
             const msg = document.getElementById('msgBloqueioStatus');
 
             if (!dataBloq) {
-                msg.className = "text-xs text-center font-medium text-red-400";
-                msg.innerText = "Selecione a data para bloquear!";
+                if (msg) {
+                    msg.className = "text-xs text-center font-medium text-red-400";
+                    msg.innerText = "Selecione a data para bloquear!";
+                }
                 return;
             }
 
             try {
                 await setDoc(doc(db, "diasBloqueados", dataBloq), { bloqueado: true, motivo });
-                document.getElementById('inputDataBloqueio').value = "";
-                document.getElementById('inputMotivoBloqueio').value = "";
-                msg.className = "text-xs text-center font-medium text-green-400";
-                msg.innerText = "Data bloqueada com sucesso!";
-                setTimeout(() => msg.innerText = "", 3000);
+                const elData = document.getElementById('inputDataBloqueio');
+                const elMotivo = document.getElementById('inputMotivoBloqueio');
+                if (elData) elData.value = "";
+                if (elMotivo) elMotivo.value = "";
+                if (msg) {
+                    msg.className = "text-xs text-center font-medium text-green-400";
+                    msg.innerText = "Data bloqueada com sucesso!";
+                    setTimeout(() => { if (msg) msg.innerText = ""; }, 3000);
+                }
                 carregarDiasBloqueadosAdmin();
-            } catch (e) { msg.innerText = "Erro ao bloquear data."; }
+            } catch (e) { if (msg) msg.innerText = "Erro ao bloquear data."; }
         });
 
         async function carregarDiasBloqueadosAdmin() {
