@@ -2799,11 +2799,12 @@
                 });
 
                 window.listaAgendamentosMemoria = lista;
+                console.log('[EMAÚS:AGENDAMENTOS] 📥 Carregados', lista.length, 'agendamentos do Firestore.');
 
                 atualizarMetricasOverviewComDados(lista);
                 renderizarTabelaAgendamentos();
             } catch (e) {
-                console.error("Erro ao buscar agendamentos:", e);
+                console.error("[EMAÚS:ERRO:AGENDAMENTOS] Falha ao carregar agendamentos:", e);
                 if (tabela) tabela.innerHTML = `<tr><td colspan='6' class='p-6 text-center text-red-400'>Erro ao carregar agendamentos: ${e.message}</td></tr>`;
             }
         };
@@ -3155,10 +3156,18 @@
                 if (statEst) statEst.innerText = `R$ ${totalEstornos.toFixed(2)}`;
                 if (badgeEst) badgeEst.innerText = `${qtdEstornos} estorno(s)`;
 
+                console.log(`[EMAÚS:FATURAMENTO] 💰 Faturamento consolidado (${prefixoMesAno}):`, {
+                    liquido: faturamentoLiquido,
+                    planos: totalPlanos,
+                    agendamentos: totalAgendamentos,
+                    estornos: totalEstornos,
+                    transacoes: transacoes.length
+                });
+
                 renderizarTabelaHistoricoFaturamento();
 
             } catch (err) {
-                console.error("Erro ao processar faturamento mensal:", err);
+                console.error("[EMAÚS:ERRO:FATURAMENTO] Erro ao processar faturamento mensal:", err);
                 if (tbody) tbody.innerHTML = `<tr><td colspan='6' class='p-6 text-center text-red-400'>Erro ao carregar faturamento: ${err.message}</td></tr>`;
             }
         };
