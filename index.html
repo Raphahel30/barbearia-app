@@ -1764,20 +1764,62 @@
                     return;
                 }
 
-                listaPlanosClienteDiv.innerHTML = "";
+                const temPlanoAtivo = dadosAssinaturaAtiva && dadosAssinaturaAtiva.ehAtivo;
+                const podeComprarOuRenovar = !temPlanoAtivo || (dadosAssinaturaAtiva.diasRestantes <= 3);
+
+                let htmlPlanos = "";
+
+                if (temPlanoAtivo) {
+                    if (podeComprarOuRenovar) {
+                        htmlPlanos += `
+                            <div class="col-span-full bg-gradient-to-r from-amber-950/60 to-black p-3.5 rounded-xl border border-amber-500/50 text-xs text-amber-200 space-y-1 mb-2">
+                                <p class="font-bold text-amber-300 flex items-center gap-1.5">
+                                    <span>⚡</span> Renovação Antecipada Liberada!
+                                </p>
+                                <p class="text-[11px] text-zinc-300">
+                                    Seu plano atual termina em <strong>${dadosAssinaturaAtiva.diasRestantes} dia(s) (${dadosAssinaturaAtiva.dataFimFormatada})</strong>. Você já pode renovar com antecedência para garantir seu próximo ciclo de 4 cortes sem interrupção.
+                                </p>
+                            </div>
+                        `;
+                    } else {
+                        htmlPlanos += `
+                            <div class="col-span-full bg-black/80 p-3.5 rounded-xl border border-zinc-800 text-xs text-zinc-300 space-y-1 mb-2">
+                                <p class="font-bold text-zinc-200 flex items-center gap-1.5">
+                                    <span>🔒</span> Você já possui o plano "${dadosAssinaturaAtiva.nomePlano}" ativo
+                                </p>
+                                <p class="text-[11px] text-zinc-400">
+                                    Válido até <strong class="text-white">${dadosAssinaturaAtiva.dataFimFormatada}</strong> (${dadosAssinaturaAtiva.diasRestantes} dias restantes). A contratação de um novo plano só é liberada <strong>faltando 3 dias para o vencimento</strong>.
+                                </p>
+                            </div>
+                        `;
+                    }
+                }
+
                 planosSnap.forEach((docSnap) => {
                     const pId = docSnap.id;
                     const pData = docSnap.data();
-                    listaPlanosClienteDiv.innerHTML += `
+
+                    let botaoHtml = "";
+                    if (!temPlanoAtivo) {
+                        botaoHtml = `<button onclick="iniciarCompraPlano('${pId}', '${pData.nome}', ${pData.preco})" class="bg-dourado hover:bg-[#C5A028] text-black font-bold px-3.5 py-1.5 rounded-lg text-xs uppercase cursor-pointer transition">Assinar Plano</button>`;
+                    } else if (podeComprarOuRenovar) {
+                        botaoHtml = `<button onclick="iniciarCompraPlano('${pId}', '${pData.nome}', ${pData.preco})" class="bg-gradient-to-r from-dourado to-amber-500 hover:opacity-90 text-black font-extrabold px-3.5 py-2 rounded-lg text-xs uppercase cursor-pointer transition shadow-md flex items-center gap-1"><span>⚡</span> Renovar</button>`;
+                    } else {
+                        botaoHtml = `<button disabled class="bg-zinc-800 text-zinc-500 font-bold px-3 py-1.5 rounded-lg text-xs uppercase cursor-not-allowed border border-zinc-700">🔒 Plano Ativo</button>`;
+                    }
+
+                    htmlPlanos += `
                         <div class="flex justify-between items-center bg-zinc-900 p-3.5 rounded-xl border border-zinc-800">
                             <div>
                                 <p class="font-bold text-white">${pData.nome}</p>
                                 <p class="text-xs text-dourado font-semibold">R$ ${pData.preco.toFixed(2)} / 30 dias (4 cortes)</p>
                             </div>
-                            <button onclick="iniciarCompraPlano('${pId}', '${pData.nome}', ${pData.preco})" class="bg-dourado hover:bg-[#C5A028] text-black font-bold px-3.5 py-1.5 rounded-lg text-xs uppercase cursor-pointer transition">Assinar Plano</button>
+                            ${botaoHtml}
                         </div>
                     `;
                 });
+
+                listaPlanosClienteDiv.innerHTML = htmlPlanos;
 
             } catch (e) {
                 console.error(e);
@@ -2169,6 +2211,10 @@
         });
 
         window.iniciarCompraPlano = function(id, nome, preco) {
+            if (dadosAssinaturaAtiva && dadosAssinaturaAtiva.ehAtivo && dadosAssinaturaAtiva.diasRestantes > 3) {
+                alert(`Você já possui o plano "${dadosAssinaturaAtiva.nomePlano}" ativo até ${dadosAssinaturaAtiva.dataFimFormatada} (${dadosAssinaturaAtiva.diasRestantes} dias restantes).\n\nA contratação ou renovação de um novo plano só é liberada faltando 3 dias ou menos para o vencimento.`);
+                return;
+            }
             abrirModalTermos('plano', { plano: { id, nome, preco } });
         };
 

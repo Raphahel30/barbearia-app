@@ -2274,6 +2274,10 @@
                                     <span>🔄</span>
                                     <span>+30 Dias</span>
                                 </button>
+                                <button onclick="window.estornarAssinaturaMensalistaAdmin('${item.id}', '${item.cliente || 'Cliente'}', ${item.preco || 0}, '${item.idPagamento || ''}')" title="Cancelar e Estornar Assinatura" class="bg-amber-950/80 hover:bg-amber-900 text-amber-300 px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer border border-amber-700">
+                                    <span>↩️</span>
+                                    <span>Estornar</span>
+                                </button>
                                 <button onclick="window.excluirAssinaturaMensalistaAdmin('${item.id}', '${item.cliente || 'Cliente'}')" title="Cancelar/Excluir Plano" class="bg-red-950/60 hover:bg-red-900 text-red-400 px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer border border-red-800">
                                     <span>🗑️</span>
                                 </button>
@@ -2520,6 +2524,41 @@
                 await window.carregarClientesMensalistasAdmin();
             } catch (e) {
                 alert("Erro ao excluir assinatura: " + e.message);
+            }
+        };
+
+        // Estornar e Cancelar Assinatura VIP
+        window.estornarAssinaturaMensalistaAdmin = async function(userId, clienteNome, precoPlano, idPagamento) {
+            if (!confirm(`Deseja CANCELAR e registrar o ESTORNO da assinatura de "${clienteNome}" (Valor: R$ ${Number(precoPlano || 0).toFixed(2)})?\n\nIsso cancelará o plano imediatamente e deduzirá o valor no extrato financeiro.`)) {
+                return;
+            }
+
+            try {
+                if (idPagamento && idPagamento !== 'undefined' && idPagamento !== 'Manual' && /^\d+$/.test(idPagamento)) {
+                    try {
+                        await fetch(`${getBackendUrlAtivo()}/api/mercadopago/reembolsar-pagamento`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ paymentId: idPagamento, valorReembolso: precoPlano })
+                        });
+                    } catch (errEst) {
+                        console.warn("Aviso ao tentar estorno no MP:", errEst);
+                    }
+                }
+
+                await updateDoc(doc(db, "assinaturasClientes", userId), {
+                    status: 'cancelado',
+                    estornadoEm: new Date().toISOString(),
+                    motivoCancelamento: 'Cancelado e estornado pelo administrador'
+                });
+
+                exibirToastNotificacao('↩️ Assinatura Estornada', `Plano de ${clienteNome} cancelado e estornado com sucesso.`, 'cancelamento');
+                await window.carregarClientesMensalistasAdmin();
+                if (typeof carregarFaturamentoMensalAdmin === 'function') {
+                    carregarFaturamentoMensalAdmin(true);
+                }
+            } catch (e) {
+                alert("Erro ao estornar assinatura: " + e.message);
             }
         };
 
