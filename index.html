@@ -2020,6 +2020,7 @@
 
                 let horaAberturaMin = 8 * 60;
                 let horaFechamentoMin = 20 * 60;
+                let intervaloMin = 60;
 
                 const configSnap = await getDoc(doc(db, "configuracoes", "expediente"));
                 if (configSnap.exists()) {
@@ -2031,6 +2032,9 @@
                     if (cfg.fechamento) {
                         const [fh, fm] = cfg.fechamento.split(':').map(Number);
                         horaFechamentoMin = fh * 60 + fm;
+                    }
+                    if (cfg.intervaloMin) {
+                        intervaloMin = Number(cfg.intervaloMin);
                     }
                 }
 
@@ -2057,8 +2061,8 @@
                 selectHorario.innerHTML = "";
                 let disponiveisContador = 0;
                 
-                // Gera a grade de 1 em 1 hora (exatamente o mesmo padrão do agendamento comum)
-                for (let minutos = horaAberturaMin; minutos <= horaFechamentoMin; minutos += 60) {
+                // Gera a grade de horários respeitando a abertura, fechamento e intervalo do expediente
+                for (let minutos = horaAberturaMin; minutos <= horaFechamentoMin; minutos += intervaloMin) {
                     const h = Math.floor(minutos / 60);
                     const m = minutos % 60;
                     const horaFormatada = String(h).padStart(2, '0') + ":" + String(m).padStart(2, '0');
@@ -2076,7 +2080,7 @@
                             const [oh, om] = ocupado.split(':').map(Number);
                             const minOcupadoTotal = oh * 60 + om;
 
-                            if (minutos >= minOcupadoTotal && minutos < minOcupadoTotal + 60) {
+                            if (minutos >= minOcupadoTotal && minutos < minOcupadoTotal + intervaloMin) {
                                 bloqueado = true;
                                 break;
                             }

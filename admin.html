@@ -167,8 +167,8 @@
                     <span>Produtos & Estoque</span>
                 </button>
                 <button id="tabNavBlockDays" class="sidebar-link w-full text-left">
-                    <span class="text-lg">🚫</span>
-                    <span>Dias Fechados</span>
+                    <span class="text-lg">🗓️</span>
+                    <span>Calendário</span>
                 </button>
                 <button id="tabNavPayments" class="sidebar-link w-full text-left">
                     <span class="text-lg">💳</span>
@@ -725,32 +725,114 @@
                 </div>
             </section>
 
-            <!-- 4. ABA: BLOQUEIO DE DIAS -->
+            <!-- 4. ABA: CALENDÁRIO & HORÁRIOS DE EXPEDIENTE -->
             <section id="viewBlockDays" class="space-y-6 hidden">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="card-dark p-6 rounded-2xl border border-zinc-800 space-y-4">
-                        <h2 class="text-xl font-bold text-white uppercase">Bloquear Data</h2>
-                        <p class="text-xs text-zinc-400">Selecione dias de folga, feriados ou férias para impedir agendamentos no site.</p>
-                        <div class="space-y-3">
-                            <div>
-                                <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">Data para Bloquear</label>
-                                <input type="date" id="inputDataBloqueio" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                <div class="flex flex-col md:flex-row justify-between md:items-center gap-3">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white uppercase flex items-center gap-2">
+                            <span>🗓️</span> Calendário & Horários de Expediente
+                        </h2>
+                        <p class="text-xs text-zinc-400">Configure os horários de abertura e fechamento da barbearia e bloqueie feriados ou dias sem atendimento.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- CARD 1: CONFIGURAÇÃO DE HORÁRIOS DE ABERTURA E FECHAMENTO -->
+                    <div class="card-dark p-6 rounded-3xl border border-zinc-800 space-y-5 shadow-xl">
+                        <div class="flex items-center gap-3 border-b border-zinc-800/80 pb-3">
+                            <div class="w-10 h-10 bg-amber-950/60 border border-dourado/40 rounded-xl flex items-center justify-center text-xl shadow-inner">
+                                ⏰
                             </div>
                             <div>
-                                <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">Motivo (Opcional)</label>
-                                <input type="text" id="inputMotivoBloqueio" placeholder="Ex: Feriado Nacional / Folga" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                                <h3 class="text-base font-bold text-white uppercase">Horários de Atendimento</h3>
+                                <p class="text-xs text-zinc-400">Define a grade de horários disponível no site dos clientes.</p>
                             </div>
-                            <button id="btnSalvarBloqueio" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-lg text-xs uppercase transition cursor-pointer">
-                                🚫 Bloquear Esta Data
+                        </div>
+
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-zinc-300 uppercase mb-1.5 flex items-center gap-1">
+                                        <span>🌅</span> Abertura da Barbearia
+                                    </label>
+                                    <input type="time" id="inputExpedienteAbertura" value="08:00" class="w-full px-3.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white text-xs font-bold focus:outline-none focus:border-dourado cursor-pointer">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-zinc-300 uppercase mb-1.5 flex items-center gap-1">
+                                        <span>🌙</span> Fechamento da Barbearia
+                                    </label>
+                                    <input type="time" id="inputExpedienteFechamento" value="20:00" class="w-full px-3.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white text-xs font-bold focus:outline-none focus:border-dourado cursor-pointer">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-zinc-300 uppercase mb-1.5 flex items-center gap-1">
+                                    <span>⏱️</span> Intervalo entre Atendimentos
+                                </label>
+                                <select id="selectExpedienteIntervalo" class="w-full px-3.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white text-xs font-bold focus:outline-none focus:border-dourado cursor-pointer">
+                                    <option value="60" selected>De 1 em 1 hora (60 min) - Padrão</option>
+                                    <option value="45">A cada 45 minutos</option>
+                                    <option value="30">A cada 30 minutos</option>
+                                </select>
+                            </div>
+
+                            <!-- Preview dos horários gerados -->
+                            <div class="bg-black/60 p-3.5 rounded-xl border border-zinc-800/80 space-y-1.5">
+                                <p class="text-[11px] font-bold text-dourado uppercase tracking-wider">👀 Visualização da Grade de Horários:</p>
+                                <div id="previewGradeHorariosExpediente" class="flex flex-wrap gap-1.5 text-[11px] text-zinc-300 font-mono">
+                                    08:00 • 09:00 • 10:00 • 11:00 • 12:00 • 13:00 • 14:00 • 15:00 • 16:00 • 17:00 • 18:00 • 19:00 • 20:00
+                                </div>
+                            </div>
+
+                            <button id="btnSalvarExpedienteAdmin" onclick="window.salvarExpedienteAdmin()" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl text-xs uppercase transition cursor-pointer shadow-lg flex items-center justify-center gap-2">
+                                <span>💾</span>
+                                <span>Salvar Horários de Funcionamento</span>
                             </button>
-                            <p id="msgBloqueioStatus" class="text-xs text-center font-medium"></p>
+                            <p id="msgStatusExpedienteAdmin" class="text-xs text-center font-medium"></p>
                         </div>
                     </div>
 
-                    <div class="card-dark p-6 rounded-2xl border border-zinc-800 space-y-4 lg:col-span-2">
-                        <h2 class="text-xl font-bold text-white uppercase">Datas Atualmente Fechadas</h2>
-                        <div id="listaDiasBloqueadosAdmin" class="flex flex-wrap gap-2">
-                            <span class="text-xs text-zinc-500">Nenhuma data bloqueada.</span>
+                    <!-- CARD 2: BLOQUEAR DIAS / FERIADOS / FOLGAS -->
+                    <div class="space-y-6">
+                        <div class="card-dark p-6 rounded-3xl border border-zinc-800 space-y-4 shadow-xl">
+                            <div class="flex items-center gap-3 border-b border-zinc-800/80 pb-3">
+                                <div class="w-10 h-10 bg-red-950/60 border border-red-800/40 rounded-xl flex items-center justify-center text-xl shadow-inner">
+                                    🚫
+                                </div>
+                                <div>
+                                    <h3 class="text-base font-bold text-white uppercase">Bloquear Data Específica</h3>
+                                    <p class="text-xs text-zinc-400">Feche o agendamento em feriados, folgas ou dias de manutenção.</p>
+                                </div>
+                            </div>
+
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">Data para Bloquear</label>
+                                    <input type="date" id="inputDataBloqueio" class="w-full px-3.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado cursor-pointer">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">Motivo (Opcional)</label>
+                                    <input type="text" id="inputMotivoBloqueio" placeholder="Ex: Feriado Nacional / Folga" class="w-full px-3.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                                </div>
+                                <button id="btnSalvarBloqueio" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer flex items-center justify-center gap-2 shadow-md">
+                                    <span>🚫</span>
+                                    <span>Bloquear Esta Data</span>
+                                </button>
+                                <p id="msgBloqueioStatus" class="text-xs text-center font-medium"></p>
+                            </div>
+                        </div>
+
+                        <!-- CARD 3: DATAS ATUALMENTE FECHADAS -->
+                        <div class="card-dark p-6 rounded-3xl border border-zinc-800 space-y-4 shadow-xl">
+                            <div class="flex justify-between items-center border-b border-zinc-800/80 pb-3">
+                                <h3 class="text-base font-bold text-white uppercase flex items-center gap-2">
+                                    <span>📅</span> Datas Fechadas
+                                </h3>
+                                <button onclick="carregarDiasBloqueadosAdmin()" class="text-xs text-zinc-400 hover:text-white transition">🔄 Atualizar</button>
+                            </div>
+                            <div id="listaDiasBloqueadosAdmin" class="flex flex-wrap gap-2 min-h-[50px] items-center">
+                                <span class="text-xs text-zinc-500">Carregando datas bloqueadas...</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1614,7 +1696,9 @@
             vipClients: "👑 Clientes Mensalistas",
             services: "✂️ Serviços & Preços",
             products: "🛍️ Loja & Estoque de Produtos",
-            blockDays: "🚫 Dias Fechados",
+            blockDays: "🗓️ Calendário & Horários",
+            calendar: "🗓️ Calendário & Horários",
+            closedDays: "🗓️ Calendário & Horários",
             payments: "💳 Mercado Pago",
             whatsapp: "🤖 WhatsApp Bot",
             admins: "👥 Administradores"
@@ -1690,8 +1774,9 @@
                 carregarPlanosAdmin();
             } else if (nomeAba === 'products') {
                 carregarProdutosAdmin();
-            } else if (nomeAba === 'blockDays') {
+            } else if (nomeAba === 'blockDays' || nomeAba === 'calendar' || nomeAba === 'closedDays') {
                 carregarDiasBloqueadosAdmin();
+                carregarExpedienteAdmin();
             } else if (nomeAba === 'admins') {
                 carregarAdministradoresPainel();
             }
@@ -4190,6 +4275,119 @@
                 } catch (e) { alert("Erro ao desbloquear data."); }
             }
         };
+
+        // ==========================================
+        // GESTÃO DE EXPEDIENTE & HORÁRIOS DE FUNCIONAMENTO
+        // ==========================================
+        async function carregarExpedienteAdmin() {
+            const inputAbertura = document.getElementById('inputExpedienteAbertura');
+            const inputFechamento = document.getElementById('inputExpedienteFechamento');
+            const selectIntervalo = document.getElementById('selectExpedienteIntervalo');
+            if (!inputAbertura || !inputFechamento) return;
+
+            try {
+                const configSnap = await getDoc(doc(db, "configuracoes", "expediente"));
+                if (configSnap.exists()) {
+                    const cfg = configSnap.data();
+                    if (cfg.abertura) inputAbertura.value = cfg.abertura;
+                    if (cfg.fechamento) inputFechamento.value = cfg.fechamento;
+                    if (cfg.intervaloMin && selectIntervalo) selectIntervalo.value = String(cfg.intervaloMin);
+                }
+                atualizarPreviewGradeExpediente();
+            } catch (err) {
+                console.warn("Erro ao carregar expediente:", err);
+            }
+        }
+
+        function atualizarPreviewGradeExpediente() {
+            const inputAbertura = document.getElementById('inputExpedienteAbertura');
+            const inputFechamento = document.getElementById('inputExpedienteFechamento');
+            const selectIntervalo = document.getElementById('selectExpedienteIntervalo');
+            const containerPreview = document.getElementById('previewGradeHorariosExpediente');
+            if (!inputAbertura || !inputFechamento || !containerPreview) return;
+
+            const abertura = inputAbertura.value || "08:00";
+            const fechamento = inputFechamento.value || "20:00";
+            const intervalo = Number(selectIntervalo?.value || 60);
+
+            const [ah, am] = abertura.split(':').map(Number);
+            const [fh, fm] = fechamento.split(':').map(Number);
+
+            const aberturaMin = ah * 60 + am;
+            const fechamentoMin = fh * 60 + fm;
+
+            if (aberturaMin >= fechamentoMin) {
+                containerPreview.innerHTML = "<span class='text-red-400 font-bold'>⚠️ O horário de fechamento deve ser maior que o de abertura.</span>";
+                return;
+            }
+
+            let slots = [];
+            for (let m = aberturaMin; m <= fechamentoMin; m += intervalo) {
+                const h = Math.floor(m / 60);
+                const min = m % 60;
+                slots.push(String(h).padStart(2, '0') + ":" + String(min).padStart(2, '0'));
+            }
+
+            if (slots.length === 0) {
+                containerPreview.innerHTML = "<span class='text-zinc-500'>Nenhum horário gerado.</span>";
+            } else {
+                containerPreview.innerHTML = slots.map(s => `<span class="bg-zinc-900 border border-zinc-800 text-dourado px-2 py-0.5 rounded font-bold">${s}</span>`).join(' ');
+            }
+        }
+
+        window.salvarExpedienteAdmin = async function() {
+            const inputAbertura = document.getElementById('inputExpedienteAbertura');
+            const inputFechamento = document.getElementById('inputExpedienteFechamento');
+            const selectIntervalo = document.getElementById('selectExpedienteIntervalo');
+            const btnSalvar = document.getElementById('btnSalvarExpedienteAdmin');
+            const msgStatus = document.getElementById('msgStatusExpedienteAdmin');
+
+            const abertura = (inputAbertura?.value || "08:00").trim();
+            const fechamento = (inputFechamento?.value || "20:00").trim();
+            const intervaloMin = Number(selectIntervalo?.value || 60);
+
+            const [ah, am] = abertura.split(':').map(Number);
+            const [fh, fm] = fechamento.split(':').map(Number);
+
+            if ((ah * 60 + am) >= (fh * 60 + fm)) {
+                alert("O horário de fechamento precisa ser depois do horário de abertura!");
+                return;
+            }
+
+            if (btnSalvar) {
+                btnSalvar.disabled = true;
+                btnSalvar.innerHTML = "<span>⏳</span><span>Salvando Horários...</span>";
+            }
+
+            try {
+                await setDoc(doc(db, "configuracoes", "expediente"), {
+                    abertura,
+                    fechamento,
+                    intervaloMin,
+                    atualizadoEm: new Date().toISOString()
+                }, { merge: true });
+
+                exibirToastNotificacao('⏰ Expediente Atualizado!', `Abertura: ${abertura} • Fechamento: ${fechamento} (Intervalos: ${intervaloMin}min)`, 'config');
+                if (msgStatus) {
+                    msgStatus.className = "text-xs text-center font-bold text-green-400";
+                    msgStatus.innerText = "✓ Horários salvos com sucesso e integrados à agenda dos clientes!";
+                    setTimeout(() => { msgStatus.innerText = ""; }, 4000);
+                }
+                atualizarPreviewGradeExpediente();
+            } catch (err) {
+                console.error("Erro ao salvar expediente:", err);
+                alert("Erro ao salvar horários de expediente: " + err.message);
+            } finally {
+                if (btnSalvar) {
+                    btnSalvar.disabled = false;
+                    btnSalvar.innerHTML = "<span>💾</span><span>Salvar Horários de Funcionamento</span>";
+                }
+            }
+        };
+
+        document.getElementById('inputExpedienteAbertura')?.addEventListener('input', atualizarPreviewGradeExpediente);
+        document.getElementById('inputExpedienteFechamento')?.addEventListener('input', atualizarPreviewGradeExpediente);
+        document.getElementById('selectExpedienteIntervalo')?.addEventListener('change', atualizarPreviewGradeExpediente);
 
         async function carregarConfiguracoesMercadoPago() {
             try {
