@@ -437,35 +437,53 @@
 
             <!-- 2. ABA: AGENDA COMPLETA DE CLIENTES -->
             <section id="viewSchedule" class="space-y-4 hidden">
-                <div class="flex flex-col md:flex-row justify-between md:items-center gap-3">
+                <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-3 bg-zinc-950/90 p-4 rounded-2xl border border-zinc-800">
                     <div>
-                        <h2 class="text-2xl font-bold text-white uppercase">Agenda de Atendimentos</h2>
-                        <p class="text-xs text-zinc-400">Gerencie horários, confirme presenças, registre faltas ou cancele agendamentos.</p>
+                        <h2 class="text-xl font-bold text-white uppercase flex items-center gap-2">
+                            <span>📅</span> Agenda de Atendimentos
+                        </h2>
+                        <p id="subtituloAgendaAdmin" class="text-xs text-zinc-400">Atendimentos de Hoje</p>
                     </div>
                     
                     <div class="flex flex-wrap items-center gap-2">
                         <!-- Busca rápida instantânea -->
                         <div class="relative">
-                            <input id="inputBuscaAgendaAdmin" type="text" placeholder="🔍 Buscar cliente / telefone..." class="bg-black border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-dourado w-44 sm:w-52">
+                            <input id="inputBuscaAgendaAdmin" type="text" placeholder="🔍 Buscar cliente..." class="bg-black border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-dourado w-36 sm:w-44">
                         </div>
 
-                        <!-- Filtros por status / data -->
-                        <div class="flex gap-1 bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs">
-                            <button id="btnFiltroFuturos" onclick="carregarAgendamentosAdmin('futuros')" class="bg-dourado text-black px-3 py-1.5 rounded-lg font-bold uppercase transition cursor-pointer">
-                                Próximos
-                            </button>
-                            <button id="btnFiltroHoje" onclick="carregarAgendamentosAdmin('hoje')" class="bg-transparent text-zinc-400 hover:text-white px-3 py-1.5 rounded-lg font-bold uppercase transition cursor-pointer">
+                        <!-- Navegador de Data & Calendário -->
+                        <div class="flex items-center gap-1.5 bg-black p-1 rounded-xl border border-zinc-800">
+                            <button id="btnAgendaHoje" class="px-2.5 py-1.5 bg-dourado text-black rounded-lg text-xs font-bold uppercase transition cursor-pointer shadow-sm" title="Ir para Hoje">
                                 Hoje
                             </button>
-                            <button id="btnFiltroPassados" onclick="carregarAgendamentosAdmin('passados')" class="bg-transparent text-zinc-400 hover:text-white px-3 py-1.5 rounded-lg font-bold uppercase transition cursor-pointer">
-                                Histórico
+                            <button id="btnDiaAnteriorAgenda" class="px-2 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg text-xs font-bold transition cursor-pointer" title="Dia Anterior">
+                                ◀
+                            </button>
+                            <input type="date" id="inputDataFiltroAgenda" class="bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-dourado font-sans cursor-pointer font-bold">
+                            <button id="btnDiaSeguinteAgenda" class="px-2 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg text-xs font-bold transition cursor-pointer" title="Dia Seguinte">
+                                ▶
                             </button>
                         </div>
 
-                        <button onclick="buscarAgendamentosFirestore(true)" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1 border border-zinc-700" title="Recarregar dados do servidor">
+                        <!-- Botão de Histórico Geral -->
+                        <button id="btnFiltroHistoricoGeral" class="bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white px-3 py-1.5 rounded-xl border border-zinc-800 text-xs font-bold transition cursor-pointer">
+                            📋 Histórico Geral
+                        </button>
+
+                        <button onclick="buscarAgendamentosFirestore(true)" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-2.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1 border border-zinc-700" title="Recarregar dados do servidor">
                             <span>🔄</span>
                         </button>
                     </div>
+                </div>
+
+                <!-- Barra de Resumo da Data Selecionada -->
+                <div id="barraResumoDataSelecionada" class="flex justify-between items-center bg-zinc-900/60 px-4 py-2.5 rounded-xl border border-zinc-800/80 text-xs">
+                    <span id="labelDataSelecionadaFormatada" class="text-white font-bold flex items-center gap-1.5">
+                        📅 Carregando data...
+                    </span>
+                    <span id="badgeQtdAgendamentosData" class="bg-dourado/10 text-dourado border border-dourado/30 px-2.5 py-0.5 rounded-full font-bold text-[11px]">
+                        0 clientes
+                    </span>
                 </div>
 
                 <div class="card-dark rounded-2xl border border-zinc-800 overflow-hidden shadow-xl">
@@ -1662,7 +1680,7 @@
             if (nomeAba === 'billing') {
                 carregarFaturamentoMensalAdmin();
             } else if (nomeAba === 'schedule') {
-                carregarAgendamentosAdmin(filtroAgendamentosAtual);
+                carregarAgendamentosAdmin('data', new Date().toISOString().split('T')[0]);
             } else if (nomeAba === 'overview') {
                 carregarMetricasOverview();
             } else if (nomeAba === 'vipClients') {
@@ -3122,19 +3140,33 @@
         document.getElementById('inputBuscaFaturamento')?.addEventListener('input', renderizarTabelaHistoricoFaturamento);
         document.getElementById('selectFiltroTipoFaturamento')?.addEventListener('change', renderizarTabelaHistoricoFaturamento);
 
-        window.carregarAgendamentosAdmin = async function(tipo = 'futuros') {
-            filtroAgendamentosAtual = tipo;
+        let dataFiltroAgendaSelecionada = new Date().toISOString().split('T')[0];
+        let filtroModoAgenda = 'data'; // 'data' ou 'todos'
 
-            const btnFuturos = document.getElementById('btnFiltroFuturos');
-            const btnHoje = document.getElementById('btnFiltroHoje');
-            const btnPassados = document.getElementById('btnFiltroPassados');
+        window.carregarAgendamentosAdmin = async function(modo = 'data', dataParam = null) {
+            filtroModoAgenda = modo;
+            if (dataParam) {
+                dataFiltroAgendaSelecionada = dataParam;
+            } else if (!dataFiltroAgendaSelecionada) {
+                dataFiltroAgendaSelecionada = new Date().toISOString().split('T')[0];
+            }
 
-            const btnAtivoClass = "bg-dourado text-black px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase transition cursor-pointer shadow-sm";
-            const btnInativoClass = "bg-transparent text-zinc-400 hover:text-white px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase transition cursor-pointer";
+            const inputData = document.getElementById('inputDataFiltroAgenda');
+            const btnHoje = document.getElementById('btnAgendaHoje');
+            const btnHist = document.getElementById('btnFiltroHistoricoGeral');
+            const hojeStr = new Date().toISOString().split('T')[0];
 
-            if (btnFuturos) btnFuturos.className = tipo === 'futuros' ? btnAtivoClass : btnInativoClass;
-            if (btnHoje) btnHoje.className = tipo === 'hoje' ? btnAtivoClass : btnInativoClass;
-            if (btnPassados) btnPassados.className = tipo === 'passados' ? btnAtivoClass : btnInativoClass;
+            if (inputData) inputData.value = dataFiltroAgendaSelecionada;
+
+            const btnAtivoClass = "bg-dourado text-black px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase transition cursor-pointer shadow-sm";
+            const btnInativoClass = "bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase transition cursor-pointer";
+
+            if (btnHoje) {
+                btnHoje.className = (filtroModoAgenda === 'data' && dataFiltroAgendaSelecionada === hojeStr) ? btnAtivoClass : btnInativoClass;
+            }
+            if (btnHist) {
+                btnHist.className = filtroModoAgenda === 'todos' ? "bg-dourado text-black px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shadow-sm" : "bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white px-3 py-1.5 rounded-xl border border-zinc-800 text-xs font-bold transition cursor-pointer";
+            }
 
             if (window.listaAgendamentosMemoria.length === 0) {
                 await buscarAgendamentosFirestore(false);
@@ -3145,26 +3177,37 @@
 
         function renderizarTabelaAgendamentos() {
             const tabela = document.getElementById('tabelaAgendamentosAdmin');
+            const labelResumo = document.getElementById('labelDataSelecionadaFormatada');
+            const badgeQtd = document.getElementById('badgeQtdAgendamentosData');
+            const subtitulo = document.getElementById('subtituloAgendaAdmin');
             if (!tabela) return;
 
-            const tipo = filtroAgendamentosAtual;
-            const agora = new Date().toISOString().slice(0, 16);
             const hojeStr = new Date().toISOString().split('T')[0];
+            let listaFiltrada = [];
 
-            let listaFiltrada = window.listaAgendamentosMemoria.filter(ag => {
-                const ehFuturo = ag.dataHora >= agora;
-                const ehConcluido = ag.status === 'concluido';
-                const ehFalta = ag.status === 'falta';
+            if (filtroModoAgenda === 'todos') {
+                listaFiltrada = [...window.listaAgendamentosMemoria];
+                listaFiltrada.sort((a, b) => b.dataHora.localeCompare(a.dataHora));
+                if (labelResumo) labelResumo.innerHTML = "📋 Visualizando Todos os Agendamentos (Histórico Geral)";
+                if (subtitulo) subtitulo.innerText = "Histórico Geral de Agendamentos";
+            } else {
+                listaFiltrada = window.listaAgendamentosMemoria.filter(ag => ag.dataHora && ag.dataHora.startsWith(dataFiltroAgendaSelecionada));
+                listaFiltrada.sort((a, b) => a.dataHora.localeCompare(b.dataHora));
 
-                if (tipo === 'futuros') {
-                    return ehFuturo && !ehConcluido && !ehFalta;
-                } else if (tipo === 'hoje') {
-                    return ag.dataHora.startsWith(hojeStr);
-                } else if (tipo === 'passados') {
-                    return !ehFuturo || ehConcluido || ehFalta;
-                }
-                return true;
-            });
+                const [ano, mes, dia] = dataFiltroAgendaSelecionada.split('-').map(Number);
+                const dataObj = new Date(ano, mes - 1, dia);
+                const diasSemana = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+                const nomeDiaSemana = diasSemana[dataObj.getDay()];
+                const dataFormatadaPt = `${String(dia).padStart(2, '0')}/${String(mes).padStart(2, '0')}/${ano}`;
+
+                const ehHoje = dataFiltroAgendaSelecionada === hojeStr;
+                const textoData = ehHoje 
+                    ? `📅 Agenda de Hoje • ${nomeDiaSemana}, ${dataFormatadaPt}` 
+                    : `📅 Agenda de ${nomeDiaSemana}, ${dataFormatadaPt}`;
+
+                if (labelResumo) labelResumo.innerHTML = textoData;
+                if (subtitulo) subtitulo.innerText = ehHoje ? "Atendimentos de Hoje" : `Atendimentos de ${dataFormatadaPt}`;
+            }
 
             // Filtro de busca textual em tempo real
             if (termoBuscaAgenda) {
@@ -3177,15 +3220,10 @@
                 });
             }
 
-            // Ordenação otimizada
-            if (tipo === 'passados') {
-                listaFiltrada.sort((a, b) => b.dataHora.localeCompare(a.dataHora)); // Mais recentes primeiro no histórico
-            } else {
-                listaFiltrada.sort((a, b) => a.dataHora.localeCompare(b.dataHora)); // Mais próximos primeiro na fila
-            }
+            if (badgeQtd) badgeQtd.innerText = `${listaFiltrada.length} cliente(s)`;
 
             if (listaFiltrada.length === 0) {
-                tabela.innerHTML = "<tr><td colspan='6' class='p-8 text-center text-zinc-500'>Nenhum agendamento encontrado nesta visualização.</td></tr>";
+                tabela.innerHTML = `<tr><td colspan='6' class='p-8 text-center text-zinc-500'>Nenhum agendamento encontrado para ${filtroModoAgenda === 'todos' ? 'esta busca' : 'este dia'}. Horários livres!</td></tr>`;
                 return;
             }
 
@@ -3266,7 +3304,7 @@
             tabela.innerHTML = html;
         }
 
-        // Listener da busca rápida
+        // Listeners dos controles da agenda (Busca, Calendário, Navegação de dias)
         const inputBuscaAgendaAdmin = document.getElementById('inputBuscaAgendaAdmin');
         if (inputBuscaAgendaAdmin) {
             inputBuscaAgendaAdmin.addEventListener('input', (e) => {
@@ -3274,6 +3312,44 @@
                 renderizarTabelaAgendamentos();
             });
         }
+
+        document.getElementById('inputDataFiltroAgenda')?.addEventListener('change', (e) => {
+            const novaData = e.target.value;
+            if (novaData) {
+                carregarAgendamentosAdmin('data', novaData);
+            }
+        });
+
+        document.getElementById('btnAgendaHoje')?.addEventListener('click', () => {
+            const hoje = new Date().toISOString().split('T')[0];
+            carregarAgendamentosAdmin('data', hoje);
+        });
+
+        document.getElementById('btnDiaAnteriorAgenda')?.addEventListener('click', () => {
+            const [ano, mes, dia] = dataFiltroAgendaSelecionada.split('-').map(Number);
+            const dt = new Date(ano, mes - 1, dia);
+            dt.setDate(dt.getDate() - 1);
+            const y = dt.getFullYear();
+            const m = String(dt.getMonth() + 1).padStart(2, '0');
+            const d = String(dt.getDate()).padStart(2, '0');
+            const novaData = `${y}-${m}-${d}`;
+            carregarAgendamentosAdmin('data', novaData);
+        });
+
+        document.getElementById('btnDiaSeguinteAgenda')?.addEventListener('click', () => {
+            const [ano, mes, dia] = dataFiltroAgendaSelecionada.split('-').map(Number);
+            const dt = new Date(ano, mes - 1, dia);
+            dt.setDate(dt.getDate() + 1);
+            const y = dt.getFullYear();
+            const m = String(dt.getMonth() + 1).padStart(2, '0');
+            const d = String(dt.getDate()).padStart(2, '0');
+            const novaData = `${y}-${m}-${d}`;
+            carregarAgendamentosAdmin('data', novaData);
+        });
+
+        document.getElementById('btnFiltroHistoricoGeral')?.addEventListener('click', () => {
+            carregarAgendamentosAdmin('todos');
+        });
 
         window.confirmarPresencaAdmin = async function(id) {
             const ag = window.agendamentosCache[id];
