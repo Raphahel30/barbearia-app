@@ -572,16 +572,21 @@ app.post('/api/configuracoes/mercadopago', (req, res) => {
         client = new MercadoPagoConfig({ accessToken: activeAccessToken, options: { timeout: 10000 } });
         paymentClient = new Payment(client);
         refundClient = new PaymentRefund(client);
-        console.log(`[Config] Access Token atualizado via Admin: ${activeAccessToken.slice(0, 8)}...`);
+        console.log(`[Config] Access Token atualizado via Admin: ${activeAccessToken.slice(0, 10)}...`);
         return res.json({ success: true, message: 'Token atualizado com sucesso no backend.' });
     }
     return res.status(400).json({ error: 'Token invalido.' });
 });
 
 // Endpoint de Teste em tempo real do Token do Mercado Pago
-app.post('/api/pagamento/testar-token', async (req, res) => {
+app.post(['/api/pagamento/testar-token', '/api/configuracoes/mercadopago/testar'], async (req, res) => {
     const { accessToken } = req.body;
-    const tokenParaTestar = (accessToken && accessToken.trim()) ? accessToken.trim() : activeAccessToken;
+    let tokenParaTestar = (accessToken && accessToken.trim()) ? accessToken.trim() : activeAccessToken;
+
+    if (!tokenParaTestar || tokenParaTestar === 'SEU_ACCESS_TOKEN_AQUI') {
+        await carregarConfiguracoesMercadoPagoFirestore();
+        tokenParaTestar = activeAccessToken;
+    }
 
     if (!tokenParaTestar || tokenParaTestar === 'SEU_ACCESS_TOKEN_AQUI') {
         return res.status(400).json({ success: false, error: 'Nenhum token fornecido para teste.' });
@@ -831,6 +836,18 @@ app.post('/api/pagamento/estorno', async (req, res) => {
             return res.status(400).json({ success: false, error: 'ID do pagamento obrigatório para estorno.' });
         }
 
+        const cleanPaymentId = String(paymentId).trim();
+
+        // Se for pagamento manual, pix manual ou plano vip que não passa pelo Mercado Pago
+        if (cleanPaymentId === 'manual' || cleanPaymentId === 'pix_manual' || cleanPaymentId === 'plano_vip' || cleanPaymentId.startsWith('manual_')) {
+            console.log(`[Estorno Manual] Pagamento ${cleanPaymentId} marcado como cancelado.`);
+            return res.json({
+                success: true,
+                status: 'approved',
+                message: 'Pagamento manual registrado como cancelado (sem cobrança no Mercado Pago).'
+            });
+        }
+
         if (!activeAccessToken || activeAccessToken === 'SEU_ACCESS_TOKEN_AQUI') {
             await carregarConfiguracoesMercadoPagoFirestore();
         }
@@ -842,40 +859,58 @@ app.post('/api/pagamento/estorno', async (req, res) => {
             });
         }
 
-        console.log(`[Estorno] Solicitando estorno para o pagamento ${paymentId}. Motivo: ${reason || 'Cancelamento de agendamento'}`);
+        console.log(`[Estorno] Solicitando estorno para o pagamento ${cleanPaymentId}. Motivo: ${reason || 'Cancelamento de agendamento'}`);
 
         let refundResult = null;
 
-        // Try using PaymentRefund SDK
+        // Tenta primeiro via SDK
         try {
             if (amount && Number(amount) > 0) {
                 refundResult = await refundClient.create({
-                    payment_id: paymentId,
+                    payment_id: cleanPaymentId,
                     body: { amount: Number(parseFloat(amount).toFixed(2)) }
                 });
             } else {
-                refundResult = await refundClient.total({ payment_id: paymentId });
+                refundResult = await refundClient.total({ payment_id: cleanPaymentId });
             }
         } catch (sdkErr) {
             console.warn('[Estorno SDK Falhou, tentando via REST API]:', sdkErr.message);
-            // Fallback to direct REST API
-            const restRes = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}/refunds`, {
+            const errStr = (sdkErr.message || '').toLowerCase();
+            if (errStr.includes('already refunded') || errStr.includes('total_refunded_amount') || errStr.includes('ja foi estornado')) {
+                return res.json({
+                    success: true,
+                    status: 'approved',
+                    message: 'Este pagamento já havia sido estornado no Mercado Pago.'
+                });
+            }
+
+            // Fallback direto para REST API
+            const restRes = await fetch(`https://api.mercadopago.com/v1/payments/${cleanPaymentId}/refunds`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${activeAccessToken}`,
                     'Content-Type': 'application/json',
-                    'X-Idempotency-Key': `refund_${paymentId}_${Date.now()}`
+                    'X-Idempotency-Key': `refund_${cleanPaymentId}_${Date.now()}`
                 },
                 body: (amount && Number(amount) > 0) ? JSON.stringify({ amount: Number(parseFloat(amount).toFixed(2)) }) : JSON.stringify({})
             });
             const restData = await restRes.json();
+
             if (!restRes.ok) {
+                const restErrStr = JSON.stringify(restData).toLowerCase();
+                if (restErrStr.includes('already refunded') || restErrStr.includes('total_refunded_amount') || restErrStr.includes('ja foi estornado')) {
+                    return res.json({
+                        success: true,
+                        status: 'approved',
+                        message: 'Este pagamento já havia sido estornado no Mercado Pago.'
+                    });
+                }
                 throw new Error(restData.message || restData.error || 'Falha ao estornar no Mercado Pago');
             }
             refundResult = restData;
         }
 
-        console.log(`[Estorno Sucesso] Pagamento ${paymentId} estornado:`, refundResult?.status || 'Aprovado');
+        console.log(`[Estorno Sucesso] Pagamento ${cleanPaymentId} estornado:`, refundResult?.status || 'Aprovado');
 
         return res.json({
             success: true,

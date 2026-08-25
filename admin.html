@@ -3621,6 +3621,14 @@
 
                     if (blocoConectado) blocoConectado.classList.remove('hidden');
                     if (blocoDesconectado) blocoDesconectado.classList.add('hidden');
+
+                    // Sincroniza em segundo plano com a memória ativa do backend
+                    fetch(`${getBackendUrlAtivo()}/api/configuracoes/mercadopago`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ accessToken: data.mpAccessToken })
+                    }).catch(() => {});
+
                     return;
                 }
 
@@ -3816,6 +3824,12 @@
                                 mpConectadoViaOAuth: true,
                                 atualizadoEm: new Date()
                             }, { merge: true });
+
+                            await fetch(`${getBackendUrlAtivo()}/api/configuracoes/mercadopago`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ accessToken: tokenRetornado })
+                            }).catch(() => {});
                         } catch(err) { console.error("Erro ao sincronizar Firestore:", err); }
                     }
 
