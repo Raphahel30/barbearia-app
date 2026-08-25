@@ -139,49 +139,70 @@
             </div>
 
             <!-- LINKS DE NAVEGAÇÃO DO MENU LATERAL -->
-            <nav class="p-4 space-y-1.5 overflow-y-auto flex-1">
-                <div class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-3 py-1 mb-1">Navegação</div>
-                
-                <button id="tabNavOverview" class="sidebar-link active w-full text-left">
-                    <span class="text-lg">📊</span>
-                    <span>Visão Geral & Caixa</span>
-                </button>
-                <button id="tabNavBilling" class="sidebar-link w-full text-left">
-                    <span class="text-lg">💰</span>
-                    <span>Faturamento Mensal</span>
-                </button>
-                <button id="tabNavSchedule" class="sidebar-link w-full text-left">
-                    <span class="text-lg">📅</span>
-                    <span>Agenda de Clientes</span>
-                </button>
-                <button id="tabNavVipClients" class="sidebar-link w-full text-left">
-                    <span class="text-lg">👑</span>
-                    <span>Clientes Mensalistas</span>
-                </button>
-                <button id="tabNavServices" class="sidebar-link w-full text-left">
-                    <span class="text-lg">✂️</span>
-                    <span>Serviços & Preços</span>
-                </button>
-                <button id="tabNavProducts" class="sidebar-link w-full text-left">
-                    <span class="text-lg">📦</span>
-                    <span>Produtos & Estoque</span>
-                </button>
-                <button id="tabNavBlockDays" class="sidebar-link w-full text-left">
-                    <span class="text-lg">🗓️</span>
-                    <span>Calendário</span>
-                </button>
-                <button id="tabNavPayments" class="sidebar-link w-full text-left">
-                    <span class="text-lg">💳</span>
-                    <span>Mercado Pago</span>
-                </button>
-                <button id="tabNavWhatsApp" class="sidebar-link w-full text-left">
-                    <span class="text-lg">🤖</span>
-                    <span>WhatsApp Bot</span>
-                </button>
-                <button id="tabNavAdmins" class="sidebar-link w-full text-left">
-                    <span class="text-lg">👥</span>
-                    <span>Administradores</span>
-                </button>
+            <nav class="p-4 space-y-4 overflow-y-auto flex-1 text-left">
+                <!-- BLOCO 1: OPERACIONAL DO DIA -->
+                <div class="space-y-1">
+                    <div class="text-[10px] font-extrabold text-zinc-500 uppercase tracking-widest px-3 py-1 flex items-center gap-1.5">
+                        <span>💈</span>
+                        <span>Operacional do Dia</span>
+                    </div>
+                    <button id="tabNavOverview" class="sidebar-link active w-full text-left">
+                        <span class="text-base">📊</span>
+                        <span>Painel do Dia & Presença</span>
+                    </button>
+                    <button id="tabNavSchedule" class="sidebar-link w-full text-left">
+                        <span class="text-base">📅</span>
+                        <span>Agenda de Atendimentos</span>
+                    </button>
+                    <button id="tabNavVipClients" class="sidebar-link w-full text-left">
+                        <span class="text-base">👑</span>
+                        <span>Clientes Mensalistas VIP</span>
+                    </button>
+                </div>
+
+                <!-- BLOCO 2: FINANCEIRO & CATÁLOGO -->
+                <div class="space-y-1 pt-1 border-t border-zinc-800/60">
+                    <div class="text-[10px] font-extrabold text-zinc-500 uppercase tracking-widest px-3 py-1 flex items-center gap-1.5">
+                        <span>💰</span>
+                        <span>Financeiro & Catálogo</span>
+                    </div>
+                    <button id="tabNavBilling" class="sidebar-link w-full text-left">
+                        <span class="text-base">📈</span>
+                        <span>Faturamento & Extrato</span>
+                    </button>
+                    <button id="tabNavServices" class="sidebar-link w-full text-left">
+                        <span class="text-base">✂️</span>
+                        <span>Serviços & Planos</span>
+                    </button>
+                    <button id="tabNavProducts" class="sidebar-link w-full text-left">
+                        <span class="text-base">🛍️</span>
+                        <span>Loja & Estoque</span>
+                    </button>
+                </div>
+
+                <!-- BLOCO 3: SISTEMA & CONFIGURAÇÕES -->
+                <div class="space-y-1 pt-1 border-t border-zinc-800/60">
+                    <div class="text-[10px] font-extrabold text-zinc-500 uppercase tracking-widest px-3 py-1 flex items-center gap-1.5">
+                        <span>⚙️</span>
+                        <span>Sistema & Expediente</span>
+                    </div>
+                    <button id="tabNavBlockDays" class="sidebar-link w-full text-left">
+                        <span class="text-base">🗓️</span>
+                        <span>Calendário & Expediente</span>
+                    </button>
+                    <button id="tabNavPayments" class="sidebar-link w-full text-left">
+                        <span class="text-base">💳</span>
+                        <span>Mercado Pago</span>
+                    </button>
+                    <button id="tabNavWhatsApp" class="sidebar-link w-full text-left">
+                        <span class="text-base">🤖</span>
+                        <span>WhatsApp Bot</span>
+                    </button>
+                    <button id="tabNavAdmins" class="sidebar-link w-full text-left">
+                        <span class="text-base">👥</span>
+                        <span>Administradores</span>
+                    </button>
+                </div>
             </nav>
 
             <!-- RODAPÉ DO MENU LATERAL -->
@@ -1714,15 +1735,13 @@
         }
 
         const tabTitles = {
-            overview: "📊 Visão Geral & Caixa",
-            billing: "💰 Faturamento & Caixa Mensal",
-            schedule: "📅 Agenda de Clientes",
-            vipClients: "👑 Clientes Mensalistas",
-            services: "✂️ Serviços & Preços",
+            overview: "📊 Painel do Dia & Presença",
+            billing: "💰 Faturamento & Extrato Mensal",
+            schedule: "📅 Agenda de Atendimentos",
+            vipClients: "👑 Clientes Mensalistas VIP",
+            services: "✂️ Serviços & Planos",
             products: "🛍️ Loja & Estoque de Produtos",
-            blockDays: "🗓️ Calendário & Horários",
-            calendar: "🗓️ Calendário & Horários",
-            closedDays: "🗓️ Calendário & Horários",
+            blockDays: "🗓️ Calendário & Horários de Expediente",
             payments: "💳 Mercado Pago",
             whatsapp: "🤖 WhatsApp Bot",
             admins: "👥 Administradores"
@@ -1970,7 +1989,7 @@
                 } catch (signInErr) {
                     const errCode = (signInErr && signInErr.code) ? signInErr.code : (signInErr.message || '');
                     const emailLimpo = email.toLowerCase();
-                    const ehAdminPreAutorizado = ADMIN_EMAILS.some(e => e.toLowerCase() === emailLimpo) || emailLimpo.includes('admin');
+                    const ehAdminPreAutorizado = ADMIN_EMAILS.some(e => e.toLowerCase() === emailLimpo);
 
                     // Se a conta ainda não foi criada no Firebase Auth e é um admin pré-autorizado, cria a conta automaticamente
                     if (ehAdminPreAutorizado && (errCode.includes('invalid-credential') || errCode.includes('user-not-found') || errCode.includes('INVALID_LOGIN_CREDENTIALS'))) {
