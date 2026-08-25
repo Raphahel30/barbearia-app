@@ -197,6 +197,23 @@
         </div>
 
         <div id="viewClienteAgendamentos" class="space-y-6">
+            <!-- BANNER DE DESTAQUE VIP DO CLIENTE -->
+            <div id="cardStatusVipAgendamento" class="hidden p-4 rounded-xl bg-gradient-to-r from-amber-950/80 via-black to-amber-950/80 border-2 border-dourado text-zinc-200 text-xs shadow-xl space-y-2">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="text-2xl">👑</span>
+                        <div>
+                            <span class="font-extrabold text-dourado uppercase tracking-wider text-xs sm:text-sm">Assinatura VIP Ativa</span>
+                            <p id="labelNomePlanoVipAgendamento" class="text-[11px] text-zinc-300 font-medium">Plano Mensal</p>
+                        </div>
+                    </div>
+                    <span id="badgeSemanaAtualVip" class="bg-green-500 text-black px-2.5 py-1 rounded-full font-extrabold text-[10px] uppercase shadow">1 Corte Semanal Gratuito</span>
+                </div>
+                <p id="labelDescricaoSemanaVip" class="text-amber-200/90 text-[11px] leading-relaxed">
+                    ✨ Escolha uma data e horário abaixo para agendar seu atendimento exclusivo com <strong>R$ 0,00 de taxa de reserva</strong> (100% isento)!
+                </p>
+            </div>
+
             <div class="bg-black p-4 rounded-lg border border-zinc-800 space-y-3">
                 <h2 class="text-md font-semibold text-dourado uppercase tracking-wide">Meus Agendamentos Ativos</h2>
                 <div id="meusAgendamentosLista" class="space-y-2 text-sm text-zinc-300">
@@ -1377,20 +1394,30 @@
 
         function processarCicloPlano(assinatura) {
             if (!assinatura || !assinatura.dataPagamento) return null;
-            const tInicio = new Date(assinatura.dataPagamento).getTime();
-            const dataFim = new Date(assinatura.dataFim || (tInicio + 30 * 86400000));
+            const dtPagto = new Date(assinatura.dataPagamento);
+            // Início no primeiro milissegundo do dia da compra para cobrir todo o dia
+            const tInicioDia = new Date(dtPagto.getFullYear(), dtPagto.getMonth(), dtPagto.getDate(), 0, 0, 0, 0).getTime();
+            
+            const dtFim = assinatura.dataFim ? new Date(assinatura.dataFim) : new Date(tInicioDia + 30 * 86400000);
+            const dataFim = new Date(dtFim.getFullYear(), dtFim.getMonth(), dtFim.getDate(), 23, 59, 59, 999);
+            
             const agora = new Date();
-            const diasRestantes = Math.max(0, Math.ceil((dataFim - agora) / (1000 * 60 * 60 * 24)));
+            const diasRestantes = Math.max(0, Math.ceil((dataFim.getTime() - agora.getTime()) / (1000 * 60 * 60 * 24)));
             const ehAtivo = (dataFim >= agora);
 
             const semanasSalvas = assinatura.semanas || {};
             const semanasInfo = [];
-
             let semanaAtualInfo = null;
 
             for (let i = 1; i <= 4; i++) {
-                const semInicio = new Date(tInicio + (i - 1) * 7 * 86400000);
-                const semFim = (i === 4) ? dataFim : new Date(tInicio + i * 7 * 86400000 - 1000);
+                const semInicio = new Date(tInicioDia + (i - 1) * 7 * 86400000);
+                semInicio.setHours(0, 0, 0, 0);
+
+                const semFim = (i === 4) 
+                    ? new Date(dataFim) 
+                    : new Date(tInicioDia + i * 7 * 86400000 - 1000);
+                semFim.setHours(23, 59, 59, 999);
+
                 const ehSemanaAtual = (agora >= semInicio && agora <= semFim);
 
                 let status = 'disponivel';
@@ -1403,11 +1430,11 @@
                     servicoInfo = semanasSalvas[i].servico || '';
                 } else {
                     if (agora > semFim) {
-                        status = 'expirado'; // Passou a semana e não usou: PERDEU!
+                        status = 'expirado'; // Passou a semana e não usou
                     } else if (agora < semInicio) {
                         status = 'bloqueado'; // Semana futura
                     } else {
-                        status = 'disponivel'; // Semana atual disponível para agendamento gratuito
+                        status = 'disponivel'; // Semana atual disponível
                     }
                 }
 
@@ -1438,7 +1465,7 @@
                 ehAtivo,
                 diasRestantes,
                 dataFimFormatada: dataFim.toLocaleDateString('pt-BR'),
-                dataPagtoFormatada: new Date(assinatura.dataPagamento).toLocaleDateString('pt-BR'),
+                dataPagtoFormatada: dtPagto.toLocaleDateString('pt-BR'),
                 semanas: semanasInfo,
                 semanaAtualInfo: semanaAtualInfo
             };
@@ -1447,20 +1474,50 @@
         async function carregarPainelPlanosCliente(userId) {
             const meuPlanoAtivoDiv = document.getElementById('meuPlanoAtivo');
             const listaPlanosClienteDiv = document.getElementById('listaPlanosCliente');
+            const cardVipAg = document.getElementById('cardStatusVipAgendamento');
+            const lblNomeVipAg = document.getElementById('labelNomePlanoVipAgendamento');
+            const badgeSemanaVip = document.getElementById('badgeSemanaAtualVip');
+            const descSemanaVip = document.getElementById('labelDescricaoSemanaVip');
+
             if (meuPlanoAtivoDiv) meuPlanoAtivoDiv.innerHTML = "<p class='text-xs text-zinc-400'>A verificar seu plano...</p>";
             if (listaPlanosClienteDiv) listaPlanosClienteDiv.innerHTML = "<p class='text-xs text-zinc-500'>A carregar planos...</p>";
 
             try {
                 // 1. Verifica se o cliente tem um plano ativo
                 const assinaturaSnap = await getDoc(doc(db, "assinaturasClientes", userId));
-                const agora = new Date();
 
                 if (assinaturaSnap.exists()) {
                     const assinatura = assinaturaSnap.data();
                     const info = processarCicloPlano(assinatura);
                     dadosAssinaturaAtiva = info;
 
-                    if (info.ehAtivo) {
+                    if (info && info.ehAtivo) {
+                        // Atualiza banner de destaque VIP no topo dos agendamentos
+                        if (cardVipAg && lblNomeVipAg) {
+                            cardVipAg.classList.remove('hidden');
+                            lblNomeVipAg.innerText = `${info.nomePlano} • Válido até ${info.dataFimFormatada} (${info.diasRestantes} dias restantes)`;
+                            if (info.semanaAtualInfo) {
+                                if (info.semanaAtualInfo.status === 'disponivel') {
+                                    if (badgeSemanaVip) {
+                                        badgeSemanaVip.className = "bg-green-500 text-black px-2.5 py-1 rounded-full font-extrabold text-[10px] uppercase shadow animate-pulse";
+                                        badgeSemanaVip.innerText = `Semana ${info.semanaAtualInfo.numero}: Corte Grátis Disponível`;
+                                    }
+                                    if (descSemanaVip) descSemanaVip.innerHTML = `✨ Você tem <strong>1 corte 100% isento (R$ 0,00)</strong> disponível nesta semana (expira em ${info.semanaAtualInfo.diasAteFimSemana}d). Escolha data e horário abaixo!`;
+                                } else if (info.semanaAtualInfo.status === 'agendado') {
+                                    if (badgeSemanaVip) {
+                                        badgeSemanaVip.className = "bg-blue-500 text-white px-2.5 py-1 rounded-full font-extrabold text-[10px] uppercase shadow";
+                                        badgeSemanaVip.innerText = `Semana ${info.semanaAtualInfo.numero}: Já Agendado`;
+                                    }
+                                    if (descSemanaVip) descSemanaVip.innerHTML = `📅 Seu corte desta semana já está agendado (${info.semanaAtualInfo.agendamentoData ? info.semanaAtualInfo.agendamentoData.replace('T', ' às ') : ''}).`;
+                                } else {
+                                    if (badgeSemanaVip) {
+                                        badgeSemanaVip.className = "bg-zinc-700 text-zinc-300 px-2.5 py-1 rounded-full font-extrabold text-[10px] uppercase shadow";
+                                        badgeSemanaVip.innerText = `Semana ${info.semanaAtualInfo.numero}: ${info.semanaAtualInfo.status}`;
+                                    }
+                                }
+                            }
+                        }
+
                         let semanasHtml = "";
                         info.semanas.forEach(s => {
                             let badge = "";
@@ -1597,10 +1654,12 @@
                         `;
                     } else {
                         dadosAssinaturaAtiva = null;
+                        if (cardVipAg) cardVipAg.classList.add('hidden');
                         meuPlanoAtivoDiv.innerHTML = `<p class="text-xs text-red-400 font-semibold">❌ Seu plano mensal expirou em ${info.dataFimFormatada}. Renove abaixo para voltar a ter corte semanal gratuito:</p>`;
                     }
                 } else {
                     dadosAssinaturaAtiva = null;
+                    if (cardVipAg) cardVipAg.classList.add('hidden');
                     meuPlanoAtivoDiv.innerHTML = `<p class="text-xs text-zinc-400">Você ainda não possui nenhum plano mensal ativo.</p>`;
                 }
 
@@ -1626,6 +1685,10 @@
                     `;
                 });
 
+                // Atualiza botões do agendamento se já houver uma data selecionada
+                const dtAtend = document.getElementById('dataAtendimento')?.value;
+                if (dtAtend) atualizarBotoesAgendamentoParaData(dtAtend);
+
             } catch (e) {
                 console.error(e);
             }
@@ -1636,7 +1699,11 @@
                 return { elegivel: false };
             }
 
-            const targetTime = new Date(dataSelecionadaStr + 'T12:00:00').getTime();
+            if (!dataSelecionadaStr) return { elegivel: false };
+
+            const partes = dataSelecionadaStr.split('-').map(Number);
+            if (partes.length < 3) return { elegivel: false };
+            const targetTime = new Date(partes[0], partes[1] - 1, partes[2], 12, 0, 0).getTime();
 
             for (let s of dadosAssinaturaAtiva.semanas) {
                 const tIni = s.inicio.getTime();
@@ -2159,26 +2226,6 @@
                     alertMsg = "Agendamento cancelado com sucesso (sem estorno, conforme os Termos de cancelamento com menos de 3h).";
                 }
                 alert(alertMsg);
-                
-                let statusCreditoPlanoZap = "";
-                if (isPlano) {
-                    statusCreditoPlanoZap = planoPerdeuCredito 
-                        ? "PERDIDO (Cancelado com 3h ou menos de antecedência)" 
-                        : "LIBERADO PARA REAGENDAR (Cancelado com +3h de antecedência)";
-                }
-
-                const textoCancelamento = encodeURIComponent(
-                    `❌ *CANCELAMENTO DE AGENDAMENTO PELO CLIENTE*\n\n` +
-                    `👤 Cliente: ${cliente}\n` +
-                    `✂️ Serviço: ${servico}\n` +
-                    `📅 Data/Hora: ${dataHora.replace('T', ' às ')}\n` +
-                    `💰 Valor Pago: R$ ${valorPago.toFixed(2)}\n` +
-                    (isPlano 
-                        ? `👑 Corte Semanal VIP: ${statusCreditoPlanoZap}`
-                        : `🛡️ Estorno: ${elegivelEstorno ? 'SIM (Cancelado com +3h - Estorno Automático Mercado Pago Realizado)' : 'NÃO (Cancelado com menos de 3h)'}`
-                    )
-                );
-                window.open(`https://wa.me/${MEU_WHATSAPP}?text=${textoCancelamento}`, '_blank');
 
                 if (auth.currentUser) {
                     carregarPainelCliente(auth.currentUser.uid);
@@ -2474,16 +2521,21 @@
                     document.getElementById('pixActiveState').classList.remove('hidden');
                     document.getElementById('pixManualFallback').classList.add('hidden');
 
-                    // Monitoramento em tempo real da aprovação do pagamento
+                    // Monitoramento em tempo real da aprovação do pagamento com trava anti-duplicação
                     const paymentId = data.id;
+                    let pagamentoPixConcluido = false;
                     pollingIntervalPix = setInterval(async () => {
                         try {
+                            if (pagamentoPixConcluido) return;
                             const statusRes = await fetch(`${getBackendUrlAtivo()}/api/pagamento/status/${paymentId}`);
                             const statusData = await statusRes.json();
 
-                            if (statusData && statusData.status === 'approved') {
-                                clearInterval(pollingIntervalPix);
-                                pollingIntervalPix = null;
+                            if (statusData && statusData.status === 'approved' && !pagamentoPixConcluido) {
+                                pagamentoPixConcluido = true;
+                                if (pollingIntervalPix) {
+                                    clearInterval(pollingIntervalPix);
+                                    pollingIntervalPix = null;
+                                }
 
                                 const badge = document.getElementById('pixStatusBadge');
                                 if (badge) {
@@ -2491,10 +2543,8 @@
                                     badge.innerHTML = "<span>✅ Pagamento Aprovado com Sucesso!</span>";
                                 }
 
-                                setTimeout(async () => {
-                                    fecharModalPagamento();
-                                    await concluirPagamentoComSucesso(paymentId, 'pix_mercadopago');
-                                }, 1000);
+                                fecharModalPagamento();
+                                await concluirPagamentoComSucesso(paymentId, 'pix_mercadopago');
                             }
                         } catch (err) {
                             console.warn("Monitoramento de pagamento:", err);
@@ -2560,9 +2610,25 @@
             });
         }
 
+        // ==========================================
+        // CONTROLE ANTI-DUPLICAÇÃO E CONCLUSÃO DE PAGAMENTOS
+        // ==========================================
+        let isSalvandoAgendamento = false;
+
         // Conclusão com Sucesso no Firestore e Notificação WhatsApp
         async function concluirPagamentoComSucesso(paymentId = 'manual', metodo = 'pix_manual') {
+            if (isSalvandoAgendamento) {
+                console.warn("⚠️ Processamento já em andamento. Ignorando chamada concorrente.");
+                return;
+            }
+            isSalvandoAgendamento = true;
+
             const user = auth.currentUser;
+            if (!user) {
+                isSalvandoAgendamento = false;
+                return;
+            }
+
             let nomeCliente = user.email;
             let telefoneCliente = "Não informado";
             try {
@@ -2573,15 +2639,34 @@
                 }
             } catch (e) { console.error(e); }
 
-            if (tipoPagamentoAtual === 'agendamento' && dadosPagamentoPendente) {
-                const { servico, preco, data, horario, modalidade, valorCobrado, extras } = dadosPagamentoPendente;
-                const msgStatus = document.getElementById('msgStatus');
-                const dataHoraCompleta = `${data}T${horario}`;
-                const valorEfetivoPago = valorCobrado !== undefined ? valorCobrado : (modalidade === 'total' ? preco : 10.00);
-                const precoTotalNum = Number(preco || 0);
-                const valorRestanteNum = Math.max(0, precoTotalNum - valorEfetivoPago);
+            try {
+                if (tipoPagamentoAtual === 'agendamento' && dadosPagamentoPendente) {
+                    const { servico, preco, data, horario, modalidade, valorCobrado, extras } = dadosPagamentoPendente;
+                    const msgStatus = document.getElementById('msgStatus');
+                    const dataHoraCompleta = `${data}T${horario}`;
+                    const valorEfetivoPago = valorCobrado !== undefined ? valorCobrado : (modalidade === 'total' ? preco : 10.00);
+                    const precoTotalNum = Number(preco || 0);
 
-                try {
+                    // Idempotência: Checa se já existe agendamento deste usuário na mesma data/hora
+                    const queryExistente = await getDocs(query(
+                        collection(db, "agendamentos"),
+                        where("userId", "==", user.uid),
+                        where("dataHora", "==", dataHoraCompleta)
+                    ));
+                    let jaExiste = false;
+                    queryExistente.forEach(d => {
+                        const st = d.data().status;
+                        if (st === 'confirmado' || st === 'pendente') jaExiste = true;
+                    });
+
+                    if (jaExiste) {
+                        console.warn("⚠️ Agendamento já registrado no Firestore. Evitando duplicação.");
+                        fecharModalPagamento();
+                        exibirModalSucessoAgendamento(servico, dataHoraCompleta, nomeCliente, precoTotalNum, valorEfetivoPago, false);
+                        carregarPainelCliente(user.uid);
+                        return;
+                    }
+
                     await addDoc(collection(db, "agendamentos"), {
                         userId: user.uid,
                         cliente: nomeCliente,
@@ -2599,7 +2684,7 @@
                     });
 
                     if (msgStatus) {
-                        msgStatus.className = "text-center text-sm text-green-400";
+                        msgStatus.className = "text-center text-sm text-green-400 font-bold";
                         msgStatus.innerText = "Agendamento confirmado com sucesso!";
                     }
 
@@ -2612,7 +2697,7 @@
                     // Abre a tela de agradecimento e confirmação com valores
                     exibirModalSucessoAgendamento(servico, dataHoraCompleta, nomeCliente, precoTotalNum, valorEfetivoPago, false);
 
-                    // Disparo automático via WhatsApp Bot
+                    // Disparo automático via WhatsApp Bot em background (Sem abrir tela manual)
                     dispararNotificacaoAutomaticaWhatsApp({
                         cliente: nomeCliente,
                         telefone: telefoneCliente,
@@ -2624,19 +2709,8 @@
                         isPlano: false
                     });
 
-                    const descTipo = modalidade === 'total' ? 'PAGAMENTO TOTAL' : 'TAXA DE RESERVA';
-                    const descRestante = valorRestanteNum === 0 ? 'Totalmente Quitado (R$ 0,00)' : `R$ ${valorRestanteNum.toFixed(2)} (a pagar no atendimento)`;
-                    const textoNotificacao = encodeURIComponent(`🚨 *NOVO AGENDAMENTO CONFIRMADO (${metodo === 'cartao' ? 'CARTÃO' : 'PIX'} PAGO) - EMAÚS!*\n\n👤 Cliente: ${nomeCliente}\n📱 Tel: ${telefoneCliente}\n✂️ Serviço: ${servico}\n📅 Data/Hora: ${dataHoraCompleta.replace('T', ' às ')}\n💰 Valor Total: R$ ${precoTotalNum.toFixed(2)}\n💳 Pago Online (${descTipo}): R$ ${valorEfetivoPago.toFixed(2)}\n💵 *Restante a Pagar no Atendimento:* ${descRestante}`);
-                    window.open(`https://wa.me/${MEU_WHATSAPP}?text=${textoNotificacao}`, '_blank');
-                } catch (error) {
-                    if (msgStatus) {
-                        msgStatus.className = "text-center text-sm text-red-400";
-                        msgStatus.innerText = "Erro ao registrar agendamento: " + error.message;
-                    }
-                }
-            } else if (tipoPagamentoAtual === 'plano' && dadosPagamentoPendente?.plano) {
-                const plano = dadosPagamentoPendente.plano;
-                try {
+                } else if (tipoPagamentoAtual === 'plano' && dadosPagamentoPendente?.plano) {
+                    const plano = dadosPagamentoPendente.plano;
                     const dataPagamento = new Date();
                     const dataFim = new Date();
                     dataFim.setDate(dataPagamento.getDate() + 30);
@@ -2655,13 +2729,34 @@
                         atualizadoEm: new Date().toISOString()
                     });
 
+                    // Dispara notificação automática de compra de plano no WhatsApp (Barbeiro + Cliente)
+                    try {
+                        fetch(`${getBackendUrlAtivo()}/api/whatsapp/notificar-compra-plano`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                cliente: nomeCliente,
+                                telefone: telefoneCliente,
+                                nomePlano: plano.nome,
+                                preco: plano.preco,
+                                dataFim: dataFim.toISOString(),
+                                whatsappBarbeiro: MEU_WHATSAPP
+                            })
+                        }).catch(e => console.warn("Aviso WhatsApp compra plano:", e));
+                    } catch (eZap) { console.warn(eZap); }
+
                     fecharModalPagamento();
-                    alert(`🎉 Parabéns, ${nomeCliente}! Sua assinatura do ${plano.nome} foi ativada com sucesso! Você tem 1 corte por semana pelos próximos 30 dias.`);
-                    carregarPainelPlanosCliente(user.uid);
-                    document.getElementById('btnTabClientePlanos').click();
-                } catch (e) {
-                    alert("Erro ao ativar plano: " + e.message);
+                    alert(`🎉 Parabéns, ${nomeCliente}! Sua assinatura do ${plano.nome} foi ativada com sucesso! Você tem 1 corte semanal 100% gratuito pelos próximos 30 dias.`);
+                    
+                    await carregarPainelPlanosCliente(user.uid);
+                    await carregarPainelCliente(user.uid);
+                    document.getElementById('btnTabClientePlanos')?.click();
                 }
+            } catch (err) {
+                console.error("Erro ao concluir pagamento:", err);
+                alert("Ocorreu um erro ao processar o agendamento: " + err.message);
+            } finally {
+                isSalvandoAgendamento = false;
             }
         }
 
@@ -2716,12 +2811,20 @@
             });
         }
 
-        // Agendamento VIP Gratuito (Isento)
+        // Agendamento VIP Gratuito (Isento - Anti-Duplicação Integrada)
         async function executarAgendamentoVipGratuito(dados) {
+            if (isSalvandoAgendamento) {
+                console.warn("⚠️ Agendamento VIP já em andamento.");
+                return;
+            }
+            isSalvandoAgendamento = true;
+
             const { servico, data, horario, beneficio, subtotalExtras, extras } = dados;
             const msgStatus = document.getElementById('msgStatus');
             try {
                 const user = auth.currentUser;
+                if (!user) return;
+
                 let nomeCliente = user.email;
                 let telefoneCliente = "";
                 try {
@@ -2735,6 +2838,26 @@
 
                 const dataHoraCompleta = `${data}T${horario}`;
                 const valorCobrarExtras = Number(subtotalExtras || 0);
+
+                // Idempotência: Checa se já existe agendamento VIP para esta data/hora
+                const queryExistenteVip = await getDocs(query(
+                    collection(db, "agendamentos"),
+                    where("userId", "==", user.uid),
+                    where("dataHora", "==", dataHoraCompleta)
+                ));
+                let jaExisteVip = false;
+                queryExistenteVip.forEach(d => {
+                    const st = d.data().status;
+                    if (st === 'confirmado' || st === 'pendente') jaExisteVip = true;
+                });
+
+                if (jaExisteVip) {
+                    console.warn("⚠️ Agendamento VIP já registrado no Firestore. Evitando duplicação.");
+                    carregarPainelCliente(user.uid);
+                    carregarPainelPlanosCliente(user.uid);
+                    exibirModalSucessoAgendamento(`${servico} (Plano VIP - Sem ${beneficio.semana})`, dataHoraCompleta, nomeCliente, valorCobrarExtras, 0, true);
+                    return;
+                }
 
                 const docRef = await addDoc(collection(db, "agendamentos"), {
                     userId: user.uid,
@@ -2777,11 +2900,12 @@
                 const bannerPlano = document.getElementById('bannerPlanoBeneficio');
                 if (bannerPlano) bannerPlano.classList.add('hidden');
 
-                carregarPainelCliente(user.uid);
-                carregarPainelPlanosCliente(user.uid);
+                await carregarPainelCliente(user.uid);
+                await carregarPainelPlanosCliente(user.uid);
 
                 exibirModalSucessoAgendamento(`${servico} (Plano VIP - Sem ${beneficio.semana})`, dataHoraCompleta, nomeCliente, valorCobrarExtras, 0, true);
 
+                // Disparo automático via WhatsApp Bot (Sem abrir tela manual)
                 dispararNotificacaoAutomaticaWhatsApp({
                     cliente: nomeCliente,
                     telefone: telefoneCliente,
@@ -2793,14 +2917,14 @@
                     semanaPlano: beneficio.semana
                 });
 
-                const infoExtrasZap = valorCobrarExtras > 0 ? `\n💵 Adicionais no Atendimento: R$ ${valorCobrarExtras.toFixed(2)}` : '';
-                const textoPlanoZap = encodeURIComponent(`✨ *NOVO AGENDAMENTO VIP (PLANO MENSAL) - EMAÚS!*\n\n👤 Cliente: ${nomeCliente}\n📱 Tel: ${telefoneCliente}\n✂️ Serviço: ${servico}\n📦 Plano: ${beneficio.nomePlano} (Semana ${beneficio.semana})\n💰 Taxa de Reserva: R$ 0,00 (Isento)${infoExtrasZap}\n📅 Data/Hora: ${dataHoraCompleta.replace('T', ' às ')}`);
-                window.open(`https://wa.me/${MEU_WHATSAPP}?text=${textoPlanoZap}`, '_blank');
             } catch (err) {
+                console.error("Erro ao registrar agendamento VIP:", err);
                 if (msgStatus) {
                     msgStatus.className = "text-center text-sm text-red-400";
                     msgStatus.innerText = "Erro ao registrar agendamento VIP: " + err.message;
                 }
+            } finally {
+                isSalvandoAgendamento = false;
             }
         }
 
@@ -2859,12 +2983,22 @@
             };
         }
 
-        // Acionador do botão "Pagar Taxa de Reserva (R$ 10,00)"
+        // Acionador do botão "Pagar Taxa de Reserva (R$ 10,00)" - Protegido com Isenção VIP
         const btnPagarTaxaReserva = document.getElementById('btnPagarTaxaReserva');
         if (btnPagarTaxaReserva) {
             btnPagarTaxaReserva.addEventListener('click', async () => {
                 const dadosForm = await validarFormAgendamento();
                 if (!dadosForm) return;
+
+                // Se o cliente for mensalista com semana disponível, agenda gratuitamente
+                const beneficio = verificarBeneficioPlanoParaData(dadosForm.data);
+                if (beneficio && beneficio.elegivel) {
+                    abrirModalTermos('vip', {
+                        ...dadosForm,
+                        beneficio
+                    });
+                    return;
+                }
 
                 abrirModalTermos('agendamento', {
                     ...dadosForm,
@@ -2874,12 +3008,22 @@
             });
         }
 
-        // Acionador do botão "Pagar Valor Total"
+        // Acionador do botão "Pagar Valor Total" - Protegido com Isenção VIP
         const btnPagarValorTotal = document.getElementById('btnPagarValorTotal');
         if (btnPagarValorTotal) {
             btnPagarValorTotal.addEventListener('click', async () => {
                 const dadosForm = await validarFormAgendamento();
                 if (!dadosForm) return;
+
+                // Se o cliente for mensalista com semana disponível, agenda gratuitamente
+                const beneficio = verificarBeneficioPlanoParaData(dadosForm.data);
+                if (beneficio && beneficio.elegivel) {
+                    abrirModalTermos('vip', {
+                        ...dadosForm,
+                        beneficio
+                    });
+                    return;
+                }
 
                 abrirModalTermos('agendamento', {
                     ...dadosForm,
@@ -2898,7 +3042,7 @@
 
                 const beneficio = verificarBeneficioPlanoParaData(dadosForm.data);
                 if (!beneficio.elegivel) {
-                    alert("Data não elegível para corte gratuito pelo plano VIP.");
+                    alert("Data não elegível para corte gratuito pelo plano VIP: " + (beneficio.motivo || "Verifique as datas do seu plano."));
                     return;
                 }
 
@@ -3519,17 +3663,22 @@
                         document.getElementById('containerPixAtivoProduto')?.classList.remove('hidden');
                         if (msg) msg.innerText = '';
 
-                        // Polling de aprovação em tempo real
+                        // Polling de aprovação em tempo real com trava anti-duplicidade
                         const paymentId = data.id;
+                        let compraPixConcluida = false;
                         if (pollingIntervalPixProduto) clearInterval(pollingIntervalPixProduto);
                         pollingIntervalPixProduto = setInterval(async () => {
                             try {
+                                if (compraPixConcluida) return;
                                 const statusRes = await fetch(`${getBackendUrlAtivo()}/api/pagamento/status/${paymentId}`);
                                 const statusData = await statusRes.json();
 
-                                if (statusData && statusData.status === 'approved') {
-                                    clearInterval(pollingIntervalPixProduto);
-                                    pollingIntervalPixProduto = null;
+                                if (statusData && statusData.status === 'approved' && !compraPixConcluida) {
+                                    compraPixConcluida = true;
+                                    if (pollingIntervalPixProduto) {
+                                        clearInterval(pollingIntervalPixProduto);
+                                        pollingIntervalPixProduto = null;
+                                    }
 
                                     // 1. Atualiza estoque no Firestore
                                     const novoEstoque = Math.max(0, Number(produtoSelecionadoCompra.estoque || 0) - quantidadeCompraProduto);
