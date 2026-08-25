@@ -776,6 +776,30 @@
                                 </select>
                             </div>
 
+                            <!-- Configuração de Pausa / Ausência / Almoço -->
+                            <div class="bg-zinc-900/80 p-3.5 rounded-2xl border border-zinc-800 space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" id="checkTemPausaExpediente" class="w-4 h-4 rounded text-dourado bg-black border-zinc-700 focus:ring-0 cursor-pointer">
+                                        <span class="text-xs font-bold text-zinc-200 uppercase flex items-center gap-1.5">
+                                            <span>⏸️</span> Horário de Ausência / Almoço
+                                        </span>
+                                    </label>
+                                    <span id="badgeStatusPausa" class="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-zinc-800 text-zinc-400">Desativado</span>
+                                </div>
+
+                                <div id="containerCamposPausa" class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 hidden">
+                                    <div>
+                                        <label class="block text-[11px] font-semibold text-zinc-400 uppercase mb-1">Início da Ausência</label>
+                                        <input type="time" id="inputPausaInicio" value="11:00" class="w-full px-3 py-2 bg-black rounded-xl border border-zinc-700 text-white text-xs font-bold focus:outline-none focus:border-dourado cursor-pointer">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-semibold text-zinc-400 uppercase mb-1">Fim da Ausência</label>
+                                        <input type="time" id="inputPausaFim" value="12:00" class="w-full px-3 py-2 bg-black rounded-xl border border-zinc-700 text-white text-xs font-bold focus:outline-none focus:border-dourado cursor-pointer">
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Preview dos horários gerados -->
                             <div class="bg-black/60 p-3.5 rounded-xl border border-zinc-800/80 space-y-1.5">
                                 <p class="text-[11px] font-bold text-dourado uppercase tracking-wider">👀 Visualização da Grade de Horários:</p>
@@ -4283,6 +4307,11 @@
             const inputAbertura = document.getElementById('inputExpedienteAbertura');
             const inputFechamento = document.getElementById('inputExpedienteFechamento');
             const selectIntervalo = document.getElementById('selectExpedienteIntervalo');
+            const checkTemPausa = document.getElementById('checkTemPausaExpediente');
+            const inputPausaInicio = document.getElementById('inputPausaInicio');
+            const inputPausaFim = document.getElementById('inputPausaFim');
+            const containerCamposPausa = document.getElementById('containerCamposPausa');
+            const badgeStatusPausa = document.getElementById('badgeStatusPausa');
             if (!inputAbertura || !inputFechamento) return;
 
             try {
@@ -4292,6 +4321,17 @@
                     if (cfg.abertura) inputAbertura.value = cfg.abertura;
                     if (cfg.fechamento) inputFechamento.value = cfg.fechamento;
                     if (cfg.intervaloMin && selectIntervalo) selectIntervalo.value = String(cfg.intervaloMin);
+
+                    const temPausa = cfg.temPausa === true;
+                    if (checkTemPausa) checkTemPausa.checked = temPausa;
+                    if (cfg.pausaInicio && inputPausaInicio) inputPausaInicio.value = cfg.pausaInicio;
+                    if (cfg.pausaFim && inputPausaFim) inputPausaFim.value = cfg.pausaFim;
+
+                    if (containerCamposPausa) containerCamposPausa.classList.toggle('hidden', !temPausa);
+                    if (badgeStatusPausa) {
+                        badgeStatusPausa.className = temPausa ? "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-amber-950 text-amber-300 border border-amber-800" : "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-zinc-800 text-zinc-400";
+                        badgeStatusPausa.innerText = temPausa ? `Ativo (${cfg.pausaInicio || '11:00'} às ${cfg.pausaFim || '12:00'})` : "Desativado";
+                    }
                 }
                 atualizarPreviewGradeExpediente();
             } catch (err) {
@@ -4303,12 +4343,26 @@
             const inputAbertura = document.getElementById('inputExpedienteAbertura');
             const inputFechamento = document.getElementById('inputExpedienteFechamento');
             const selectIntervalo = document.getElementById('selectExpedienteIntervalo');
+            const checkTemPausa = document.getElementById('checkTemPausaExpediente');
+            const inputPausaInicio = document.getElementById('inputPausaInicio');
+            const inputPausaFim = document.getElementById('inputPausaFim');
             const containerPreview = document.getElementById('previewGradeHorariosExpediente');
             if (!inputAbertura || !inputFechamento || !containerPreview) return;
 
             const abertura = inputAbertura.value || "08:00";
             const fechamento = inputFechamento.value || "20:00";
             const intervalo = Number(selectIntervalo?.value || 60);
+
+            const temPausa = checkTemPausa ? checkTemPausa.checked : false;
+            let pausaInicioMin = -1;
+            let pausaFimMin = -1;
+
+            if (temPausa && inputPausaInicio && inputPausaFim) {
+                const [pih, pim] = (inputPausaInicio.value || "11:00").split(':').map(Number);
+                const [pfh, pfm] = (inputPausaFim.value || "12:00").split(':').map(Number);
+                pausaInicioMin = pih * 60 + pim;
+                pausaFimMin = pfh * 60 + pfm;
+            }
 
             const [ah, am] = abertura.split(':').map(Number);
             const [fh, fm] = fechamento.split(':').map(Number);
@@ -4325,13 +4379,23 @@
             for (let m = aberturaMin; m <= fechamentoMin; m += intervalo) {
                 const h = Math.floor(m / 60);
                 const min = m % 60;
-                slots.push(String(h).padStart(2, '0') + ":" + String(min).padStart(2, '0'));
+                const horaFormatada = String(h).padStart(2, '0') + ":" + String(min).padStart(2, '0');
+
+                // Verifica se cai na pausa
+                if (temPausa && pausaInicioMin >= 0 && pausaFimMin > pausaInicioMin) {
+                    if (m >= pausaInicioMin && m < pausaFimMin) {
+                        slots.push(`<span class="bg-red-950/60 border border-red-800/80 text-red-300 px-2 py-0.5 rounded font-bold line-through text-[10px]" title="Horário de Pausa / Ausência">${horaFormatada} (Ausente)</span>`);
+                        continue;
+                    }
+                }
+
+                slots.push(`<span class="bg-zinc-900 border border-zinc-800 text-dourado px-2 py-0.5 rounded font-bold">${horaFormatada}</span>`);
             }
 
             if (slots.length === 0) {
                 containerPreview.innerHTML = "<span class='text-zinc-500'>Nenhum horário gerado.</span>";
             } else {
-                containerPreview.innerHTML = slots.map(s => `<span class="bg-zinc-900 border border-zinc-800 text-dourado px-2 py-0.5 rounded font-bold">${s}</span>`).join(' ');
+                containerPreview.innerHTML = slots.join(' ');
             }
         }
 
@@ -4339,6 +4403,9 @@
             const inputAbertura = document.getElementById('inputExpedienteAbertura');
             const inputFechamento = document.getElementById('inputExpedienteFechamento');
             const selectIntervalo = document.getElementById('selectExpedienteIntervalo');
+            const checkTemPausa = document.getElementById('checkTemPausaExpediente');
+            const inputPausaInicio = document.getElementById('inputPausaInicio');
+            const inputPausaFim = document.getElementById('inputPausaFim');
             const btnSalvar = document.getElementById('btnSalvarExpedienteAdmin');
             const msgStatus = document.getElementById('msgStatusExpedienteAdmin');
 
@@ -4346,12 +4413,25 @@
             const fechamento = (inputFechamento?.value || "20:00").trim();
             const intervaloMin = Number(selectIntervalo?.value || 60);
 
+            const temPausa = checkTemPausa ? checkTemPausa.checked : false;
+            const pausaInicio = (inputPausaInicio?.value || "11:00").trim();
+            const pausaFim = (inputPausaFim?.value || "12:00").trim();
+
             const [ah, am] = abertura.split(':').map(Number);
             const [fh, fm] = fechamento.split(':').map(Number);
 
             if ((ah * 60 + am) >= (fh * 60 + fm)) {
                 alert("O horário de fechamento precisa ser depois do horário de abertura!");
                 return;
+            }
+
+            if (temPausa) {
+                const [pih, pim] = pausaInicio.split(':').map(Number);
+                const [pfh, pfm] = pausaFim.split(':').map(Number);
+                if ((pih * 60 + pim) >= (pfh * 60 + pfm)) {
+                    alert("O fim do horário de ausência precisa ser depois do início!");
+                    return;
+                }
             }
 
             if (btnSalvar) {
@@ -4364,10 +4444,14 @@
                     abertura,
                     fechamento,
                     intervaloMin,
+                    temPausa,
+                    pausaInicio,
+                    pausaFim,
                     atualizadoEm: new Date().toISOString()
                 }, { merge: true });
 
-                exibirToastNotificacao('⏰ Expediente Atualizado!', `Abertura: ${abertura} • Fechamento: ${fechamento} (Intervalos: ${intervaloMin}min)`, 'config');
+                const textoPausa = temPausa ? ` • Ausência: ${pausaInicio} às ${pausaFim}` : '';
+                exibirToastNotificacao('⏰ Expediente Atualizado!', `Abertura: ${abertura} • Fechamento: ${fechamento}${textoPausa}`, 'config');
                 if (msgStatus) {
                     msgStatus.className = "text-xs text-center font-bold text-green-400";
                     msgStatus.innerText = "✓ Horários salvos com sucesso e integrados à agenda dos clientes!";
@@ -4388,6 +4472,22 @@
         document.getElementById('inputExpedienteAbertura')?.addEventListener('input', atualizarPreviewGradeExpediente);
         document.getElementById('inputExpedienteFechamento')?.addEventListener('input', atualizarPreviewGradeExpediente);
         document.getElementById('selectExpedienteIntervalo')?.addEventListener('change', atualizarPreviewGradeExpediente);
+        document.getElementById('inputPausaInicio')?.addEventListener('input', atualizarPreviewGradeExpediente);
+        document.getElementById('inputPausaFim')?.addEventListener('input', atualizarPreviewGradeExpediente);
+
+        document.getElementById('checkTemPausaExpediente')?.addEventListener('change', (e) => {
+            const containerCamposPausa = document.getElementById('containerCamposPausa');
+            const badgeStatusPausa = document.getElementById('badgeStatusPausa');
+            const inputPausaInicio = document.getElementById('inputPausaInicio');
+            const inputPausaFim = document.getElementById('inputPausaFim');
+
+            if (containerCamposPausa) containerCamposPausa.classList.toggle('hidden', !e.target.checked);
+            if (badgeStatusPausa) {
+                badgeStatusPausa.className = e.target.checked ? "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-amber-950 text-amber-300 border border-amber-800" : "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-zinc-800 text-zinc-400";
+                badgeStatusPausa.innerText = e.target.checked ? `Ativo (${inputPausaInicio?.value || '11:00'} às ${inputPausaFim?.value || '12:00'})` : "Desativado";
+            }
+            atualizarPreviewGradeExpediente();
+        });
 
         async function carregarConfiguracoesMercadoPago() {
             try {

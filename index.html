@@ -2021,6 +2021,9 @@
                 let horaAberturaMin = 8 * 60;
                 let horaFechamentoMin = 20 * 60;
                 let intervaloMin = 60;
+                let temPausa = false;
+                let pausaInicioMin = -1;
+                let pausaFimMin = -1;
 
                 const configSnap = await getDoc(doc(db, "configuracoes", "expediente"));
                 if (configSnap.exists()) {
@@ -2035,6 +2038,13 @@
                     }
                     if (cfg.intervaloMin) {
                         intervaloMin = Number(cfg.intervaloMin);
+                    }
+                    if (cfg.temPausa && cfg.pausaInicio && cfg.pausaFim) {
+                        temPausa = true;
+                        const [pih, pim] = cfg.pausaInicio.split(':').map(Number);
+                        const [pfh, pfm] = cfg.pausaFim.split(':').map(Number);
+                        pausaInicioMin = pih * 60 + pim;
+                        pausaFimMin = pfh * 60 + pfm;
                     }
                 }
 
@@ -2068,9 +2078,18 @@
                     const horaFormatada = String(h).padStart(2, '0') + ":" + String(m).padStart(2, '0');
                     
                     let bloqueado = false;
+                    let ehHorarioPausa = false;
+
+                    // Bloqueia se estiver dentro do horário de ausência / almoço do barbeiro
+                    if (temPausa && pausaInicioMin >= 0 && pausaFimMin > pausaInicioMin) {
+                        if (minutos >= pausaInicioMin && minutos < pausaFimMin) {
+                            bloqueado = true;
+                            ehHorarioPausa = true;
+                        }
+                    }
                     
                     // Bloqueia se o horário já passou hoje
-                    if (agoraMinutosHoje >= 0 && minutos <= agoraMinutosHoje) {
+                    if (!bloqueado && agoraMinutosHoje >= 0 && minutos <= agoraMinutosHoje) {
                         bloqueado = true;
                     }
 
@@ -2090,7 +2109,11 @@
                     const opt = document.createElement('option');
                     opt.value = horaFormatada;
                     if (bloqueado) {
-                        opt.textContent = `${horaFormatada} - (Indisponível/Ocupado)`;
+                        if (ehHorarioPausa) {
+                            opt.textContent = `${horaFormatada} - (Ausente / Intervalo)`;
+                        } else {
+                            opt.textContent = `${horaFormatada} - (Indisponível/Ocupado)`;
+                        }
                         opt.disabled = true;
                         opt.className = "text-zinc-600";
                     } else {
