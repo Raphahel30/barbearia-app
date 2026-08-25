@@ -315,6 +315,10 @@
                             <span id="labelValorTotalBotao" class="text-[11px] font-normal text-zinc-300">(R$ 40,00)</span>
                         </button>
                     </div>
+                    <p class="text-[11px] text-zinc-400 text-center flex items-center justify-center gap-1.5 pt-1">
+                        <span>🔒</span>
+                        <span>Pagamento seguro via Pix • Cancelamento com estorno até 3h antes.</span>
+                    </p>
                 </div>
                 <p id="msgStatus" class="mt-2 text-center text-sm font-medium"></p>
             </div>
@@ -2235,7 +2239,7 @@
                 servicoPrincipalPlano: servicoPrincipal
             };
 
-            abrirModalTermos('agendamento', dadosPagamentoPendente);
+            processarAberturaPagamento('agendamento', dadosPagamentoPendente);
         });
 
         window.iniciarCompraPlano = function(id, nome, preco) {
@@ -2243,7 +2247,7 @@
                 alert(`Você já possui o plano "${dadosAssinaturaAtiva.nomePlano}" ativo até ${dadosAssinaturaAtiva.dataFimFormatada} (${dadosAssinaturaAtiva.diasRestantes} dias restantes).\n\nA contratação ou renovação de um novo plano só é liberada faltando 3 dias ou menos para o vencimento.`);
                 return;
             }
-            abrirModalTermos('plano', { plano: { id, nome, preco } });
+            processarAberturaPagamento('plano', { plano: { id, nome, preco } });
         };
 
         let listaServicosCadastradosGlobal = [];
@@ -2513,6 +2517,24 @@
                         const valorPagoExib = Number(ag.taxaReservaPaga !== undefined ? ag.taxaReservaPaga : (ag.isPlano ? 0 : 10));
                         const valorRestante = Math.max(0, precoTotal - valorPagoExib);
 
+                        const dataAgObj = new Date(ag.dataHora);
+                        const diffHorasAg = (dataAgObj.getTime() - new Date().getTime()) / (1000 * 60 * 60);
+
+                        let badgeCancelamentoInfo = "";
+                        if (ag.isPlano) {
+                            if (diffHorasAg > 3) {
+                                badgeCancelamentoInfo = `<span class="text-[10px] text-purple-300 font-semibold bg-purple-950/60 border border-purple-800/80 px-2 py-0.5 rounded inline-flex items-center gap-1">👑 Reagendamento livre (+3h antecedência)</span>`;
+                            } else {
+                                badgeCancelamentoInfo = `<span class="text-[10px] text-amber-300 font-semibold bg-amber-950/60 border border-amber-800/80 px-2 py-0.5 rounded inline-flex items-center gap-1">⚠️ Faltam menos de 3h (Perda do corte semanal ao cancelar)</span>`;
+                            }
+                        } else {
+                            if (diffHorasAg > 3) {
+                                badgeCancelamentoInfo = `<span class="text-[10px] text-green-300 font-semibold bg-green-950/60 border border-green-800/80 px-2 py-0.5 rounded inline-flex items-center gap-1">🟢 Cancelamento com estorno automático disponível (+3h)</span>`;
+                            } else {
+                                badgeCancelamentoInfo = `<span class="text-[10px] text-amber-300 font-semibold bg-amber-950/60 border border-amber-800/80 px-2 py-0.5 rounded inline-flex items-center gap-1">🟡 Faltam menos de 3h (Sem estorno da taxa de reserva)</span>`;
+                            }
+                        }
+
                         let financeiroBadge = "";
                         if (ag.isPlano) {
                             financeiroBadge = `<span class="text-[11px] text-purple-300 font-bold bg-purple-950/80 px-2 py-0.5 rounded border border-purple-800">👑 Plano VIP (R$ 0,00 restante)</span>`;
@@ -2523,7 +2545,7 @@
                                 <div class="mt-1 flex items-center gap-1.5 flex-wrap text-xs">
                                     <span class="text-zinc-400">Total: <strong class="text-zinc-200">R$ ${precoTotal.toFixed(2)}</strong></span>
                                     <span class="text-zinc-500">•</span>
-                                    <span class="text-zinc-400">Taxa Paga: <strong class="text-green-400">R$ ${valorPagoExib.toFixed(2)}</strong></span>
+                                    <span class="text-zinc-400">Taxa Paga: <strong class="text-green-400 font-bold">R$ ${valorPagoExib.toFixed(2)}</strong></span>
                                     <span class="text-zinc-500">•</span>
                                     <span class="bg-amber-950/90 text-amber-300 border border-amber-600/70 px-2 py-0.5 rounded font-extrabold shadow-sm">
                                         💵 Restante a Pagar no Local: <strong class="text-dourado text-sm">R$ ${valorRestante.toFixed(2)}</strong>
@@ -2533,15 +2555,16 @@
                         }
 
                         meusAgendamentosLista.innerHTML += `
-                            <div id="itemMeusAgendamentos_${agId}" class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 gap-3 shadow-md">
-                                <div class="space-y-1">
+                            <div id="itemMeusAgendamentos_${agId}" class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-zinc-900/90 p-3.5 rounded-2xl border border-zinc-800 gap-3 shadow-md">
+                                <div class="space-y-1.5">
                                     <div class="flex items-center gap-2 flex-wrap">
-                                        <p class="font-bold text-dourado text-sm">${ag.servico || 'Corte'} ${ag.isPlano ? '<span class="text-xs text-purple-400">(VIP)</span>' : ''}</p>
-                                        <span class="text-xs text-zinc-300 bg-zinc-800 px-2 py-0.5 rounded">📅 ${ag.dataHora.replace('T', ' às ')}</span>
+                                        <p class="font-bold text-dourado text-sm">${ag.servico || 'Corte'} ${ag.isPlano ? '<span class="text-xs text-purple-400 font-bold">(VIP)</span>' : ''}</p>
+                                        <span class="text-xs text-zinc-300 bg-zinc-800 px-2 py-0.5 rounded font-mono">📅 ${ag.dataHora.replace('T', ' às ')}</span>
                                     </div>
                                     ${financeiroBadge}
+                                    <div class="pt-0.5">${badgeCancelamentoInfo}</div>
                                 </div>
-                                <button onclick="cancelarAgendamento('${agId}')" id="btnCancelarCliente_${agId}" class="bg-red-600/80 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer self-end sm:self-center">Cancelar</button>
+                                <button onclick="cancelarAgendamento('${agId}')" id="btnCancelarCliente_${agId}" class="bg-red-600/80 hover:bg-red-600 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer self-end sm:self-center shadow">Cancelar</button>
                             </div>
                         `;
                     }
@@ -3531,7 +3554,7 @@
                 const dadosForm = await validarFormAgendamento();
                 if (!dadosForm) return;
 
-                abrirModalTermos('agendamento', {
+                processarAberturaPagamento('agendamento', {
                     ...dadosForm,
                     modalidade: 'taxa',
                     valorCobrado: 10.00
@@ -3546,7 +3569,7 @@
                 const dadosForm = await validarFormAgendamento();
                 if (!dadosForm) return;
 
-                abrirModalTermos('agendamento', {
+                processarAberturaPagamento('agendamento', {
                     ...dadosForm,
                     modalidade: 'total',
                     valorCobrado: dadosForm.preco
