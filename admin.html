@@ -373,6 +373,10 @@
                     </div>
 
                     <div class="flex flex-wrap items-center gap-2">
+                        <button id="btnAbrirModalNovoMensalista" class="bg-dourado hover:bg-[#C5A028] text-black px-4 py-2.5 rounded-xl text-xs font-bold uppercase transition cursor-pointer shadow-lg flex items-center gap-2">
+                            <span>👑</span>
+                            <span>+ Ativar Assinante VIP</span>
+                        </button>
                         <button id="btnDispararLembretesLote" class="bg-amber-500 hover:bg-amber-600 text-black px-4 py-2.5 rounded-xl text-xs font-bold uppercase transition cursor-pointer shadow-lg flex items-center gap-2">
                             <span>🤖</span>
                             <span>Avisar Todos em Risco de Expirar</span>
@@ -429,8 +433,8 @@
                     <div class="flex items-center gap-2 w-full sm:w-auto">
                         <label class="text-xs text-zinc-400 uppercase font-semibold whitespace-nowrap">Filtrar:</label>
                         <select id="selectFiltroMensalista" class="w-full sm:w-auto bg-black text-white text-xs px-3.5 py-2.5 rounded-xl border border-zinc-700 focus:outline-none focus:border-dourado">
-                            <option value="todos">Todos os Mensalistas</option>
-                            <option value="ativos" selected>Apenas Assinaturas Ativas</option>
+                            <option value="todos" selected>Todos os Mensalistas</option>
+                            <option value="ativos">Apenas Assinaturas Ativas</option>
                             <option value="expirando">Crédito da Semana Expirando (&le; 3 dias)</option>
                             <option value="expirados">Planos Expirados / Inativos</option>
                         </select>
@@ -1107,6 +1111,85 @@
         </div>
     </div>
 
+    <!-- MODAL DE ATIVAÇÃO MANUAL DE CLIENTE MENSALISTA VIP -->
+    <div id="modalNovoMensalistaAdmin" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="card-dark w-full max-w-lg p-6 rounded-3xl border border-dourado/50 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">👑</span>
+                    <h3 class="text-lg font-bold text-white uppercase">Ativar Assinatura VIP</h3>
+                </div>
+                <button id="btnFecharModalNovoMensalista" type="button" class="text-zinc-400 hover:text-white text-xl cursor-pointer">&times;</button>
+            </div>
+
+            <form id="formNovoMensalistaAdmin" class="space-y-4">
+                <div>
+                    <label class="block text-xs uppercase font-bold text-zinc-400 mb-1">Selecionar Cliente Cadastrado (Opcional):</label>
+                    <select id="selectClienteCadastradoMensalista" class="w-full bg-black text-white p-3 rounded-xl border border-zinc-700 text-xs focus:border-dourado outline-none">
+                        <option value="">-- Digitar dados manualmente abaixo --</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs uppercase font-bold text-zinc-400 mb-1">Nome do Cliente *</label>
+                        <input type="text" id="inputNomeNovoMensalista" placeholder="Ex: João da Silva" required class="w-full bg-black text-white p-3 rounded-xl border border-zinc-700 text-xs focus:border-dourado outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs uppercase font-bold text-zinc-400 mb-1">WhatsApp do Cliente *</label>
+                        <input type="text" id="inputTelNovoMensalista" placeholder="Ex: (11) 99999-9999" required class="w-full bg-black text-white p-3 rounded-xl border border-zinc-700 text-xs focus:border-dourado outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs uppercase font-bold text-zinc-400 mb-1">Plano Mensal *</label>
+                        <select id="selectPlanoNovoMensalista" required class="w-full bg-black text-white p-3 rounded-xl border border-zinc-700 text-xs focus:border-dourado outline-none">
+                            <option value="">Selecione o plano...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs uppercase font-bold text-zinc-400 mb-1">Data de Início *</label>
+                        <input type="date" id="inputDataInicioMensalista" required class="w-full bg-black text-white p-3 rounded-xl border border-zinc-700 text-xs focus:border-dourado outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs uppercase font-bold text-zinc-400 mb-1">Método de Pagamento</label>
+                        <select id="selectMetodoPagtoMensalista" class="w-full bg-black text-white p-3 rounded-xl border border-zinc-700 text-xs focus:border-dourado outline-none">
+                            <option value="Pix Balcão">Pix Balcão</option>
+                            <option value="Dinheiro">Dinheiro no Balcão</option>
+                            <option value="Cartão de Crédito">Cartão de Crédito (Maquininha)</option>
+                            <option value="Cartão de Débito">Cartão de Débito (Maquininha)</option>
+                            <option value="Cortesia / VIP">Cortesia / Permuta</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs uppercase font-bold text-zinc-400 mb-1">Valor Cobrado (R$)</label>
+                        <input type="number" step="0.01" id="inputValorCobradoMensalista" placeholder="120.00" class="w-full bg-black text-white p-3 rounded-xl border border-zinc-700 text-xs focus:border-dourado outline-none">
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 p-3 bg-zinc-900 rounded-xl border border-zinc-800">
+                    <input type="checkbox" id="checkNotificarWhatsAtivacao" checked class="w-4 h-4 accent-dourado cursor-pointer">
+                    <label for="checkNotificarWhatsAtivacao" class="text-xs text-zinc-300 cursor-pointer">Disparar notificação automática de confirmação no WhatsApp do cliente</label>
+                </div>
+
+                <div id="msgStatusNovoMensalista" class="hidden text-center text-xs p-2 rounded-lg"></div>
+
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" id="btnCancelarNovoMensalista" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold px-4 py-2.5 rounded-xl text-xs uppercase transition cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="btnSalvarNovoMensalista" class="bg-dourado hover:bg-[#C5A028] text-black font-bold px-5 py-2.5 rounded-xl text-xs uppercase transition cursor-pointer shadow-lg">
+                        💾 Ativar Assinatura VIP
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- SCRIPT FIREBASE E CONTROLE DO ADMIN -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -1347,10 +1430,11 @@
                 });
             });
 
-            // 2. Monitora Mensalistas
+            // 2. Monitora Mensalistas em Tempo Real
             onSnapshot(collection(db, "assinaturasClientes"), (snapshot) => {
                 if (primeiroCarregamentoMensalistas) {
                     primeiroCarregamentoMensalistas = false;
+                    carregarClientesMensalistasAdmin();
                     return;
                 }
 
@@ -1367,9 +1451,9 @@
                             'EMAÚS - 👑 Novo Assinante VIP!',
                             `${sub.cliente || 'Cliente'} assinou ${sub.nomePlano}!`
                         );
-                        carregarClientesMensalistasAdmin();
                     }
                 });
+                carregarClientesMensalistasAdmin();
             });
         }
 
@@ -1711,11 +1795,37 @@
         let listaMensalistasCache = [];
 
         function processarCicloMensalistaAdmin(sub) {
-            if (!sub || !sub.dataPagamento) return null;
-            const tInicio = new Date(sub.dataPagamento).getTime();
-            const dataFim = new Date(sub.dataFim || (tInicio + 30 * 86400000));
+            if (!sub) return null;
+
+            let dtPagto;
+            if (sub.dataPagamento) {
+                dtPagto = (typeof sub.dataPagamento === 'object' && sub.dataPagamento.toDate) 
+                    ? sub.dataPagamento.toDate() 
+                    : new Date(sub.dataPagamento);
+            } else if (sub.criadoEm) {
+                dtPagto = (typeof sub.criadoEm === 'object' && sub.criadoEm.toDate) 
+                    ? sub.criadoEm.toDate() 
+                    : new Date(sub.criadoEm);
+            } else {
+                dtPagto = new Date();
+            }
+            if (isNaN(dtPagto.getTime())) dtPagto = new Date();
+
+            const tInicioDia = new Date(dtPagto.getFullYear(), dtPagto.getMonth(), dtPagto.getDate(), 0, 0, 0, 0).getTime();
+            
+            let dtFim;
+            if (sub.dataFim) {
+                dtFim = (typeof sub.dataFim === 'object' && sub.dataFim.toDate)
+                    ? sub.dataFim.toDate()
+                    : new Date(sub.dataFim);
+            } else {
+                dtFim = new Date(tInicioDia + 30 * 86400000);
+            }
+            if (isNaN(dtFim.getTime())) dtFim = new Date(tInicioDia + 30 * 86400000);
+
+            const dataFim = new Date(dtFim.getFullYear(), dtFim.getMonth(), dtFim.getDate(), 23, 59, 59, 999);
             const agora = new Date();
-            const diasRestantes = Math.max(0, Math.ceil((dataFim - agora) / (1000 * 60 * 60 * 24)));
+            const diasRestantes = Math.max(0, Math.ceil((dataFim.getTime() - agora.getTime()) / (1000 * 60 * 60 * 24)));
             const ehAtivo = (dataFim >= agora);
 
             const semanasSalvas = sub.semanas || {};
@@ -1725,8 +1835,14 @@
             let semanaExpirandoInfo = null;
 
             for (let i = 1; i <= 4; i++) {
-                const semInicio = new Date(tInicio + (i - 1) * 7 * 86400000);
-                const semFim = (i === 4) ? dataFim : new Date(tInicio + i * 7 * 86400000 - 1000);
+                const semInicio = new Date(tInicioDia + (i - 1) * 7 * 86400000);
+                semInicio.setHours(0, 0, 0, 0);
+
+                const semFim = (i === 4) 
+                    ? new Date(dataFim) 
+                    : new Date(tInicioDia + i * 7 * 86400000 - 1000);
+                semFim.setHours(23, 59, 59, 999);
+
                 const ehSemanaAtual = (agora >= semInicio && agora <= semFim);
                 if (ehSemanaAtual) semanaAtualNumero = i;
 
@@ -1775,12 +1891,22 @@
                 });
             }
 
+            const precoFinal = Number(sub.precoPlano !== undefined ? sub.precoPlano : (sub.preco || sub.valorTotal || sub.valor || 0));
+            const nomePlanoFinal = sub.nomePlano || sub.planoNome || sub.plano?.nome || 'Plano Mensal VIP';
+            const clienteFinal = sub.cliente || sub.nome || sub.clienteNome || sub.userEmail || 'Cliente VIP';
+            const telefoneFinal = sub.telefone || sub.clienteTelefone || sub.tel || '';
+
             return {
                 ...sub,
+                id: sub.id,
+                cliente: clienteFinal,
+                telefone: telefoneFinal,
+                nomePlano: nomePlanoFinal,
+                preco: precoFinal,
                 ehAtivo,
                 diasRestantes,
                 dataFimFormatada: dataFim.toLocaleDateString('pt-BR'),
-                dataPagtoFormatada: new Date(sub.dataPagamento).toLocaleDateString('pt-BR'),
+                dataPagtoFormatada: dtPagto.toLocaleDateString('pt-BR'),
                 semanas: semanasInfo,
                 semanaAtualNumero,
                 temCreditoExpirando,
@@ -1841,7 +1967,7 @@
             if (!container) return;
 
             const termoBusca = (document.getElementById('inputBuscaMensalista')?.value || '').trim().toLowerCase();
-            const filtro = document.getElementById('selectFiltroMensalista')?.value || 'ativos';
+            const filtro = document.getElementById('selectFiltroMensalista')?.value || 'todos';
 
             let filtrados = lista.filter(item => {
                 const matchTexto = !termoBusca || 
@@ -1858,7 +1984,15 @@
             });
 
             if (filtrados.length === 0) {
-                container.innerHTML = `<div class="card-dark p-8 rounded-2xl border border-zinc-800 text-center text-zinc-500 text-xs">Nenhum cliente mensalista encontrado para este filtro.</div>`;
+                container.innerHTML = `
+                    <div class="card-dark p-8 rounded-2xl border border-zinc-800 text-center space-y-3">
+                        <p class="text-zinc-500 text-xs">Nenhum cliente mensalista encontrado para este filtro.</p>
+                        <button onclick="window.abrirModalNovoMensalistaAdmin()" class="bg-dourado hover:bg-[#C5A028] text-black px-4 py-2 rounded-xl text-xs font-bold uppercase transition cursor-pointer shadow-md inline-flex items-center gap-1.5">
+                            <span>👑</span>
+                            <span>+ Ativar Novo Assinante VIP Agora</span>
+                        </button>
+                    </div>
+                `;
                 return;
             }
 
@@ -1901,8 +2035,8 @@
                             badgeSemana = '<span class="bg-green-900/60 text-green-300 border border-green-600 px-2 py-0.5 rounded text-[10px] font-bold uppercase">🟢 Disponível</span>';
                             bordaCard = "border-green-600/40 bg-green-950/20";
                         }
-                    } else if (s.status === 'falta') {
-                        badgeSemana = '<span class="bg-red-950 text-red-400 border border-red-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">🚫 Não Compareceu</span>';
+                    } else if (s.status === 'falta' || s.status === 'cancelado_tardio' || s.status === 'perdido') {
+                        badgeSemana = '<span class="bg-red-950 text-red-400 border border-red-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">🚫 Perdido</span>';
                         bordaCard = "border-red-900/30 bg-red-950/10";
                     } else if (s.status === 'expirado') {
                         badgeSemana = '<span class="bg-zinc-800 text-zinc-400 border border-zinc-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase">⚠️ Expirou</span>';
@@ -1921,6 +2055,11 @@
                                 ${badgeSemana}
                             </div>
                             <p class="text-[10px] text-zinc-400 font-mono">${s.inicioStr} até ${s.fimStr}</p>
+                            <div class="flex items-center gap-1 pt-1 border-t border-zinc-800/60">
+                                <button onclick="window.alterarStatusSemanaMensalistaAdmin('${item.id}', ${s.numero}, 'concluido')" title="Marcar como Concluído" class="text-[9px] bg-green-950 hover:bg-green-900 text-green-300 px-1.5 py-0.5 rounded border border-green-800 cursor-pointer">✅ Feito</button>
+                                <button onclick="window.alterarStatusSemanaMensalistaAdmin('${item.id}', ${s.numero}, 'disponivel')" title="Liberar corte" class="text-[9px] bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-1.5 py-0.5 rounded border border-zinc-700 cursor-pointer">🟢 Liberar</button>
+                                <button onclick="window.alterarStatusSemanaMensalistaAdmin('${item.id}', ${s.numero}, 'falta')" title="Marcar Falta / Perdido" class="text-[9px] bg-red-950 hover:bg-red-900 text-red-400 px-1.5 py-0.5 rounded border border-red-800 cursor-pointer">🚫 Falta</button>
+                            </div>
                         </div>
                     `;
                 });
@@ -1971,12 +2110,19 @@
                                 </div>
                             </div>
 
-                            <div class="flex items-center gap-2.5 flex-wrap self-end lg:self-center">
+                            <div class="flex items-center gap-2 flex-wrap self-end lg:self-center">
                                 ${badgeStatusGeral}
                                 <a href="${linkWhatsDireto}" target="_blank" class="bg-green-600/90 hover:bg-green-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-md">
                                     <span>💬</span>
                                     <span>WhatsApp</span>
                                 </a>
+                                <button onclick="window.renovarAssinaturaMensalistaAdmin('${item.id}', '${item.nomePlano || 'VIP'}', '${item.cliente || 'Cliente'}')" title="Renovar por mais 30 dias" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer border border-zinc-700">
+                                    <span>🔄</span>
+                                    <span>+30 Dias</span>
+                                </button>
+                                <button onclick="window.excluirAssinaturaMensalistaAdmin('${item.id}', '${item.cliente || 'Cliente'}')" title="Cancelar/Excluir Plano" class="bg-red-950/60 hover:bg-red-900 text-red-400 px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer border border-red-800">
+                                    <span>🗑️</span>
+                                </button>
                             </div>
                         </div>
 
@@ -1998,6 +2144,244 @@
 
             container.innerHTML = html;
         }
+
+        // ==========================================
+        // ATIVAÇÃO MANUAL DE NOVO ASSINANTE VIP
+        // ==========================================
+        window.abrirModalNovoMensalistaAdmin = async function() {
+            const modal = document.getElementById('modalNovoMensalistaAdmin');
+            const selectCli = document.getElementById('selectClienteCadastradoMensalista');
+            const selectPlano = document.getElementById('selectPlanoNovoMensalista');
+            const inputData = document.getElementById('inputDataInicioMensalista');
+            const msgStatus = document.getElementById('msgStatusNovoMensalista');
+
+            if (msgStatus) {
+                msgStatus.classList.add('hidden');
+                msgStatus.innerText = '';
+            }
+
+            if (inputData) {
+                inputData.value = new Date().toISOString().split('T')[0];
+            }
+
+            // Carrega planos no select
+            if (selectPlano) {
+                selectPlano.innerHTML = '<option value="">Carregando planos...</option>';
+                try {
+                    const planosSnap = await getDocs(collection(db, "planosMensais"));
+                    if (planosSnap.empty) {
+                        selectPlano.innerHTML = '<option value="">Nenhum plano cadastrado</option>';
+                    } else {
+                        selectPlano.innerHTML = '<option value="">Selecione o plano...</option>';
+                        planosSnap.forEach(pDoc => {
+                            const p = pDoc.data();
+                            selectPlano.innerHTML += `<option value="${pDoc.id}" data-nome="${p.nome}" data-preco="${p.preco}">${p.nome} - R$ ${p.preco.toFixed(2)}</option>`;
+                        });
+                    }
+                } catch (e) {
+                    console.warn("Erro ao buscar planos:", e);
+                }
+            }
+
+            // Carrega usuários cadastrados no select
+            if (selectCli) {
+                selectCli.innerHTML = '<option value="">-- Digitar dados manualmente abaixo --</option>';
+                try {
+                    const uSnap = await getDocs(collection(db, "usuarios"));
+                    uSnap.forEach(uDoc => {
+                        const u = uDoc.data();
+                        const nomeExibir = u.nome ? `${u.nome} (${u.telefone || u.email || 'Sem tel'})` : (u.email || uDoc.id);
+                        selectCli.innerHTML += `<option value="${uDoc.id}" data-nome="${u.nome || ''}" data-tel="${u.telefone || ''}">${nomeExibir}</option>`;
+                    });
+                } catch (e) {
+                    console.warn("Erro ao buscar usuários:", e);
+                }
+            }
+
+            if (modal) modal.classList.remove('hidden');
+        };
+
+        window.fecharModalNovoMensalistaAdmin = function() {
+            const modal = document.getElementById('modalNovoMensalistaAdmin');
+            if (modal) modal.classList.add('hidden');
+        };
+
+        document.getElementById('btnAbrirModalNovoMensalista')?.addEventListener('click', window.abrirModalNovoMensalistaAdmin);
+        document.getElementById('btnFecharModalNovoMensalista')?.addEventListener('click', window.fecharModalNovoMensalistaAdmin);
+        document.getElementById('btnCancelarNovoMensalista')?.addEventListener('click', window.fecharModalNovoMensalistaAdmin);
+
+        // Preenche campos ao selecionar cliente no dropdown
+        document.getElementById('selectClienteCadastradoMensalista')?.addEventListener('change', (e) => {
+            const opt = e.target.options[e.target.selectedIndex];
+            if (opt && opt.value) {
+                const nome = opt.getAttribute('data-nome') || '';
+                const tel = opt.getAttribute('data-tel') || '';
+                if (nome) document.getElementById('inputNomeNovoMensalista').value = nome;
+                if (tel) document.getElementById('inputTelNovoMensalista').value = tel;
+            }
+        });
+
+        // Preenche valor ao selecionar plano
+        document.getElementById('selectPlanoNovoMensalista')?.addEventListener('change', (e) => {
+            const opt = e.target.options[e.target.selectedIndex];
+            if (opt && opt.value) {
+                const preco = opt.getAttribute('data-preco');
+                if (preco) document.getElementById('inputValorCobradoMensalista').value = parseFloat(preco).toFixed(2);
+            }
+        });
+
+        // Salvar novo mensalista
+        document.getElementById('formNovoMensalistaAdmin')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btnSalvar = document.getElementById('btnSalvarNovoMensalista');
+            const msgStatus = document.getElementById('msgStatusNovoMensalista');
+            const selectCli = document.getElementById('selectClienteCadastradoMensalista');
+            const selectPlano = document.getElementById('selectPlanoNovoMensalista');
+            const inputNome = document.getElementById('inputNomeNovoMensalista');
+            const inputTel = document.getElementById('inputTelNovoMensalista');
+            const inputData = document.getElementById('inputDataInicioMensalista');
+            const selectMetodo = document.getElementById('selectMetodoPagtoMensalista');
+            const inputValor = document.getElementById('inputValorCobradoMensalista');
+            const checkNotif = document.getElementById('checkNotificarWhatsAtivacao');
+
+            const clienteNome = inputNome?.value.trim();
+            const clienteTel = inputTel?.value.trim();
+            const planoOpt = selectPlano?.options[selectPlano.selectedIndex];
+            const planoNome = planoOpt ? planoOpt.getAttribute('data-nome') : 'Plano Mensal VIP';
+            const planoPreco = parseFloat(inputValor?.value || planoOpt?.getAttribute('data-preco') || 0);
+            const dataInicioStr = inputData?.value || new Date().toISOString().split('T')[0];
+            const metodoPagto = selectMetodo?.value || 'Balcão';
+
+            if (!clienteNome || !clienteTel || !selectPlano?.value) {
+                if (msgStatus) {
+                    msgStatus.className = "text-center text-xs p-2 rounded-lg bg-red-950 text-red-400 border border-red-800";
+                    msgStatus.innerText = "Preencha todos os campos obrigatórios!";
+                    msgStatus.classList.remove('hidden');
+                }
+                return;
+            }
+
+            if (btnSalvar) {
+                btnSalvar.disabled = true;
+                btnSalvar.innerText = "⏳ Ativando Plano...";
+            }
+
+            try {
+                const partes = dataInicioStr.split('-').map(Number);
+                const dataPagamento = new Date(partes[0], partes[1] - 1, partes[2], 12, 0, 0);
+                const dataFim = new Date(dataPagamento.getTime() + 30 * 86400000);
+
+                let userId = selectCli?.value;
+                if (!userId) {
+                    // Gera ID único baseado no telefone
+                    userId = 'vip_' + clienteTel.replace(/\D/g, '');
+                }
+
+                await setDoc(doc(db, "assinaturasClientes", userId), {
+                    userId: userId,
+                    cliente: clienteNome,
+                    telefone: clienteTel,
+                    nomePlano: planoNome,
+                    precoPlano: planoPreco,
+                    dataPagamento: dataPagamento.toISOString(),
+                    dataFim: dataFim.toISOString(),
+                    idPagamento: 'manual_admin_' + Date.now(),
+                    metodoPagamento: metodoPagto,
+                    status: 'ativo',
+                    ativadoPorAdmin: true,
+                    atualizadoEm: new Date().toISOString()
+                });
+
+                // Disparo WhatsApp opcional
+                if (checkNotif && checkNotif.checked) {
+                    try {
+                        fetch(`${getBackendUrlAtivo()}/api/whatsapp/notificar-compra-plano`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                cliente: clienteNome,
+                                telefone: clienteTel,
+                                nomePlano: planoNome,
+                                preco: planoPreco,
+                                dataFim: dataFim.toISOString(),
+                                whatsappBarbeiro: whatsAppNumeroAtivo
+                            })
+                        }).catch(e => console.warn("Aviso WhatsApp compra plano:", e));
+                    } catch (eZap) { console.warn(eZap); }
+                }
+
+                window.fecharModalNovoMensalistaAdmin();
+                exibirToastNotificacao('👑 Plano VIP Ativado!', `Assinatura de ${clienteNome} foi ativada com sucesso!`, 'vip');
+                await window.carregarClientesMensalistasAdmin();
+
+            } catch (err) {
+                console.error("Erro ao ativar mensalista:", err);
+                if (msgStatus) {
+                    msgStatus.className = "text-center text-xs p-2 rounded-lg bg-red-950 text-red-400 border border-red-800";
+                    msgStatus.innerText = "Erro ao ativar: " + err.message;
+                    msgStatus.classList.remove('hidden');
+                }
+            } finally {
+                if (btnSalvar) {
+                    btnSalvar.disabled = false;
+                    btnSalvar.innerText = "💾 Ativar Assinatura VIP";
+                }
+            }
+        });
+
+        // Renovar Assinatura VIP (+30 dias)
+        window.renovarAssinaturaMensalistaAdmin = async function(userId, nomePlano, clienteNome) {
+            if (!confirm(`Deseja renovar a assinatura VIP de "${clienteNome}" (${nomePlano}) por mais 30 dias a partir de hoje?`)) {
+                return;
+            }
+
+            try {
+                const dataPagamento = new Date();
+                const dataFim = new Date(dataPagamento.getTime() + 30 * 86400000);
+
+                await updateDoc(doc(db, "assinaturasClientes", userId), {
+                    dataPagamento: dataPagamento.toISOString(),
+                    dataFim: dataFim.toISOString(),
+                    semanas: {},
+                    status: 'ativo',
+                    renovadoEm: new Date().toISOString()
+                });
+
+                exibirToastNotificacao('🔄 Assinatura Renovada!', `Plano VIP de ${clienteNome} renovado por mais 30 dias.`, 'vip');
+                await window.carregarClientesMensalistasAdmin();
+            } catch (e) {
+                alert("Erro ao renovar assinatura: " + e.message);
+            }
+        };
+
+        // Excluir Assinatura VIP
+        window.excluirAssinaturaMensalistaAdmin = async function(userId, clienteNome) {
+            if (!confirm(`Tem certeza que deseja EXCLUIR/CANCELAR a assinatura VIP de "${clienteNome}"?`)) {
+                return;
+            }
+
+            try {
+                await deleteDoc(doc(db, "assinaturasClientes", userId));
+                exibirToastNotificacao('🗑️ Assinatura Removida', `Assinatura de ${clienteNome} foi removida.`, 'cancelamento');
+                await window.carregarClientesMensalistasAdmin();
+            } catch (e) {
+                alert("Erro ao excluir assinatura: " + e.message);
+            }
+        };
+
+        // Alterar status de uma semana específica
+        window.alterarStatusSemanaMensalistaAdmin = async function(userId, semanaNumero, novoStatus) {
+            try {
+                const updateObj = {};
+                updateObj[`semanas.${semanaNumero}.status`] = novoStatus;
+                updateObj[`semanas.${semanaNumero}.atualizadoEm`] = new Date().toISOString();
+                await updateDoc(doc(db, "assinaturasClientes", userId), updateObj);
+                exibirToastNotificacao('Semana Atualizada', `Semana ${semanaNumero} marcada como "${novoStatus}".`, 'info');
+                await window.carregarClientesMensalistasAdmin();
+            } catch (e) {
+                alert("Erro ao alterar semana: " + e.message);
+            }
+        };
 
         window.dispararLembreteUnicoMensalista = async function(id, cliente, telefone, nomePlano, semanaNumero, diasRestantes, dataLimite) {
             if (!telefone) {
@@ -2023,7 +2407,6 @@
                 if (data.success) {
                     alert(`✅ Mensagem de aviso enviada com sucesso para ${cliente} (${telefone}) via WhatsApp!`);
                 } else {
-                    // Fallback para abrir WhatsApp Web / App diretamente
                     const msgWhats = encodeURIComponent(`Olá ${cliente}! 👑 Passando para avisar que o seu corte da Semana ${semanaNumero} do plano ${nomePlano} na EMAÚS Barbearia expira em ${dataLimite} (${diasRestantes} dias restantes). Agende pelo site para garantir seu horário: https://emaus-barbearia.vercel.app`);
                     window.open(`https://wa.me/${telefone}?text=${msgWhats}`, '_blank');
                 }
