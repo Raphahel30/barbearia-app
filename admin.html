@@ -2125,9 +2125,9 @@
 
             let filtrados = lista.filter(item => {
                 const matchTexto = !termoBusca || 
-                    (item.cliente && item.cliente.toLowerCase().includes(termoBusca)) || 
-                    (item.telefone && item.telefone.replace(/\D/g, '').includes(termoBusca)) ||
-                    (item.nomePlano && item.nomePlano.toLowerCase().includes(termoBusca));
+                    (item.cliente && String(item.cliente).toLowerCase().includes(termoBusca)) || 
+                    (item.telefone && String(item.telefone).replace(/\D/g, '').includes(termoBusca)) ||
+                    (item.nomePlano && String(item.nomePlano).toLowerCase().includes(termoBusca));
 
                 if (!matchTexto) return false;
 
@@ -3024,10 +3024,10 @@
 
             let filtradas = listaTransacoesMesCache.filter(item => {
                 const matchTexto = !termoBusca ||
-                    (item.cliente && item.cliente.toLowerCase().includes(termoBusca)) ||
-                    (item.telefone && item.telefone.replace(/\D/g, '').includes(termoBusca)) ||
-                    (item.transacaoId && item.transacaoId.toLowerCase().includes(termoBusca)) ||
-                    (item.descricao && item.descricao.toLowerCase().includes(termoBusca));
+                    (item.cliente && String(item.cliente).toLowerCase().includes(termoBusca)) ||
+                    (item.telefone && String(item.telefone).replace(/\D/g, '').includes(termoBusca)) ||
+                    (item.transacaoId && String(item.transacaoId).toLowerCase().includes(termoBusca)) ||
+                    (item.descricao && String(item.descricao).toLowerCase().includes(termoBusca));
 
                 if (!matchTexto) return false;
 
