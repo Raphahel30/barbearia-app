@@ -122,8 +122,8 @@
     </div>
 
     <!-- MODAL PARA COMPLETAR CADASTRO APÓS LOGIN COM GOOGLE -->
-    <div id="modalCompletarCadastroGoogle" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50">
-        <div class="bg-zinc-900 border border-dourado p-6 sm:p-7 rounded-3xl max-w-md w-full space-y-4 shadow-2xl relative">
+    <div id="modalCompletarCadastroGoogle" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div class="bg-zinc-900 border border-dourado p-6 sm:p-7 rounded-3xl max-w-md w-full space-y-4 shadow-2xl relative my-auto sm:my-8 max-h-[92vh] overflow-y-auto">
             <div class="text-center space-y-1">
                 <span class="text-[10px] font-bold text-dourado uppercase tracking-widest bg-dourado/10 px-3 py-1 rounded-full border border-dourado/20">Finalizar Cadastro</span>
                 <h2 class="text-xl font-bold text-white uppercase tracking-wide mt-2">Bem-vindo(a)! 👋</h2>
@@ -224,16 +224,16 @@
                     <p id="clientWelcome" class="text-xs text-zinc-400 font-medium"></p>
                 </div>
             </div>
-            <div class="flex items-center gap-2 self-end sm:self-center">
-                <button id="btnAbrirPerfilCliente" class="text-xs bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 hover:border-dourado px-3 py-1.5 rounded-xl transition font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-md" title="Gerenciar meus dados cadastrados">
+            <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 justify-center sm:justify-end w-full sm:w-auto">
+                <button id="btnAbrirPerfilCliente" class="text-xs bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 hover:border-dourado px-3 py-2 rounded-xl transition font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-md" title="Gerenciar meus dados cadastrados">
                     <span>👤</span>
                     <span>Meu Perfil</span>
                 </button>
-                <button id="btnInstalarAppCliente" class="text-xs bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-500/70 px-3.5 py-1.5 rounded-xl transition font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-md" title="Instalar aplicativo na tela inicial">
+                <button id="btnInstalarAppCliente" class="text-xs bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-500/70 px-3.5 py-2 rounded-xl transition font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-md" title="Instalar aplicativo na tela inicial">
                     <span>📲</span>
                     <span id="labelInstalarClienteHeader">Instalar App</span>
                 </button>
-                <button class="btnLogout bg-red-600/90 hover:bg-red-600 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer shadow-lg">
+                <button class="btnLogout bg-red-600/90 hover:bg-red-600 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-lg">
                     Sair
                 </button>
             </div>
@@ -255,10 +255,10 @@
             </button>
         </div>
 
-        <div class="flex border-b border-zinc-800">
-            <button id="btnTabClienteAgendamentos" class="flex-1 pb-2 font-semibold text-dourado border-b-2 border-dourado cursor-pointer text-sm uppercase">Agendamentos</button>
-            <button id="btnTabClienteProdutos" class="flex-1 pb-2 font-semibold text-zinc-500 cursor-pointer text-sm uppercase">🛍️ Produtos & Loja</button>
-            <button id="btnTabClientePlanos" class="flex-1 pb-2 font-semibold text-zinc-500 cursor-pointer text-sm uppercase">Planos Mensais</button>
+        <div class="flex border-b border-zinc-800 gap-1">
+            <button id="btnTabClienteAgendamentos" class="flex-1 pb-2.5 font-bold text-dourado border-b-2 border-dourado cursor-pointer text-xs sm:text-sm uppercase tracking-tight sm:tracking-normal transition text-center">Agendamentos</button>
+            <button id="btnTabClienteProdutos" class="flex-1 pb-2.5 font-bold text-zinc-500 hover:text-zinc-300 cursor-pointer text-xs sm:text-sm uppercase tracking-tight sm:tracking-normal transition text-center">🛍️ Loja</button>
+            <button id="btnTabClientePlanos" class="flex-1 pb-2.5 font-bold text-zinc-500 hover:text-zinc-300 cursor-pointer text-xs sm:text-sm uppercase tracking-tight sm:tracking-normal transition text-center">👑 Planos</button>
         </div>
 
         <div id="viewClienteAgendamentos" class="space-y-6">
@@ -474,7 +474,7 @@
 
     <!-- MODAL DE CONFIRMAÇÃO DE LEITURA DOS TERMOS E CONDIÇÕES -->
     <div id="modalTermosCondicoes" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
-        <div class="bg-zinc-900 border border-dourado p-6 rounded-2xl max-w-lg w-full space-y-4 text-center shadow-2xl relative my-6">
+        <div class="bg-zinc-900 border border-dourado p-6 rounded-2xl max-w-lg w-full space-y-4 text-center shadow-2xl relative my-auto sm:my-6 max-h-[92vh] overflow-y-auto">
             <button id="btnFecharModalTermosTopo" type="button" class="absolute top-4 right-4 text-zinc-400 hover:text-white text-xl font-bold transition">&times;</button>
             
             <div class="space-y-1">
@@ -535,7 +535,7 @@
     </div>
 
     <div id="modalPix" class="hidden fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-        <div class="bg-zinc-900 border border-dourado p-6 rounded-2xl max-w-md w-full space-y-4 text-center shadow-2xl relative my-8">
+        <div class="bg-zinc-900 border border-dourado p-6 rounded-2xl max-w-md w-full space-y-4 text-center shadow-2xl relative my-auto sm:my-8 max-h-[92vh] overflow-y-auto">
             <!-- Botão Fechar no Topo -->
             <button id="btnFecharModalTopo" type="button" class="absolute top-4 right-4 text-zinc-400 hover:text-white text-xl font-bold transition">&times;</button>
             
@@ -725,7 +725,7 @@
 
     <!-- MODAL DE AGENDAMENTO EXCLUSIVO DO PLANO MENSAL VIP -->
     <div id="modalAgendamentoMensalista" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
-        <div class="bg-zinc-900 border border-dourado/80 p-5 sm:p-7 rounded-3xl max-w-lg w-full shadow-2xl space-y-4 relative my-6 text-left">
+        <div class="bg-zinc-900 border border-dourado/80 p-5 sm:p-7 rounded-3xl max-w-lg w-full shadow-2xl space-y-4 relative my-auto sm:my-6 max-h-[92vh] overflow-y-auto text-left">
             <button id="btnFecharModalAgendamentoMensalista" type="button" class="absolute top-4 right-4 text-zinc-400 hover:text-white text-xl font-bold transition">&times;</button>
             
             <div class="space-y-1">
@@ -807,8 +807,8 @@
     </div>
 
     <!-- MODAL DE CONFIRMAÇÃO DE AGENDAMENTO (PROFISSIONAL E RESUMIDO) -->
-    <div id="modalConfirmacaoSucesso" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50">
-        <div class="bg-zinc-900 border border-zinc-700 p-6 rounded-2xl max-w-md w-full text-center shadow-2xl space-y-4 relative my-8">
+    <div id="modalConfirmacaoSucesso" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div class="bg-zinc-900 border border-zinc-700 p-6 rounded-2xl max-w-md w-full text-center shadow-2xl space-y-4 relative my-auto sm:my-8 max-h-[92vh] overflow-y-auto">
             <div class="mx-auto w-12 h-12 bg-black border border-dourado rounded-full flex items-center justify-center text-xl shadow-lg">
                 ✓
             </div>
@@ -892,7 +892,7 @@
 
     <!-- MODAL DE COMPRA DIRETA DE PRODUTO (PIX, CRÉDITO E DÉBITO - SEM TERMOS) -->
     <div id="modalComprarProdutoPix" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
-        <div class="bg-zinc-900 border border-dourado p-6 sm:p-7 rounded-3xl max-w-md w-full space-y-4 text-center shadow-2xl relative my-6 animate-fade-in">
+        <div class="bg-zinc-900 border border-dourado p-6 sm:p-7 rounded-3xl max-w-md w-full space-y-4 text-center shadow-2xl relative my-auto sm:my-6 max-h-[92vh] overflow-y-auto animate-fade-in">
             <button id="btnFecharModalProdutoPix" type="button" class="absolute top-4 right-4 text-zinc-400 hover:text-white text-xl font-bold transition cursor-pointer">&times;</button>
             
             <div class="space-y-1">
@@ -1101,8 +1101,8 @@
     </div>
 
     <!-- MODAL SUCESSO COMPRA DE PRODUTO -->
-    <div id="modalSucessoCompraProduto" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50">
-        <div class="bg-zinc-900 border border-green-500/80 p-6 sm:p-7 rounded-3xl max-w-md w-full text-center shadow-2xl space-y-4 relative my-8 animate-fade-in">
+    <div id="modalSucessoCompraProduto" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div class="bg-zinc-900 border border-green-500/80 p-6 sm:p-7 rounded-3xl max-w-md w-full text-center shadow-2xl space-y-4 relative my-auto sm:my-8 max-h-[92vh] overflow-y-auto animate-fade-in">
             <div class="mx-auto w-14 h-14 bg-green-950/80 border border-green-500/60 rounded-2xl flex items-center justify-center text-3xl shadow-lg">
                 🛍️
             </div>
