@@ -255,7 +255,7 @@
             </button>
         </div>
 
-        <div class="flex border-b border-zinc-800 gap-1">
+        <div class="hidden sm:flex border-b border-zinc-800 gap-1">
             <button id="btnTabClienteAgendamentos" class="flex-1 pb-2.5 font-bold text-dourado border-b-2 border-dourado cursor-pointer text-xs sm:text-sm uppercase tracking-tight sm:tracking-normal transition text-center">Agendamentos</button>
             <button id="btnTabClienteProdutos" class="flex-1 pb-2.5 font-bold text-zinc-500 hover:text-zinc-300 cursor-pointer text-xs sm:text-sm uppercase tracking-tight sm:tracking-normal transition text-center">🛍️ Loja</button>
             <button id="btnTabClientePlanos" class="flex-1 pb-2.5 font-bold text-zinc-500 hover:text-zinc-300 cursor-pointer text-xs sm:text-sm uppercase tracking-tight sm:tracking-normal transition text-center">👑 Planos</button>
@@ -1654,11 +1654,7 @@
                     clientWelcome.innerText = `Olá, ${novoNome}!`;
                 }
 
-                // Atualiza também o input de agendamento se estiver preenchido
-                const nomeInputAg = document.getElementById('clienteNome');
-                if (nomeInputAg) nomeInputAg.value = novoNome;
-                const telInputAg = document.getElementById('clienteTelefone');
-                if (telInputAg) telInputAg.value = novoTelefone;
+
 
                 if (msgPerfilStatus) {
                     msgPerfilStatus.className = "text-xs text-center font-bold text-green-400";
@@ -1746,41 +1742,7 @@
         aplicarMascaraTelefone(document.getElementById('googleTelefoneWhatsApp'));
         aplicarMascaraTelefone(document.getElementById('perfilTelefoneCliente'));
 
-        const inputCartaoNumero = document.getElementById('cartaoNumero');
-        if (inputCartaoNumero) {
-            inputCartaoNumero.addEventListener('input', (e) => {
-                let v = e.target.value.replace(/\D/g, '').slice(0, 16);
-                e.target.value = v.replace(/(\d{4})(?=\d)/g, '$1 ');
-            });
-        }
 
-        const inputCartaoValidade = document.getElementById('cartaoValidade');
-        if (inputCartaoValidade) {
-            inputCartaoValidade.addEventListener('input', (e) => {
-                let v = e.target.value.replace(/\D/g, '').slice(0, 4);
-                if (v.length >= 3) {
-                    e.target.value = `${v.slice(0, 2)}/${v.slice(2)}`;
-                } else {
-                    e.target.value = v;
-                }
-            });
-        }
-
-        const inputCartaoCpf = document.getElementById('cartaoCpf');
-        if (inputCartaoCpf) {
-            inputCartaoCpf.addEventListener('input', (e) => {
-                let v = e.target.value.replace(/\D/g, '').slice(0, 11);
-                if (v.length > 9) {
-                    e.target.value = `${v.slice(0, 3)}.${v.slice(3, 6)}.${v.slice(6, 9)}-${v.slice(9)}`;
-                } else if (v.length > 6) {
-                    e.target.value = `${v.slice(0, 3)}.${v.slice(3, 6)}.${v.slice(6)}`;
-                } else if (v.length > 3) {
-                    e.target.value = `${v.slice(0, 3)}.${v.slice(3)}`;
-                } else {
-                    e.target.value = v;
-                }
-            });
-        }
 
         // ==========================================
         // PAINEL DE PLANOS DO CLIENTE & CICLO DE 4 SEMANAS
