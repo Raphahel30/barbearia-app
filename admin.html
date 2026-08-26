@@ -986,9 +986,10 @@
 
                         <div>
                             <label class="block text-xs font-bold text-zinc-300 uppercase mb-1">
-                                WhatsApp para Notificações (com DDD)
+                                WhatsApp do Barbeiro para Notificações (Opcional)
                             </label>
-                            <input type="text" id="inputWhatsappAdmin" placeholder="5511953789095" class="w-full px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                            <input type="text" id="inputWhatsappAdmin" placeholder="Deixe vazio para usar o número conectado no WhatsApp" class="w-full px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                            <p class="text-[11px] text-zinc-500 mt-1">Opcional: Por padrão, as notificações de barbeiro vão para o próprio WhatsApp conectado no sistema.</p>
                         </div>
 
                         <div class="pt-2">
@@ -1501,7 +1502,7 @@
             return BACKEND_URL;
         }
 
-        let whatsAppNumeroAtivo = "5511953789095";
+        let whatsAppNumeroAtivo = "";
 
         // ==========================================
         // SISTEMA DE NOTIFICAÇÕES EM TEMPO REAL & SOM NATIVO
@@ -2090,7 +2091,7 @@
         if (btnAdminLogout) btnAdminLogout.addEventListener('click', () => signOut(auth));
         if (btnAdminLogoutSidebar) btnAdminLogoutSidebar.addEventListener('click', () => signOut(auth));
 
-        let adminWhatsappGlobal = "5511953789095";
+        let adminWhatsappGlobal = "";
 
         // ==========================================
         // GESTÃO DE CLIENTES MENSALISTAS (PACOTES VIP)
@@ -4717,8 +4718,8 @@
 
             try {
                 await setDoc(doc(db, "configuracoes", "pagamento"), {
-                    pixManual: pixManual || '11953789095',
-                    whatsappAdmin: whatsappAdmin || '5511953789095',
+                    pixManual: pixManual || '',
+                    whatsappAdmin: whatsappAdmin || '',
                     taxaCartaoCredito: isNaN(taxaCredito) ? 0 : taxaCredito,
                     taxaCartaoDebito: isNaN(taxaDebito) ? 0 : taxaDebito,
                     atualizadoEm: new Date()

@@ -1087,6 +1087,17 @@ app.post('/api/whatsapp/enviar', async (req, res) => {
     return res.json(result);
 });
 
+function resolverNumeroBarbeiro(customNumber) {
+    if (customNumber && String(customNumber).trim().replace(/\D/g, '').length >= 10) {
+        return String(customNumber).trim().replace(/\D/g, '');
+    }
+    const statusWa = obterStatusWhatsApp();
+    if (statusWa && statusWa.userNumber) {
+        return statusWa.userNumber;
+    }
+    return null;
+}
+
 // Notificação automática de novo agendamento (Barbeiro + Cliente)
 app.post('/api/whatsapp/notificar-agendamento', async (req, res) => {
     try {
@@ -1104,33 +1115,36 @@ app.post('/api/whatsapp/notificar-agendamento', async (req, res) => {
         } = req.body;
 
         const dataFormatada = dataHora ? dataHora.replace('T', ' às ') : 'Data a confirmar';
-        const numBarbeiro = whatsappBarbeiro || '5511953789095';
+        const numBarbeiro = resolverNumeroBarbeiro(whatsappBarbeiro);
 
         const precoTotal = Number(preco || 0);
         const valorPago = Number(taxaReservaPaga !== undefined ? taxaReservaPaga : (isPlano ? 0 : 10));
         const valorRestante = Math.max(0, precoTotal - valorPago);
 
-        // 1. Mensagem para o Barbeiro
-        let tipoPagtoTexto = `Taxa de Reserva Paga (R$ ${valorPago.toFixed(2)})`;
-        let restanteBarbeiroTexto = `R$ ${valorRestante.toFixed(2)}`;
+        // 1. Mensagem para o Barbeiro (enviada apenas se houver número conectado ou configurado)
+        let envioBarbeiro = null;
+        if (numBarbeiro) {
+            let tipoPagtoTexto = `Taxa de Reserva Paga (R$ ${valorPago.toFixed(2)})`;
+            let restanteBarbeiroTexto = `R$ ${valorRestante.toFixed(2)}`;
 
-        if (isPlano) {
-            tipoPagtoTexto = `Assinatura VIP (Semana ${semanaPlano || '1'})`;
-            restanteBarbeiroTexto = "R$ 0,00 (Plano VIP - Isento)";
-        } else if (modalidade === 'total' || valorRestante === 0) {
-            tipoPagtoTexto = `Valor Integral Pago Online (R$ ${valorPago.toFixed(2)})`;
-            restanteBarbeiroTexto = "R$ 0,00 (Totalmente Quitado)";
+            if (isPlano) {
+                tipoPagtoTexto = `Assinatura VIP (Semana ${semanaPlano || '1'})`;
+                restanteBarbeiroTexto = "R$ 0,00 (Plano VIP - Isento)";
+            } else if (modalidade === 'total' || valorRestante === 0) {
+                tipoPagtoTexto = `Valor Integral Pago Online (R$ ${valorPago.toFixed(2)})`;
+                restanteBarbeiroTexto = "R$ 0,00 (Totalmente Quitado)";
+            }
+
+            const msgBarbeiro = `*EMAÚS Barbearia - Novo Agendamento* 📅\n\n` +
+                `• *Cliente:* ${cliente || 'Cliente'}\n` +
+                `• *Telefone:* ${telefone || 'Não informado'}\n` +
+                `• *Serviço:* ${servico || 'Corte'} (Total R$ ${precoTotal.toFixed(2)})\n` +
+                `• *Data/Hora:* ${dataFormatada}\n` +
+                `• *Pagamento Online:* ${tipoPagtoTexto}\n` +
+                `• *Restante a Receber no Atendimento:* ${restanteBarbeiroTexto}`;
+
+            envioBarbeiro = await enviarMensagemWhatsApp(numBarbeiro, msgBarbeiro);
         }
-
-        const msgBarbeiro = `*EMAÚS Barbearia - Novo Agendamento* 📅\n\n` +
-            `• *Cliente:* ${cliente || 'Cliente'}\n` +
-            `• *Telefone:* ${telefone || 'Não informado'}\n` +
-            `• *Serviço:* ${servico || 'Corte'} (Total R$ ${precoTotal.toFixed(2)})\n` +
-            `• *Data/Hora:* ${dataFormatada}\n` +
-            `• *Pagamento Online:* ${tipoPagtoTexto}\n` +
-            `• *Restante a Receber no Atendimento:* ${restanteBarbeiroTexto}`;
-
-        const envioBarbeiro = await enviarMensagemWhatsApp(numBarbeiro, msgBarbeiro);
 
         // 2. Mensagem de Confirmação para o Cliente (se tiver telefone)
         let envioCliente = null;
@@ -1246,7 +1260,7 @@ app.post('/api/whatsapp/notificar-cancelamento', async (req, res) => {
         } = req.body;
 
         const dataFormatada = dataHora ? dataHora.replace('T', ' às ') : 'Data não informada';
-        const numBarbeiro = whatsappBarbeiro || '5511953789095';
+        const numBarbeiro = resolverNumeroBarbeiro(whatsappBarbeiro);
 
         // 1. Mensagem para o Barbeiro
         let statusEstornoTexto = "Sem estorno (Cancelamento fora do prazo de 3h)";
@@ -1264,7 +1278,10 @@ app.post('/api/whatsapp/notificar-cancelamento', async (req, res) => {
             `• *Cancelado por:* ${canceladoPor === 'barbeiro' ? 'Barbeiro / Estabelecimento' : 'Cliente'}\n` +
             `• *Status:* ${statusEstornoTexto}`;
 
-        const envioBarbeiro = await enviarMensagemWhatsApp(numBarbeiro, msgBarbeiro);
+        let envioBarbeiro = null;
+        if (numBarbeiro) {
+            envioBarbeiro = await enviarMensagemWhatsApp(numBarbeiro, msgBarbeiro);
+        }
 
         // 2. Mensagem para o Cliente (se tiver telefone)
         let envioCliente = null;
@@ -1297,7 +1314,7 @@ app.post('/api/whatsapp/notificar-cancelamento', async (req, res) => {
 app.post('/api/whatsapp/notificar-compra-plano', async (req, res) => {
     try {
         const { cliente, telefone, nomePlano, preco, dataFim, whatsappBarbeiro } = req.body;
-        const numBarbeiro = whatsappBarbeiro || '5511953789095';
+        const numBarbeiro = resolverNumeroBarbeiro(whatsappBarbeiro);
 
         // 1. Mensagem para o Barbeiro
         const msgBarbeiro = `*EMAÚS Barbearia - Nova Assinatura VIP!* 👑\n\n` +
@@ -1308,7 +1325,10 @@ app.post('/api/whatsapp/notificar-compra-plano', async (req, res) => {
             `• *Valor Pago:* R$ ${Number(preco || 0).toFixed(2)}\n` +
             `• *Validade:* 30 dias (4 atendimentos)`;
 
-        const envioBarbeiro = await enviarMensagemWhatsApp(numBarbeiro, msgBarbeiro);
+        let envioBarbeiro = null;
+        if (numBarbeiro) {
+            envioBarbeiro = await enviarMensagemWhatsApp(numBarbeiro, msgBarbeiro);
+        }
 
         // 2. Mensagem de Boas-Vindas para o Cliente VIP
         let envioCliente = null;
@@ -1344,7 +1364,7 @@ app.post('/api/whatsapp/notificar-compra-produto', async (req, res) => {
             whatsappBarbeiro
         } = req.body;
 
-        const numBarbeiro = whatsappBarbeiro || '5511953789095';
+        const numBarbeiro = resolverNumeroBarbeiro(whatsappBarbeiro);
         const totalNum = Number(valorTotal || 0);
 
         let itensTexto = '';
@@ -1365,7 +1385,10 @@ app.post('/api/whatsapp/notificar-compra-produto', async (req, res) => {
             `• *Total Pago:* R$ ${totalNum.toFixed(2)} (${metodoPagamento || 'Pix'})\n` +
             `• *Status:* ✅ Pagamento Aprovado - Separar para Retirada!`;
 
-        const envioBarbeiro = await enviarMensagemWhatsApp(numBarbeiro, msgBarbeiro);
+        let envioBarbeiro = null;
+        if (numBarbeiro) {
+            envioBarbeiro = await enviarMensagemWhatsApp(numBarbeiro, msgBarbeiro);
+        }
 
         // 2. Mensagem de Confirmação para o Cliente
         let envioCliente = null;
