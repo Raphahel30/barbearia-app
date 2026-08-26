@@ -149,6 +149,67 @@
         </div>
     </div>
 
+    <!-- MODAL DE GESTÃO DO PERFIL DO CLIENTE -->
+    <div id="modalPerfilCliente" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div class="bg-zinc-900 border border-zinc-700 hover:border-dourado/60 p-6 sm:p-7 rounded-3xl max-w-md w-full space-y-4 shadow-2xl relative my-6 animate-fade-in transition duration-200">
+            <button id="btnFecharModalPerfilCliente" type="button" class="absolute top-4 right-4 text-zinc-400 hover:text-white text-xl font-bold transition cursor-pointer">&times;</button>
+            
+            <div class="text-center space-y-1">
+                <div class="w-14 h-14 bg-dourado/10 border border-dourado/30 rounded-2xl flex items-center justify-center text-3xl mx-auto shadow-inner">
+                    👤
+                </div>
+                <span class="text-[10px] font-bold text-dourado uppercase tracking-widest bg-dourado/10 px-3 py-1 rounded-full border border-dourado/20 inline-block mt-2">
+                    Minha Conta
+                </span>
+                <h2 class="text-xl font-bold text-white uppercase tracking-wide mt-1">Meu Perfil</h2>
+                <p class="text-xs text-zinc-400">Atualize seus dados pessoais e informações de contato.</p>
+            </div>
+
+            <form id="formPerfilCliente" class="space-y-3.5 pt-2 text-left text-xs">
+                <!-- Nome Completo -->
+                <div>
+                    <label class="block font-semibold text-zinc-300 uppercase mb-1">Nome Completo *</label>
+                    <input type="text" id="perfilNomeCliente" required placeholder="Seu nome completo" class="w-full px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white focus:outline-none focus:border-dourado font-medium">
+                </div>
+
+                <!-- Telefone / WhatsApp -->
+                <div>
+                    <label class="block font-semibold text-zinc-300 uppercase mb-1">WhatsApp / Telefone *</label>
+                    <input type="tel" id="perfilTelefoneCliente" required placeholder="(11) 99999-9999" class="w-full px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white focus:outline-none focus:border-dourado font-medium">
+                    <p class="text-[10px] text-zinc-500 mt-0.5">Usado para o envio de confirmações e lembretes de agendamento.</p>
+                </div>
+
+                <!-- E-mail de Acesso -->
+                <div>
+                    <label class="block font-semibold text-zinc-300 uppercase mb-1">E-mail Cadastrado</label>
+                    <input type="email" id="perfilEmailCliente" readonly class="w-full px-3.5 py-2.5 bg-zinc-950 rounded-lg border border-zinc-800 text-zinc-400 cursor-not-allowed font-mono text-[11px]">
+                </div>
+
+                <!-- Card de Redefinição de Senha -->
+                <div class="bg-black/60 p-3.5 rounded-xl border border-zinc-800 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-zinc-300 text-xs">🔒 Senha de Acesso</span>
+                        <button id="btnTrocarSenhaPerfil" type="button" class="text-[11px] text-dourado hover:underline font-bold transition cursor-pointer">
+                            Alterar Senha
+                        </button>
+                    </div>
+                    <p id="msgTrocaSenhaPerfil" class="text-[11px] text-zinc-400 leading-tight"></p>
+                </div>
+
+                <p id="msgPerfilStatus" class="text-xs text-center font-medium min-h-[16px]"></p>
+
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <button id="btnCancelarPerfilCliente" type="button" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-2.5 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button id="btnSalvarPerfilCliente" type="submit" class="bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-2.5 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-1">
+                        <span>💾</span> Salvar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div id="clientDashboard" class="hidden max-w-2xl w-full mx-auto bg-zinc-900/95 backdrop-blur p-6 sm:p-8 rounded-2xl shadow-2xl border border-zinc-800 space-y-6 my-4">
         
         <!-- Header da Área do Cliente com Logo -->
@@ -164,6 +225,10 @@
                 </div>
             </div>
             <div class="flex items-center gap-2 self-end sm:self-center">
+                <button id="btnAbrirPerfilCliente" class="text-xs bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 hover:border-dourado px-3 py-1.5 rounded-xl transition font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-md" title="Gerenciar meus dados cadastrados">
+                    <span>👤</span>
+                    <span>Meu Perfil</span>
+                </button>
                 <button id="btnInstalarAppCliente" class="text-xs bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-500/70 px-3.5 py-1.5 rounded-xl transition font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-md" title="Instalar aplicativo na tela inicial">
                     <span>📲</span>
                     <span id="labelInstalarClienteHeader">Instalar App</span>
@@ -1289,11 +1354,18 @@
         }
 
         let usuarioPendenteGoogle = null;
+        let dadosUsuarioAtual = null;
 
         async function inicializarDashboardCliente(user, dadosUsuario) {
             authScreen.classList.add('hidden');
             clientDashboard.classList.remove('hidden');
-            const nome = (dadosUsuario && dadosUsuario.nome) ? dadosUsuario.nome : (user.displayName || user.email);
+            dadosUsuarioAtual = {
+                uid: user.uid,
+                email: user.email || '',
+                nome: (dadosUsuario && dadosUsuario.nome) ? dadosUsuario.nome : (user.displayName || user.email || ''),
+                telefone: (dadosUsuario && dadosUsuario.telefone) ? dadosUsuario.telefone : ''
+            };
+            const nome = dadosUsuarioAtual.nome;
             clientWelcome.innerText = `Olá, ${nome}!`;
             carregarPainelCliente(user.uid);
             carregarPainelPlanosCliente(user.uid);
@@ -1428,6 +1500,152 @@
         });
 
         // ==========================================
+        // GESTÃO DO PERFIL DO CLIENTE (DADOS CADASTRAIS)
+        // ==========================================
+        const modalPerfilCliente = document.getElementById('modalPerfilCliente');
+        const btnAbrirPerfilCliente = document.getElementById('btnAbrirPerfilCliente');
+        const btnFecharModalPerfilCliente = document.getElementById('btnFecharModalPerfilCliente');
+        const btnCancelarPerfilCliente = document.getElementById('btnCancelarPerfilCliente');
+        const formPerfilCliente = document.getElementById('formPerfilCliente');
+        const perfilNomeCliente = document.getElementById('perfilNomeCliente');
+        const perfilTelefoneCliente = document.getElementById('perfilTelefoneCliente');
+        const perfilEmailCliente = document.getElementById('perfilEmailCliente');
+        const msgPerfilStatus = document.getElementById('msgPerfilStatus');
+        const btnTrocarSenhaPerfil = document.getElementById('btnTrocarSenhaPerfil');
+        const msgTrocaSenhaPerfil = document.getElementById('msgTrocaSenhaPerfil');
+
+        function abrirModalPerfilCliente() {
+            if (!auth.currentUser) return;
+            if (perfilNomeCliente) perfilNomeCliente.value = dadosUsuarioAtual?.nome || auth.currentUser.displayName || '';
+            if (perfilTelefoneCliente) perfilTelefoneCliente.value = dadosUsuarioAtual?.telefone || '';
+            if (perfilEmailCliente) perfilEmailCliente.value = auth.currentUser.email || '';
+            if (msgPerfilStatus) { msgPerfilStatus.innerText = ''; msgPerfilStatus.className = 'text-xs text-center font-medium min-h-[16px]'; }
+            if (msgTrocaSenhaPerfil) { msgTrocaSenhaPerfil.innerText = ''; }
+            if (modalPerfilCliente) modalPerfilCliente.classList.remove('hidden');
+        }
+
+        function fecharModalPerfilCliente() {
+            if (modalPerfilCliente) modalPerfilCliente.classList.add('hidden');
+        }
+
+        btnAbrirPerfilCliente?.addEventListener('click', abrirModalPerfilCliente);
+        btnFecharModalPerfilCliente?.addEventListener('click', fecharModalPerfilCliente);
+        btnCancelarPerfilCliente?.addEventListener('click', fecharModalPerfilCliente);
+
+        formPerfilCliente?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!auth.currentUser) return;
+
+            const novoNome = perfilNomeCliente?.value.trim();
+            const novoTelefone = perfilTelefoneCliente?.value.trim();
+
+            if (!novoNome || !novoTelefone) {
+                if (msgPerfilStatus) {
+                    msgPerfilStatus.className = "text-xs text-center font-medium text-red-400";
+                    msgPerfilStatus.innerText = "Por favor, preencha o Nome e WhatsApp!";
+                }
+                return;
+            }
+
+            const btnSalvar = document.getElementById('btnSalvarPerfilCliente');
+            if (btnSalvar) {
+                btnSalvar.disabled = true;
+                btnSalvar.innerHTML = `<span>⏳</span> Salvando...`;
+            }
+            if (msgPerfilStatus) {
+                msgPerfilStatus.className = "text-xs text-center font-medium text-amber-300";
+                msgPerfilStatus.innerText = "Atualizando seus dados no sistema...";
+            }
+
+            try {
+                const dadosAtualizados = {
+                    nome: novoNome,
+                    telefone: novoTelefone,
+                    email: auth.currentUser.email || '',
+                    atualizadoEm: new Date().toISOString()
+                };
+
+                await setDoc(doc(db, "usuarios", auth.currentUser.uid), dadosAtualizados, { merge: true });
+
+                if (dadosUsuarioAtual) {
+                    dadosUsuarioAtual.nome = novoNome;
+                    dadosUsuarioAtual.telefone = novoTelefone;
+                } else {
+                    dadosUsuarioAtual = { uid: auth.currentUser.uid, ...dadosAtualizados };
+                }
+
+                if (clientWelcome) {
+                    clientWelcome.innerText = `Olá, ${novoNome}!`;
+                }
+
+                // Atualiza também o input de agendamento se estiver preenchido
+                const nomeInputAg = document.getElementById('clienteNome');
+                if (nomeInputAg) nomeInputAg.value = novoNome;
+                const telInputAg = document.getElementById('clienteTelefone');
+                if (telInputAg) telInputAg.value = novoTelefone;
+
+                if (msgPerfilStatus) {
+                    msgPerfilStatus.className = "text-xs text-center font-bold text-green-400";
+                    msgPerfilStatus.innerText = "✅ Dados atualizados com sucesso!";
+                }
+
+                setTimeout(() => {
+                    fecharModalPerfilCliente();
+                    if (btnSalvar) {
+                        btnSalvar.disabled = false;
+                        btnSalvar.innerHTML = `<span>💾</span> Salvar`;
+                    }
+                }, 1200);
+
+            } catch (err) {
+                console.error("Erro ao salvar perfil do cliente:", err);
+                if (msgPerfilStatus) {
+                    msgPerfilStatus.className = "text-xs text-center font-medium text-red-400";
+                    msgPerfilStatus.innerText = "Erro ao atualizar: " + err.message;
+                }
+                if (btnSalvar) {
+                    btnSalvar.disabled = false;
+                    btnSalvar.innerHTML = `<span>💾</span> Salvar`;
+                }
+            }
+        });
+
+        btnTrocarSenhaPerfil?.addEventListener('click', async () => {
+            if (!auth.currentUser || !auth.currentUser.email) {
+                if (msgTrocaSenhaPerfil) msgTrocaSenhaPerfil.innerText = "E-mail não identificado.";
+                return;
+            }
+
+            btnTrocarSenhaPerfil.disabled = true;
+            btnTrocarSenhaPerfil.innerText = "Enviando...";
+            if (msgTrocaSenhaPerfil) {
+                msgTrocaSenhaPerfil.className = "text-[11px] text-amber-300 font-medium";
+                msgTrocaSenhaPerfil.innerText = "Solicitando link de redefinição de senha...";
+            }
+
+            try {
+                await sendPasswordResetEmail(auth, auth.currentUser.email);
+                if (msgTrocaSenhaPerfil) {
+                    msgTrocaSenhaPerfil.className = "text-[11px] text-green-400 font-bold";
+                    msgTrocaSenhaPerfil.innerText = "✅ E-mail enviado! Verifique sua caixa de entrada.";
+                }
+                btnTrocarSenhaPerfil.innerText = "Link Enviado ✓";
+                setTimeout(() => {
+                    btnTrocarSenhaPerfil.disabled = false;
+                    btnTrocarSenhaPerfil.innerText = "Alterar Senha";
+                }, 5000);
+            } catch (err) {
+                console.error("Erro ao solicitar troca de senha pelo perfil:", err);
+                if (msgTrocaSenhaPerfil) {
+                    msgTrocaSenhaPerfil.className = "text-[11px] text-red-400 font-medium";
+                    msgTrocaSenhaPerfil.innerText = "Erro: " + err.message;
+                }
+                btnTrocarSenhaPerfil.disabled = false;
+                btnTrocarSenhaPerfil.innerText = "Tentar Novamente";
+            }
+        });
+
+        // ==========================================
         // MÁSCARAS DE DIGITAÇÃO AMIGÁVEIS (UX)
         // ==========================================
         function aplicarMascaraTelefone(input) {
@@ -1449,6 +1667,7 @@
 
         aplicarMascaraTelefone(document.getElementById('regTelefone'));
         aplicarMascaraTelefone(document.getElementById('googleTelefoneWhatsApp'));
+        aplicarMascaraTelefone(document.getElementById('perfilTelefoneCliente'));
 
         const inputCartaoNumero = document.getElementById('cartaoNumero');
         if (inputCartaoNumero) {
