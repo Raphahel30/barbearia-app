@@ -3669,7 +3669,7 @@
                             fecharModalReembolso();
                         }, 2500);
                     } else {
-                        throw new Error(resData.message || "Erro ao processar estorno.");
+                        throw new Error(resData.error || resData.message || "Erro ao processar estorno.");
                     }
                 } catch (errEst) {
                     console.error("Erro no estorno:", errEst);
