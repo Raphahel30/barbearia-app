@@ -1776,6 +1776,25 @@
             document.body.classList.add('overflow-hidden');
         }
 
+        // ==========================================
+        // SISTEMA DE FEEDBACK TÁTIL / HAPTIC TOUCH API
+        // ==========================================
+        window.vibrarDispositivo = function(tipo = 'clique') {
+            try {
+                if ('vibrate' in navigator) {
+                    if (tipo === 'sucesso') {
+                        navigator.vibrate([40, 60, 40]);
+                    } else if (tipo === 'copiar') {
+                        navigator.vibrate([50]);
+                    } else if (tipo === 'alerta') {
+                        navigator.vibrate([100, 50, 100]);
+                    } else {
+                        navigator.vibrate(25);
+                    }
+                }
+            } catch (e) {}
+        };
+
         const btnAbrirSidebar = document.getElementById('btnAbrirSidebar');
         const btnFecharSidebar = document.getElementById('btnFecharSidebar');
         const sidebarBackdrop = document.getElementById('sidebarBackdrop');
@@ -1785,6 +1804,7 @@
         if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', fecharSidebarMobile);
 
         window.mudarAba = function(nomeAba) {
+            if (window.vibrarDispositivo) window.vibrarDispositivo('clique');
             Object.keys(tabs).forEach(k => {
                 if (k === nomeAba) {
                     if (tabs[k].view) tabs[k].view.classList.remove('hidden');
