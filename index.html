@@ -2875,6 +2875,7 @@
                             estornoMsg = `\n\n💸 ESTORNO AUTOMÁTICO CONCLUÍDO: O valor de R$ ${valorPago.toFixed(2)} foi devolvido com sucesso para a sua conta pelo Mercado Pago!`;
                         } else {
                             console.warn("Estorno automático via Mercado Pago:", resEstData.error || resEstData.message);
+                            estornoMsg = `\n\nℹ️ O agendamento foi cancelado com sucesso. O estorno da taxa de R$ ${valorPago.toFixed(2)} será conferido e efetuado pelo estabelecimento.`;
                         }
                     } catch (errEst) {
                         console.error("Erro na requisição de estorno:", errEst);

@@ -913,21 +913,74 @@ app.post('/api/pagamento/estorno', async (req, res) => {
             }
         }
 
+        const transactionAmount = paymentInfo?.transaction_amount ? Number(paymentInfo.transaction_amount) : 0;
+        const requestedAmount = amount ? Number(parseFloat(amount).toFixed(2)) : 0;
+        const ehEstornoTotal = (!requestedAmount || (transactionAmount > 0 && requestedAmount >= transactionAmount));
+
         let refundResult = null;
 
-        // Tenta primeiro via SDK
         try {
-            if (amount && Number(amount) > 0) {
-                refundResult = await refundClient.create({
-                    payment_id: cleanPaymentId,
-                    body: { amount: Number(parseFloat(amount).toFixed(2)) }
-                });
+            if (ehEstornoTotal) {
+                // Estorno Total nativo do Pix / Cartão (sem passar amount fracionado para máxima compatibilidade)
+                try {
+                    refundResult = await refundClient.total({ payment_id: cleanPaymentId });
+                } catch (sdkTotErr) {
+                    console.warn('[Estorno Total SDK falhou, tentando REST API]:', sdkTotErr.message);
+                    const restRes = await fetch(`https://api.mercadopago.com/v1/payments/${cleanPaymentId}/refunds`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${activeAccessToken}`,
+                            'Content-Type': 'application/json',
+                            'X-Idempotency-Key': `refund_${cleanPaymentId}_${Date.now()}`
+                        },
+                        body: JSON.stringify({})
+                    });
+                    const restData = await restRes.json();
+                    if (!restRes.ok) {
+                        throw new Error(restData.message || restData.error || 'Falha ao processar estorno total no Mercado Pago');
+                    }
+                    refundResult = restData;
+                }
             } else {
-                refundResult = await refundClient.total({ payment_id: cleanPaymentId });
+                // Estorno Parcial
+                try {
+                    refundResult = await refundClient.create({
+                        payment_id: cleanPaymentId,
+                        body: { amount: requestedAmount }
+                    });
+                } catch (sdkParcErr) {
+                    console.warn('[Estorno Parcial SDK falhou, tentando REST API]:', sdkParcErr.message);
+                    const restRes = await fetch(`https://api.mercadopago.com/v1/payments/${cleanPaymentId}/refunds`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${activeAccessToken}`,
+                            'Content-Type': 'application/json',
+                            'X-Idempotency-Key': `refund_${cleanPaymentId}_${Date.now()}`
+                        },
+                        body: JSON.stringify({ amount: requestedAmount })
+                    });
+                    const restData = await restRes.json();
+                    if (!restRes.ok) {
+                        throw new Error(restData.message || restData.error || 'Falha ao processar estorno parcial no Mercado Pago');
+                    }
+                    refundResult = restData;
+                }
             }
-        } catch (sdkErr) {
-            console.warn('[Estorno SDK Falhou, tentando via REST API]:', sdkErr.message);
-            const errStr = (sdkErr.message || '').toLowerCase();
+
+            console.log(`[Estorno Sucesso] Pagamento ${cleanPaymentId} estornado:`, refundResult?.status || 'Aprovado');
+
+            return res.json({
+                success: true,
+                status: refundResult?.status || 'approved',
+                refundId: refundResult?.id,
+                amount: refundResult?.amount || amount,
+                message: 'Estorno realizado com sucesso no Mercado Pago!'
+            });
+
+        } catch (error) {
+            console.error('Erro ao processar estorno no Mercado Pago:', error);
+            const errStr = (error.message || '').toLowerCase();
+            
             if (errStr.includes('already refunded') || errStr.includes('total_refunded_amount') || errStr.includes('ja foi estornado')) {
                 return res.json({
                     success: true,
@@ -936,47 +989,22 @@ app.post('/api/pagamento/estorno', async (req, res) => {
                 });
             }
 
-            // Fallback direto para REST API
-            const restRes = await fetch(`https://api.mercadopago.com/v1/payments/${cleanPaymentId}/refunds`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${activeAccessToken}`,
-                    'Content-Type': 'application/json',
-                    'X-Idempotency-Key': `refund_${cleanPaymentId}_${Date.now()}`
-                },
-                body: (amount && Number(amount) > 0) ? JSON.stringify({ amount: Number(parseFloat(amount).toFixed(2)) }) : JSON.stringify({})
-            });
-            const restData = await restRes.json();
-
-            if (!restRes.ok) {
-                const restErrStr = JSON.stringify(restData).toLowerCase();
-                if (restErrStr.includes('already refunded') || restErrStr.includes('total_refunded_amount') || restErrStr.includes('ja foi estornado')) {
-                    return res.json({
-                        success: true,
-                        status: 'approved',
-                        message: 'Este pagamento já havia sido estornado no Mercado Pago.'
-                    });
-                }
-                throw new Error(restData.message || restData.error || 'Falha ao estornar no Mercado Pago');
+            let msgAmigavel = error.message || 'Erro ao processar estorno no Mercado Pago.';
+            if (errStr.includes('unauthorized') || errStr.includes('policy') || errStr.includes('insufficient_amount') || errStr.includes('saldo')) {
+                msgAmigavel = 'O Mercado Pago não autorizou o estorno automático. Verifique se a sua conta do Mercado Pago possui saldo disponível suficiente ou realize a devolução manualmente pelo aplicativo do Mercado Pago.';
             }
-            refundResult = restData;
+
+            return res.status(400).json({
+                success: false,
+                error: msgAmigavel,
+                podeEstornarManualmente: true
+            });
         }
-
-        console.log(`[Estorno Sucesso] Pagamento ${cleanPaymentId} estornado:`, refundResult?.status || 'Aprovado');
-
-        return res.json({
-            success: true,
-            status: refundResult?.status || 'approved',
-            refundId: refundResult?.id,
-            amount: refundResult?.amount || amount,
-            message: 'Estorno realizado com sucesso no Mercado Pago!'
-        });
-
-    } catch (error) {
-        console.error('Erro ao processar estorno no Mercado Pago:', error);
+    } catch (errGeral) {
+        console.error('Erro geral no endpoint de estorno:', errGeral);
         return res.status(500).json({
             success: false,
-            error: error.message || 'Erro ao processar estorno no Mercado Pago.'
+            error: errGeral.message || 'Erro interno no servidor de estorno.'
         });
     }
 });

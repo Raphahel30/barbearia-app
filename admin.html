@@ -3674,8 +3674,8 @@
                 } catch (errEst) {
                     console.error("Erro no estorno:", errEst);
                     if (msgReembolsoStatus) {
-                        msgReembolsoStatus.className = "text-xs text-center font-medium text-red-400";
-                        msgReembolsoStatus.innerText = "Erro ao efetuar estorno: " + errEst.message;
+                        msgReembolsoStatus.className = "text-xs text-center font-medium text-amber-300 bg-amber-950/50 p-3 rounded-xl border border-amber-800/80 leading-relaxed text-left space-y-1";
+                        msgReembolsoStatus.innerHTML = `<span class="font-bold text-red-400 block">⚠️ Não foi possível estornar automaticamente:</span> <span>${errEst.message}</span>`;
                     }
                     btnExecutarEstornoModal.disabled = false;
                     btnExecutarEstornoModal.innerHTML = `<span>💸 Tentar Novamente</span>`;
