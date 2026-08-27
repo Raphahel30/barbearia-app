@@ -1129,6 +1129,7 @@ app.post('/api/whatsapp/notificar-agendamento', async (req, res) => {
             preco, 
             taxaReservaPaga, 
             modalidade,
+            produtos,
             isPlano, 
             semanaPlano,
             whatsappBarbeiro 
@@ -1140,6 +1141,13 @@ app.post('/api/whatsapp/notificar-agendamento', async (req, res) => {
         const precoTotal = Number(preco || 0);
         const valorPago = Number(taxaReservaPaga !== undefined ? taxaReservaPaga : (isPlano ? 0 : 10));
         const valorRestante = Math.max(0, precoTotal - valorPago);
+
+        let produtosTextoBarbeiro = "";
+        let produtosTextoCliente = "";
+        if (Array.isArray(produtos) && produtos.length > 0) {
+            produtosTextoBarbeiro = `\n• *Produtos para Entregar no Balcão:* ` + produtos.map(p => `${p.quantidade}x ${p.nome}${p.volumeUnidade ? ` (${p.volumeUnidade})` : ''} (R$ ${Number(p.subtotal || (p.preco * p.quantidade)).toFixed(2)})`).join(', ');
+            produtosTextoCliente = `• *Produtos Adicionados (Retirar no Balcão):* ` + produtos.map(p => `${p.quantidade}x ${p.nome} (R$ ${Number(p.subtotal || (p.preco * p.quantidade)).toFixed(2)})`).join(', ') + `\n`;
+        }
 
         // 1. Mensagem para o Barbeiro (enviada apenas se houver número conectado ou configurado)
         let envioBarbeiro = null;
@@ -1161,7 +1169,8 @@ app.post('/api/whatsapp/notificar-agendamento', async (req, res) => {
                 `• *Serviço:* ${servico || 'Corte'} (Total R$ ${precoTotal.toFixed(2)})\n` +
                 `• *Data/Hora:* ${dataFormatada}\n` +
                 `• *Pagamento Online:* ${tipoPagtoTexto}\n` +
-                `• *Restante a Receber no Atendimento:* ${restanteBarbeiroTexto}`;
+                `• *Restante a Receber no Atendimento:* ${restanteBarbeiroTexto}` +
+                produtosTextoBarbeiro;
 
             envioBarbeiro = await enviarMensagemWhatsApp(numBarbeiro, msgBarbeiro);
         }
@@ -1185,6 +1194,7 @@ app.post('/api/whatsapp/notificar-agendamento', async (req, res) => {
                 `Seu agendamento foi confirmado com sucesso.\n\n` +
                 `• *Serviço:* ${servico || 'Corte'}\n` +
                 `• *Data e Horário:* ${dataFormatada}\n` +
+                produtosTextoCliente +
                 saldoClienteTexto +
                 `• *Local:* EMAÚS Barbearia\n\n` +
                 `Agradecemos a preferência. Solicitamos a gentileza de comparecer com alguns minutos de antecedência.\n\n` +

@@ -2618,18 +2618,53 @@
             });
         }
 
+        function atualizarEstiloItemCross(itemDiv, qtd) {
+            if (!itemDiv) return;
+            const precoUnit = parseFloat(itemDiv.getAttribute('data-preco') || 0);
+            const labelSub = itemDiv.querySelector('.label-subtotal-item-cross');
+
+            if (qtd > 0) {
+                itemDiv.classList.add('border-amber-500/70', 'bg-amber-950/20');
+                itemDiv.classList.remove('border-zinc-800', 'bg-zinc-900/90');
+                if (labelSub) {
+                    labelSub.innerHTML = `<span class="text-amber-300 font-bold">Subtotal: R$ ${(precoUnit * qtd).toFixed(2)} (${qtd} un.)</span>`;
+                }
+            } else {
+                itemDiv.classList.remove('border-amber-500/70', 'bg-amber-950/20');
+                itemDiv.classList.add('border-zinc-800', 'bg-zinc-900/90');
+                if (labelSub) {
+                    labelSub.innerText = "Adicionar ao corte:";
+                }
+            }
+        }
+
         function obterProdutosCrossSellSelecionados() {
-            const checkboxes = document.querySelectorAll('.checkbox-produto-cross:checked');
+            const itens = document.querySelectorAll('.item-produto-cross');
             const produtos = [];
             let subtotal = 0;
-            checkboxes.forEach(cb => {
-                const id = cb.getAttribute('data-id');
-                const nome = cb.getAttribute('data-nome');
-                const volumeUnidade = cb.getAttribute('data-volume');
-                const preco = parseFloat(cb.getAttribute('data-preco') || 0);
-                produtos.push({ id, nome, volumeUnidade, preco, quantidade: 1 });
-                subtotal += preco;
+
+            itens.forEach(item => {
+                const id = item.getAttribute('data-id');
+                const nome = item.getAttribute('data-nome');
+                const volumeUnidade = item.getAttribute('data-volume') || '';
+                const preco = parseFloat(item.getAttribute('data-preco') || 0);
+                const spanQtd = item.querySelector(`.qtd-produto-cross[data-id="${id}"]`);
+                const quantidade = spanQtd ? parseInt(spanQtd.innerText || '0', 10) : 0;
+
+                if (quantidade > 0) {
+                    const subtotalItem = preco * quantidade;
+                    produtos.push({
+                        id,
+                        nome,
+                        volumeUnidade,
+                        preco,
+                        quantidade,
+                        subtotal: subtotalItem
+                    });
+                    subtotal += subtotalItem;
+                }
             });
+
             return { produtos, subtotal };
         }
 
@@ -2671,7 +2706,8 @@
             // Atualiza badge de produtos
             if (badgeStatusProd && badgeContadorProd) {
                 if (produtosCross.length > 0) {
-                    badgeStatusProd.innerText = `${produtosCross.length} produto(s) adicionado(s)`;
+                    const totalItens = produtosCross.reduce((acc, p) => acc + p.quantidade, 0);
+                    badgeStatusProd.innerText = `${totalItens} produto(s) escolhido(s): ${produtosCross.map(p => `${p.quantidade}x ${p.nome}`).join(', ')}`;
                     badgeStatusProd.className = "text-[11px] text-amber-300 font-semibold truncate block";
                     badgeContadorProd.innerText = `+ R$ ${subtotalProdutos.toFixed(2)}`;
                     badgeContadorProd.classList.remove('hidden');
@@ -2919,9 +2955,26 @@
                     } catch (errEst) {
                         console.error("Erro na requisição de estorno:", errEst);
                     }
+                // 2. Devolve produtos ao estoque caso existam
+                if (ag && Array.isArray(ag.produtos) && ag.produtos.length > 0) {
+                    for (const p of ag.produtos) {
+                        if (p.id && p.quantidade > 0) {
+                            try {
+                                const prodSnap = await getDoc(doc(db, "produtos", p.id));
+                                if (prodSnap.exists()) {
+                                    const estAtual = Number(prodSnap.data().estoque || 0);
+                                    await updateDoc(doc(db, "produtos", p.id), {
+                                        estoque: estAtual + p.quantidade,
+                                        atualizadoEm: new Date().toISOString()
+                                    });
+                                }
+                            } catch (eEst) { console.warn("Erro ao devolver estoque no cancelamento:", eEst); }
+                        }
+                    }
+                    carregarProdutosCliente().catch(e => console.warn(e));
                 }
 
-                // 2. Exclui o agendamento
+                // 3. Exclui o agendamento
                 await deleteDoc(doc(db, "agendamentos", id));
 
                 // 3. Atualiza o crédito do plano VIP
@@ -3409,11 +3462,12 @@
 
             try {
                 if (tipoPagamentoAtual === 'agendamento' && dadosPagamentoPendente) {
-                    const { servico, preco, data, horario, modalidade, valorCobrado, extras } = dadosPagamentoPendente;
+                    const { servico, preco, data, horario, modalidade, valorCobrado, extras, produtos } = dadosPagamentoPendente;
                     const msgStatus = document.getElementById('msgStatus');
                     const dataHoraCompleta = `${data}T${horario}`;
                     const valorEfetivoPago = valorCobrado !== undefined ? valorCobrado : (modalidade === 'total' ? preco : 10.00);
                     const precoTotalNum = Number(preco || 0);
+                    const listaProdutosAg = Array.isArray(produtos) ? produtos : [];
 
                     // Idempotência: Checa se já existe agendamento deste usuário na mesma data/hora
                     const queryExistente = await getDocs(query(
@@ -3435,6 +3489,45 @@
                         return;
                     }
 
+                    // 1. Debita o estoque de cada produto escolhido no Firestore e registra a venda
+                    if (listaProdutosAg.length > 0) {
+                        for (const p of listaProdutosAg) {
+                            if (p.id && p.quantidade > 0) {
+                                try {
+                                    const prodSnap = await getDoc(doc(db, "produtos", p.id));
+                                    if (prodSnap.exists()) {
+                                        const estAtual = Number(prodSnap.data().estoque || 0);
+                                        const novoEstoque = Math.max(0, estAtual - p.quantidade);
+                                        await updateDoc(doc(db, "produtos", p.id), {
+                                            estoque: novoEstoque,
+                                            atualizadoEm: new Date().toISOString()
+                                        });
+                                    }
+                                    await addDoc(collection(db, "comprasProdutos"), {
+                                        produtoId: p.id,
+                                        produtoNome: p.nome,
+                                        volumeUnidade: p.volumeUnidade || '',
+                                        quantidade: p.quantidade,
+                                        valorUnitario: p.preco,
+                                        valorTotal: p.subtotal || (p.preco * p.quantidade),
+                                        clienteId: user.uid,
+                                        clienteNome: nomeCliente,
+                                        clienteTelefone: telefoneCliente,
+                                        idPagamento: paymentId,
+                                        metodoPagamento: metodo,
+                                        origem: 'agendamento_upsell',
+                                        status: 'aprovado',
+                                        dataCompra: new Date().toISOString()
+                                    });
+                                } catch (errProdEst) {
+                                    console.warn("Aviso ao debitar estoque no agendamento:", errProdEst);
+                                }
+                            }
+                        }
+                        // Sincroniza a loja e o upsell imediatamente
+                        carregarProdutosCliente().catch(e => console.warn(e));
+                    }
+
                     // Se for agendamento de mensalista com extras contratados
                     if (dadosPagamentoPendente.isPlanoMensalistaComExtras) {
                         const semanaPlanoNum = dadosPagamentoPendente.semanaPlano;
@@ -3449,6 +3542,7 @@
                             idPagamento: paymentId,
                             metodoPagamento: metodo,
                             extras: extras || [],
+                            produtos: listaProdutosAg,
                             isPlano: true,
                             semanaPlano: semanaPlanoNum,
                             status: 'confirmado',
@@ -3483,6 +3577,7 @@
                             dataHora: dataHoraCompleta,
                             preco: preco,
                             taxaReservaPaga: valorEfetivoPago,
+                            produtos: listaProdutosAg,
                             isPlano: true,
                             semanaPlano: semanaPlanoNum
                         });
@@ -3501,6 +3596,7 @@
                         idPagamento: paymentId,
                         metodoPagamento: metodo,
                         extras: extras || [],
+                        produtos: listaProdutosAg,
                         status: 'confirmado',
                         dataHora: dataHoraCompleta,
                         criadoEm: new Date()
@@ -3532,6 +3628,7 @@
                         preco: preco,
                         taxaReservaPaga: valorEfetivoPago,
                         modalidade: modalidade || 'taxa',
+                        produtos: listaProdutosAg,
                         isPlano: false
                     });
 
@@ -4170,7 +4267,7 @@
                     }
                 }
 
-                // 2. Renderiza no Cross-sell do Agendamento
+                // 2. Renderiza no Cross-sell do Agendamento com Seletor de Quantidade
                 if (containerCrossSell && secaoCrossSell) {
                     const produtosDisponiveis = lista.filter(p => Number(p.estoque || 0) > 0);
                     if (produtosDisponiveis.length === 0) {
@@ -4180,23 +4277,84 @@
                         secaoCrossSell.classList.remove('hidden');
                         let htmlCross = '';
                         produtosDisponiveis.forEach(p => {
+                            const estoque = Number(p.estoque || 0);
+                            const precoNum = Number(p.preco || 0);
+                            const fotoUrl = p.fotoUrl || '';
+
                             htmlCross += `
-                                <label class="flex items-center justify-between p-2.5 bg-zinc-900/90 hover:bg-zinc-900 border border-zinc-800 rounded-xl cursor-pointer transition select-none group">
-                                    <div class="flex items-center gap-2.5 min-w-0 pr-2">
-                                        <input type="checkbox" class="checkbox-produto-cross rounded bg-black border-zinc-700 text-dourado focus:ring-0 focus:ring-offset-0 cursor-pointer flex-shrink-0" data-id="${p.id}" data-nome="${p.nome}" data-preco="${p.preco}" data-volume="${p.volumeUnidade || ''}">
-                                        <div class="min-w-0">
-                                            <span class="font-bold text-white group-hover:text-amber-200 transition text-xs block truncate">🧴 ${p.nome}</span>
-                                            <p class="text-[10px] text-zinc-400">${p.volumeUnidade || 'Produto'}</p>
+                                <div class="item-produto-cross bg-zinc-900/90 border border-zinc-800 rounded-xl p-3 flex flex-col justify-between gap-2.5 transition hover:border-zinc-700 shadow-sm" data-id="${p.id}" data-nome="${p.nome}" data-preco="${precoNum}" data-volume="${p.volumeUnidade || ''}" data-estoque="${estoque}">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div class="flex items-center gap-2.5 min-w-0">
+                                            <div class="w-9 h-9 rounded-lg bg-black border border-zinc-800 flex items-center justify-center overflow-hidden flex-shrink-0 text-base shadow-inner">
+                                                ${fotoUrl ? `<img src="${fotoUrl}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='🧴'" alt="${p.nome}">` : '🧴'}
+                                            </div>
+                                            <div class="min-w-0">
+                                                <h5 class="font-bold text-white text-xs truncate">${p.nome}</h5>
+                                                <div class="flex items-center gap-1.5 text-[10px] text-zinc-400">
+                                                    <span>${p.volumeUnidade || 'Item'}</span>
+                                                    <span>•</span>
+                                                    <span class="text-emerald-400 font-medium">Estoque: ${estoque} un.</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="text-right flex-shrink-0">
+                                            <span class="font-bold text-dourado font-mono text-xs block">R$ ${precoNum.toFixed(2)}</span>
+                                            <span class="text-[9px] text-zinc-500">por un.</span>
                                         </div>
                                     </div>
-                                    <span class="font-bold text-dourado font-mono text-xs whitespace-nowrap">+ R$ ${Number(p.preco || 0).toFixed(2)}</span>
-                                </label>
+
+                                    <!-- Seletor de Quantidade -->
+                                    <div class="flex items-center justify-between pt-2 border-t border-zinc-800/80">
+                                        <span class="text-[10px] text-zinc-400 font-medium label-subtotal-item-cross">Adicionar ao corte:</span>
+                                        <div class="flex items-center gap-1.5 bg-black p-1 rounded-lg border border-zinc-800">
+                                            <button type="button" class="btn-diminuir-cross w-6 h-6 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold text-xs flex items-center justify-center transition cursor-pointer" data-id="${p.id}" title="Diminuir">−</button>
+                                            <span class="qtd-produto-cross font-mono font-bold text-xs text-dourado min-w-[20px] text-center select-none" data-id="${p.id}">0</span>
+                                            <button type="button" class="btn-aumentar-cross w-6 h-6 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold text-xs flex items-center justify-center transition cursor-pointer" data-id="${p.id}" title="Aumentar">+</button>
+                                        </div>
+                                    </div>
+                                </div>
                             `;
                         });
                         containerCrossSell.innerHTML = htmlCross;
 
-                        containerCrossSell.querySelectorAll('.checkbox-produto-cross').forEach(cb => {
-                            cb.addEventListener('change', atualizarLabelPrecoTotal);
+                        // Listeners de aumento e diminuição de quantidade
+                        containerCrossSell.querySelectorAll('.btn-aumentar-cross').forEach(btn => {
+                            btn.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                const id = btn.getAttribute('data-id');
+                                const itemDiv = btn.closest('.item-produto-cross');
+                                const maxEstoque = parseInt(itemDiv.getAttribute('data-estoque') || '1', 10);
+                                const spanQtd = itemDiv.querySelector(`.qtd-produto-cross[data-id="${id}"]`);
+                                let qtdAtual = parseInt(spanQtd.innerText || '0', 10);
+
+                                if (qtdAtual < maxEstoque) {
+                                    qtdAtual++;
+                                    spanQtd.innerText = qtdAtual;
+                                    atualizarEstiloItemCross(itemDiv, qtdAtual);
+                                    atualizarLabelPrecoTotal();
+                                    if (window.vibrarDispositivo) window.vibrarDispositivo('clique');
+                                } else {
+                                    alert(`Limite de estoque atingido (${maxEstoque} unidades disponíveis).`);
+                                }
+                            });
+                        });
+
+                        containerCrossSell.querySelectorAll('.btn-diminuir-cross').forEach(btn => {
+                            btn.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                const id = btn.getAttribute('data-id');
+                                const itemDiv = btn.closest('.item-produto-cross');
+                                const spanQtd = itemDiv.querySelector(`.qtd-produto-cross[data-id="${id}"]`);
+                                let qtdAtual = parseInt(spanQtd.innerText || '0', 10);
+
+                                if (qtdAtual > 0) {
+                                    qtdAtual--;
+                                    spanQtd.innerText = qtdAtual;
+                                    atualizarEstiloItemCross(itemDiv, qtdAtual);
+                                    atualizarLabelPrecoTotal();
+                                    if (window.vibrarDispositivo) window.vibrarDispositivo('clique');
+                                }
+                            });
                         });
                     }
                 }

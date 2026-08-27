@@ -3751,6 +3751,25 @@
                 // 1. Exclui do Firestore
                 await deleteDoc(doc(db, "agendamentos", id));
 
+                // 1.5 Devolve produtos ao estoque caso existam
+                if (ag && Array.isArray(ag.produtos) && ag.produtos.length > 0) {
+                    for (const p of ag.produtos) {
+                        if (p.id && p.quantidade > 0) {
+                            try {
+                                const prodSnap = await getDoc(doc(db, "produtos", p.id));
+                                if (prodSnap.exists()) {
+                                    const estAtual = Number(prodSnap.data().estoque || 0);
+                                    await updateDoc(doc(db, "produtos", p.id), {
+                                        estoque: estAtual + p.quantidade,
+                                        atualizadoEm: new Date().toISOString()
+                                    });
+                                }
+                            } catch (eEst) { console.warn("Erro ao devolver estoque no admin:", eEst); }
+                        }
+                    }
+                    if (typeof carregarProdutosAdmin === 'function') carregarProdutosAdmin();
+                }
+
                 // 2. Se era do plano VIP, restaura o crédito da semana
                 if (isPlano && userId && semanaPlano && semanaPlano !== 'undefined') {
                     try {
