@@ -1643,6 +1643,36 @@
 
                 await setDoc(doc(db, "usuarios", auth.currentUser.uid), dadosAtualizados, { merge: true });
 
+                // Sincroniza imediatamente com a assinatura VIP do cliente (se houver)
+                try {
+                    const assRef = doc(db, "assinaturasClientes", auth.currentUser.uid);
+                    const assSnap = await getDoc(assRef);
+                    if (assSnap.exists()) {
+                        await updateDoc(assRef, {
+                            cliente: novoNome,
+                            telefone: novoTelefone,
+                            atualizadoEm: new Date().toISOString()
+                        });
+                    }
+                } catch (eAss) { console.warn("Aviso ao sincronizar assinatura:", eAss); }
+
+                // Sincroniza agendamentos ativos do cliente
+                try {
+                    const qAgs = query(collection(db, "agendamentos"), where("userId", "==", auth.currentUser.uid));
+                    const agsSnap = await getDocs(qAgs);
+                    const updates = [];
+                    agsSnap.forEach(dAg => {
+                        const agData = dAg.data();
+                        if (agData.status === 'confirmado' || agData.status === 'pendente') {
+                            updates.push(updateDoc(doc(db, "agendamentos", dAg.id), {
+                                cliente: novoNome,
+                                telefone: novoTelefone
+                            }));
+                        }
+                    });
+                    if (updates.length > 0) await Promise.all(updates);
+                } catch (eAg) { console.warn("Aviso ao sincronizar agendamentos:", eAg); }
+
                 if (dadosUsuarioAtual) {
                     dadosUsuarioAtual.nome = novoNome;
                     dadosUsuarioAtual.telefone = novoTelefone;

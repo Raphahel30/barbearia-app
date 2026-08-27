@@ -1701,6 +1701,7 @@
         let monitoramentoIniciado = false;
         let primeiroCarregamentoAgendamentos = true;
         let primeiroCarregamentoMensalistas = true;
+        let mapaUsuariosAdmin = new Map();
 
         function iniciarMonitoramentoTempoRealAdmin() {
             if (monitoramentoIniciado) return;
@@ -1772,6 +1773,24 @@
                     }
                 });
                 carregarClientesMensalistasAdmin();
+            });
+
+            // 3. Monitora Usuários em Tempo Real para Sincronização Perfeita de Telefone e Nome
+            onSnapshot(collection(db, "usuarios"), (snapshot) => {
+                snapshot.forEach((docSnap) => {
+                    const u = docSnap.data();
+                    mapaUsuariosAdmin.set(docSnap.id, u);
+                    if (u.email) mapaUsuariosAdmin.set(u.email.toLowerCase().trim(), u);
+                });
+                // Re-renderiza com os dados atualizados
+                try {
+                    if (listaMensalistasCache && listaMensalistasCache.length > 0) {
+                        renderizarListaMensalistas(listaMensalistasCache);
+                    }
+                    if (window.listaAgendamentosMemoria && window.listaAgendamentosMemoria.length > 0) {
+                        renderizarTabelaAgendamentos();
+                    }
+                } catch (e) { console.warn(e); }
             });
         }
 
@@ -2237,8 +2256,15 @@
 
             const precoFinal = Number(sub.precoPlano !== undefined ? sub.precoPlano : (sub.preco || sub.valorTotal || sub.valor || 0));
             const nomePlanoFinal = sub.nomePlano || sub.planoNome || sub.plano?.nome || 'Plano Mensal VIP';
-            const clienteFinal = sub.cliente || sub.nome || sub.clienteNome || sub.userEmail || 'Cliente VIP';
-            const telefoneFinal = sub.telefone || sub.clienteTelefone || sub.tel || '';
+            
+            // Cruza com o mapa oficial de usuários para garantir nome e telefone sempre atualizados
+            const uData = (sub.id && mapaUsuariosAdmin.get(sub.id)) 
+                || (sub.userId && mapaUsuariosAdmin.get(sub.userId)) 
+                || (sub.userEmail && mapaUsuariosAdmin.get(sub.userEmail.toLowerCase().trim()))
+                || (sub.email && mapaUsuariosAdmin.get(sub.email.toLowerCase().trim()));
+
+            const clienteFinal = uData?.nome || sub.cliente || sub.nome || sub.clienteNome || sub.userEmail || 'Cliente VIP';
+            const telefoneFinal = uData?.telefone || sub.telefone || sub.clienteTelefone || sub.tel || '';
 
             return {
                 ...sub,
@@ -2260,9 +2286,21 @@
 
         window.carregarClientesMensalistasAdmin = async function() {
             const container = document.getElementById('listaClientesMensalistasAdmin');
-            if (container) container.innerHTML = "<div class='card-dark p-8 rounded-2xl border border-zinc-800 text-center text-zinc-500 text-xs'>Carregando assinantes mensalistas...</div>";
+            if (container && (!listaMensalistasCache || listaMensalistasCache.length === 0)) {
+                container.innerHTML = "<div class='card-dark p-8 rounded-2xl border border-zinc-800 text-center text-zinc-500 text-xs'>Carregando assinantes mensalistas...</div>";
+            }
 
             try {
+                if (mapaUsuariosAdmin.size === 0) {
+                    try {
+                        const uSnap = await getDocs(collection(db, "usuarios"));
+                        uSnap.forEach(d => {
+                            mapaUsuariosAdmin.set(d.id, d.data());
+                            if (d.data().email) mapaUsuariosAdmin.set(d.data().email.toLowerCase().trim(), d.data());
+                        });
+                    } catch (eu) { console.warn("Aviso ao sincronizar usuarios:", eu); }
+                }
+
                 const querySnap = await getDocs(collection(db, "assinaturasClientes"));
                 const lista = [];
 
@@ -3457,8 +3495,9 @@
             if (termoBuscaAgenda) {
                 const t = termoBuscaAgenda.toLowerCase();
                 listaFiltrada = listaFiltrada.filter(ag => {
-                    const c = (ag.cliente || '').toLowerCase();
-                    const tel = (ag.telefone || '').toLowerCase();
+                    const uData = (ag.userId && mapaUsuariosAdmin.get(ag.userId)) || (ag.email && mapaUsuariosAdmin.get(ag.email.toLowerCase().trim()));
+                    const c = (uData?.nome || ag.cliente || '').toLowerCase();
+                    const tel = (uData?.telefone || ag.telefone || '').toLowerCase();
                     const s = (ag.servico || '').toLowerCase();
                     return c.includes(t) || tel.includes(t) || s.includes(t);
                 });
@@ -3477,10 +3516,14 @@
                 const ehConcluido = ag.status === 'concluido';
                 const ehFalta = ag.status === 'falta';
 
-                let telLimpo = ag.telefone ? ag.telefone.replace(/\D/g, '') : '';
+                const uData = (ag.userId && mapaUsuariosAdmin.get(ag.userId)) || (ag.email && mapaUsuariosAdmin.get(ag.email.toLowerCase().trim()));
+                const nomeClienteFinal = uData?.nome || ag.cliente || 'Cliente';
+                const telefoneClienteFinal = uData?.telefone || ag.telefone || '';
+
+                let telLimpo = telefoneClienteFinal ? telefoneClienteFinal.replace(/\D/g, '') : '';
                 if (telLimpo && !telLimpo.startsWith('55')) telLimpo = '55' + telLimpo;
 
-                const msgZap = encodeURIComponent(`Olá ${ag.cliente || 'Cliente'}! Confirmando seu horário na EMAÚS Barbearia dia ${ag.dataHora.replace('T', ' às ')} (${ag.servico || 'Corte'}). Tudo certo?`);
+                const msgZap = encodeURIComponent(`Olá ${nomeClienteFinal}! Confirmando seu horário na EMAÚS Barbearia dia ${ag.dataHora.replace('T', ' às ')} (${ag.servico || 'Corte'}). Tudo certo?`);
                 const linkZap = telLimpo ? `https://wa.me/${telLimpo}?text=${msgZap}` : '#';
 
                 const dataFormatada = ag.dataHora.replace('T', ' às ');
@@ -3513,9 +3556,9 @@
 
                 html += `
                     <tr id="linhaAgendamento_${id}" class="hover:bg-zinc-900/50 transition border-b border-zinc-800/40">
-                        <td class="p-3.5 font-bold text-white">${ag.cliente || 'Cliente'}</td>
+                        <td class="p-3.5 font-bold text-white">${nomeClienteFinal}</td>
                         <td class="p-3.5">
-                            <span class="text-zinc-300 font-mono">${ag.telefone || 'N/A'}</span>
+                            <span class="text-zinc-300 font-mono">${telefoneClienteFinal || 'N/A'}</span>
                             ${telLimpo ? `<a href="${linkZap}" target="_blank" class="ml-2 inline-block bg-green-600 hover:bg-green-700 text-white px-2 py-0.5 rounded text-[11px] font-bold transition shadow-sm">📱 WhatsApp</a>` : ''}
                         </td>
                         <td class="p-3.5">
