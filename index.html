@@ -2582,9 +2582,12 @@
                         }
                     }
                     
-                    // Bloqueia se o horário já passou hoje
-                    if (!bloqueado && agoraMinutosHoje >= 0 && minutos <= agoraMinutosHoje) {
+                    // Bloqueia se o horário já passou hoje ou se está dentro da margem mínima de 20 minutos de antecedência
+                    let ehPrazoCurto = false;
+                    const margemAntecedenciaMin = 20;
+                    if (!bloqueado && agoraMinutosHoje >= 0 && minutos <= (agoraMinutosHoje + margemAntecedenciaMin)) {
                         bloqueado = true;
+                        ehPrazoCurto = true;
                     }
 
                     // Bloqueia se o horário já estiver agendado
@@ -2605,6 +2608,8 @@
                     if (bloqueado) {
                         if (ehHorarioPausa) {
                             opt.textContent = `${horaFormatada} - (Ausente / Intervalo)`;
+                        } else if (ehPrazoCurto) {
+                            opt.textContent = `${horaFormatada} - (Indisponível / Mínimo 20min)`;
                         } else {
                             opt.textContent = `${horaFormatada} - (Indisponível/Ocupado)`;
                         }
