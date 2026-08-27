@@ -2061,23 +2061,37 @@
                 planosSnap.forEach((docSnap) => {
                     const pId = docSnap.id;
                     const pData = docSnap.data();
+                    const servicosInclusos = pData.servicosInclusos || [];
+                    const servicosJson = JSON.stringify(servicosInclusos).replace(/"/g, '&quot;');
 
                     let botaoHtml = "";
                     if (!temPlanoAtivo) {
-                        botaoHtml = `<button onclick="iniciarCompraPlano('${pId}', '${pData.nome}', ${pData.preco})" class="bg-dourado hover:bg-[#C5A028] text-black font-bold px-3.5 py-1.5 rounded-lg text-xs uppercase cursor-pointer transition">Assinar Plano</button>`;
+                        botaoHtml = `<button onclick="iniciarCompraPlano('${pId}', '${pData.nome}', ${pData.preco}, ${servicosJson})" class="bg-dourado hover:bg-[#C5A028] text-black font-bold px-3.5 py-1.5 rounded-lg text-xs uppercase cursor-pointer transition whitespace-nowrap shadow">Assinar Plano</button>`;
                     } else if (podeComprarOuRenovar) {
-                        botaoHtml = `<button onclick="iniciarCompraPlano('${pId}', '${pData.nome}', ${pData.preco})" class="bg-gradient-to-r from-dourado to-amber-500 hover:opacity-90 text-black font-extrabold px-3.5 py-2 rounded-lg text-xs uppercase cursor-pointer transition shadow-md flex items-center gap-1"><span>⚡</span> Renovar</button>`;
+                        botaoHtml = `<button onclick="iniciarCompraPlano('${pId}', '${pData.nome}', ${pData.preco}, ${servicosJson})" class="bg-gradient-to-r from-dourado to-amber-500 hover:opacity-90 text-black font-extrabold px-3.5 py-2 rounded-lg text-xs uppercase cursor-pointer transition shadow-md flex items-center gap-1 whitespace-nowrap"><span>⚡</span> Renovar</button>`;
                     } else {
-                        botaoHtml = `<button disabled class="bg-zinc-800 text-zinc-500 font-bold px-3 py-1.5 rounded-lg text-xs uppercase cursor-not-allowed border border-zinc-700">🔒 Plano Ativo</button>`;
+                        botaoHtml = `<button disabled class="bg-zinc-800 text-zinc-500 font-bold px-3 py-1.5 rounded-lg text-xs uppercase cursor-not-allowed border border-zinc-700 whitespace-nowrap">🔒 Plano Ativo</button>`;
+                    }
+
+                    let tagsServicosHtml = "";
+                    if (servicosInclusos.length > 0) {
+                        tagsServicosHtml = `
+                            <div class="flex items-center gap-1.5 flex-wrap mt-1.5">
+                                ${servicosInclusos.map(s => `<span class="bg-black/80 border border-zinc-700 text-amber-200 text-[10px] px-2 py-0.5 rounded font-medium">✂️ ${s}</span>`).join('')}
+                            </div>
+                        `;
                     }
 
                     htmlPlanos += `
-                        <div class="flex justify-between items-center bg-zinc-900 p-3.5 rounded-xl border border-zinc-800">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-zinc-900 p-4 rounded-xl border border-zinc-800 shadow-lg">
                             <div>
-                                <p class="font-bold text-white">${pData.nome}</p>
-                                <p class="text-xs text-dourado font-semibold">R$ ${pData.preco.toFixed(2)} / 30 dias (4 cortes)</p>
+                                <p class="font-bold text-white text-sm">${pData.nome}</p>
+                                <p class="text-xs text-dourado font-semibold mt-0.5">R$ ${pData.preco.toFixed(2)} / 30 dias (4 atendimentos)</p>
+                                ${tagsServicosHtml}
                             </div>
-                            ${botaoHtml}
+                            <div class="self-end sm:self-center">
+                                ${botaoHtml}
+                            </div>
                         </div>
                     `;
                 });
@@ -2095,7 +2109,10 @@
         let listaServicosGeralCache = [];
         let extrasMensalistaSelecionados = [];
 
-        function obterServicoPrincipalDoPlano(nomePlano = '') {
+        function obterServicoPrincipalDoPlano(nomePlano = '', servicosInclusos = []) {
+            if (Array.isArray(servicosInclusos) && servicosInclusos.length > 0) {
+                return servicosInclusos.join(' + ');
+            }
             const p = (nomePlano || '').toLowerCase();
             if (p.includes('corte, barba e sobrancelha') || p.includes('corte e barba e sobrancelha')) {
                 return 'Corte, barba e sobrancelha';
@@ -2112,10 +2129,15 @@
             return nomePlano || 'Atendimento do Plano Mensal';
         }
 
-        function verificarSeServicoJaEstaInclusoNoPlano(nomeServico = '', nomePlano = '') {
+        function verificarSeServicoJaEstaInclusoNoPlano(nomeServico = '', nomePlano = '', servicosInclusos = []) {
             const s = (nomeServico || '').toLowerCase().trim();
+            if (Array.isArray(servicosInclusos) && servicosInclusos.length > 0) {
+                return servicosInclusos.some(si => {
+                    const siClean = String(si).toLowerCase().trim();
+                    return s === siClean || s.includes(siClean) || siClean.includes(s);
+                });
+            }
             const p = (nomePlano || '').toLowerCase().trim();
-
             if (p.includes('corte, barba e sobrancelha') || p.includes('corte e barba e sobrancelha')) {
                 if (s.includes('corte') || s.includes('barba') || s.includes('sobrancelha')) return true;
             } else if (p.includes('corte e barba')) {
@@ -2163,7 +2185,8 @@
                 msgStatus.innerText = '';
             }
 
-            const servicoPrincipal = obterServicoPrincipalDoPlano(dadosAssinaturaAtiva.nomePlano);
+            const servicosInclusosPlano = dadosAssinaturaAtiva.servicosInclusos || [];
+            const servicoPrincipal = obterServicoPrincipalDoPlano(dadosAssinaturaAtiva.nomePlano, servicosInclusosPlano);
             if (nomeServicoPlanoEl) nomeServicoPlanoEl.innerText = servicoPrincipal;
             if (subSemana) subSemana.innerText = `Semana ${semDisponivel.numero} de 4 (${semDisponivel.inicioStr} a ${semDisponivel.fimStr}) • ${dadosAssinaturaAtiva.nomePlano}`;
 
@@ -2191,8 +2214,8 @@
                     snap.forEach(d => servicos.push({ id: d.id, ...d.data() }));
                     listaServicosGeralCache = servicos;
 
-                    // Filtra serviços que NÃO são exatamente o que já está coberto
-                    const servicosExtras = servicos.filter(sv => !verificarSeServicoJaEstaInclusoNoPlano(sv.nome, dadosAssinaturaAtiva.nomePlano));
+                    // Filtra serviços que NÃO são exatamente o que já está coberto no plano
+                    const servicosExtras = servicos.filter(sv => !verificarSeServicoJaEstaInclusoNoPlano(sv.nome, dadosAssinaturaAtiva.nomePlano, servicosInclusosPlano));
 
                     if (servicosExtras.length === 0) {
                         containerExtras.innerHTML = "<p class='text-xs text-zinc-500 col-span-full'>Todos os serviços principais já estão inclusos no seu plano!</p>";
@@ -2500,12 +2523,12 @@
             processarAberturaPagamento('agendamento', dadosPagamentoPendente);
         });
 
-        window.iniciarCompraPlano = function(id, nome, preco) {
+        window.iniciarCompraPlano = function(id, nome, preco, servicosInclusos = []) {
             if (dadosAssinaturaAtiva && dadosAssinaturaAtiva.ehAtivo && dadosAssinaturaAtiva.diasRestantes > 3) {
                 alert(`Você já possui o plano "${dadosAssinaturaAtiva.nomePlano}" ativo até ${dadosAssinaturaAtiva.dataFimFormatada} (${dadosAssinaturaAtiva.diasRestantes} dias restantes).\n\nA contratação ou renovação de um novo plano só é liberada faltando 3 dias ou menos para o vencimento.`);
                 return;
             }
-            processarAberturaPagamento('plano', { plano: { id, nome, preco } });
+            processarAberturaPagamento('plano', { plano: { id, nome, preco, servicosInclusos } });
         };
 
         let listaServicosCadastradosGlobal = [];
@@ -3646,6 +3669,7 @@
                         telefone: telefoneCliente,
                         nomePlano: plano.nome,
                         precoPlano: plano.preco,
+                        servicosInclusos: plano.servicosInclusos || [],
                         dataPagamento: dataPagamento.toISOString(),
                         dataFim: dataFim.toISOString(),
                         idPagamento: paymentId,

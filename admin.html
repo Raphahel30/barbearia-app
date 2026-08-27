@@ -626,19 +626,30 @@
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="card-dark p-6 rounded-2xl border border-zinc-800 space-y-4">
                         <h2 class="text-xl font-bold text-white uppercase">Novo Serviço / Corte</h2>
+                        
+                        <!-- Dica de Gestão Individual de Serviços -->
+                        <div class="bg-amber-950/40 border border-amber-500/40 p-3 rounded-xl text-[11px] text-amber-200 leading-snug space-y-1">
+                            <p class="font-bold text-amber-300 flex items-center gap-1.5">
+                                <span>💡</span> Cadastre um serviço por vez
+                            </p>
+                            <p class="text-zinc-300 text-[10px]">
+                                Cadastre serviços de forma individual (ex: <em>Apenas corte</em>, <em>Barba</em>, <em>Sobrancelha</em>, <em>Progressiva</em>). Isso permite que os clientes adicionem extras no agendamento e facilita a montagem dos <strong>Combos de Planos Mensais</strong> abaixo.
+                            </p>
+                        </div>
+
                         <div class="space-y-3">
                             <div>
                                 <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">Nome do Serviço</label>
-                                <input type="text" id="inputNovoServicoNome" placeholder="Ex: Degradê Especial + Barba" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                                <input type="text" id="inputNovoServicoNome" placeholder="Ex: Apenas corte, Barba, Sobrancelha" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
                             </div>
                             <div>
-                                <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">Valor (R$)</label>
-                                <input type="number" id="inputNovoServicoPreco" placeholder="50.00" step="0.50" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                                <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">Valor Unitário (R$)</label>
+                                <input type="number" id="inputNovoServicoPreco" placeholder="40.00" step="0.50" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
                             </div>
-                            <button id="btnSalvarNovoServico" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-bold py-2.5 rounded-lg text-xs uppercase transition cursor-pointer">
-                                Adicionar Serviço
+                            <button id="btnSalvarNovoServico" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-bold py-2.5 rounded-lg text-xs uppercase transition cursor-pointer shadow-md">
+                                + Adicionar Serviço
                             </button>
-                            <p id="msgNovoServico" class="text-xs text-center font-medium"></p>
+                            <p id="msgNovoServico" class="text-xs text-center font-medium min-h-[16px]"></p>
                         </div>
                     </div>
 
@@ -654,19 +665,40 @@
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4 border-t border-zinc-800/80">
                     <div class="card-dark p-6 rounded-2xl border border-zinc-800 space-y-4">
                         <h2 class="text-xl font-bold text-white uppercase">Novo Plano Mensal</h2>
-                        <div class="space-y-3">
+                        
+                        <p class="text-[11px] text-zinc-400">
+                            Selecione os serviços que compõem este plano. O <strong>nome do combo é gerado automaticamente</strong> ao marcar as opções!
+                        </p>
+
+                        <div class="space-y-3.5">
+                            <!-- Seleção Dinâmica de Serviços Inclusos -->
                             <div>
-                                <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">Nome do Plano</label>
-                                <input type="text" id="inputNovoPlanoNome" placeholder="Ex: Plano VIP Mensal" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                                <label class="block text-xs font-semibold text-amber-400 uppercase mb-1.5 flex items-center justify-between">
+                                    <span>✂️ Serviços Inclusos no Plano:</span>
+                                    <span class="text-[10px] text-zinc-500 font-normal">Marque para o combo</span>
+                                </label>
+                                <div id="containerServicosParaPlano" class="space-y-1.5 max-h-44 overflow-y-auto pr-1 bg-black/60 p-2.5 rounded-xl border border-zinc-800">
+                                    <p class="text-[11px] text-zinc-500 text-center py-2">Carregando serviços...</p>
+                                </div>
                             </div>
+
                             <div>
-                                <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">Valor Mensal (R$)</label>
-                                <input type="number" id="inputNovoPlanoPreco" placeholder="120.00" step="1.00" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                                <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1 flex items-center justify-between">
+                                    <span>Nome do Plano (Automático ou Personalizado)</span>
+                                </label>
+                                <input type="text" id="inputNovoPlanoNome" placeholder="Ex: Combo: Apenas corte + Barba" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-medium">
                             </div>
-                            <button id="btnSalvarNovoPlano" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-bold py-2.5 rounded-lg text-xs uppercase transition cursor-pointer">
-                                Adicionar Plano Mensal
+
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">Valor Mensal do Plano (R$)</label>
+                                <input type="number" id="inputNovoPlanoPreco" placeholder="130.00" step="1.00" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                                <p class="text-[10px] text-zinc-500 mt-1">💡 Defina o preço livremente para 30 dias (4 atendimentos no mês).</p>
+                            </div>
+
+                            <button id="btnSalvarNovoPlano" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-bold py-2.5 rounded-lg text-xs uppercase transition cursor-pointer shadow-md">
+                                + Adicionar Plano Mensal
                             </button>
-                            <p id="msgNovoPlano" class="text-xs text-center font-medium"></p>
+                            <p id="msgNovoPlano" class="text-xs text-center font-medium min-h-[16px]"></p>
                         </div>
                     </div>
 
@@ -3877,14 +3909,20 @@
 
         async function carregarServicosAdmin() {
             const listaDiv = document.getElementById('listaServicosAdmin');
+            const containerServicosPlano = document.getElementById('containerServicosParaPlano');
             if (!listaDiv) return;
             try {
                 const querySnapshot = await getDocs(collection(db, "servicos"));
                 if (querySnapshot.empty) {
                     listaDiv.innerHTML = '<p class="text-xs text-zinc-500">Nenhum serviço cadastrado no momento.</p>';
+                    if (containerServicosPlano) {
+                        containerServicosPlano.innerHTML = '<p class="text-[11px] text-zinc-500 text-center py-2">Cadastre serviços acima para montar o combo do plano.</p>';
+                    }
                     return;
                 }
                 listaDiv.innerHTML = "";
+                let htmlPlanoCheckboxes = "";
+
                 querySnapshot.forEach((docSnap) => {
                     const serv = docSnap.data();
                     const id = docSnap.id;
@@ -3899,7 +3937,39 @@
                             </button>
                         </div>
                     `;
+
+                    htmlPlanoCheckboxes += `
+                        <label class="flex items-center justify-between p-2 rounded-lg bg-zinc-950/80 hover:bg-zinc-900 border border-zinc-800 cursor-pointer transition select-none group">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <input type="checkbox" class="checkbox-servico-plano rounded bg-black border-zinc-700 text-dourado focus:ring-0 focus:ring-offset-0 cursor-pointer" data-id="${id}" data-nome="${serv.nome}" data-preco="${serv.preco || 0}">
+                                <span class="text-xs font-medium text-zinc-200 group-hover:text-amber-200 truncate">${serv.nome}</span>
+                            </div>
+                            <span class="text-[11px] text-zinc-500 font-mono">R$ ${(serv.preco || 0).toFixed(2)}</span>
+                        </label>
+                    `;
                 });
+
+                if (containerServicosPlano) {
+                    containerServicosPlano.innerHTML = htmlPlanoCheckboxes;
+                    
+                    // Listener de seleção para geração automática do nome do plano
+                    containerServicosPlano.querySelectorAll('.checkbox-servico-plano').forEach(cb => {
+                        cb.addEventListener('change', () => {
+                            const selecionados = Array.from(document.querySelectorAll('.checkbox-servico-plano:checked')).map(x => x.getAttribute('data-nome'));
+                            const inputNomePlano = document.getElementById('inputNovoPlanoNome');
+                            if (inputNomePlano) {
+                                if (selecionados.length === 1) {
+                                    inputNomePlano.value = `Plano: ${selecionados[0]}`;
+                                } else if (selecionados.length > 1) {
+                                    inputNomePlano.value = `Combo: ${selecionados.join(' + ')}`;
+                                } else {
+                                    inputNomePlano.value = "";
+                                }
+                            }
+                            if (window.vibrarDispositivo) window.vibrarDispositivo('clique');
+                        });
+                    });
+                }
             } catch (e) { console.error(e); }
         }
 
@@ -3916,31 +3986,54 @@
         const btnSalvarNovoPlano = document.getElementById('btnSalvarNovoPlano');
         if (btnSalvarNovoPlano) {
             btnSalvarNovoPlano.addEventListener('click', async () => {
-                const nome = (document.getElementById('inputNovoPlanoNome')?.value || '').trim();
+                const inputNome = document.getElementById('inputNovoPlanoNome');
                 const preco = parseFloat(document.getElementById('inputNovoPlanoPreco')?.value || '0');
                 const msg = document.getElementById('msgNovoPlano');
 
-                if (!nome || isNaN(preco) || preco <= 0) {
+                const servicosInclusos = Array.from(document.querySelectorAll('.checkbox-servico-plano:checked')).map(cb => cb.getAttribute('data-nome'));
+                
+                let nome = (inputNome?.value || '').trim();
+                if (!nome && servicosInclusos.length > 0) {
+                    nome = servicosInclusos.length === 1 ? `Plano: ${servicosInclusos[0]}` : `Combo: ${servicosInclusos.join(' + ')}`;
+                }
+
+                if (!nome) {
                     if (msg) {
                         msg.className = "text-xs text-center font-medium text-red-400";
-                        msg.innerText = "Preencha o nome do plano e o preço corretamente!";
+                        msg.innerText = "Selecione ao menos um serviço para o plano ou digite o nome!";
+                    }
+                    return;
+                }
+
+                if (isNaN(preco) || preco <= 0) {
+                    if (msg) {
+                        msg.className = "text-xs text-center font-medium text-red-400";
+                        msg.innerText = "Preencha o valor mensal do plano corretamente!";
                     }
                     return;
                 }
 
                 try {
-                    await addDoc(collection(db, "planosMensais"), { nome, preco, duracaoDias: 30, criadoEm: new Date() });
-                    const elNomeP = document.getElementById('inputNovoPlanoNome');
+                    await addDoc(collection(db, "planosMensais"), {
+                        nome,
+                        preco,
+                        servicosInclusos: servicosInclusos.length > 0 ? servicosInclusos : [nome],
+                        duracaoDias: 30,
+                        criadoEm: new Date()
+                    });
+                    
+                    if (inputNome) inputNome.value = "";
                     const elPrecoP = document.getElementById('inputNovoPlanoPreco');
-                    if (elNomeP) elNomeP.value = "";
                     if (elPrecoP) elPrecoP.value = "";
+                    document.querySelectorAll('.checkbox-servico-plano').forEach(cb => cb.checked = false);
+
                     if (msg) {
                         msg.className = "text-xs text-center font-medium text-green-400";
                         msg.innerText = "Plano mensal criado com sucesso!";
                         setTimeout(() => { if (msg) msg.innerText = ""; }, 3000);
                     }
                     carregarPlanosAdmin();
-                } catch (e) { if (msg) msg.innerText = "Erro ao salvar plano."; }
+                } catch (e) { if (msg) msg.innerText = "Erro ao salvar plano: " + e.message; }
             });
         }
 
@@ -3957,13 +4050,25 @@
                 querySnapshot.forEach((docSnap) => {
                     const plano = docSnap.data();
                     const id = docSnap.id;
+                    const servicos = plano.servicosInclusos || [];
+
+                    let tagsServicosHtml = "";
+                    if (servicos.length > 0) {
+                        tagsServicosHtml = `
+                            <div class="flex items-center gap-1.5 flex-wrap mt-1.5">
+                                ${servicos.map(s => `<span class="bg-amber-950/70 border border-amber-500/40 text-amber-300 text-[10px] px-2 py-0.5 rounded font-medium">✂️ ${s}</span>`).join('')}
+                            </div>
+                        `;
+                    }
+
                     listaDiv.innerHTML += `
-                        <div class="flex justify-between items-center bg-black p-3 rounded-xl border border-zinc-800 text-xs">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-black p-3.5 rounded-xl border border-zinc-800 text-xs">
                             <div>
                                 <span class="font-bold text-white text-sm">${plano.nome}</span>
-                                <p class="text-dourado font-bold">R$ ${(plano.preco || 0).toFixed(2)} / mês</p>
+                                <p class="text-dourado font-bold text-xs mt-0.5">R$ ${(plano.preco || 0).toFixed(2)} / mês (30 dias • 4 atendimentos)</p>
+                                ${tagsServicosHtml}
                             </div>
-                            <button onclick="excluirPlanoAdmin('${id}')" class="bg-red-600/80 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">
+                            <button onclick="excluirPlanoAdmin('${id}')" class="self-end sm:self-center bg-red-600/80 hover:bg-red-600 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">
                                 Excluir
                             </button>
                         </div>
