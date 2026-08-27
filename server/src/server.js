@@ -1133,11 +1133,15 @@ app.post('/api/whatsapp/notificar-agendamento', async (req, res) => {
             produtos,
             isPlano, 
             semanaPlano,
-            whatsappBarbeiro 
+            whatsappBarbeiro,
+            barbeiroNome,
+            barbeiroWhatsapp
         } = req.body;
 
         const dataFormatada = dataHora ? dataHora.replace('T', ' às ') : 'Data a confirmar';
-        const numBarbeiro = resolverNumeroBarbeiro(whatsappBarbeiro);
+        const numBarbeiroEspecifico = resolverNumeroBarbeiro(barbeiroWhatsapp);
+        const numBarbeiroGeral = resolverNumeroBarbeiro(whatsappBarbeiro);
+        const numBarbeiroDestino = numBarbeiroEspecifico || numBarbeiroGeral;
 
         const precoTotal = Number(preco || 0);
         const valorPago = Number(taxaReservaPaga !== undefined ? taxaReservaPaga : (isPlano ? 0 : 10));
@@ -1150,9 +1154,9 @@ app.post('/api/whatsapp/notificar-agendamento', async (req, res) => {
             produtosTextoCliente = `• *Produtos Adicionados (Retirar no Balcão):* ` + produtos.map(p => `${p.quantidade}x ${p.nome} (R$ ${Number(p.subtotal || (p.preco * p.quantidade)).toFixed(2)})`).join(', ') + `\n`;
         }
 
-        // 1. Mensagem para o Barbeiro (enviada apenas se houver número conectado ou configurado)
+        // 1. Mensagem para o Barbeiro
         let envioBarbeiro = null;
-        if (numBarbeiro) {
+        if (numBarbeiroDestino) {
             let tipoPagtoTexto = `Taxa de Reserva Paga (R$ ${valorPago.toFixed(2)})`;
             let restanteBarbeiroTexto = `R$ ${valorRestante.toFixed(2)}`;
 
@@ -1164,7 +1168,11 @@ app.post('/api/whatsapp/notificar-agendamento', async (req, res) => {
                 restanteBarbeiroTexto = "R$ 0,00 (Totalmente Quitado)";
             }
 
-            const msgBarbeiro = `*EMAÚS Barbearia - Novo Agendamento* 📅\n\n` +
+            const headerBarbeiro = barbeiroNome && barbeiroNome !== 'Qualquer Profissional'
+                ? `*EMAÚS Barbearia - Novo Agendamento (${barbeiroNome})* 📅`
+                : `*EMAÚS Barbearia - Novo Agendamento* 📅`;
+
+            const msgBarbeiro = `${headerBarbeiro}\n\n` +
                 `• *Cliente:* ${cliente || 'Cliente'}\n` +
                 `• *Telefone:* ${telefone || 'Não informado'}\n` +
                 `• *Serviço:* ${servico || 'Corte'} (Total R$ ${precoTotal.toFixed(2)})\n` +
@@ -1173,7 +1181,14 @@ app.post('/api/whatsapp/notificar-agendamento', async (req, res) => {
                 `• *Restante a Receber no Atendimento:* ${restanteBarbeiroTexto}` +
                 produtosTextoBarbeiro;
 
-            envioBarbeiro = await enviarMensagemWhatsApp(numBarbeiro, msgBarbeiro);
+            envioBarbeiro = await enviarMensagemWhatsApp(numBarbeiroDestino, msgBarbeiro);
+
+            // Se o barbeiro específico for diferente do dono principal, envia cópia de acompanhamento para o dono
+            if (numBarbeiroGeral && numBarbeiroEspecifico && numBarbeiroGeral !== numBarbeiroEspecifico) {
+                try {
+                    await enviarMensagemWhatsApp(numBarbeiroGeral, `*[Aviso Master]* Novo agendamento para o profissional *${barbeiroNome || 'da Equipe'}*:\n` + msgBarbeiro);
+                } catch (eMaster) { console.warn("Aviso ao notificar master:", eMaster.message); }
+            }
         }
 
         // 2. Mensagem de Confirmação para o Cliente (se tiver telefone)

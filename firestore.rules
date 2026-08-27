@@ -40,6 +40,11 @@ service cloud.firestore {
       allow write: if isAuthenticated();
     }
 
+    match /barbeiros/{barbeiroId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
     match /assinaturasClientes/{userId} {
       allow read: if true;
       allow write: if isAuthenticated();

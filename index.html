@@ -355,6 +355,19 @@
                     </div>
                 </div>
 
+                <!-- SEÇÃO DE SELEÇÃO DE BARBEIRO / PROFISSIONAL (ATIVA NO MODO MULTI-BARBEIRO) -->
+                <div id="secaoEscolhaBarbeiro" class="hidden bg-zinc-950/90 rounded-xl border border-zinc-800 p-3.5 space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-dourado uppercase tracking-wide flex items-center gap-1.5">
+                            <span>💈</span> Escolha o Profissional
+                        </label>
+                        <span id="badgeBarbeiroSelecionado" class="text-[11px] text-zinc-400 font-medium">Qualquer Profissional</span>
+                    </div>
+                    <div id="gridBarbeirosCliente" class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                        <!-- Gerado dinamicamente via JavaScript -->
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium mb-1 text-zinc-300">Data do Atendimento</label>
@@ -1443,6 +1456,7 @@
             carregarPainelPlanosCliente(user.uid);
             carregarServicosCliente();
             carregarProdutosCliente();
+            carregarBarbeirosCliente();
             carregarConfiguracoesGerais();
             verificarSeBarbeariaFechadaHoje();
         }
@@ -2368,12 +2382,33 @@
                 const querySnapshot = await getDocs(collection(db, "agendamentos"));
                 let horariosOcupados = [];
 
+                const barbeiroIdFiltro = (modoMultiBarbeiroCliente && barbeiroSelecionadoCliente) ? barbeiroSelecionadoCliente.id : 'qualquer';
+                const agendamentosPorHora = {};
+
                 querySnapshot.forEach(docSnap => {
                     const ag = docSnap.data();
                     if (ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'reembolsado') return;
                     if (ag.dataHora && ag.dataHora.startsWith(dataSelecionada)) {
                         const horaStr = ag.dataHora.split('T')[1];
-                        if (horaStr) horariosOcupados.push(horaStr);
+                        if (!horaStr) return;
+                        if (!agendamentosPorHora[horaStr]) agendamentosPorHora[horaStr] = [];
+                        agendamentosPorHora[horaStr].push(ag);
+                    }
+                });
+
+                const totalBarbeirosAtivos = (listaBarbeirosCliente && listaBarbeirosCliente.length > 0) ? listaBarbeirosCliente.length : 1;
+
+                Object.keys(agendamentosPorHora).forEach(horaStr => {
+                    const ags = agendamentosPorHora[horaStr];
+                    if (modoMultiBarbeiroCliente && barbeiroIdFiltro !== 'qualquer') {
+                        const barbeiroOcupado = ags.some(a => a.barbeiroId === barbeiroIdFiltro);
+                        if (barbeiroOcupado) horariosOcupados.push(horaStr);
+                    } else if (modoMultiBarbeiroCliente && barbeiroIdFiltro === 'qualquer') {
+                        if (ags.length >= totalBarbeirosAtivos) {
+                            horariosOcupados.push(horaStr);
+                        }
+                    } else {
+                        horariosOcupados.push(horaStr);
                     }
                 });
 
@@ -2803,6 +2838,99 @@
                 renderizarOpcoesExtras();
             } catch (e) { console.error(e); }
         }
+
+        // ==========================================
+        // GESTÃO DE BARBEIROS NO AGENDAMENTO (CLIENTE)
+        // ==========================================
+        let modoMultiBarbeiroCliente = false;
+        let listaBarbeirosCliente = [];
+        let barbeiroSelecionadoCliente = { id: 'qualquer', nome: 'Qualquer Profissional', whatsapp: '' };
+
+        async function carregarBarbeirosCliente() {
+            try {
+                const configSnap = await getDoc(doc(db, "configuracoes", "geral"));
+                if (configSnap.exists()) {
+                    modoMultiBarbeiroCliente = Boolean(configSnap.data().modoMultiBarbeiro);
+                } else {
+                    modoMultiBarbeiroCliente = false;
+                }
+
+                const secao = document.getElementById('secaoEscolhaBarbeiro');
+                const grid = document.getElementById('gridBarbeirosCliente');
+
+                if (!modoMultiBarbeiroCliente) {
+                    if (secao) secao.classList.add('hidden');
+                    barbeiroSelecionadoCliente = { id: 'qualquer', nome: 'Barbearia EMAÚS', whatsapp: '' };
+                    return;
+                }
+
+                if (secao) secao.classList.remove('hidden');
+
+                const snap = await getDocs(collection(db, "barbeiros"));
+                const lista = [];
+                snap.forEach(d => {
+                    const data = d.data();
+                    if (data.status !== 'inativo') {
+                        lista.push({ id: d.id, ...data });
+                    }
+                });
+                listaBarbeirosCliente = lista;
+
+                if (!grid) return;
+
+                let html = `
+                    <div onclick="window.selecionarBarbeiroAgendamento('qualquer', 'Qualquer Profissional', '')" id="cardBarbeiro_qualquer" class="card-barbeiro-item p-2.5 rounded-xl border-2 border-dourado bg-zinc-900/90 cursor-pointer transition flex flex-col items-center text-center gap-1.5 shadow-md">
+                        <div class="w-10 h-10 rounded-full bg-dourado/20 text-dourado flex items-center justify-center text-lg font-bold border border-dourado/40">
+                            ⚡
+                        </div>
+                        <span class="font-bold text-white text-[11px] uppercase leading-tight">Qualquer Barbeiro</span>
+                        <span class="text-[9px] text-zinc-400">Mais Rápido</span>
+                    </div>
+                `;
+
+                lista.forEach(b => {
+                    const foto = b.fotoUrl || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=150&auto=format&fit=crop&q=80';
+                    html += `
+                        <div onclick="window.selecionarBarbeiroAgendamento('${b.id}', '${b.nome.replace(/'/g, "\\'")}', '${(b.whatsapp || '').replace(/'/g, "\\'")}')" id="cardBarbeiro_${b.id}" class="card-barbeiro-item p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 hover:bg-zinc-900/80 cursor-pointer transition flex flex-col items-center text-center gap-1.5 shadow-md">
+                            <img src="${foto}" alt="${b.nome}" class="w-10 h-10 rounded-full object-cover border border-amber-500/40 bg-zinc-900" onerror="this.src='https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=150&auto=format&fit=crop&q=80'">
+                            <span class="font-bold text-white text-[11px] uppercase leading-tight truncate w-full">${b.nome}</span>
+                            <span class="text-[9px] text-zinc-400 truncate w-full">${b.especialidade || 'Barbeiro'}</span>
+                        </div>
+                    `;
+                });
+
+                grid.innerHTML = html;
+            } catch (e) {
+                console.warn("Aviso ao carregar barbeiros no cliente:", e);
+            }
+        }
+
+        window.selecionarBarbeiroAgendamento = function(id, nome, whatsapp) {
+            barbeiroSelecionadoCliente = { id, nome, whatsapp };
+            const badge = document.getElementById('badgeBarbeiroSelecionado');
+            if (badge) badge.innerText = nome;
+
+            document.querySelectorAll('.card-barbeiro-item').forEach(el => {
+                el.classList.remove('border-dourado', 'bg-zinc-900/90');
+                el.classList.add('border-zinc-800', 'bg-zinc-950');
+            });
+
+            const cardAtivo = document.getElementById(`cardBarbeiro_${id}`);
+            if (cardAtivo) {
+                cardAtivo.classList.remove('border-zinc-800', 'bg-zinc-950');
+                cardAtivo.classList.add('border-dourado', 'bg-zinc-900/90');
+            }
+
+            if (window.vibrarDispositivo) window.vibrarDispositivo('clique');
+
+            // Recarrega grade com o barbeiro selecionado
+            const inputData = document.getElementById('dataAtendimento');
+            if (inputData && inputData.value) {
+                const selectHorario = document.getElementById('horarioGrade');
+                const avisoBloqueio = document.getElementById('avisoDataBloqueiada');
+                carregarGradeHorariosPadrao(inputData.value, selectHorario, avisoBloqueio);
+            }
+        };
 
         const selectServicoElement = document.getElementById('servico');
         if (selectServicoElement) {
@@ -3600,6 +3728,9 @@
                             produtos: listaProdutosAg,
                             isPlano: true,
                             semanaPlano: semanaPlanoNum,
+                            barbeiroId: barbeiroSelecionadoCliente?.id || 'qualquer',
+                            barbeiroNome: barbeiroSelecionadoCliente?.nome || 'Barbearia EMAÚS',
+                            barbeiroWhatsapp: barbeiroSelecionadoCliente?.whatsapp || '',
                             status: 'confirmado',
                             dataHora: dataHoraCompleta,
                             criadoEm: new Date()
@@ -3634,7 +3765,9 @@
                             taxaReservaPaga: valorEfetivoPago,
                             produtos: listaProdutosAg,
                             isPlano: true,
-                            semanaPlano: semanaPlanoNum
+                            semanaPlano: semanaPlanoNum,
+                            barbeiroNome: barbeiroSelecionadoCliente?.nome || '',
+                            barbeiroWhatsapp: barbeiroSelecionadoCliente?.whatsapp || ''
                         });
 
                         return;
@@ -3652,6 +3785,9 @@
                         metodoPagamento: metodo,
                         extras: extras || [],
                         produtos: listaProdutosAg,
+                        barbeiroId: barbeiroSelecionadoCliente?.id || 'qualquer',
+                        barbeiroNome: barbeiroSelecionadoCliente?.nome || 'Barbearia EMAÚS',
+                        barbeiroWhatsapp: barbeiroSelecionadoCliente?.whatsapp || '',
                         status: 'confirmado',
                         dataHora: dataHoraCompleta,
                         criadoEm: new Date()
@@ -3684,7 +3820,9 @@
                         taxaReservaPaga: valorEfetivoPago,
                         modalidade: modalidade || 'taxa',
                         produtos: listaProdutosAg,
-                        isPlano: false
+                        isPlano: false,
+                        barbeiroNome: barbeiroSelecionadoCliente?.nome || '',
+                        barbeiroWhatsapp: barbeiroSelecionadoCliente?.whatsapp || ''
                     });
 
                 } else if (tipoPagamentoAtual === 'plano' && dadosPagamentoPendente?.plano) {
@@ -3851,6 +3989,9 @@
                     isPlano: true,
                     semanaPlano: beneficio.semana,
                     extras: extras || [],
+                    barbeiroId: barbeiroSelecionadoCliente?.id || 'qualquer',
+                    barbeiroNome: barbeiroSelecionadoCliente?.nome || 'Barbearia EMAÚS',
+                    barbeiroWhatsapp: barbeiroSelecionadoCliente?.whatsapp || '',
                     status: 'confirmado',
                     dataHora: dataHoraCompleta,
                     criadoEm: new Date()
@@ -3893,7 +4034,9 @@
                     preco: valorCobrarExtras,
                     taxaReservaPaga: 0,
                     isPlano: true,
-                    semanaPlano: beneficio.semana
+                    semanaPlano: beneficio.semana,
+                    barbeiroNome: barbeiroSelecionadoCliente?.nome || '',
+                    barbeiroWhatsapp: barbeiroSelecionadoCliente?.whatsapp || ''
                 });
 
             } catch (err) {

@@ -158,6 +158,10 @@
                         <span class="text-base">👑</span>
                         <span>Clientes Mensalistas VIP</span>
                     </button>
+                    <button id="tabNavTeam" class="sidebar-link w-full text-left">
+                        <span class="text-base">👥</span>
+                        <span>Equipe & Barbeiros</span>
+                    </button>
                 </div>
 
                 <!-- BLOCO 2: FINANCEIRO & CATÁLOGO -->
@@ -1222,6 +1226,98 @@
                 </div>
             </section>
 
+            <!-- 8. ABA: EQUIPE & MULTI-BARBEIROS -->
+            <section id="viewTeam" class="space-y-6 hidden">
+                <!-- Header com Interruptor Geral -->
+                <div class="card-dark p-6 rounded-3xl border border-amber-500/30 bg-gradient-to-r from-zinc-900 via-black to-zinc-900 shadow-2xl flex flex-col md:flex-row justify-between md:items-center gap-4">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-2xl">👥</span>
+                            <h2 class="text-2xl font-bold text-white uppercase tracking-wide">Equipe & Multi-Barbeiros</h2>
+                        </div>
+                        <p class="text-xs text-zinc-400 mt-1">Gerencie os profissionais da barbearia, cadeiras de atendimento e notificações independentes de WhatsApp.</p>
+                    </div>
+
+                    <!-- INTERRUPTOR / TOGGLE DO MODO MULTI-BARBEIRO -->
+                    <div class="flex items-center gap-3 bg-black/80 p-3 rounded-2xl border border-zinc-800 self-start md:self-auto">
+                        <div class="text-right">
+                            <p class="text-xs font-bold text-white uppercase" id="labelStatusMultiBarbeiro">Modo Multi-Barbeiro</p>
+                            <p class="text-[10px] text-zinc-400" id="sublabelStatusMultiBarbeiro">Desativado (Agenda Única)</p>
+                        </div>
+                        <button id="btnToggleModoMultiBarbeiro" onclick="window.alternarModoMultiBarbeiro()" class="relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none bg-zinc-700 cursor-pointer">
+                            <span id="indicadorToggleMultiBarbeiro" class="inline-block h-5 w-5 transform rounded-full bg-white transition-transform translate-x-1 shadow-md"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Formulário de Cadastro e Lista de Profissionais -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Cadastrar Novo Barbeiro -->
+                    <div class="card-dark p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
+                        <h3 class="text-base font-bold text-white uppercase flex items-center gap-2">
+                            <span>💈</span> Cadastrar Barbeiro
+                        </h3>
+                        <p class="text-[11px] text-zinc-400">
+                            Cadastre o profissional e o WhatsApp dele. As mensagens de agendamento serão enviadas diretamente para ele pelo robô oficial.
+                        </p>
+
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">Nome do Profissional</label>
+                                <input type="text" id="inputNomeNovoBarbeiro" placeholder="Ex: Matheus Silva" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-medium">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">WhatsApp para Notificações</label>
+                                <input type="tel" id="inputWhatsNovoBarbeiro" placeholder="(11) 98888-7777" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono">
+                                <p class="text-[10px] text-zinc-500 mt-1">O robô enviará os avisos de agendamento para este número.</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">Especialidade / Bio Curta (Opcional)</label>
+                                <input type="text" id="inputEspecialidadeNovoBarbeiro" placeholder="Ex: Fade Especialista, Barboterapia" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">Foto / Avatar (URL Opcional)</label>
+                                <input type="url" id="inputFotoNovoBarbeiro" placeholder="https://exemplo.com/foto.jpg" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                            </div>
+
+                            <button id="btnSalvarNovoBarbeiro" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-bold py-2.5 rounded-lg text-xs uppercase transition cursor-pointer shadow-md">
+                                + Adicionar Barbeiro
+                            </button>
+                            <p id="msgNovoBarbeiroStatus" class="text-xs text-center font-medium min-h-[16px]"></p>
+                        </div>
+                    </div>
+
+                    <!-- Lista de Barbeiros Cadastrados -->
+                    <div class="card-dark p-6 rounded-2xl border border-zinc-800 space-y-4 lg:col-span-2 shadow-xl">
+                        <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+                            <h3 class="text-base font-bold text-white uppercase flex items-center gap-2">
+                                <span>👥</span> Barbeiros na Barbearia
+                            </h3>
+                            <span id="badgeTotalBarbeiros" class="text-xs text-dourado font-bold bg-dourado/10 px-2.5 py-1 rounded-full border border-dourado/20">...</span>
+                        </div>
+
+                        <div id="listaBarbeirosAdmin" class="space-y-3">
+                            <p class="text-xs text-zinc-500 text-center py-6">Carregando barbeiros...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Orientações do Modo Multi-Barbeiro -->
+                <div class="bg-black/60 p-4 rounded-xl border border-zinc-800/80 space-y-2 text-xs text-zinc-300">
+                    <p class="font-bold text-dourado uppercase flex items-center gap-1.5">
+                        <span>💡</span> Como Funciona a Gestão de Multi-Barbeiros:
+                    </p>
+                    <ul class="list-disc list-inside space-y-1 text-[11px] text-zinc-400">
+                        <li><strong>Interruptor Desativado:</strong> O agendamento funciona como hoje (agenda única, rápida e sem pedir escolha de barbeiro).</li>
+                        <li><strong>Interruptor Ativado:</strong> O cliente escolhe com qual profissional deseja agendar (ou escolhe a opção <em>"Qualquer Profissional"</em> para horários mais rápidos).</li>
+                        <li><strong>Notificação Independente:</strong> Quando um cliente agendar com um barbeiro, o WhatsApp desse barbeiro é notificado na hora pelo robô.</li>
+                    </ul>
+                </div>
+            </section>
+
         </main>
         </div>
     </div>
@@ -1804,7 +1900,8 @@
             blockDays: "🗓️ Calendário & Horários de Expediente",
             payments: "💳 Mercado Pago",
             whatsapp: "🤖 WhatsApp Bot",
-            admins: "👥 Administradores"
+            admins: "👥 Administradores",
+            team: "👥 Equipe & Multi-Barbeiros"
         };
 
         const tabs = {
@@ -1817,7 +1914,8 @@
             blockDays: { btn: document.getElementById('tabNavBlockDays'), view: document.getElementById('viewBlockDays') },
             payments: { btn: document.getElementById('tabNavPayments'), view: document.getElementById('viewPayments') },
             whatsapp: { btn: document.getElementById('tabNavWhatsApp'), view: document.getElementById('viewWhatsApp') },
-            admins: { btn: document.getElementById('tabNavAdmins'), view: document.getElementById('viewAdmins') }
+            admins: { btn: document.getElementById('tabNavAdmins'), view: document.getElementById('viewAdmins') },
+            team: { btn: document.getElementById('tabNavTeam'), view: document.getElementById('viewTeam') }
         };
 
         function fecharSidebarMobile() {
@@ -1902,6 +2000,9 @@
                 carregarExpedienteAdmin();
             } else if (nomeAba === 'admins') {
                 carregarAdministradoresPainel();
+            } else if (nomeAba === 'team') {
+                carregarConfigMultiBarbeiro();
+                carregarBarbeirosAdmin();
             }
         };
 
@@ -2022,6 +2123,7 @@
                     try { await carregarConfiguracoesServidorWa(); } catch (e) { console.warn(e); }
                     try { carregarStatusWhatsAppBot(); } catch (e) { console.warn(e); }
                     try { carregarAdministradoresPainel(); } catch (e) { console.warn(e); }
+                    try { carregarConfigMultiBarbeiro(); carregarBarbeirosAdmin(); } catch (e) { console.warn(e); }
                     try { iniciarMonitoramentoTempoRealAdmin(); } catch (e) { console.warn(e); }
                     return;
                 } else {
@@ -3556,7 +3658,10 @@
 
                 html += `
                     <tr id="linhaAgendamento_${id}" class="hover:bg-zinc-900/50 transition border-b border-zinc-800/40">
-                        <td class="p-3.5 font-bold text-white">${nomeClienteFinal}</td>
+                        <td class="p-3.5 font-bold text-white">
+                            ${nomeClienteFinal}
+                            ${ag.barbeiroNome && ag.barbeiroNome !== 'Barbearia EMAÚS' && ag.barbeiroNome !== 'Qualquer Profissional' ? `<span class="block text-[10px] text-amber-400 font-semibold mt-0.5">💈 ${ag.barbeiroNome}</span>` : ''}
+                        </td>
                         <td class="p-3.5">
                             <span class="text-zinc-300 font-mono">${telefoneClienteFinal || 'N/A'}</span>
                             ${telLimpo ? `<a href="${linkZap}" target="_blank" class="ml-2 inline-block bg-green-600 hover:bg-green-700 text-white px-2 py-0.5 rounded text-[11px] font-bold transition shadow-sm">📱 WhatsApp</a>` : ''}
@@ -5604,6 +5709,195 @@
                 }
             });
         }
+
+        // ==========================================
+        // GESTÃO DE EQUIPE & MODO MULTI-BARBEIRO
+        // ==========================================
+        let modoMultiBarbeiroAtivo = false;
+        let listaBarbeirosAdminCache = [];
+
+        async function carregarConfigMultiBarbeiro() {
+            try {
+                const docSnap = await getDoc(doc(db, "configuracoes", "geral"));
+                if (docSnap.exists()) {
+                    modoMultiBarbeiroAtivo = Boolean(docSnap.data().modoMultiBarbeiro);
+                } else {
+                    modoMultiBarbeiroAtivo = false;
+                }
+                atualizarUIMultibarbeiroToggle();
+            } catch (e) {
+                console.warn("Aviso ao carregar config multi-barbeiro:", e);
+            }
+        }
+
+        function atualizarUIMultibarbeiroToggle() {
+            const btn = document.getElementById('btnToggleModoMultiBarbeiro');
+            const indicador = document.getElementById('indicadorToggleMultiBarbeiro');
+            const label = document.getElementById('labelStatusMultiBarbeiro');
+            const sublabel = document.getElementById('sublabelStatusMultiBarbeiro');
+
+            if (modoMultiBarbeiroAtivo) {
+                if (btn) btn.className = "relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none bg-green-500 cursor-pointer shadow-lg";
+                if (indicador) indicador.className = "inline-block h-5 w-5 transform rounded-full bg-white transition-transform translate-x-8 shadow-md";
+                if (label) label.innerHTML = '<span class="text-green-400">🟢 Modo Multi-Barbeiro: ATIVO</span>';
+                if (sublabel) sublabel.innerText = "Clientes escolhem o barbeiro no agendamento";
+            } else {
+                if (btn) btn.className = "relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none bg-zinc-700 cursor-pointer";
+                if (indicador) indicador.className = "inline-block h-5 w-5 transform rounded-full bg-white transition-transform translate-x-1 shadow-md";
+                if (label) label.innerHTML = '<span class="text-zinc-300">Modo Multi-Barbeiro</span>';
+                if (sublabel) sublabel.innerText = "Desativado (Agenda Única Tradicional)";
+            }
+        }
+
+        window.alternarModoMultiBarbeiro = async function() {
+            const novoEstado = !modoMultiBarbeiroAtivo;
+            const confirmMsg = novoEstado
+                ? "Deseja ATIVAR o Modo Multi-Barbeiros?\n\nO site passará a exibir a seleção de profissionais no agendamento e a calcular os horários por cadeira individual."
+                : "Deseja DESATIVAR o Modo Multi-Barbeiros?\n\nO site voltará a operar no modo tradicional de agenda única.";
+
+            if (!confirm(confirmMsg)) return;
+
+            try {
+                await setDoc(doc(db, "configuracoes", "geral"), {
+                    modoMultiBarbeiro: novoEstado,
+                    atualizadoEm: new Date().toISOString()
+                }, { merge: true });
+
+                modoMultiBarbeiroAtivo = novoEstado;
+                atualizarUIMultibarbeiroToggle();
+                if (window.vibrarDispositivo) window.vibrarDispositivo('sucesso');
+                alert(`✅ Modo Multi-Barbeiros ${novoEstado ? 'ATIVADO' : 'DESATIVADO'} com sucesso!`);
+            } catch (e) {
+                alert("Erro ao alterar modo: " + e.message);
+            }
+        };
+
+        async function carregarBarbeirosAdmin() {
+            const container = document.getElementById('listaBarbeirosAdmin');
+            const badgeTotal = document.getElementById('badgeTotalBarbeiros');
+            if (!container) return;
+
+            try {
+                const snap = await getDocs(collection(db, "barbeiros"));
+                const lista = [];
+                snap.forEach(d => lista.push({ id: d.id, ...d.data() }));
+                listaBarbeirosAdminCache = lista;
+
+                if (badgeTotal) badgeTotal.innerText = `${lista.length} cadastrado(s)`;
+
+                if (lista.length === 0) {
+                    container.innerHTML = `
+                        <div class="bg-black/50 p-6 rounded-2xl border border-zinc-800 text-center space-y-2">
+                            <p class="text-xs text-zinc-400">Nenhum barbeiro adicional cadastrado na equipe.</p>
+                            <p class="text-[11px] text-zinc-500">Cadastre novos barbeiros ao lado para que recebam agendamentos diretamente no WhatsApp particular.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = "";
+                lista.forEach(b => {
+                    const foto = b.fotoUrl || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=150&auto=format&fit=crop&q=80';
+                    const telFmt = b.whatsapp || 'Sem WhatsApp';
+                    const telLimpo = b.whatsapp ? b.whatsapp.replace(/\D/g, '') : '';
+                    const linkZap = telLimpo ? `https://wa.me/55${telLimpo}` : '#';
+
+                    html += `
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-black p-4 rounded-xl border border-zinc-800">
+                            <div class="flex items-center gap-3.5 min-w-0">
+                                <img src="${foto}" alt="${b.nome}" class="w-12 h-12 rounded-xl object-cover border border-amber-500/40 bg-zinc-900 flex-shrink-0" onerror="this.src='https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=150&auto=format&fit=crop&q=80'">
+                                <div class="truncate">
+                                    <div class="flex items-center gap-2">
+                                        <h4 class="text-sm font-bold text-white uppercase">${b.nome}</h4>
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-950 text-green-400 border border-green-800">Ativo</span>
+                                    </div>
+                                    <p class="text-[11px] text-zinc-400 truncate">${b.especialidade || 'Barbeiro Profissional'}</p>
+                                    <div class="flex items-center gap-2 mt-0.5">
+                                        <span class="text-[11px] text-dourado font-mono">📱 ${telFmt}</span>
+                                        ${telLimpo ? `<a href="${linkZap}" target="_blank" class="text-[10px] text-green-400 hover:underline">Testar Link</a>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 self-end sm:self-center">
+                                <button onclick="window.excluirBarbeiroAdmin('${b.id}', '${b.nome}')" class="bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-700/60 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">
+                                    Excluir
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+            } catch (e) {
+                console.error("Erro ao carregar barbeiros:", e);
+                container.innerHTML = `<p class="text-xs text-red-400 text-center py-4">Erro ao carregar barbeiros: ${e.message}</p>`;
+            }
+        }
+
+        const btnSalvarNovoBarbeiro = document.getElementById('btnSalvarNovoBarbeiro');
+        if (btnSalvarNovoBarbeiro) {
+            btnSalvarNovoBarbeiro.addEventListener('click', async () => {
+                const nome = (document.getElementById('inputNomeNovoBarbeiro')?.value || '').trim();
+                const whatsapp = (document.getElementById('inputWhatsNovoBarbeiro')?.value || '').trim();
+                const especialidade = (document.getElementById('inputEspecialidadeNovoBarbeiro')?.value || '').trim();
+                const fotoUrl = (document.getElementById('inputFotoNovoBarbeiro')?.value || '').trim();
+                const msg = document.getElementById('msgNovoBarbeiroStatus');
+
+                if (!nome || !whatsapp) {
+                    if (msg) {
+                        msg.className = "text-xs text-center font-medium text-red-400";
+                        msg.innerText = "Preencha o Nome e o WhatsApp do barbeiro!";
+                    }
+                    return;
+                }
+
+                btnSalvarNovoBarbeiro.disabled = true;
+                btnSalvarNovoBarbeiro.innerText = "⏳ Salvando...";
+
+                try {
+                    await addDoc(collection(db, "barbeiros"), {
+                        nome,
+                        whatsapp,
+                        especialidade: especialidade || "Barbeiro Profissional",
+                        fotoUrl: fotoUrl || "",
+                        status: "ativo",
+                        criadoEm: new Date().toISOString()
+                    });
+
+                    document.getElementById('inputNomeNovoBarbeiro').value = "";
+                    document.getElementById('inputWhatsNovoBarbeiro').value = "";
+                    document.getElementById('inputEspecialidadeNovoBarbeiro').value = "";
+                    document.getElementById('inputFotoNovoBarbeiro').value = "";
+
+                    if (msg) {
+                        msg.className = "text-xs text-center font-bold text-green-400";
+                        msg.innerText = "✅ Barbeiro adicionado com sucesso à equipe!";
+                        setTimeout(() => { if (msg) msg.innerText = ""; }, 3000);
+                    }
+                    if (window.vibrarDispositivo) window.vibrarDispositivo('sucesso');
+                    carregarBarbeirosAdmin();
+                } catch (e) {
+                    if (msg) {
+                        msg.className = "text-xs text-center font-medium text-red-400";
+                        msg.innerText = "Erro ao salvar: " + e.message;
+                    }
+                } finally {
+                    btnSalvarNovoBarbeiro.disabled = false;
+                    btnSalvarNovoBarbeiro.innerText = "+ Adicionar Barbeiro";
+                }
+            });
+        }
+
+        window.excluirBarbeiroAdmin = async function(id, nome) {
+            if (!confirm(`Tem certeza que deseja remover ${nome} da equipe?`)) return;
+            try {
+                await deleteDoc(doc(db, "barbeiros", id));
+                if (window.vibrarDispositivo) window.vibrarDispositivo('sucesso');
+                carregarBarbeirosAdmin();
+            } catch (e) {
+                alert("Erro ao remover barbeiro: " + e.message);
+            }
+        };
 
         // ==========================================
         // INSTALAÇÃO DO APLICATIVO DO BARBEIRO (PWA)
