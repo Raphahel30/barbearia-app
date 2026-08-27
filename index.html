@@ -2955,6 +2955,8 @@
                     } catch (errEst) {
                         console.error("Erro na requisição de estorno:", errEst);
                     }
+                }
+
                 // 2. Devolve produtos ao estoque caso existam
                 if (ag && Array.isArray(ag.produtos) && ag.produtos.length > 0) {
                     for (const p of ag.produtos) {
