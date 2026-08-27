@@ -1042,13 +1042,56 @@
                                     <input type="text" id="inputWhatsappBarbeiroPainel" placeholder="(11) 99999-9999" maxlength="15" class="w-full px-4 py-3 bg-black rounded-xl border border-zinc-700 text-white text-sm font-semibold focus:outline-none focus:border-dourado transition pl-11">
                                     <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-sm text-zinc-400">💬</span>
                                 </div>
-                                <p class="text-[11px] text-zinc-500 mt-1.5">💡 Exemplo: (11) 95378-9095. Você não precisa escanear QR Code no seu celular.</p>
+                                <p class="text-[11px] text-zinc-500 mt-1.5">💡 Digite o seu número com DDD (ex: 11993448991).</p>
                             </div>
 
                             <button id="btnSalvarWhatsappBarbeiro" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider transition cursor-pointer shadow-lg flex items-center justify-center gap-2">
                                 <span>💾</span> Salvar WhatsApp do Barbeiro
                             </button>
                             <p id="msgSalvarWhatsappBarbeiro" class="text-xs text-center font-medium min-h-[16px]"></p>
+                        </div>
+
+                        <!-- BLOCO: CONEXÃO POR CÓDIGO DE 8 DÍGITOS (SEM QR CODE) -->
+                        <div class="pt-5 border-t border-zinc-800/80 space-y-4">
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                <div>
+                                    <h4 class="text-xs font-bold uppercase text-amber-400 flex items-center gap-1.5">
+                                        <span>🔑</span> Ativar Robô no WhatsApp (Sem Câmera / Sem QR Code)
+                                    </h4>
+                                    <p class="text-[11px] text-zinc-400">Gere um código de 8 dígitos para conectar direto no aplicativo do seu celular.</p>
+                                </div>
+                                <button id="btnGerarCodigoPareamento" type="button" class="bg-amber-500 hover:bg-amber-600 text-black font-extrabold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition cursor-pointer shadow-lg flex items-center gap-1.5 whitespace-nowrap">
+                                    <span>⚡</span> Gerar Código
+                                </button>
+                            </div>
+
+                            <!-- Exibição do Código de 8 Dígitos -->
+                            <div id="boxCodigoPareamentoExibicao" class="hidden p-5 rounded-2xl bg-black border border-amber-500/60 text-center space-y-3.5 animate-fade-in shadow-2xl">
+                                <span class="text-[10px] font-bold text-amber-400 uppercase tracking-widest bg-amber-950/80 px-3 py-1 rounded-full border border-amber-600/50">
+                                    Seu Código de Conexão
+                                </span>
+                                
+                                <div class="flex items-center justify-center gap-2">
+                                    <div id="textoCodigoPareamento" class="font-mono text-2xl sm:text-3xl font-black text-dourado tracking-[0.2em] bg-zinc-950 px-5 py-3 rounded-xl border border-zinc-700 shadow-inner select-all">
+                                        ---- ----
+                                    </div>
+                                    <button id="btnCopiarCodigoPareamento" type="button" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3.5 py-3 rounded-xl transition cursor-pointer text-sm font-bold flex items-center gap-1" title="Copiar Código">
+                                        📋 Copiar
+                                    </button>
+                                </div>
+                                <p id="msgCopiadoCodigo" class="text-[11px] text-green-400 font-semibold min-h-[14px]"></p>
+
+                                <div class="bg-zinc-900/90 p-4 rounded-xl border border-zinc-700 text-left space-y-2 text-xs text-zinc-300">
+                                    <p class="font-bold text-amber-400 text-[11px] uppercase">📖 Como ativar no seu celular em 10 segundos:</p>
+                                    <ol class="list-decimal list-inside space-y-1.5 text-[11px] text-zinc-300">
+                                        <li>Abra o <strong>WhatsApp</strong> no seu celular.</li>
+                                        <li>Acesse <strong>Aparelhos Conectados</strong> > Toque em <strong>Conectar um aparelho</strong>.</li>
+                                        <li>No rodapé da tela, toque em <strong>"Conectar com número de telefone"</strong>.</li>
+                                        <li>Digite o código de 8 dígitos acima. <strong>Pronto! Conecta na hora sem câmera.</strong></li>
+                                    </ol>
+                                </div>
+                            </div>
+                            <p id="msgCodigoPareamentoStatus" class="text-xs text-center font-medium min-h-[16px]"></p>
                         </div>
 
                         <!-- Teste Instantâneo no Celular do Barbeiro -->
@@ -1072,18 +1115,13 @@
                             <div class="flex items-center gap-2.5">
                                 <span id="iconStatusRoboCentral" class="w-3 h-3 rounded-full bg-amber-400 animate-pulse"></span>
                                 <div>
-                                    <h4 class="text-xs font-bold text-white uppercase">Robô Central de Disparos da Barbearia</h4>
-                                    <p id="subtextoStatusRoboCentral" class="text-[11px] text-zinc-400">Verificando conexão da central...</p>
+                                    <h4 class="text-xs font-bold text-white uppercase">Robô Central de Disparos</h4>
+                                    <p id="subtextoStatusRoboCentral" class="text-[11px] text-zinc-400">Consultando status do servidor...</p>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <span id="badgeStatusRoboCentral" class="text-[10px] font-bold uppercase px-2.5 py-1 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">
-                                    Consultando...
-                                </span>
-                                <button id="btnAbrirParearRoboCentral" type="button" class="hidden bg-amber-500 hover:bg-amber-600 text-black font-extrabold px-3 py-1.5 rounded-lg text-[11px] uppercase tracking-wider transition cursor-pointer shadow-md">
-                                    🔗 Conectar Robô (1ª Vez)
-                                </button>
-                            </div>
+                            <span id="badgeStatusRoboCentral" class="text-[10px] font-bold uppercase px-2.5 py-1 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">
+                                Consultando...
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -1219,37 +1257,6 @@
 
             <button id="btnEntendiIosAdmin" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider cursor-pointer transition shadow-lg">
                 ✓ Entendi, Fechar
-            </button>
-        </div>
-    </div>
-
-    <!-- MODAL PAREAMENTO DO ROBÔ CENTRAL DE DISPAROS DA BARBEARIA -->
-    <div id="modalParearRoboCentral" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
-        <div class="bg-zinc-900 border border-amber-500/80 p-6 sm:p-7 rounded-3xl max-w-sm w-full space-y-4 text-center shadow-2xl relative my-6 animate-fade-in">
-            <button id="btnFecharModalParearRobo" type="button" class="absolute top-4 right-4 text-zinc-400 hover:text-white text-xl font-bold transition cursor-pointer">&times;</button>
-            <div class="mx-auto w-12 h-12 bg-amber-950/70 border border-amber-500/60 rounded-2xl flex items-center justify-center text-2xl shadow-inner">
-                🤖
-            </div>
-            
-            <div class="space-y-1">
-                <span class="text-[10px] font-extrabold text-amber-400 uppercase tracking-widest bg-amber-950/80 px-3 py-1 rounded-full border border-amber-600/50 inline-block">
-                    Pareamento da Central
-                </span>
-                <h3 class="text-lg font-extrabold text-white uppercase tracking-wide mt-1">Conectar Robô da Barbearia</h3>
-                <p class="text-xs text-zinc-400 leading-relaxed">
-                    Escaneie este QR Code <strong>apenas uma vez</strong> com o WhatsApp que fará os disparos automáticos da barbearia.
-                </p>
-            </div>
-
-            <!-- Área da Imagem do QR Code -->
-            <div id="boxQrImagemModal" class="w-60 h-60 mx-auto bg-black rounded-2xl flex items-center justify-center border border-zinc-700 p-2 overflow-hidden shadow-2xl">
-                <p class="text-xs text-zinc-500 text-center px-4 animate-pulse">Carregando QR Code...</p>
-            </div>
-
-            <p id="msgStatusPareamentoModal" class="text-xs text-center text-zinc-400 font-medium"></p>
-
-            <button id="btnFecharModalParearRoboOk" type="button" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider transition cursor-pointer">
-                Fechar
             </button>
         </div>
     </div>
@@ -5026,9 +5033,7 @@
             const icon = document.getElementById('iconStatusRoboCentral');
             const subtexto = document.getElementById('subtextoStatusRoboCentral');
             const badge = document.getElementById('badgeStatusRoboCentral');
-            const btnParear = document.getElementById('btnAbrirParearRoboCentral');
-            const boxQrModal = document.getElementById('boxQrImagemModal');
-            const msgModal = document.getElementById('msgStatusPareamentoModal');
+            const boxCodigo = document.getElementById('boxCodigoPareamentoExibicao');
 
             try {
                 const backendUrl = getBackendUrlAtivo();
@@ -5042,68 +5047,139 @@
                         badge.className = "text-[10px] font-bold uppercase px-2.5 py-1 rounded bg-green-950 text-green-300 border border-green-700";
                         badge.innerText = "🟢 Online 24h";
                     }
-                    if (btnParear) btnParear.classList.add('hidden');
-                    if (boxQrModal) {
-                        boxQrModal.innerHTML = `<div class="text-center space-y-2 py-8"><span class="text-4xl">✅</span><p class="text-xs text-green-400 font-bold">Robô Central Conectado com Sucesso!</p></div>`;
+                    if (boxCodigo && !boxCodigo.classList.contains('hidden')) {
+                        boxCodigo.classList.add('hidden');
                     }
-                    if (msgModal) msgModal.innerText = "Sessão conectada! Você pode fechar este modal.";
                     if (pollingRoboCentralInterval) {
                         clearInterval(pollingRoboCentralInterval);
                         pollingRoboCentralInterval = null;
                     }
-                } else if (data.status === 'qr_ready' && data.qrCode) {
+                } else if (data.status === 'qr_ready' || data.status === 'connecting') {
                     if (icon) icon.className = "w-3 h-3 rounded-full bg-amber-400 animate-pulse";
-                    if (subtexto) subtexto.innerText = "Robô aguardando pareamento da central (Apenas 1ª vez)";
+                    if (subtexto) subtexto.innerText = "Robô aguardando ativação por código no WhatsApp";
                     if (badge) {
                         badge.className = "text-[10px] font-bold uppercase px-2.5 py-1 rounded bg-amber-950 text-amber-300 border border-amber-700";
-                        badge.innerText = "⚠️ Pareamento Pendente";
+                        badge.innerText = "⚠️ Ativação Pendente";
                     }
-                    if (btnParear) btnParear.classList.remove('hidden');
-                    if (boxQrModal) {
-                        boxQrModal.innerHTML = `<img src="${data.qrCode}" class="w-full h-full object-contain rounded-lg" alt="QR Code" />`;
-                    }
-                    if (msgModal) msgModal.innerText = "Abra o WhatsApp no celular > Aparelhos Conectados e aponte a câmera para o QR Code acima.";
                 } else {
                     if (icon) icon.className = "w-3 h-3 rounded-full bg-zinc-600";
-                    if (subtexto) subtexto.innerText = "Robô offline ou iniciando...";
+                    if (subtexto) subtexto.innerText = "Robô desconectado. Clique em 'Gerar Código' acima.";
                     if (badge) {
                         badge.className = "text-[10px] font-bold uppercase px-2.5 py-1 rounded bg-zinc-800 text-zinc-400 border border-zinc-700";
                         badge.innerText = "Desconectado";
                     }
-                    if (btnParear) btnParear.classList.remove('hidden');
                 }
             } catch (e) {
                 if (subtexto) subtexto.innerText = "Servidor em nuvem iniciando...";
             }
         }
 
-        // Modal de Pareamento Inicial
-        const modalParearRobo = document.getElementById('modalParearRoboCentral');
-        const btnAbrirParear = document.getElementById('btnAbrirParearRoboCentral');
-        const btnFecharParear = document.getElementById('btnFecharModalParearRobo');
-        const btnFecharParearOk = document.getElementById('btnFecharModalParearRoboOk');
+        // 1. Gerar Código de Pareamento de 8 dígitos (sem câmera)
+        document.getElementById('btnGerarCodigoPareamento')?.addEventListener('click', async () => {
+            const btn = document.getElementById('btnGerarCodigoPareamento');
+            const input = document.getElementById('inputWhatsappBarbeiroPainel');
+            const boxCodigo = document.getElementById('boxCodigoPareamentoExibicao');
+            const textoCodigo = document.getElementById('textoCodigoPareamento');
+            const msgStatus = document.getElementById('msgCodigoPareamentoStatus');
 
-        if (btnAbrirParear) {
-            btnAbrirParear.addEventListener('click', async () => {
-                if (modalParearRobo) modalParearRobo.classList.remove('hidden');
-                await fetch(`${getBackendUrlAtivo()}/api/whatsapp/conectar`, { method: 'POST' }).catch(() => {});
-                await carregarStatusWhatsAppBot();
+            const raw = input ? input.value.replace(/\D/g, '') : (whatsAppNumeroAtivo || '');
 
-                if (pollingRoboCentralInterval) clearInterval(pollingRoboCentralInterval);
-                pollingRoboCentralInterval = setInterval(carregarStatusWhatsAppBot, 3000);
-            });
-        }
-
-        const fecharModalParear = () => {
-            if (modalParearRobo) modalParearRobo.classList.add('hidden');
-            if (pollingRoboCentralInterval) {
-                clearInterval(pollingRoboCentralInterval);
-                pollingRoboCentralInterval = null;
+            if (!raw || raw.length < 10) {
+                if (msgStatus) {
+                    msgStatus.className = "text-xs text-center font-medium text-red-400";
+                    msgStatus.innerText = "Digite seu número com DDD no campo acima para gerar o código.";
+                }
+                return;
             }
-        };
 
-        if (btnFecharParear) btnFecharParear.addEventListener('click', fecharModalParear);
-        if (btnFecharParearOk) btnFecharParearOk.addEventListener('click', fecharModalParear);
+            let numeroFinal = raw;
+            if (!numeroFinal.startsWith('55') && (numeroFinal.length === 10 || numeroFinal.length === 11)) {
+                numeroFinal = '55' + numeroFinal;
+            }
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<span>⏳ Gerando Código...</span>`;
+            }
+            if (msgStatus) {
+                msgStatus.className = "text-xs text-center font-medium text-amber-300";
+                msgStatus.innerText = "Solicitando código de 8 dígitos aos servidores do WhatsApp...";
+            }
+
+            try {
+                const backendUrl = getBackendUrlAtivo();
+                const res = await fetch(`${backendUrl}/api/whatsapp/codigo-pareamento`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telefone: numeroFinal })
+                });
+                const data = await res.json();
+
+                if (data.success && data.pairingCode) {
+                    if (textoCodigo) textoCodigo.innerText = data.pairingCode;
+                    if (boxCodigo) boxCodigo.classList.remove('hidden');
+                    if (msgStatus) {
+                        msgStatus.className = "text-xs text-center font-bold text-green-400";
+                        msgStatus.innerText = `✅ Código gerado! Digite no seu WhatsApp em Aparelhos Conectados > Conectar com número.`;
+                    }
+                    if (window.vibrarDispositivo) window.vibrarDispositivo('sucesso');
+
+                    if (pollingRoboCentralInterval) clearInterval(pollingRoboCentralInterval);
+                    pollingRoboCentralInterval = setInterval(carregarStatusWhatsAppBot, 3000);
+                } else if (data.status === 'connected') {
+                    if (msgStatus) {
+                        msgStatus.className = "text-xs text-center font-bold text-green-400";
+                        msgStatus.innerText = "✅ WhatsApp já está conectado e pronto para uso!";
+                    }
+                    await carregarStatusWhatsAppBot();
+                } else {
+                    if (msgStatus) {
+                        msgStatus.className = "text-xs text-center font-medium text-red-400";
+                        msgStatus.innerText = "Erro ao gerar código: " + (data.error || 'Tente novamente em instantes.');
+                    }
+                }
+            } catch (err) {
+                if (msgStatus) {
+                    msgStatus.className = "text-xs text-center font-medium text-red-400";
+                    msgStatus.innerText = "Erro de conexão: " + err.message;
+                }
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<span>⚡ Gerar Código</span>`;
+                }
+            }
+        });
+
+        // 2. Copiar Código de Pareamento
+        document.getElementById('btnCopiarCodigoPareamento')?.addEventListener('click', async () => {
+            const textoCodigo = document.getElementById('textoCodigoPareamento');
+            const msgCopiado = document.getElementById('msgCopiadoCodigo');
+            const code = textoCodigo ? textoCodigo.innerText.trim() : '';
+
+            if (code && code !== '---- ----') {
+                try {
+                    await navigator.clipboard.writeText(code);
+                    if (msgCopiado) {
+                        msgCopiado.innerText = "✅ Código copiado para a área de transferência!";
+                        setTimeout(() => { if (msgCopiado) msgCopiado.innerText = ""; }, 3000);
+                    }
+                    if (window.vibrarDispositivo) window.vibrarDispositivo('copiar');
+                } catch (e) {
+                    // Fallback
+                    const ta = document.createElement('textarea');
+                    ta.value = code;
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    if (msgCopiado) {
+                        msgCopiado.innerText = "✅ Código copiado!";
+                        setTimeout(() => { if (msgCopiado) msgCopiado.innerText = ""; }, 3000);
+                    }
+                }
+            }
+        });
 
         // ==========================================
         // GESTÃO DE ADMINISTRADORES
