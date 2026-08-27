@@ -2383,7 +2383,7 @@
                 let telLimpo = item.telefone ? item.telefone.replace(/\D/g, '') : '';
                 if (telLimpo && !telLimpo.startsWith('55')) telLimpo = '55' + telLimpo;
 
-                const msgWhatsLembrete = encodeURIComponent(`Olá ${item.cliente || 'Cliente'}! 👑 Passando para avisar que você tem 1 corte disponível no seu plano mensal VIP esta semana na EMAÚS Barbearia. O corte da semana expira em breve, agende pelo site para não perder: https://emaus-barbearia.vercel.app`);
+                const msgWhatsLembrete = encodeURIComponent(`Olá ${item.cliente || 'Cliente'}! 👑 Passando para avisar que você tem 1 corte disponível no seu plano mensal VIP esta semana na EMAÚS Barbearia. O corte da semana expira em breve, agende pelo site para não perder: ${window.location.origin}`);
                 const linkWhatsDireto = telLimpo ? `https://wa.me/${telLimpo}?text=${msgWhatsLembrete}` : '#';
 
                 // Status Geral da Assinatura
@@ -2828,11 +2828,11 @@
                 if (data.success) {
                     alert(`✅ Mensagem de aviso enviada com sucesso para ${cliente} (${telefone}) via WhatsApp!`);
                 } else {
-                    const msgWhats = encodeURIComponent(`Olá ${cliente}! 👑 Passando para avisar que o seu corte da Semana ${semanaNumero} do plano ${nomePlano} na EMAÚS Barbearia expira em ${dataLimite} (${diasRestantes} dias restantes). Agende pelo site para garantir seu horário: https://emaus-barbearia.vercel.app`);
+                    const msgWhats = encodeURIComponent(`Olá ${cliente}! 👑 Passando para avisar que o seu corte da Semana ${semanaNumero} do plano ${nomePlano} na EMAÚS Barbearia expira em ${dataLimite} (${diasRestantes} dias restantes). Agende pelo site para garantir seu horário: ${window.location.origin}`);
                     window.open(`https://wa.me/${telefone}?text=${msgWhats}`, '_blank');
                 }
             } catch (e) {
-                const msgWhats = encodeURIComponent(`Olá ${cliente}! 👑 Passando para avisar que o seu corte da Semana ${semanaNumero} do plano ${nomePlano} na EMAÚS Barbearia expira em ${dataLimite} (${diasRestantes} dias restantes). Agende pelo site para garantir seu horário: https://emaus-barbearia.vercel.app`);
+                const msgWhats = encodeURIComponent(`Olá ${cliente}! 👑 Passando para avisar que o seu corte da Semana ${semanaNumero} do plano ${nomePlano} na EMAÚS Barbearia expira em ${dataLimite} (${diasRestantes} dias restantes). Agende pelo site para garantir seu horário: ${window.location.origin}`);
                 window.open(`https://wa.me/${telefone}?text=${msgWhats}`, '_blank');
             }
         };

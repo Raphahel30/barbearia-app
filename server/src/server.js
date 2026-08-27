@@ -242,6 +242,7 @@ function requestResetOobCode(token, email) {
 
 const app = express();
 const port = process.env.PORT || 3000;
+const APP_SITE_URL = process.env.APP_SITE_URL || 'https://agendamento-barbearia-e8ffb.web.app';
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
@@ -305,7 +306,7 @@ app.post('/api/auth/recuperar-senha', async (req, res) => {
         }
 
         const oobCode = result.oobCode;
-        const directLink = `https://emaus-barbearia.vercel.app/redefinir-senha.html?oobCode=${oobCode}`;
+        const directLink = `${APP_SITE_URL}/redefinir-senha.html?oobCode=${oobCode}`;
 
         return res.json({
             success: true,
@@ -412,7 +413,7 @@ app.get('/api/auth/mercadopago/callback', async (req, res) => {
 
     if (error || !code) {
         console.error("Erro no retorno do OAuth Mercado Pago:", error, error_description);
-        return res.redirect(`https://emaus-barbearia.vercel.app/admin.html?mp_status=erro&msg=${encodeURIComponent(error_description || error || 'Autorizacao cancelada')}`);
+        return res.redirect(`${APP_SITE_URL}/admin.html?mp_status=erro&msg=${encodeURIComponent(error_description || error || 'Autorizacao cancelada')}`);
     }
 
     try {
@@ -447,7 +448,7 @@ app.get('/api/auth/mercadopago/callback', async (req, res) => {
 
         if (!tokenData || !tokenData.access_token) {
             console.error("Erro ao obter access token no OAuth:", tokenData);
-            return res.redirect(`https://emaus-barbearia.vercel.app/admin.html?mp_status=erro&msg=${encodeURIComponent(tokenData?.message || 'Falha ao autenticar com o Mercado Pago')}`);
+            return res.redirect(`${APP_SITE_URL}/admin.html?mp_status=erro&msg=${encodeURIComponent(tokenData?.message || 'Falha ao autenticar com o Mercado Pago')}`);
         }
 
         // Atualiza memória do servidor
@@ -496,11 +497,11 @@ app.get('/api/auth/mercadopago/callback', async (req, res) => {
             console.warn("Aviso ao salvar OAuth no Firestore:", fsErr);
         }
 
-        return res.redirect(`https://emaus-barbearia.vercel.app/admin.html?mp_status=sucesso&user_id=${encodeURIComponent(tokenData.user_id || '')}&token=${encodeURIComponent(tokenData.access_token || '')}&pub_key=${encodeURIComponent(tokenData.public_key || '')}`);
+        return res.redirect(`${APP_SITE_URL}/admin.html?mp_status=sucesso&user_id=${encodeURIComponent(tokenData.user_id || '')}&token=${encodeURIComponent(tokenData.access_token || '')}&pub_key=${encodeURIComponent(tokenData.public_key || '')}`);
 
     } catch (err) {
         console.error("Erro no processamento do callback OAuth:", err);
-        return res.redirect(`https://emaus-barbearia.vercel.app/admin.html?mp_status=erro&msg=${encodeURIComponent(err.message)}`);
+        return res.redirect(`${APP_SITE_URL}/admin.html?mp_status=erro&msg=${encodeURIComponent(err.message)}`);
     }
 });
 
@@ -1229,7 +1230,7 @@ app.post('/api/whatsapp/lembrete-expiracao-plano', async (req, res) => {
             `Identificamos que você possui *1 atendimento disponível* da *Semana ${semanaNumero || 'atual'}* no seu plano *${nomePlano || 'Mensal VIP'}*.\n\n` +
             `⚠️ *Atenção:* O crédito desta semana expira em *${dataLimiteSemana || 'breve'}* (${diasRestantesSemana || 'poucos'} dias restantes) e não acumula para a próxima semana.\n\n` +
             `Agende seu horário agora mesmo pelo nosso site para garantir o seu atendimento:\n` +
-            `👉 https://emaus-barbearia.vercel.app\n\n` +
+            `👉 ${APP_SITE_URL}\n\n` +
             `_EMAÚS Barbearia • Estilo e Alta Performance_`;
 
         const resultado = await enviarMensagemWhatsApp(telefone, msgLembrete);
@@ -1255,7 +1256,7 @@ app.post('/api/whatsapp/disparar-lembretes-expiracao-lote', async (req, res) => 
                 `Olá, *${item.cliente || 'Cliente'}*! 👑\n\n` +
                 `Lembramos que o seu corte da *Semana ${item.semanaNumero || 'atual'}* do plano *${item.nomePlano || 'Mensal VIP'}* está *disponível* e expira em *${item.dataLimiteSemana || 'breve'}*.\n\n` +
                 `Garanta o seu horário no link abaixo para não perder seu crédito semanal:\n` +
-                `👉 https://emaus-barbearia.vercel.app\n\n` +
+                `👉 ${APP_SITE_URL}\n\n` +
                 `_EMAÚS Barbearia_`;
 
             try {
@@ -1327,7 +1328,7 @@ app.post('/api/whatsapp/notificar-cancelamento', async (req, res) => {
             }
 
             msgCliente += `Caso deseje agendar um novo horário, acesse nosso site:\n` +
-                `👉 https://emaus-barbearia.vercel.app\n\n` +
+                `👉 ${APP_SITE_URL}\n\n` +
                 `_EMAÚS Barbearia_`;
 
             envioCliente = await enviarMensagemWhatsApp(telefone, msgCliente);
@@ -1369,7 +1370,7 @@ app.post('/api/whatsapp/notificar-compra-plano', async (req, res) => {
                 `• *Benefício:* 4 cortes (1 corte exclusivo por semana)\n` +
                 `• *Seu corte da Semana 1 já está disponível para agendamento gratuito!*\n\n` +
                 `Agende seus atendimentos diretamente no nosso site:\n` +
-                `👉 https://emaus-barbearia.vercel.app\n\n` +
+                `👉 ${APP_SITE_URL}\n\n` +
                 `_EMAÚS Barbearia • Estilo e Alta Performance_`;
 
             envioCliente = await enviarMensagemWhatsApp(telefone, msgCliente);
