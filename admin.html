@@ -1119,9 +1119,14 @@
                                     <p id="subtextoStatusRoboCentral" class="text-[11px] text-zinc-400">Consultando status do servidor...</p>
                                 </div>
                             </div>
-                            <span id="badgeStatusRoboCentral" class="text-[10px] font-bold uppercase px-2.5 py-1 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">
-                                Consultando...
-                            </span>
+                            <div class="flex items-center gap-2">
+                                <span id="badgeStatusRoboCentral" class="text-[10px] font-bold uppercase px-2.5 py-1 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">
+                                    Consultando...
+                                </span>
+                                <button id="btnDesconectarRoboWa" type="button" class="hidden bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-700/60 font-bold px-3 py-1.5 rounded-lg text-[11px] uppercase tracking-wider transition cursor-pointer">
+                                    🔌 Trocar WhatsApp que Envia
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -5034,6 +5039,7 @@
             const subtexto = document.getElementById('subtextoStatusRoboCentral');
             const badge = document.getElementById('badgeStatusRoboCentral');
             const boxCodigo = document.getElementById('boxCodigoPareamentoExibicao');
+            const btnDesconectar = document.getElementById('btnDesconectarRoboWa');
 
             try {
                 const backendUrl = getBackendUrlAtivo();
@@ -5047,6 +5053,7 @@
                         badge.className = "text-[10px] font-bold uppercase px-2.5 py-1 rounded bg-green-950 text-green-300 border border-green-700";
                         badge.innerText = "🟢 Online 24h";
                     }
+                    if (btnDesconectar) btnDesconectar.classList.remove('hidden');
                     if (boxCodigo && !boxCodigo.classList.contains('hidden')) {
                         boxCodigo.classList.add('hidden');
                     }
@@ -5061,6 +5068,7 @@
                         badge.className = "text-[10px] font-bold uppercase px-2.5 py-1 rounded bg-amber-950 text-amber-300 border border-amber-700";
                         badge.innerText = "⚠️ Ativação Pendente";
                     }
+                    if (btnDesconectar) btnDesconectar.classList.add('hidden');
                 } else {
                     if (icon) icon.className = "w-3 h-3 rounded-full bg-zinc-600";
                     if (subtexto) subtexto.innerText = "Robô desconectado. Clique em 'Gerar Código' acima.";
@@ -5068,11 +5076,27 @@
                         badge.className = "text-[10px] font-bold uppercase px-2.5 py-1 rounded bg-zinc-800 text-zinc-400 border border-zinc-700";
                         badge.innerText = "Desconectado";
                     }
+                    if (btnDesconectar) btnDesconectar.classList.add('hidden');
                 }
             } catch (e) {
                 if (subtexto) subtexto.innerText = "Servidor em nuvem iniciando...";
             }
         }
+
+        // Desconectar / Trocar WhatsApp que envia
+        document.getElementById('btnDesconectarRoboWa')?.addEventListener('click', async () => {
+            if (confirm("Deseja realmente desconectar o WhatsApp que envia as mensagens para conectar um novo número?")) {
+                try {
+                    const backendUrl = getBackendUrlAtivo();
+                    await fetch(`${backendUrl}/api/whatsapp/desconectar`, { method: 'POST' });
+                    if (pollingRoboCentralInterval) clearInterval(pollingRoboCentralInterval);
+                    await carregarStatusWhatsAppBot();
+                    alert("WhatsApp desconectado com sucesso! Agora você pode digitar o novo número e clicar em 'Gerar Código'.");
+                } catch (err) {
+                    alert("Erro ao desconectar: " + err.message);
+                }
+            }
+        });
 
         // 1. Gerar Código de Pareamento de 8 dígitos (sem câmera)
         document.getElementById('btnGerarCodigoPareamento')?.addEventListener('click', async () => {
