@@ -2580,8 +2580,8 @@
                     <div class="card-dark p-5 sm:p-6 rounded-3xl border border-zinc-800 hover:border-dourado/40 transition space-y-4 shadow-xl">
                         <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-zinc-800/80 pb-4">
                             <div class="flex items-center gap-3.5">
-                                <div class="w-12 h-12 bg-amber-950/50 border border-dourado/40 rounded-2xl flex items-center justify-center text-2xl shadow-inner flex-shrink-0">
-                                    👑
+                                <div class="w-12 h-12 bg-amber-950/50 border border-dourado/40 rounded-2xl flex items-center justify-center text-2xl shadow-inner flex-shrink-0 overflow-hidden">
+                                    ${uData?.fotoUrl ? `<img src="${uData.fotoUrl}" alt="${item.cliente || 'Cliente'}" class="w-full h-full object-cover" onerror="this.remove()">` : `👑`}
                                 </div>
                                 <div>
                                     <div class="flex items-center gap-2 flex-wrap">
@@ -3667,8 +3667,13 @@
                 html += `
                     <tr id="linhaAgendamento_${id}" class="hover:bg-zinc-900/50 transition border-b border-zinc-800/40">
                         <td class="p-3.5 font-bold text-white">
-                            ${nomeClienteFinal}
-                            ${ag.barbeiroNome && ag.barbeiroNome !== 'Barbearia EMAÚS' && ag.barbeiroNome !== 'Qualquer Profissional' ? `<span class="block text-[10px] text-amber-400 font-semibold mt-0.5">💈 ${ag.barbeiroNome}</span>` : ''}
+                            <div class="flex items-center gap-2.5">
+                                ${uData?.fotoUrl ? `<img src="${uData.fotoUrl}" alt="${nomeClienteFinal}" class="w-8 h-8 rounded-full object-cover border border-amber-500/40 bg-zinc-900 flex-shrink-0" onerror="this.remove()">` : ''}
+                                <div>
+                                    <span>${nomeClienteFinal}</span>
+                                    ${ag.barbeiroNome && ag.barbeiroNome !== 'Barbearia EMAÚS' && ag.barbeiroNome !== 'Qualquer Profissional' ? `<span class="block text-[10px] text-amber-400 font-semibold mt-0.5">💈 ${ag.barbeiroNome}</span>` : ''}
+                                </div>
+                            </div>
                         </td>
                         <td class="p-3.5">
                             <span class="text-zinc-300 font-mono">${telefoneClienteFinal || 'N/A'}</span>
