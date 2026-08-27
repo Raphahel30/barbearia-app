@@ -1087,6 +1087,26 @@ app.post('/api/whatsapp/enviar', async (req, res) => {
     return res.json(result);
 });
 
+// Teste rápido para o WhatsApp do Barbeiro
+app.post('/api/whatsapp/testar-barbeiro', async (req, res) => {
+    try {
+        const { numero } = req.body;
+        if (!numero || String(numero).replace(/\D/g, '').length < 10) {
+            return res.status(400).json({ success: false, error: 'Digite um número de WhatsApp válido com DDD para realizar o teste.' });
+        }
+        const msgTeste = `💈 *EMAÚS Barbearia - Teste de Notificação*\n\n` +
+            `Olá, Barbeiro! ✂️\n\n` +
+            `Seu WhatsApp foi configurado com sucesso no sistema da Barbearia EMAÚS.\n\n` +
+            `✅ A partir de agora, você receberá aqui todos os resumos de agendamentos, cancelamentos e vendas da loja em tempo real!\n\n` +
+            `_EMAÚS Barbearia • Sistema de Gestão 24/7_`;
+
+        const result = await enviarMensagemWhatsApp(numero, msgTeste);
+        return res.json(result);
+    } catch (err) {
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 function resolverNumeroBarbeiro(customNumber) {
     if (customNumber && String(customNumber).trim().replace(/\D/g, '').length >= 10) {
         return String(customNumber).trim().replace(/\D/g, '');

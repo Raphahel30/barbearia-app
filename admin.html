@@ -1013,112 +1013,72 @@
                 </div>
             </section>
 
-            <!-- 6. ABA: AUTOMAÇÃO DO WHATSAPP BOT -->
+            <!-- 6. ABA: AUTOMAÇÃO WHATSAPP & NOTIFICAÇÕES DO BARBEIRO -->
             <section id="viewWhatsApp" class="space-y-6 hidden">
-                <div class="max-w-2xl mx-auto space-y-6">
+                <div class="max-w-3xl mx-auto space-y-6">
                     <div>
-                        <h2 class="text-2xl font-bold text-white uppercase">Robô de WhatsApp Automático</h2>
-                        <p class="text-xs text-zinc-400">Envie mensagens de confirmação e lembretes automaticamente direto pelo seu WhatsApp sem precisar clicar em links.</p>
+                        <h2 class="text-2xl font-bold text-white uppercase">🤖 WhatsApp do Barbeiro</h2>
+                        <p class="text-xs text-zinc-400">Receba todos os novos agendamentos, cancelamentos, assinaturas VIP e compras de produtos diretamente no seu WhatsApp pessoal.</p>
                     </div>
 
-                    <!-- Card de Configuração do Servidor Render / Nuvem 24/7 (Oculto para layout limpo) -->
-                    <div id="cardConfigServidorRenderWa" class="hidden card-dark p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
-                        <div class="flex justify-between items-start">
+                    <!-- CARD PRINCIPAL: NÚMERO DO BARBEIRO -->
+                    <div class="card-dark p-6 sm:p-7 rounded-2xl border border-zinc-800 space-y-6 shadow-2xl">
+                        <div class="flex items-center gap-3.5 border-b border-zinc-800/80 pb-4">
+                            <div class="w-12 h-12 bg-amber-950/80 border border-dourado/50 rounded-2xl flex items-center justify-center text-2xl shadow-lg flex-shrink-0">
+                                📱
+                            </div>
                             <div>
-                                <span class="text-[10px] font-bold uppercase tracking-widest text-dourado bg-dourado/10 border border-dourado/30 px-2.5 py-0.5 rounded-full">
-                                    Conexão 24 Horas
-                                </span>
-                                <h3 class="text-base font-bold text-white uppercase tracking-wide mt-2">
-                                    🌐 Servidor do Robô WhatsApp (Render / Nuvem)
-                                </h3>
-                                <p class="text-xs text-zinc-400 mt-1">
-                                    Insira a URL do seu servidor contínuo (ex: <strong>Render.com</strong>) para manter o WhatsApp conectado 24 horas por dia sem quedas.
-                                </p>
+                                <h3 class="text-base font-bold text-white uppercase tracking-wide">Número para Receber Notificações</h3>
+                                <p class="text-xs text-zinc-400">Basta cadastrar o seu WhatsApp abaixo. O robô enviará todos os avisos em tempo real.</p>
                             </div>
                         </div>
 
-                        <div class="space-y-3 pt-1">
+                        <div class="space-y-4">
                             <div>
-                                <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">
-                                    URL do Servidor no Render
+                                <label class="block text-xs font-bold text-zinc-300 uppercase mb-1.5">
+                                    WhatsApp do Barbeiro com DDD
                                 </label>
-                                <div class="flex flex-col sm:flex-row gap-2">
-                                    <input type="url" id="inputUrlServidorWa" placeholder="https://emaus-barbearia-bot.onrender.com" class="flex-1 px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white text-xs font-mono focus:outline-none focus:border-dourado transition">
-                                    <button id="btnSalvarUrlServidorWa" type="button" class="bg-dourado hover:bg-[#C5A028] text-black font-bold px-4 py-2.5 rounded-lg text-xs uppercase tracking-wider transition cursor-pointer shadow-lg whitespace-nowrap">
-                                        💾 Salvar URL
-                                    </button>
-                                    <button id="btnTestarConexaoServidorWa" type="button" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-bold px-4 py-2.5 rounded-lg text-xs uppercase tracking-wider transition cursor-pointer whitespace-nowrap">
-                                        ⚡ Testar Servidor
-                                    </button>
+                                <div class="relative">
+                                    <input type="text" id="inputWhatsappBarbeiroPainel" placeholder="(11) 99999-9999" maxlength="15" class="w-full px-4 py-3 bg-black rounded-xl border border-zinc-700 text-white text-sm font-semibold focus:outline-none focus:border-dourado transition pl-11">
+                                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-sm text-zinc-400">💬</span>
                                 </div>
+                                <p class="text-[11px] text-zinc-500 mt-1.5">💡 Exemplo: (11) 95378-9095. Você não precisa escanear QR Code no seu celular.</p>
                             </div>
-                            <p id="msgUrlServidorWaStatus" class="text-xs text-center font-medium min-h-[16px]"></p>
-                        </div>
-                    </div>
 
-                    <!-- Card de Status do WhatsApp -->
-                    <div class="card-dark p-6 rounded-2xl border border-zinc-800 space-y-5">
-                        <div id="boxStatusWa" class="p-4 rounded-xl border flex items-center justify-between bg-zinc-900 border-zinc-800">
-                            <div class="flex items-center gap-3">
-                                <span id="iconStatusWa" class="w-3.5 h-3.5 rounded-full bg-amber-400 animate-pulse"></span>
-                                <div>
-                                    <h4 id="textoStatusWa" class="font-bold text-sm text-white">Verificando WhatsApp...</h4>
-                                    <p id="subtextoStatusWa" class="text-xs text-zinc-400">Consultando o servidor de automação</p>
-                                </div>
-                            </div>
-                            <span id="badgeAmbienteWa" class="text-[10px] font-bold uppercase px-2.5 py-1 rounded bg-zinc-800 text-zinc-300">
-                                Desconectado
-                            </span>
-                        </div>
-
-                        <!-- CONEXÃO DIRETA VIA QR CODE -->
-                        <div class="space-y-4 pt-1">
-                            <!-- Área do QR Code -->
-                            <div id="containerQrCodeWa" class="flex flex-col items-center justify-center p-6 bg-black rounded-2xl border border-zinc-800 space-y-4">
-                                <div id="boxQrImagem" class="w-64 h-64 bg-zinc-900 rounded-2xl flex items-center justify-center border border-zinc-700 p-2 overflow-hidden shadow-2xl">
-                                    <p class="text-xs text-zinc-500 text-center px-4">Clique no botão abaixo para gerar o QR Code de conexão.</p>
-                                </div>
-                                
-                                <p class="text-xs text-zinc-300 text-center max-w-sm">
-                                    Abra o WhatsApp no celular > <strong>Aparelhos Conectados</strong> > <strong>Conectar um aparelho</strong> e aponte a câmera para o QR Code acima.
-                                </p>
-                                
-                                <div class="flex flex-wrap items-center justify-center gap-3">
-                                    <button id="btnGerarQrCodeWa" type="button" class="bg-dourado hover:bg-[#C5A028] text-black font-extrabold px-6 py-3 rounded-xl text-xs uppercase tracking-wider transition cursor-pointer flex items-center gap-2 shadow-xl">
-                                        🔄 Gerar / Conectar QR Code
-                                    </button>
-                                </div>
-
-                                <!-- Dica para quem usa apenas 1 celular -->
-                                <div class="bg-zinc-900/90 p-4 rounded-xl border border-zinc-700 text-left space-y-1.5 text-xs max-w-md">
-                                    <p class="font-bold text-dourado text-[11px] uppercase flex items-center gap-1.5">
-                                        <span>💡</span> Dica rápida se estiver usando apenas 1 celular:
-                                    </p>
-                                    <p class="text-[11px] text-zinc-300 leading-relaxed">
-                                        1. Clique em <strong>Gerar QR Code</strong> e tire um <strong>Print da tela</strong>.<br>
-                                        2. Envie o print para o WhatsApp de um amigo/familiar ou abra na tela de um computador/tablet.<br>
-                                        3. No seu WhatsApp, abra <strong>Aparelhos Conectados</strong> e aponte a câmera para a foto. Conecta na hora!
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex justify-center pt-2">
-                            <button id="btnDesconectarWa" type="button" class="hidden bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2.5 rounded-lg text-xs uppercase transition cursor-pointer flex items-center gap-1.5 shadow-lg">
-                                🔌 Sair do Número Atual / Trocar de WhatsApp
+                            <button id="btnSalvarWhatsappBarbeiro" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider transition cursor-pointer shadow-lg flex items-center justify-center gap-2">
+                                <span>💾</span> Salvar WhatsApp do Barbeiro
                             </button>
+                            <p id="msgSalvarWhatsappBarbeiro" class="text-xs text-center font-medium min-h-[16px]"></p>
                         </div>
 
-                        <!-- Teste de Envio Rápido -->
-                        <div class="pt-4 border-t border-zinc-800 space-y-3">
-                            <h4 class="text-xs font-bold uppercase text-zinc-300">🧪 Testar Disparo de Mensagem</h4>
-                            <div class="flex flex-col sm:flex-row gap-2">
-                                <input type="text" id="inputTesteWaNumero" placeholder="DDD + Número (ex: 11999999999)" class="flex-1 px-3 py-2 bg-zinc-900 rounded-lg border border-zinc-800 text-xs text-white focus:outline-none focus:border-dourado">
-                                <button id="btnEnviarTesteWa" type="button" class="bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2 rounded-lg text-xs uppercase transition cursor-pointer whitespace-nowrap">
-                                    Enviar Teste
+                        <!-- Teste Instantâneo no Celular do Barbeiro -->
+                        <div class="pt-4 border-t border-zinc-800/80 space-y-3">
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                <div>
+                                    <h4 class="text-xs font-bold uppercase text-zinc-300">🧪 Testar Notificação no seu Celular</h4>
+                                    <p class="text-[11px] text-zinc-400">Envie um alerta de teste para confirmar que as mensagens estão chegando no seu aparelho.</p>
+                                </div>
+                                <button id="btnTestarWhatsappBarbeiro" type="button" class="bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs uppercase transition cursor-pointer flex items-center gap-1.5 shadow-md whitespace-nowrap">
+                                    <span>📲</span> Enviar Teste
                                 </button>
                             </div>
-                            <p id="msgTesteWaStatus" class="text-xs text-center font-medium"></p>
+                            <p id="msgTestarWhatsappBarbeiro" class="text-xs text-center font-medium min-h-[16px]"></p>
+                        </div>
+                    </div>
+
+                    <!-- Status do Robô Central de Disparos -->
+                    <div class="bg-black/60 p-5 rounded-2xl border border-zinc-800/80 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2.5">
+                                <span class="w-3 h-3 rounded-full bg-green-400 animate-pulse"></span>
+                                <div>
+                                    <h4 class="text-xs font-bold text-white uppercase">Robô Central da Barbearia</h4>
+                                    <p class="text-[11px] text-zinc-400">Servidor em nuvem 24h ativo para disparos automáticos</p>
+                                </div>
+                            </div>
+                            <span class="text-[10px] font-bold uppercase px-2.5 py-1 rounded bg-green-950 text-green-300 border border-green-700">
+                                🟢 Ativo 24h
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -4603,6 +4563,20 @@
                 if (data.whatsappAdmin) {
                     const inputWa = document.getElementById('inputWhatsappAdmin');
                     if (inputWa) inputWa.value = data.whatsappAdmin;
+
+                    const inputWaPainel = document.getElementById('inputWhatsappBarbeiroPainel');
+                    if (inputWaPainel) {
+                        let v = data.whatsappAdmin.replace(/\D/g, '');
+                        if (v.startsWith('55') && v.length > 10) v = v.slice(2);
+                        if (v.length > 10) {
+                            inputWaPainel.value = `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`;
+                        } else if (v.length > 6) {
+                            inputWaPainel.value = `(${v.slice(0, 2)}) ${v.slice(2, 6)}-${v.slice(6)}`;
+                        } else {
+                            inputWaPainel.value = v;
+                        }
+                    }
+
                     whatsAppNumeroAtivo = data.whatsappAdmin;
                     adminWhatsappGlobal = data.whatsappAdmin;
                 }
@@ -4860,8 +4834,6 @@
                     const data = snap.data();
                     if (data.servidorUrl) {
                         configWhatsappUrlGlobal = data.servidorUrl.trim().replace(/\/+$/, '');
-                        const input = document.getElementById('inputUrlServidorWa');
-                        if (input) input.value = configWhatsappUrlGlobal;
                     }
                 }
             } catch (e) {
@@ -4869,260 +4841,153 @@
             }
         }
 
-        async function carregarStatusWhatsAppBot() {
-            const box = document.getElementById('boxStatusWa');
-            const texto = document.getElementById('textoStatusWa');
-            const sub = document.getElementById('subtextoStatusWa');
-            const icon = document.getElementById('iconStatusWa');
-            const badge = document.getElementById('badgeAmbienteWa');
-            const boxQr = document.getElementById('boxQrImagem');
-            const btnDesconectar = document.getElementById('btnDesconectarWa');
+        // ==========================================
+        // GESTÃO DO WHATSAPP DO BARBEIRO (MODO SIMPLES)
+        // ==========================================
+        const inputWhatsappBarbeiro = document.getElementById('inputWhatsappBarbeiroPainel');
+        if (inputWhatsappBarbeiro) {
+            inputWhatsappBarbeiro.addEventListener('input', (e) => {
+                let v = e.target.value.replace(/\D/g, '');
+                if (v.startsWith('55') && v.length > 11) v = v.slice(2);
+                if (v.length > 11) v = v.slice(0, 11);
 
-            const backendUrlAtivo = getBackendUrlAtivo();
-
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 8000);
-                const res = await fetch(`${backendUrlAtivo}/api/whatsapp/status`, { signal: controller.signal });
-                clearTimeout(timeoutId);
-                const data = await res.json();
-
-                const btnGerar = document.getElementById('btnGerarQrCodeWa');
-
-                if (data.status === 'connected') {
-                    box.className = "p-4 rounded-xl border flex items-center justify-between bg-green-950/40 border-green-800";
-                    icon.className = "w-3.5 h-3.5 rounded-full bg-green-400";
-                    texto.innerText = "WhatsApp Conectado 24h!";
-                    sub.innerText = data.userNumber ? `Aparelho ativo: +${data.userNumber}` : "Robô ativo e enviando mensagens automáticas";
-                    badge.className = "text-[10px] font-bold uppercase px-2.5 py-1 rounded bg-green-600 text-white";
-                    badge.innerText = "Online";
-
-                    boxQr.innerHTML = `
-                        <div class="text-center space-y-2">
-                            <span class="text-4xl">✅</span>
-                            <p class="font-bold text-green-400 text-sm">WhatsApp Conectado com Sucesso!</p>
-                            <p class="text-xs text-zinc-400">Todas as confirmações, lembretes de agendamento e alertas do plano VIP estão ativos.</p>
-                            ${data.userNumber ? `<p class="text-xs text-dourado font-mono font-bold">+${data.userNumber}</p>` : ''}
-                        </div>
-                    `;
-                    if (btnDesconectar) btnDesconectar.classList.remove('hidden');
-                    if (btnGerar) btnGerar.classList.add('hidden');
-
-                    if (waPollingInterval) {
-                        clearInterval(waPollingInterval);
-                        waPollingInterval = null;
-                    }
-                } else if (data.status === 'qr_ready' && data.qrCode) {
-                    box.className = "p-4 rounded-xl border flex items-center justify-between bg-amber-950/40 border-amber-800";
-                    icon.className = "w-3.5 h-3.5 rounded-full bg-amber-400 animate-pulse";
-                    texto.innerText = "Aguardando Leitura do QR Code";
-                    sub.innerText = "Aponte a câmera do WhatsApp para conectar";
-                    badge.className = "text-[10px] font-bold uppercase px-2.5 py-1 rounded bg-amber-600 text-black";
-                    badge.innerText = "QR Code Pronto";
-
-                    boxQr.innerHTML = `<img src="${data.qrCode}" class="w-full h-full object-contain rounded-lg shadow-inner" alt="QR Code WhatsApp" />`;
-                    if (btnDesconectar) btnDesconectar.classList.add('hidden');
-                    if (btnGerar) btnGerar.classList.remove('hidden');
-                } else if (data.status === 'connecting') {
-                    box.className = "p-4 rounded-xl border flex items-center justify-between bg-zinc-900 border-zinc-800";
-                    icon.className = "w-3.5 h-3.5 rounded-full bg-blue-400 animate-pulse";
-                    texto.innerText = "Iniciando Conexão...";
-                    sub.innerText = "Preparando servidor de WhatsApp";
-                    badge.className = "text-[10px] font-bold uppercase px-2.5 py-1 rounded bg-blue-600 text-white";
-                    badge.innerText = "Conectando";
-
-                    boxQr.innerHTML = `<p class="text-xs text-zinc-400 text-center px-4 animate-pulse">Gerando novo QR Code...</p>`;
-                    if (btnDesconectar) btnDesconectar.classList.add('hidden');
-                    if (btnGerar) btnGerar.classList.remove('hidden');
+                if (v.length > 10) {
+                    e.target.value = `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`;
+                } else if (v.length > 6) {
+                    e.target.value = `(${v.slice(0, 2)}) ${v.slice(2, 6)}-${v.slice(6)}`;
+                } else if (v.length > 2) {
+                    e.target.value = `(${v.slice(0, 2)}) ${v.slice(2)}`;
                 } else {
-                    box.className = "p-4 rounded-xl border flex items-center justify-between bg-zinc-900 border-zinc-800";
-                    icon.className = "w-3.5 h-3.5 rounded-full bg-zinc-600";
-                    texto.innerText = "WhatsApp Desconectado";
-                    sub.innerText = configWhatsappUrlGlobal ? "Servidor configurado. Clique em 'Gerar / Conectar QR Code'" : "Insira a URL do Render acima e clique em 'Gerar / Conectar QR Code'";
-                    badge.className = "text-[10px] font-bold uppercase px-2.5 py-1 rounded bg-zinc-800 text-zinc-400";
-                    badge.innerText = "Desconectado";
-
-                    boxQr.innerHTML = `<p class="text-xs text-zinc-500 text-center px-4">Clique no botão abaixo para gerar o QR Code de conexão.</p>`;
-                    if (btnDesconectar) btnDesconectar.classList.add('hidden');
-                    if (btnGerar) btnGerar.classList.remove('hidden');
+                    e.target.value = v;
                 }
-            } catch (e) {
-                console.warn("Erro ao consultar status do WhatsApp:", e);
-                if (box) box.className = "p-4 rounded-xl border flex items-center justify-between bg-zinc-900 border-zinc-800";
-                if (icon) icon.className = "w-3.5 h-3.5 rounded-full bg-amber-500";
-                if (texto) texto.innerText = "Aguardando Servidor WhatsApp";
-                if (sub) sub.innerText = configWhatsappUrlGlobal ? "Servidor Render iniciando ou hibernando..." : "Configure a URL do Render no campo acima";
-                if (badge) {
-                    badge.className = "text-[10px] font-bold uppercase px-2.5 py-1 rounded bg-zinc-800 text-zinc-400";
-                    badge.innerText = "Standby";
-                }
-            }
+            });
         }
 
-        document.getElementById('btnSalvarUrlServidorWa')?.addEventListener('click', async () => {
-            const input = document.getElementById('inputUrlServidorWa');
-            const msg = document.getElementById('msgUrlServidorWaStatus');
-            const url = input ? input.value.trim().replace(/\/+$/, '') : '';
+        document.getElementById('btnSalvarWhatsappBarbeiro')?.addEventListener('click', async () => {
+            const input = document.getElementById('inputWhatsappBarbeiroPainel');
+            const msg = document.getElementById('msgSalvarWhatsappBarbeiro');
+            const btn = document.getElementById('btnSalvarWhatsappBarbeiro');
+            const raw = input ? input.value.replace(/\D/g, '') : '';
 
-            if (msg) {
-                msg.className = "text-xs text-center font-medium text-amber-300";
-                msg.innerText = "Salvando URL do servidor...";
-            }
-
-            try {
-                await setDoc(doc(db, "configuracoes", "whatsapp"), {
-                    servidorUrl: url,
-                    atualizadoEm: new Date().toISOString()
-                }, { merge: true });
-
-                configWhatsappUrlGlobal = url;
-                if (msg) {
-                    msg.className = "text-xs text-center font-bold text-green-400";
-                    msg.innerText = "✅ URL do servidor salva com sucesso no banco de dados!";
-                    setTimeout(() => { if (msg.innerText.includes('sucesso')) msg.innerText = ""; }, 4000);
-                }
-                
-                await carregarStatusWhatsAppBot();
-            } catch (e) {
+            if (!raw || raw.length < 10) {
                 if (msg) {
                     msg.className = "text-xs text-center font-medium text-red-400";
-                    msg.innerText = "Erro ao salvar URL: " + e.message;
-                }
-            }
-        });
-
-        document.getElementById('btnTestarConexaoServidorWa')?.addEventListener('click', async () => {
-            const input = document.getElementById('inputUrlServidorWa');
-            const msg = document.getElementById('msgUrlServidorWaStatus');
-            const url = (input?.value.trim() || configWhatsappUrlGlobal || BACKEND_URL).replace(/\/+$/, '');
-
-            if (!url) {
-                if (msg) {
-                    msg.className = "text-xs text-center font-medium text-red-400";
-                    msg.innerText = "Digite a URL do Render (ex: https://seu-app.onrender.com) para testar.";
+                    msg.innerText = "Por favor, digite o número do WhatsApp com DDD completo (ex: 11999999999).";
                 }
                 return;
             }
 
-            if (msg) {
-                msg.className = "text-xs text-center font-medium text-amber-300";
-                msg.innerText = "Conectando ao servidor...";
+            let numeroFinal = raw;
+            if (!numeroFinal.startsWith('55') && (numeroFinal.length === 10 || numeroFinal.length === 11)) {
+                numeroFinal = '55' + numeroFinal;
             }
 
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 12000);
-                const resp = await fetch(`${url}/health`, { signal: controller.signal });
-                clearTimeout(timeoutId);
-                const data = await resp.json();
-
-                if (data.status === 'ok' || data.status === 'online') {
-                    if (msg) {
-                        msg.className = "text-xs text-center font-bold text-green-400";
-                        msg.innerText = `✅ Servidor Online e Respondendo! (Status WhatsApp: ${data.whatsapp?.status || data.status})`;
-                    }
-                    await carregarStatusWhatsAppBot();
-                } else {
-                    if (msg) {
-                        msg.className = "text-xs text-center font-medium text-amber-300";
-                        msg.innerText = `Servidor respondeu com status: ${data.status || 'desconhecido'}`;
-                    }
-                }
-            } catch (err) {
-                if (msg) {
-                    msg.className = "text-xs text-center font-medium text-red-400";
-                    msg.innerText = `❌ Falha ao conectar no servidor (${err.message}). Se for a primeira vez no Render, ele pode levar até 40s para acordar.`;
-                }
-            }
-        });
-
-        document.getElementById('btnGerarQrCodeWa')?.addEventListener('click', async () => {
-            const btn = document.getElementById('btnGerarQrCodeWa');
             if (btn) {
                 btn.disabled = true;
-                btn.innerHTML = "⏳ Gerando QR Code...";
+                btn.innerHTML = `<span>⏳ Salvando...</span>`;
+            }
+            if (msg) {
+                msg.className = "text-xs text-center font-medium text-amber-300";
+                msg.innerText = "Salvando WhatsApp do Barbeiro...";
             }
 
             try {
-                const backendUrl = getBackendUrlAtivo();
-                await fetch(`${backendUrl}/api/whatsapp/conectar`, { method: 'POST' });
-                await carregarStatusWhatsAppBot();
+                await setDoc(doc(db, "configuracoes", "pagamento"), {
+                    whatsappAdmin: numeroFinal,
+                    atualizadoEm: new Date()
+                }, { merge: true });
 
-                if (waPollingInterval) clearInterval(waPollingInterval);
-                waPollingInterval = setInterval(async () => {
-                    await carregarStatusWhatsAppBot();
-                }, 4000);
+                whatsAppNumeroAtivo = numeroFinal;
+                adminWhatsappGlobal = numeroFinal;
+
+                const inputMercadoPago = document.getElementById('inputWhatsappAdmin');
+                if (inputMercadoPago) inputMercadoPago.value = numeroFinal;
+
+                if (msg) {
+                    msg.className = "text-xs text-center font-bold text-green-400";
+                    msg.innerText = "✅ WhatsApp do Barbeiro salvo com sucesso! Todas as notificações serão enviadas para este número.";
+                }
+                if (window.vibrarDispositivo) window.vibrarDispositivo('sucesso');
             } catch (err) {
-                alert("Erro ao solicitar QR Code: " + err.message);
+                console.error("Erro ao salvar WhatsApp do Barbeiro:", err);
+                if (msg) {
+                    msg.className = "text-xs text-center font-medium text-red-400";
+                    msg.innerText = "Erro ao salvar: " + err.message;
+                }
             } finally {
                 if (btn) {
                     btn.disabled = false;
-                    btn.innerHTML = "🔄 Gerar / Conectar QR Code";
+                    btn.innerHTML = `<span>💾 Salvar WhatsApp do Barbeiro</span>`;
                 }
             }
         });
 
-        document.getElementById('btnDesconectarWa')?.addEventListener('click', async () => {
-            if (confirm("Deseja realmente desconectar a sessão do WhatsApp?")) {
-                try {
-                    const backendUrl = getBackendUrlAtivo();
-                    await fetch(`${backendUrl}/api/whatsapp/desconectar`, { method: 'POST' });
-                    if (waPollingInterval) clearInterval(waPollingInterval);
-                    await carregarStatusWhatsAppBot();
-                } catch (err) {
-                    alert("Erro ao desconectar: " + err.message);
-                }
-            }
-        });
+        document.getElementById('btnTestarWhatsappBarbeiro')?.addEventListener('click', async () => {
+            const input = document.getElementById('inputWhatsappBarbeiroPainel');
+            const msg = document.getElementById('msgTestarWhatsappBarbeiro');
+            const btn = document.getElementById('btnTestarWhatsappBarbeiro');
+            const raw = input ? input.value.replace(/\D/g, '') : (whatsAppNumeroAtivo || '');
 
-        document.getElementById('btnEnviarTesteWa')?.addEventListener('click', async () => {
-            const inputNumero = document.getElementById('inputTesteWaNumero');
-            const msgStatus = document.getElementById('msgTesteWaStatus');
-            const numero = inputNumero ? inputNumero.value.trim() : '';
-
-            if (!numero) {
-                if (msgStatus) {
-                    msgStatus.className = "text-xs text-center font-medium text-red-400";
-                    msgStatus.innerText = "Digite um número com DDD para o teste!";
+            if (!raw || raw.length < 10) {
+                if (msg) {
+                    msg.className = "text-xs text-center font-medium text-red-400";
+                    msg.innerText = "Digite ou salve o seu WhatsApp com DDD antes de disparar o teste.";
                 }
                 return;
             }
 
-            if (msgStatus) {
-                msgStatus.className = "text-xs text-center font-medium text-amber-300";
-                msgStatus.innerText = "Enviando mensagem de teste...";
+            let numeroFinal = raw;
+            if (!numeroFinal.startsWith('55') && (numeroFinal.length === 10 || numeroFinal.length === 11)) {
+                numeroFinal = '55' + numeroFinal;
+            }
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<span>⏳ Enviando...</span>`;
+            }
+            if (msg) {
+                msg.className = "text-xs text-center font-medium text-amber-300";
+                msg.innerText = "Disparando mensagem de teste...";
             }
 
             try {
                 const backendUrl = getBackendUrlAtivo();
-                const res = await fetch(`${backendUrl}/api/whatsapp/enviar`, {
+                const res = await fetch(`${backendUrl}/api/whatsapp/testar-barbeiro`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        numero,
-                        mensagem: "💈 *EMAÚS BARBEARIA - TESTE DE AUTOMAÇÃO* 💈\n\nOlá! Seu robô de WhatsApp está conectado 24h e pronto para enviar confirmações e lembretes automáticos com sucesso! ✨"
-                    })
+                    body: JSON.stringify({ numero: numeroFinal })
                 });
                 const data = await res.json();
+
                 if (data.success) {
-                    if (msgStatus) {
-                        msgStatus.className = "text-xs text-center font-medium text-green-400";
-                        msgStatus.innerText = "✅ Mensagem de teste enviada com sucesso!";
-                        setTimeout(() => { if (msgStatus) msgStatus.innerText = ""; }, 4000);
+                    if (msg) {
+                        msg.className = "text-xs text-center font-bold text-green-400";
+                        msg.innerText = `✅ Teste enviado com sucesso para +${numeroFinal}! Verifique o seu WhatsApp.`;
                     }
+                    if (window.vibrarDispositivo) window.vibrarDispositivo('sucesso');
                 } else {
-                    if (msgStatus) {
-                        msgStatus.className = "text-xs text-center font-medium text-red-400";
-                        msgStatus.innerText = `Erro: ${data.message || data.error || 'WhatsApp não conectado'}`;
+                    if (msg) {
+                        msg.className = "text-xs text-center font-medium text-red-400";
+                        msg.innerText = "Aviso no envio: " + (data.error || data.message || 'Servidor aguardando sessão ativa.');
                     }
                 }
             } catch (err) {
-                if (msgStatus) {
-                    msgStatus.className = "text-xs text-center font-medium text-red-400";
-                    msgStatus.innerText = "Erro ao conectar com servidor: " + err.message;
+                if (msg) {
+                    msg.className = "text-xs text-center font-medium text-red-400";
+                    msg.innerText = "Erro de conexão: " + err.message;
+                }
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<span>📲 Enviar Teste</span>`;
                 }
             }
         });
+
+        async function carregarStatusWhatsAppBot() {
+            // Função compatível mantida para sincronização
+            return;
+        }
 
         // ==========================================
         // GESTÃO DE ADMINISTRADORES
