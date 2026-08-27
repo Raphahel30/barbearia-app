@@ -2497,6 +2497,7 @@
                 let temPausa = false;
                 let pausaInicioMin = -1;
                 let pausaFimMin = -1;
+                let bloqueioAntecedenciaAtivo = true;
 
                 const configSnap = await getDoc(doc(db, "configuracoes", "expediente"));
                 if (configSnap.exists()) {
@@ -2518,6 +2519,9 @@
                         const [pfh, pfm] = cfg.pausaFim.split(':').map(Number);
                         pausaInicioMin = pih * 60 + pim;
                         pausaFimMin = pfh * 60 + pfm;
+                    }
+                    if (cfg.bloqueioAntecedenciaAtivo !== undefined) {
+                        bloqueioAntecedenciaAtivo = cfg.bloqueioAntecedenciaAtivo === true;
                     }
                 }
 
@@ -2582,10 +2586,15 @@
                         }
                     }
                     
-                    // Bloqueia se o horário já passou hoje ou se está dentro da margem mínima de 20 minutos de antecedência
+                    // Bloqueia se o horário já passou hoje
+                    if (!bloqueado && agoraMinutosHoje >= 0 && minutos <= agoraMinutosHoje) {
+                        bloqueado = true;
+                    }
+
+                    // Bloqueia se está dentro da margem de 20 minutos de antecedência (quando a opção estiver ativa)
                     let ehPrazoCurto = false;
                     const margemAntecedenciaMin = 20;
-                    if (!bloqueado && agoraMinutosHoje >= 0 && minutos <= (agoraMinutosHoje + margemAntecedenciaMin)) {
+                    if (!bloqueado && bloqueioAntecedenciaAtivo && agoraMinutosHoje >= 0 && minutos <= (agoraMinutosHoje + margemAntecedenciaMin)) {
                         bloqueado = true;
                         ehPrazoCurto = true;
                     }

@@ -857,6 +857,22 @@
                                 </div>
                             </div>
 
+                            <!-- Configuração de Bloqueio Dinâmico de 20 Minutos -->
+                            <div class="bg-zinc-900/80 p-3.5 rounded-2xl border border-zinc-800 space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" id="checkBloqueioAntecedencia20min" class="w-4 h-4 rounded text-dourado bg-black border-zinc-700 focus:ring-0 cursor-pointer" checked>
+                                        <span class="text-xs font-bold text-zinc-200 uppercase flex items-center gap-1.5">
+                                            <span>⚡</span> Bloqueio Dinâmico (Mínimo 20 min)
+                                        </span>
+                                    </label>
+                                    <span id="badgeStatusBloqueio20min" class="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-green-950 text-green-400 border border-green-800">Ativado</span>
+                                </div>
+                                <p class="text-[11px] text-zinc-400 leading-tight">
+                                    Impede que clientes agendem horários no mesmo dia com menos de 20 minutos de antecedência em relação ao horário atual, garantindo tempo de preparação.
+                                </p>
+                            </div>
+
                             <!-- Preview dos horários gerados -->
                             <div class="bg-black/60 p-3.5 rounded-xl border border-zinc-800/80 space-y-1.5">
                                 <p class="text-[11px] font-bold text-dourado uppercase tracking-wider">👀 Visualização da Grade de Horários:</p>
@@ -4686,6 +4702,8 @@
             const inputPausaFim = document.getElementById('inputPausaFim');
             const containerCamposPausa = document.getElementById('containerCamposPausa');
             const badgeStatusPausa = document.getElementById('badgeStatusPausa');
+            const checkBloqueio20min = document.getElementById('checkBloqueioAntecedencia20min');
+            const badgeBloqueio20min = document.getElementById('badgeStatusBloqueio20min');
             if (!inputAbertura || !inputFechamento) return;
 
             try {
@@ -4707,12 +4725,32 @@
                         badgeStatusPausa.className = temPausa ? "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-amber-950 text-amber-300 border border-amber-800" : "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-zinc-800 text-zinc-400";
                         badgeStatusPausa.innerText = temPausa ? `Ativo (${cfg.pausaInicio || '11:00'} às ${cfg.pausaFim || '12:00'})` : "Desativado";
                     }
+
+                    const bloqueioAtivo = cfg.bloqueioAntecedenciaAtivo !== false;
+                    if (checkBloqueio20min) checkBloqueio20min.checked = bloqueioAtivo;
+                    if (badgeBloqueio20min) {
+                        badgeBloqueio20min.className = bloqueioAtivo 
+                            ? "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-green-950 text-green-400 border border-green-800" 
+                            : "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-zinc-800 text-zinc-400";
+                        badgeBloqueio20min.innerText = bloqueioAtivo ? "Ativado" : "Desativado";
+                    }
                 }
                 atualizarPreviewGradeExpediente();
             } catch (err) {
                 console.warn("Erro ao carregar expediente:", err);
             }
         }
+
+        document.getElementById('checkBloqueioAntecedencia20min')?.addEventListener('change', (e) => {
+            const badgeBloqueio20min = document.getElementById('badgeStatusBloqueio20min');
+            const ativo = e.target.checked;
+            if (badgeBloqueio20min) {
+                badgeBloqueio20min.className = ativo 
+                    ? "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-green-950 text-green-400 border border-green-800" 
+                    : "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-zinc-800 text-zinc-400";
+                badgeBloqueio20min.innerText = ativo ? "Ativado" : "Desativado";
+            }
+        });
 
         function atualizarPreviewGradeExpediente() {
             const inputAbertura = document.getElementById('inputExpedienteAbertura');
@@ -4781,6 +4819,7 @@
             const checkTemPausa = document.getElementById('checkTemPausaExpediente');
             const inputPausaInicio = document.getElementById('inputPausaInicio');
             const inputPausaFim = document.getElementById('inputPausaFim');
+            const checkBloqueio20min = document.getElementById('checkBloqueioAntecedencia20min');
             const btnSalvar = document.getElementById('btnSalvarExpedienteAdmin');
             const msgStatus = document.getElementById('msgStatusExpedienteAdmin');
 
@@ -4791,6 +4830,7 @@
             const temPausa = checkTemPausa ? checkTemPausa.checked : false;
             const pausaInicio = (inputPausaInicio?.value || "11:00").trim();
             const pausaFim = (inputPausaFim?.value || "12:00").trim();
+            const bloqueioAntecedenciaAtivo = checkBloqueio20min ? checkBloqueio20min.checked : true;
 
             const [ah, am] = abertura.split(':').map(Number);
             const [fh, fm] = fechamento.split(':').map(Number);
@@ -4822,11 +4862,13 @@
                     temPausa,
                     pausaInicio,
                     pausaFim,
+                    bloqueioAntecedenciaAtivo,
                     atualizadoEm: new Date().toISOString()
                 }, { merge: true });
 
                 const textoPausa = temPausa ? ` • Ausência: ${pausaInicio} às ${pausaFim}` : '';
-                exibirToastNotificacao('⏰ Expediente Atualizado!', `Abertura: ${abertura} • Fechamento: ${fechamento}${textoPausa}`, 'config');
+                const textoBloq = bloqueioAntecedenciaAtivo ? ' • Bloqueio 20min: Ativo' : ' • Bloqueio 20min: Inativo';
+                exibirToastNotificacao('⏰ Expediente Atualizado!', `Abertura: ${abertura} • Fechamento: ${fechamento}${textoPausa}${textoBloq}`, 'config');
                 if (msgStatus) {
                     msgStatus.className = "text-xs text-center font-bold text-green-400";
                     msgStatus.innerText = "✓ Horários salvos com sucesso e integrados à agenda dos clientes!";
