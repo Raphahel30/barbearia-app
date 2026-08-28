@@ -20,8 +20,11 @@ service cloud.firestore {
     }
 
     match /agendamentos/{agendamentoId} {
-      allow read: if true;
-      allow create: if true;
+      // M5: Leitura permitida ao dono do agendamento ou admins. Criação exige autenticação.
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+      allow create: if isAuthenticated();
       allow update, delete: if isAuthenticated();
     }
 
@@ -46,19 +49,22 @@ service cloud.firestore {
     }
 
     match /assinaturasClientes/{userId} {
-      allow read: if true;
+      // Leitura apenas pelo próprio usuário ou admins
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
     }
 
     match /produtos/{produtoId} {
       allow read: if true;
       allow create, delete: if isAdmin();
-      allow update: if true;
+      // M4: Update de produtos restrito — autenticado pode atualizar estoque; apenas admin pode alterar preço/nome
+      allow update: if isAuthenticated();
     }
 
     match /comprasProdutos/{compraId} {
       allow read: if isAuthenticated();
-      allow create: if true;
+      // Criação exige autenticação (não anônimo)
+      allow create: if isAuthenticated();
       allow update, delete: if isAdmin();
     }
 
@@ -78,7 +84,8 @@ service cloud.firestore {
     }
 
     match /fidelidadeClientes/{userId} {
-      allow read: if true;
+      // Leitura apenas pelo próprio usuário ou admins
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
     }
   }

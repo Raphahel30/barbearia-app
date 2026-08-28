@@ -558,7 +558,7 @@
                     <div>
                         <label class="block text-xs sm:text-sm font-medium mb-1 text-zinc-300">Data do Atendimento</label>
                         <input type="date" id="dataAtendimento" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-800 focus:outline-none focus:border-dourado text-white text-xs sm:text-sm">
-                        <p id="avisoDataBloqueiada" class="text-xs text-red-500 mt-1 hidden font-semibold">⚠️ Barbearia fechada nesta data.</p>
+                        <p id="avisoDataBloqueada" class="text-xs text-red-500 mt-1 hidden font-semibold">⚠️ Barbearia fechada nesta data.</p>
                     </div>
                     <div>
                         <label class="block text-xs sm:text-sm font-medium mb-1 text-zinc-300">Horário (De 1 em 1 hora)</label>
@@ -3886,7 +3886,7 @@
             const inputData = document.getElementById('dataAtendimento');
             if (inputData && inputData.value) {
                 const selectHorario = document.getElementById('horarioGrade');
-                const avisoBloqueio = document.getElementById('avisoDataBloqueiada');
+                const avisoBloqueio = document.getElementById('avisoDataBloqueada');
                 carregarGradeHorariosPadrao(inputData.value, selectHorario, avisoBloqueio);
             }
         };
@@ -3915,7 +3915,7 @@
             inputData.addEventListener('change', async (e) => {
                 const dataSelecionada = e.target.value;
                 const selectHorario = document.getElementById('horarioGrade');
-                const avisoBloqueio = document.getElementById('avisoDataBloqueiada');
+                const avisoBloqueio = document.getElementById('avisoDataBloqueada');
                 await carregarGradeHorariosPadrao(dataSelecionada, selectHorario, avisoBloqueio);
                 atualizarBotoesAgendamentoParaData(dataSelecionada);
             });
@@ -5343,7 +5343,7 @@
                     alert("⚠️ Este horário acabou de ser reservado por outro cliente. Por favor, escolha outro horário disponível.");
                     isSalvandoAgendamento = false;
                     const selectHorario = document.getElementById('horarioGrade');
-                    const avisoBloqueio = document.getElementById('avisoDataBloqueiada');
+                    const avisoBloqueio = document.getElementById('avisoDataBloqueada');
                     await carregarGradeHorariosPadrao(data, selectHorario, avisoBloqueio);
                     return;
                 }

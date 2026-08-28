@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { MercadoPagoConfig, Payment, PaymentRefund } from 'mercadopago';
 import { 
     iniciarWhatsApp, 
@@ -243,9 +245,45 @@ function requestResetOobCode(token, email) {
 const app = express();
 const port = process.env.PORT || 3000;
 const APP_SITE_URL = process.env.APP_SITE_URL || 'https://agendamento-barbearia-e8ffb.web.app';
+const SELF_URL = process.env.SELF_URL || 'https://barbearia-app-1bf5.onrender.com';
 
-app.use(cors({ origin: true, credentials: true }));
+// B3: Headers de segurança via helmet (desativa content-security-policy para não bloquear o CDN do Tailwind)
+app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false
+}));
+
+// A3: CORS restrito às origens legítimas do sistema
+const ALLOWED_ORIGINS = [
+    APP_SITE_URL,
+    'https://agendamento-barbearia-e8ffb.web.app',
+    'https://agendamento-barbearia-e8ffb.firebaseapp.com',
+    'http://localhost:3000',
+    'http://localhost:5000',
+    'http://127.0.0.1:3000',
+    SELF_URL
+];
+app.use(cors({
+    origin: (origin, callback) => {
+        // Permite requisições sem origem (ex: server-to-server, Postman, curl)
+        if (!origin) return callback(null, true);
+        if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+        callback(new Error(`CORS: Origem não autorizada: ${origin}`));
+    },
+    credentials: true
+}));
 app.use(express.json());
+
+// M1: Rate limiting — protege endpoints críticos
+const limiterGeral = rateLimit({ windowMs: 60 * 1000, max: 60, standardHeaders: true, legacyHeaders: false, message: { error: 'Muitas requisições. Aguarde 1 minuto.' } });
+const limiterPagamento = rateLimit({ windowMs: 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false, message: { error: 'Muitas tentativas de pagamento. Aguarde 1 minuto.' } });
+const limiterAuth = rateLimit({ windowMs: 15 * 60 * 1000, max: 5, standardHeaders: true, legacyHeaders: false, message: { error: 'Muitas tentativas de recuperação de senha. Tente novamente em 15 minutos.' } });
+const limiterWhatsApp = rateLimit({ windowMs: 60 * 1000, max: 20, standardHeaders: true, legacyHeaders: false, message: { error: 'Muitas requisições ao WhatsApp. Aguarde 1 minuto.' } });
+
+app.use('/api/', limiterGeral);
+app.use('/api/pagamento/', limiterPagamento);
+app.use('/api/auth/recuperar-senha', limiterAuth);
+app.use('/api/whatsapp/', limiterWhatsApp);
 
 // Rota raiz para verificação imediata de uptime no Render e UptimeRobot
 app.get('/', (req, res) => {
@@ -280,9 +318,9 @@ if (!process.env.VERCEL) {
         console.warn("Aviso WhatsApp:", e.message);
     }
 
-    // Keep-alive interno para manter o Render acordado 24/7
+    // Keep-alive interno para manter o Render acordado 24/7 (URL configurável via SELF_URL)
     setInterval(() => {
-        https.get('https://barbearia-app-1bf5.onrender.com/health', () => {}).on('error', () => {});
+        https.get(`${SELF_URL}/health`, () => {}).on('error', () => {});
     }, 10 * 60 * 1000);
 }
 
@@ -397,8 +435,8 @@ app.get('/api/health', async (req, res) => {
     });
 });
 
-const MP_CLIENT_ID = process.env.MP_CLIENT_ID || '356528958695682';
-const MP_CLIENT_SECRET = process.env.MP_CLIENT_SECRET || 'YZXrwo6Ye49ucWHenOGQggjylxUJXjCI';
+const MP_CLIENT_ID = process.env.MP_CLIENT_ID || '';
+const MP_CLIENT_SECRET = process.env.MP_CLIENT_SECRET || '';
 const MP_REDIRECT_URI = process.env.MP_REDIRECT_URI || 'https://barbearia-app-1bf5.onrender.com/api/auth/mercadopago/callback';
 
 // Retorna URL de autorização OAuth do Mercado Pago (Conectar com 1 Clique)
@@ -1010,17 +1048,51 @@ app.post('/api/pagamento/estorno', async (req, res) => {
     }
 });
 
-// Webhook endpoint to receive instant notifications from Mercado Pago
+// C1: Alias para compatibilidade — /api/mercadopago/reembolsar-pagamento → /api/pagamento/estorno
+app.post('/api/mercadopago/reembolsar-pagamento', async (req, res) => {
+    // Redireciona para o handler de estorno existente, repassando o body
+    req.url = '/api/pagamento/estorno';
+    app.handle(req, res);
+});
+
+// A2: Webhook com validação de assinatura HMAC (X-Signature do Mercado Pago)
 app.post('/api/webhook', async (req, res) => {
     try {
+        const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET || '';
+
+        // Valida assinatura se o secret estiver configurado
+        if (MP_WEBHOOK_SECRET) {
+            const xSignature = req.headers['x-signature'] || '';
+            const xRequestId = req.headers['x-request-id'] || '';
+            const dataId = req.query['data.id'] || req.body?.data?.id || '';
+
+            // Monta o manifesto de validação conforme docs oficiais do Mercado Pago
+            const manifest = `id:${dataId};request-id:${xRequestId};ts:${xSignature.split(',').find(p => p.startsWith('ts='))?.split('=')?.[1] || ''};`;
+            const signatureParts = xSignature.split(',');
+            const tsPart = signatureParts.find(p => p.trim().startsWith('ts='));
+            const v1Part = signatureParts.find(p => p.trim().startsWith('v1='));
+
+            if (tsPart && v1Part) {
+                const ts = tsPart.split('=')[1];
+                const v1 = v1Part.split('=')[1];
+                const signedManifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
+                const expectedHmac = crypto.createHmac('sha256', MP_WEBHOOK_SECRET)
+                    .update(signedManifest)
+                    .digest('hex');
+
+                if (expectedHmac !== v1) {
+                    console.warn(`[Webhook] Assinatura inválida — possível requisição não autorizada. x-request-id: ${xRequestId}`);
+                    return res.status(200).json({ received: false, reason: 'invalid_signature' });
+                }
+            }
+        }
+
         const topic = req.query.topic || req.body?.type;
         const paymentId = req.query.id || req.body?.data?.id;
 
         if (paymentId && (topic === 'payment' || req.body?.action?.includes('payment'))) {
             const response = await paymentClient.get({ id: paymentId });
-            console.log(`[Webhook] Pagamento ${paymentId} status: ${response.status} (${response.status_detail})`);
-            
-            // Webhook received and validated
+            console.log(`[Webhook] ✅ Pagamento ${paymentId} status: ${response.status} (${response.status_detail})`);
             return res.status(200).json({ received: true, status: response.status, id: paymentId });
         }
 

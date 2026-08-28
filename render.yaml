@@ -1,4 +1,4 @@
-﻿services:
+services:
   - type: web
     name: emaus-barbearia-bot
     env: node
@@ -11,3 +11,15 @@
         value: 20.18.0
       - key: MERCADO_PAGO_ACCESS_TOKEN
         sync: false
+      - key: MP_CLIENT_ID
+        sync: false
+      - key: MP_CLIENT_SECRET
+        sync: false
+      - key: MP_REDIRECT_URI
+        sync: false
+      - key: MP_WEBHOOK_SECRET
+        sync: false
+      - key: SELF_URL
+        value: https://barbearia-app-1bf5.onrender.com
+      - key: APP_SITE_URL
+        value: https://agendamento-barbearia-e8ffb.web.app
