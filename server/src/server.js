@@ -18,6 +18,13 @@ import crypto from 'crypto';
 import https from 'https';
 import { fileURLToPath } from 'url';
 
+process.on('uncaughtException', (err) => {
+    console.error('⚠️ [UncaughtException capturado]:', err?.message || err);
+});
+process.on('unhandledRejection', (reason) => {
+    console.error('⚠️ [UnhandledRejection capturado]:', reason?.message || reason);
+});
+
 import serviceAccount from './firebaseServiceAccount.js';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
