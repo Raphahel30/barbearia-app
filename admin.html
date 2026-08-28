@@ -447,7 +447,7 @@
                         <!-- Filtros Rápidos -->
                         <div class="flex flex-wrap items-center gap-2">
                             <div class="relative flex-1 min-w-[200px]">
-                                <input type="text" id="inputBuscaFaturamento" placeholder="Buscar cliente, tel ou ID..." class="w-full pl-8 pr-3 py-1.5 bg-zinc-900 text-white text-xs rounded-xl border border-zinc-800 focus:outline-none focus:border-dourado">
+                                <input type="text" id="inputBuscaFaturamento" autocomplete="off" name="search_faturamento_query" placeholder="Buscar cliente, tel ou ID..." class="w-full pl-8 pr-3 py-1.5 bg-zinc-900 text-white text-xs rounded-xl border border-zinc-800 focus:outline-none focus:border-dourado">
                                 <span class="absolute left-2.5 top-2 text-zinc-500 text-xs">🔍</span>
                             </div>
 
@@ -3577,6 +3577,11 @@
             const selectMes = document.getElementById('selectMesFaturamento');
             const selectAno = document.getElementById('selectAnoFaturamento');
             const tbody = document.getElementById('tabelaHistoricoFaturamentoBody');
+            const inputBusca = document.getElementById('inputBuscaFaturamento');
+
+            if (inputBusca && inputBusca.value.includes('@') && !inputBusca.dataset.userTyped) {
+                inputBusca.value = '';
+            }
 
             if (selectMes) selectMes.value = mesFaturamentoAtual;
             if (selectAno) {
@@ -3622,10 +3627,14 @@
 
                 // 1. Processa Planos Mensais
                 listaMensalistasCache.forEach(sub => {
-                    const dataTransacao = sub.dataPagamento || sub.criadoEm || '';
-                    if (dataTransacao && dataTransacao.startsWith(prefixoMesAno)) {
-                        const valor = Number(sub.precoPlano || 0);
-                        const ehEstornado = sub.status === 'cancelado' || sub.status === 'reembolsado';
+                    let rawDate = sub.dataPagamento || sub.criadoEm || sub.atualizadoEm || sub.estornadoEm || '';
+                    if (rawDate && typeof rawDate === 'object' && rawDate.toDate) rawDate = rawDate.toDate().toISOString();
+                    if (rawDate instanceof Date) rawDate = rawDate.toISOString();
+                    const dataTransacao = String(rawDate || '');
+
+                    if (dataTransacao && dataTransacao.substring(0, 7) === prefixoMesAno) {
+                        const valor = Number(sub.preco !== undefined ? sub.preco : (sub.precoPlano !== undefined ? sub.precoPlano : (sub.valor || sub.valorTotal || 0)));
+                        const ehEstornado = sub.status === 'cancelado' || sub.status === 'reembolsado' || sub.status === 'estornado' || Boolean(sub.estornadoEm) || sub.estornado === true;
 
                         if (ehEstornado) {
                             totalEstornos += valor;
@@ -3665,9 +3674,13 @@
 
                 // 2. Processa Agendamentos e Extras
                 window.listaAgendamentosMemoria.forEach(ag => {
-                    const dataTransacao = ag.criadoEm || ag.dataHora || '';
-                    if (dataTransacao && dataTransacao.startsWith(prefixoMesAno)) {
-                        const ehEstornado = ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'reembolsado';
+                    let rawDate = ag.criadoEm || ag.dataHora || ag.atualizadoEm || ag.canceladoEm || ag.estornadoEm || '';
+                    if (rawDate && typeof rawDate === 'object' && rawDate.toDate) rawDate = rawDate.toDate().toISOString();
+                    if (rawDate instanceof Date) rawDate = rawDate.toISOString();
+                    const dataTransacao = String(rawDate || '');
+
+                    if (dataTransacao && dataTransacao.substring(0, 7) === prefixoMesAno) {
+                        const ehEstornado = ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'reembolsado' || ag.status === 'estornado' || Boolean(ag.estornoRealizado) || Boolean(ag.estornadoEm);
 
                         if (ag.isPlano) {
                             // Mensalista VIP: exibe apenas se contratou extras/produtos
@@ -3750,6 +3763,54 @@
                     }
                 });
 
+                // 3. Processa Vendas de Produtos
+                try {
+                    const queryProdSnap = await getDocs(collection(db, "comprasProdutos"));
+                    queryProdSnap.forEach(docSnap => {
+                        const cp = docSnap.data();
+                        let rawDate = cp.criadoEm || cp.data || cp.atualizadoEm || '';
+                        if (rawDate && typeof rawDate === 'object' && rawDate.toDate) rawDate = rawDate.toDate().toISOString();
+                        const dataTransacao = String(rawDate || '');
+                        if (dataTransacao && dataTransacao.substring(0, 7) === prefixoMesAno) {
+                            const valor = Number(cp.valorTotal || cp.valor || 0);
+                            const ehEstornado = cp.status === 'cancelado' || cp.status === 'reembolsado' || cp.status === 'estornado';
+                            if (ehEstornado) {
+                                totalEstornos += valor;
+                                qtdEstornos++;
+                                transacoes.push({
+                                    dataHora: dataTransacao,
+                                    tipo: 'produto',
+                                    tipoLabel: '🛍️ Produto',
+                                    descricao: cp.produtoNome || 'Produto da Loja',
+                                    cliente: cp.cliente || 'Cliente',
+                                    telefone: cp.telefone || '',
+                                    metodo: cp.metodoPagamento || 'Pix Mercado Pago',
+                                    transacaoId: cp.idPagamento || 'Venda',
+                                    valor: valor,
+                                    status: 'estornado',
+                                    motivo: 'Compra Cancelada / Estornada'
+                                });
+                            } else {
+                                totalAgendamentos += valor;
+                                qtdAgendamentos++;
+                                transacoes.push({
+                                    dataHora: dataTransacao,
+                                    tipo: 'produto',
+                                    tipoLabel: '🛍️ Produto',
+                                    descricao: cp.produtoNome || 'Produto da Loja',
+                                    cliente: cp.cliente || 'Cliente',
+                                    telefone: cp.telefone || '',
+                                    metodo: cp.metodoPagamento || 'Pix Mercado Pago',
+                                    transacaoId: cp.idPagamento || 'Venda Concluída',
+                                    valor: valor,
+                                    status: 'aprovado',
+                                    motivo: ''
+                                });
+                            }
+                        }
+                    });
+                } catch (eProd) { console.warn("Aviso ao carregar compras de produtos:", eProd); }
+
                 transacoes.sort((a, b) => (b.dataHora || '').localeCompare(a.dataHora || ''));
                 listaTransacoesMesCache = transacoes;
 
@@ -3799,14 +3860,16 @@
                     (item.cliente && String(item.cliente).toLowerCase().includes(termoBusca)) ||
                     (item.telefone && String(item.telefone).replace(/\D/g, '').includes(termoBusca)) ||
                     (item.transacaoId && String(item.transacaoId).toLowerCase().includes(termoBusca)) ||
-                    (item.descricao && String(item.descricao).toLowerCase().includes(termoBusca));
+                    (item.descricao && String(item.descricao).toLowerCase().includes(termoBusca)) ||
+                    (item.motivo && String(item.motivo).toLowerCase().includes(termoBusca)) ||
+                    (item.tipoLabel && String(item.tipoLabel).toLowerCase().includes(termoBusca));
 
                 if (!matchTexto) return false;
 
                 if (filtroTipo === 'aprovados') return item.status === 'aprovado';
                 if (filtroTipo === 'estornados') return item.status === 'estornado';
                 if (filtroTipo === 'planos') return item.tipo === 'plano';
-                if (filtroTipo === 'agendamentos') return item.tipo === 'agendamento' || item.tipo === 'extras';
+                if (filtroTipo === 'agendamentos') return item.tipo === 'agendamento' || item.tipo === 'extras' || item.tipo === 'produto';
 
                 return true;
             });
@@ -4282,6 +4345,22 @@
                     });
                     const resData = await resp.json();
                     if (resData.success) {
+                        if (dadosReembolsoPendente && dadosReembolsoPendente.agendamentoId) {
+                            try {
+                                await updateDoc(doc(db, "agendamentos", dadosReembolsoPendente.agendamentoId), {
+                                    status: 'reembolsado',
+                                    estornadoEm: new Date().toISOString(),
+                                    estornoRealizado: true,
+                                    valorEstornado: valor,
+                                    atualizadoEm: new Date().toISOString()
+                                });
+                            } catch (eUp) { console.warn("Aviso ao marcar estorno no Firestore:", eUp); }
+                        }
+
+                        if (typeof carregarFaturamentoMensalAdmin === 'function') {
+                            carregarFaturamentoMensalAdmin(true);
+                        }
+
                         if (msgReembolsoStatus) {
                             msgReembolsoStatus.className = "text-xs text-center font-bold text-green-400";
                             msgReembolsoStatus.innerText = `✅ Reembolso de R$ ${valor.toFixed(2)} processado com sucesso no Mercado Pago!`;
@@ -4360,9 +4439,15 @@
                 btn.innerHTML = "⏳ Excluindo...";
             }
 
-            try {
-                // 1. Exclui do Firestore
-                await deleteDoc(doc(db, "agendamentos", id));
+                // 1. Marca como cancelado no Firestore (preservando o histórico financeiro e contábil)
+                await updateDoc(doc(db, "agendamentos", id), {
+                    status: 'cancelado',
+                    canceladoEm: new Date().toISOString(),
+                    canceladoPor: 'barbeiro',
+                    motivoCancelamento: 'Cancelado pelo administrador',
+                    estornoRealizado: false,
+                    atualizadoEm: new Date().toISOString()
+                });
 
                 // 1.5 Devolve produtos ao estoque caso existam
                 if (ag && Array.isArray(ag.produtos) && ag.produtos.length > 0) {
@@ -4394,11 +4479,11 @@
                     } catch (errP) { console.warn("Erro ao restaurar semana na assinatura:", errP); }
                 }
 
-                // 3. Remove da memória e atualiza UI instantaneamente (0ms de espera)
-                window.listaAgendamentosMemoria = window.listaAgendamentosMemoria.filter(x => x.id !== id);
-                delete window.agendamentosCache[id];
+                // 3. Atualiza na memória e UI instantaneamente (0ms de espera)
+                if (ag) ag.status = 'cancelado';
                 atualizarMetricasOverviewComDados(window.listaAgendamentosMemoria);
                 renderizarTabelaAgendamentos();
+                if (typeof carregarFaturamentoMensalAdmin === 'function') carregarFaturamentoMensalAdmin(true);
 
                 // 4. Notifica o cancelamento no WhatsApp em segundo plano
                 if (telCliente) {
@@ -4424,6 +4509,7 @@
                 // 5. Se foi pago online via Mercado Pago, abre o Modal com o Botão de Reembolso Manual
                 if (!isPlano && valorPago > 0 && idPagamento && idPagamento !== 'manual' && idPagamento !== 'plano_vip') {
                     dadosReembolsoPendente = {
+                        agendamentoId: id,
                         paymentId: idPagamento,
                         valor: valorPago,
                         cliente: cliente,

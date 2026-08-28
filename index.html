@@ -3946,14 +3946,15 @@
                     if (!window.meusAgendamentosCache) window.meusAgendamentosCache = {};
                     window.meusAgendamentosCache[agId] = { id: agId, ...ag };
 
-                    // Exibe na lista de ocupados APENAS se a data/hora for no futuro ou hoje
-                    if (ag.dataHora && ag.dataHora >= agora) {
+                    // Exibe na lista de ocupados APENAS se a data/hora for no futuro ou hoje e estiver ativo
+                    const ehCancelado = ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'reembolsado';
+                    if (ag.dataHora && ag.dataHora >= agora && !ehCancelado) {
                         temHorariosOcupadosFuturos = true;
                         divOcupados.innerHTML += `<div>❌ ${(ag.dataHora || '').replace('T', ' às ')}</div>`;
                     }
 
                     // Meus agendamentos ativos futuros
-                    if (ag.userId === userId && ag.dataHora >= agora) {
+                    if (ag.userId === userId && ag.dataHora >= agora && !ehCancelado) {
                         temMeusAgendamentos = true;
                         const precoTotal = Number(ag.preco || 0);
                         const valorPagoExib = Number(ag.taxaReservaPaga !== undefined ? ag.taxaReservaPaga : (ag.isPlano ? 0 : 10));
@@ -4124,8 +4125,16 @@
                     carregarProdutosCliente().catch(e => console.warn(e));
                 }
 
-                // 3. Exclui o agendamento
-                await deleteDoc(doc(db, "agendamentos", id));
+                // 3. Marca como cancelado/reembolsado no Firestore (preservando o extrato e histórico financeiro)
+                await updateDoc(doc(db, "agendamentos", id), {
+                    status: (elegivelEstorno && valorPago > 0) ? 'reembolsado' : 'cancelado',
+                    canceladoEm: new Date().toISOString(),
+                    canceladoPor: 'cliente',
+                    estornoRealizado: Boolean(elegivelEstorno && valorPago > 0),
+                    valorEstornado: (elegivelEstorno && valorPago > 0) ? valorPago : 0,
+                    motivoCancelamento: elegivelEstorno ? 'Cancelado pelo cliente (+3h de antecedência - Estorno automático efetuado)' : 'Cancelado pelo cliente (<3h de antecedência)',
+                    atualizadoEm: new Date().toISOString()
+                });
 
                 // 3. Atualiza o crédito do plano VIP
                 if (isPlano && semanaPlano && auth.currentUser) {

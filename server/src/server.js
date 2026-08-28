@@ -1024,6 +1024,9 @@ app.post('/api/pagamento/estorno', async (req, res) => {
 
             console.log(`[Estorno Sucesso] Pagamento ${cleanPaymentId} estornado:`, refundResult?.status || 'Aprovado');
 
+            // Sincroniza status no Firestore em segundo plano
+            sincronizarEstornoNoFirestore(cleanPaymentId, refundResult?.amount || amount).catch(e => console.warn("Aviso Firestore Sync:", e.message));
+
             return res.json({
                 success: true,
                 status: refundResult?.status || 'approved',
@@ -1037,6 +1040,7 @@ app.post('/api/pagamento/estorno', async (req, res) => {
             const errStr = (error.message || '').toLowerCase();
             
             if (errStr.includes('already refunded') || errStr.includes('total_refunded_amount') || errStr.includes('ja foi estornado')) {
+                sincronizarEstornoNoFirestore(cleanPaymentId, amount).catch(e => console.warn("Aviso Firestore Sync:", e.message));
                 return res.json({
                     success: true,
                     status: 'approved',
@@ -1063,6 +1067,103 @@ app.post('/api/pagamento/estorno', async (req, res) => {
         });
     }
 });
+
+// Helper para sincronizar status 'reembolsado' no Firestore
+async function sincronizarEstornoNoFirestore(paymentId, amount = 0) {
+    try {
+        if (!paymentId) return;
+        const cleanId = String(paymentId).trim();
+        const token = await getGoogleAccessToken();
+        if (!token) return;
+
+        const collections = ['agendamentos', 'assinaturasClientes', 'comprasProdutos'];
+        const nowIso = new Date().toISOString();
+
+        for (const col of collections) {
+            const queryData = JSON.stringify({
+                structuredQuery: {
+                    from: [{ collectionId: col }],
+                    where: {
+                        fieldFilter: {
+                            field: { fieldPath: 'idPagamento' },
+                            op: 'EQUAL',
+                            value: { stringValue: cleanId }
+                        }
+                    }
+                }
+            });
+
+            await new Promise((resolve) => {
+                const req = https.request({
+                    hostname: 'firestore.googleapis.com',
+                    path: `/v1/projects/${serviceAccount.project_id}/databases/(default)/documents:runQuery`,
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                        'Content-Length': Buffer.byteLength(queryData)
+                    }
+                }, (res) => {
+                    let d = '';
+                    res.on('data', c => d += c);
+                    res.on('end', async () => {
+                        try {
+                            const results = JSON.parse(d);
+                            if (Array.isArray(results)) {
+                                for (const r of results) {
+                                    if (r.document && r.document.name) {
+                                        const docPath = r.document.name.split('/documents/')[1];
+                                        const patchData = JSON.stringify({
+                                            fields: {
+                                                status: { stringValue: 'reembolsado' },
+                                                estornadoEm: { timestampValue: nowIso },
+                                                estornoRealizado: { booleanValue: true },
+                                                motivoCancelamento: { stringValue: 'Reembolsado no Mercado Pago' },
+                                                ...(amount > 0 ? { valorEstornado: { doubleValue: Number(amount) } } : {})
+                                            }
+                                        });
+                                        const patchMask = amount > 0 
+                                            ? 'updateMask.fieldPaths=status&updateMask.fieldPaths=estornadoEm&updateMask.fieldPaths=estornoRealizado&updateMask.fieldPaths=motivoCancelamento&updateMask.fieldPaths=valorEstornado'
+                                            : 'updateMask.fieldPaths=status&updateMask.fieldPaths=estornadoEm&updateMask.fieldPaths=estornoRealizado&updateMask.fieldPaths=motivoCancelamento';
+
+                                        await new Promise((pRes) => {
+                                            const pReq = https.request({
+                                                hostname: 'firestore.googleapis.com',
+                                                path: `/v1/projects/${serviceAccount.project_id}/databases/(default)/documents/${docPath}?${patchMask}`,
+                                                method: 'PATCH',
+                                                headers: {
+                                                    'Authorization': `Bearer ${token}`,
+                                                    'Content-Type': 'application/json',
+                                                    'Content-Length': Buffer.byteLength(patchData)
+                                                }
+                                            }, (pres2) => {
+                                                let pd = '';
+                                                pres2.on('data', c => pd += c);
+                                                pres2.on('end', pRes);
+                                            });
+                                            pReq.on('error', pRes);
+                                            pReq.write(patchData);
+                                            pReq.end();
+                                        });
+                                        console.log(`[Firestore Sync] Documento ${docPath} marcado como reembolsado.`);
+                                    }
+                                }
+                            }
+                        } catch (e) {
+                            console.warn(`[Firestore Sync Warning] Erro ao processar ${col}:`, e.message);
+                        }
+                        resolve();
+                    });
+                });
+                req.on('error', resolve);
+                req.write(queryData);
+                req.end();
+            });
+        }
+    } catch (err) {
+        console.warn('[Firestore Sync] Falha geral ao sincronizar estorno:', err.message);
+    }
+}
 
 // C1: Alias para compatibilidade — /api/mercadopago/reembolsar-pagamento → /api/pagamento/estorno
 app.post('/api/mercadopago/reembolsar-pagamento', async (req, res) => {
@@ -1109,6 +1210,13 @@ app.post('/api/webhook', async (req, res) => {
         if (paymentId && (topic === 'payment' || req.body?.action?.includes('payment'))) {
             const response = await paymentClient.get({ id: paymentId });
             console.log(`[Webhook] ✅ Pagamento ${paymentId} status: ${response.status} (${response.status_detail})`);
+
+            // Se o status for estornado/reembolsado, sincroniza automaticamente no banco
+            if (response.status === 'refunded' || response.status === 'cancelled') {
+                sincronizarEstornoNoFirestore(paymentId, response.transaction_amount_refunded || 0)
+                    .catch(e => console.warn("[Webhook Sync Error]:", e.message));
+            }
+
             return res.status(200).json({ received: true, status: response.status, id: paymentId });
         }
 
