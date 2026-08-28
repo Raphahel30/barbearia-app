@@ -2434,12 +2434,14 @@
 
             const clienteFinal = uData?.nome || sub.cliente || sub.nome || sub.clienteNome || sub.userEmail || 'Cliente VIP';
             const telefoneFinal = uData?.telefone || sub.telefone || sub.clienteTelefone || sub.tel || '';
+            const fotoUrlFinal = uData?.fotoUrl || sub.fotoUrl || '';
 
             return {
                 ...sub,
                 id: sub.id,
                 cliente: clienteFinal,
                 telefone: telefoneFinal,
+                fotoUrl: fotoUrlFinal,
                 nomePlano: nomePlanoFinal,
                 preco: precoFinal,
                 ehAtivo,
@@ -2640,7 +2642,7 @@
                         <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-zinc-800/80 pb-4">
                             <div class="flex items-center gap-3.5">
                                 <div class="w-12 h-12 bg-amber-950/50 border border-dourado/40 rounded-2xl flex items-center justify-center text-2xl shadow-inner flex-shrink-0 overflow-hidden">
-                                    ${uData?.fotoUrl ? `<img src="${uData.fotoUrl}" alt="${item.cliente || 'Cliente'}" class="w-full h-full object-cover" onerror="this.remove()">` : `👑`}
+                                    ${item.fotoUrl ? `<img src="${item.fotoUrl}" alt="${item.cliente || 'Cliente'}" class="w-full h-full object-cover" onerror="this.remove()">` : `👑`}
                                 </div>
                                 <div>
                                     <div class="flex items-center gap-2 flex-wrap">
