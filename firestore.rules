@@ -10,6 +10,8 @@ service cloud.firestore {
       return isAuthenticated() && (
         request.auth.token.email == 'aldo540@outlook.com' ||
         request.auth.token.email == 'rafaelcassu@hotmail.com' ||
+        request.auth.token.email == 'cassurafael30@gmail.com' ||
+        request.auth.token.email == 'admin@emausbarbearia.com' ||
         request.auth.token.admin == true
       );
     }
@@ -23,7 +25,12 @@ service cloud.firestore {
       // Leitura pública necessária para checagem de horários ocupados na grade e painel do cliente
       allow read: if true;
       allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated();
+      // Apenas o próprio cliente dono do agendamento ou administrador pode alterar/cancelar
+      allow update, delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.clienteEmail == request.auth.token.email ||
+        isAdmin()
+      );
     }
 
     match /servicos/{servicoId} {
@@ -59,7 +66,8 @@ service cloud.firestore {
     }
 
     match /comprasProdutos/{compraId} {
-      allow read: if isAuthenticated();
+      // Leitura apenas pelo próprio comprador ou admins
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
       // Criação exige autenticação (não anônimo)
       allow create: if isAuthenticated();
       allow update, delete: if isAdmin();

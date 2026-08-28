@@ -19,6 +19,24 @@ import https from 'https';
 import { fileURLToPath } from 'url';
 
 import serviceAccount from './firebaseServiceAccount.js';
+import { initializeApp, cert, getApps } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+
+let firebaseAdminApp = null;
+let firebaseAdminAuth = null;
+
+// Inicializa o Firebase Admin SDK usando o serviceAccount carregado
+if (serviceAccount && serviceAccount.private_key) {
+    try {
+        firebaseAdminApp = getApps().length ? getApps()[0] : initializeApp({
+            credential: cert(serviceAccount)
+        });
+        firebaseAdminAuth = getAuth(firebaseAdminApp);
+        console.log('✅ [Firebase Admin SDK] Inicializado com sucesso!');
+    } catch (e) {
+        console.warn('Aviso na inicialização do Firebase Admin SDK:', e.message);
+    }
+}
 
 dotenv.config();
 
@@ -302,31 +320,27 @@ app.use('/api/whatsapp/', limiterWhatsApp);
 
 // Lista de e-mails autorizados como Administradores do sistema
 const ADMIN_EMAILS = [
+    'aldo540@outlook.com',
     'rafaelcassu@hotmail.com',
     'cassurafael30@gmail.com',
     'admin@emausbarbearia.com'
 ];
 
-// Validador de Token de Autenticação do Firebase Admin
+// Validador criptográfico nativo de ID Tokens do Firebase Authentication
 async function validarTokenFirebaseAdmin(idToken) {
     if (!idToken || typeof idToken !== 'string') return null;
-    return new Promise((resolve) => {
-        const req = https.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`, (res) => {
-            let data = '';
-            res.on('data', chunk => data += chunk);
-            res.on('end', () => {
-                try {
-                    const parsed = JSON.parse(data);
-                    if (parsed && parsed.email) {
-                        resolve(parsed);
-                    } else {
-                        resolve(null);
-                    }
-                } catch (e) { resolve(null); }
-            });
-        });
-        req.on('error', () => resolve(null));
-    });
+    try {
+        if (!firebaseAdminAuth && firebaseAdminApp) {
+            firebaseAdminAuth = getAuth(firebaseAdminApp);
+        }
+        if (firebaseAdminAuth) {
+            const decoded = await firebaseAdminAuth.verifyIdToken(idToken);
+            return decoded;
+        }
+    } catch (e) {
+        console.warn('[Auth] Token inválido ou expirado:', e.message);
+    }
+    return null;
 }
 
 // Middleware de Proteção de Rotas Administrativas
@@ -1414,8 +1428,8 @@ app.post('/api/whatsapp/desconectar', verificarAdminMiddleware, async (req, res)
     }
 });
 
-// Envio de mensagem direta de texto
-app.post('/api/whatsapp/enviar', async (req, res) => {
+// Envio de mensagem direta de texto (restrito a admin)
+app.post('/api/whatsapp/enviar', verificarAdminMiddleware, async (req, res) => {
     const { numero, mensagem } = req.body;
     if (!numero || !mensagem) {
         return res.status(400).json({ error: 'Numero e mensagem sao obrigatorios.' });
@@ -1819,8 +1833,8 @@ app.post('/api/whatsapp/notificar-aniversario', verificarAdminMiddleware, async 
     }
 });
 
-// Rota para disparar checagem e envio de lembretes 4h antes (pode ser chamada por Cron ou manualmente)
-app.all('/api/whatsapp/disparar-lembretes-4h', async (req, res) => {
+// Rota para disparar checagem e envio de lembretes 4h antes (restrito a admin)
+app.all('/api/whatsapp/disparar-lembretes-4h', verificarAdminMiddleware, async (req, res) => {
     try {
         const resultado = await verificarLembretes4hAgenda();
         return res.json(resultado);
