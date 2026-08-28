@@ -68,63 +68,63 @@
         </div>
 
         <div id="tabMenu" class="flex border-b border-zinc-800">
-            <button id="tabLogin" class="flex-1 pb-2 font-semibold text-dourado border-b-2 border-dourado cursor-pointer">Entrar</button>
-            <button id="tabRegister" class="flex-1 pb-2 font-semibold text-zinc-500 cursor-pointer">Criar Conta</button>
+            <button id="tabLogin" class="flex-1 py-2.5 font-bold text-xs sm:text-sm text-dourado border-b-2 border-dourado cursor-pointer transition text-center min-h-[44px] flex items-center justify-center">Entrar</button>
+            <button id="tabRegister" class="flex-1 py-2.5 font-bold text-xs sm:text-sm text-zinc-500 cursor-pointer transition text-center min-h-[44px] flex items-center justify-center hover:text-zinc-300">Criar Conta</button>
         </div>
 
-        <div id="loginSection" class="space-y-4">
+        <div id="loginSection" class="space-y-4 pt-1">
             <div>
-                <label class="block text-sm font-medium mb-1 text-zinc-300">E-mail</label>
-                <input type="email" id="loginEmail" autocomplete="username" class="w-full px-3 py-2 bg-black rounded border border-zinc-800 focus:outline-none focus:border-dourado text-white">
+                <label class="block text-xs font-semibold uppercase mb-1 text-zinc-300">E-mail</label>
+                <input type="email" id="loginEmail" autocomplete="username" class="w-full px-3.5 py-2.5 bg-black rounded-xl border border-zinc-800 focus:outline-none focus:border-dourado text-white text-xs sm:text-sm">
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1 text-zinc-300">Senha</label>
-                <input type="password" id="loginPassword" autocomplete="current-password" class="w-full px-3 py-2 bg-black rounded border border-zinc-800 focus:outline-none focus:border-dourado text-white">
+                <label class="block text-xs font-semibold uppercase mb-1 text-zinc-300">Senha</label>
+                <input type="password" id="loginPassword" autocomplete="current-password" class="w-full px-3.5 py-2.5 bg-black rounded-xl border border-zinc-800 focus:outline-none focus:border-dourado text-white text-xs sm:text-sm">
             </div>
-            <button id="btnLogin" class="w-full bg-dourado text-black font-bold py-2.5 rounded transition uppercase tracking-wide cursor-pointer shadow-lg">Entrar na Conta</button>
+            <button id="btnLogin" class="w-full min-h-[46px] bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl transition uppercase tracking-wider cursor-pointer shadow-lg text-xs flex items-center justify-center">Entrar na Conta</button>
             
             <div class="text-right">
-                <button id="linkEsqueceuSenha" type="button" class="text-xs text-dourado hover:underline cursor-pointer">Esqueceu a senha?</button>
+                <button id="linkEsqueceuSenha" type="button" class="text-xs text-dourado hover:underline cursor-pointer py-1 inline-flex items-center">Esqueceu a senha?</button>
             </div>
         </div>
 
-        <div id="forgotSection" class="space-y-4 hidden">
+        <div id="forgotSection" class="space-y-4 pt-1 hidden">
             <p class="text-xs text-zinc-400 text-center">Insira o seu e-mail cadastrado para receber o link seguro de redefinição de senha.</p>
             <div>
-                <label class="block text-sm font-medium mb-1 text-zinc-300">E-mail Cadastrado</label>
-                <input type="email" id="forgotEmail" autocomplete="email" placeholder="seuemail@exemplo.com" class="w-full px-3 py-2 bg-black rounded border border-zinc-800 focus:outline-none focus:border-dourado text-white">
+                <label class="block text-xs font-semibold uppercase mb-1 text-zinc-300">E-mail Cadastrado</label>
+                <input type="email" id="forgotEmail" autocomplete="email" placeholder="seuemail@exemplo.com" class="w-full px-3.5 py-2.5 bg-black rounded-xl border border-zinc-800 focus:outline-none focus:border-dourado text-white text-xs sm:text-sm">
             </div>
-            <button id="btnEnviarRecuperacao" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-bold py-2.5 rounded transition uppercase tracking-wide cursor-pointer shadow-lg">
+            <button id="btnEnviarRecuperacao" class="w-full min-h-[46px] bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl transition uppercase tracking-wider cursor-pointer shadow-lg text-xs flex items-center justify-center">
                 Enviar E-mail de Recuperação
             </button>
 
-            <div class="text-center pt-2">
-                <button id="linkVoltarLogin" type="button" class="text-xs text-zinc-400 hover:text-white underline cursor-pointer">Voltar para o login</button>
+            <div class="text-center pt-1">
+                <button id="linkVoltarLogin" type="button" class="text-xs text-zinc-400 hover:text-white underline cursor-pointer py-1 inline-flex items-center">Voltar para o login</button>
             </div>
         </div>
 
-        <div id="registerSection" class="space-y-4 hidden">
+        <div id="registerSection" class="space-y-3.5 pt-1 hidden">
             <div>
-                <label class="block text-sm font-medium mb-1 text-zinc-300">Nome Completo</label>
-                <input type="text" id="regNome" autocomplete="name" class="w-full px-3 py-2 bg-black rounded border border-zinc-800 focus:outline-none focus:border-dourado text-white">
+                <label class="block text-xs font-semibold uppercase mb-1 text-zinc-300">Nome Completo</label>
+                <input type="text" id="regNome" autocomplete="name" placeholder="Seu nome completo" class="w-full px-3.5 py-2.5 bg-black rounded-xl border border-zinc-800 focus:outline-none focus:border-dourado text-white text-xs sm:text-sm">
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1 text-zinc-300">Número de Telefone (WhatsApp)</label>
-                <input type="tel" id="regTelefone" autocomplete="tel" placeholder="(00) 00000-0000" class="w-full px-3 py-2 bg-black rounded border border-zinc-800 focus:outline-none focus:border-dourado text-white">
+                <label class="block text-xs font-semibold uppercase mb-1 text-zinc-300">Número de Telefone (WhatsApp)</label>
+                <input type="tel" id="regTelefone" autocomplete="tel" placeholder="(00) 00000-0000" class="w-full px-3.5 py-2.5 bg-black rounded-xl border border-zinc-800 focus:outline-none focus:border-dourado text-white text-xs sm:text-sm">
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1 text-zinc-300">E-mail</label>
-                <input type="email" id="regEmail" autocomplete="email" class="w-full px-3 py-2 bg-black rounded border border-zinc-800 focus:outline-none focus:border-dourado text-white">
+                <label class="block text-xs font-semibold uppercase mb-1 text-zinc-300">E-mail</label>
+                <input type="email" id="regEmail" autocomplete="email" placeholder="seuemail@exemplo.com" class="w-full px-3.5 py-2.5 bg-black rounded-xl border border-zinc-800 focus:outline-none focus:border-dourado text-white text-xs sm:text-sm">
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1 text-zinc-300">Data de Nascimento (Para Presente de Aniversário 🎂)</label>
-                <input type="date" id="regDataNascimento" class="w-full px-3 py-2 bg-black rounded border border-zinc-800 focus:outline-none focus:border-dourado text-white cursor-pointer">
+                <label class="block text-xs font-semibold uppercase mb-1 text-zinc-300">Data de Nascimento 🎂 (Presente de Aniversário)</label>
+                <input type="date" id="regDataNascimento" class="w-full px-3.5 py-2.5 bg-black rounded-xl border border-zinc-800 focus:outline-none focus:border-dourado text-white text-xs sm:text-sm cursor-pointer">
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1 text-zinc-300">Senha</label>
-                <input type="password" id="regPassword" autocomplete="new-password" placeholder="Mínimo 6 caracteres" class="w-full px-3 py-2 bg-black rounded border border-zinc-800 focus:outline-none focus:border-dourado text-white">
+                <label class="block text-xs font-semibold uppercase mb-1 text-zinc-300">Senha</label>
+                <input type="password" id="regPassword" autocomplete="new-password" placeholder="Mínimo 6 caracteres" class="w-full px-3.5 py-2.5 bg-black rounded-xl border border-zinc-800 focus:outline-none focus:border-dourado text-white text-xs sm:text-sm">
             </div>
-            <button id="btnCadastrar" class="w-full bg-dourado text-black font-bold py-2.5 rounded transition uppercase tracking-wide cursor-pointer shadow-lg">Criar Conta e Entrar</button>
+            <button id="btnCadastrar" class="w-full min-h-[46px] bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl transition uppercase tracking-wider cursor-pointer shadow-lg text-xs flex items-center justify-center">Criar Conta e Entrar</button>
         </div>
 
         <!-- Divisor OU -->
@@ -244,7 +244,7 @@
                 <div class="bg-black/60 p-3.5 rounded-xl border border-zinc-800 space-y-2">
                     <div class="flex items-center justify-between">
                         <span class="font-bold text-zinc-300 text-xs">🔒 Senha de Acesso</span>
-                        <button id="btnTrocarSenhaPerfil" type="button" class="text-[11px] text-dourado hover:underline font-bold transition cursor-pointer">
+                        <button id="btnTrocarSenhaPerfil" type="button" class="text-xs bg-zinc-900 border border-zinc-700 hover:border-dourado text-dourado px-2.5 py-1 rounded-lg font-bold transition cursor-pointer inline-flex items-center shadow-sm">
                             Alterar Senha
                         </button>
                     </div>
@@ -273,8 +273,8 @@
 
                     <!-- Barra de Progresso Animada -->
                     <div class="space-y-1">
-                        <div class="w-full bg-zinc-900 h-2 rounded-full overflow-hidden border border-zinc-800">
-                            <div id="barraProgressoFidelidadePerfil" class="bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-300 h-full transition-all duration-500" style="width: 0%"></div>
+                        <div class="w-full bg-zinc-900 h-2.5 rounded-full overflow-hidden border border-zinc-800">
+                            <div id="barraProgressoFidelidadePerfil" class="bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-300 h-full transition-all duration-500 rounded-full" style="width: 0%"></div>
                         </div>
                         <div class="flex justify-between items-center text-[10px] text-zinc-400">
                             <span id="textoFaltamSelosPerfil">Faltam cortes para a recompensa</span>
@@ -3077,13 +3077,13 @@
                         servicosExtras.forEach(sv => {
                             const precoNum = Number(sv.preco || 0);
                             htmlExtras += `
-                                <label class="flex items-center gap-2.5 p-2.5 rounded-xl bg-black/80 border border-zinc-800 hover:border-dourado/50 cursor-pointer transition text-xs">
-                                    <input type="checkbox" class="checkbox-extra-mensalista accent-amber-500 w-4 h-4 rounded" 
-                                           data-id="${sv.id}" data-nome="${sv.nome}" data-preco="${precoNum}">
-                                    <div class="flex-1 flex justify-between items-center">
-                                        <span class="text-zinc-200 font-medium">${sv.nome}</span>
-                                        <span class="text-dourado font-bold">+ R$ ${precoNum.toFixed(2)}</span>
+                                <label class="flex items-center justify-between p-2.5 rounded-xl bg-black/80 border border-zinc-800 hover:border-dourado/50 cursor-pointer transition text-xs gap-2 min-w-0">
+                                    <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                                        <input type="checkbox" class="checkbox-extra-mensalista accent-amber-500 w-4 h-4 rounded flex-shrink-0" 
+                                               data-id="${sv.id}" data-nome="${sv.nome}" data-preco="${precoNum}">
+                                        <span class="text-zinc-200 font-medium truncate block">${sv.nome}</span>
                                     </div>
+                                    <span class="text-dourado font-bold font-mono text-xs flex-shrink-0 whitespace-nowrap">+ R$ ${precoNum.toFixed(2)}</span>
                                 </label>
                             `;
                         });
@@ -3471,15 +3471,15 @@
             let html = '';
             outrosServicos.forEach(s => {
                 html += `
-                    <label class="flex items-center justify-between p-2.5 bg-zinc-900/90 hover:bg-zinc-900 border border-zinc-800 rounded-xl cursor-pointer transition select-none group">
-                        <div class="flex items-center gap-2.5">
-                            <input type="checkbox" class="checkbox-extra rounded bg-black border-zinc-700 text-dourado focus:ring-0 focus:ring-offset-0 cursor-pointer" data-nome="${s.nome}" data-preco="${s.preco}">
-                            <div>
-                                <span class="font-bold text-white group-hover:text-amber-200 transition">✂️ ${s.nome}</span>
+                    <label class="flex items-center justify-between p-2.5 bg-zinc-900/90 hover:bg-zinc-900 border border-zinc-800 rounded-xl cursor-pointer transition select-none group gap-2 min-w-0">
+                        <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                            <input type="checkbox" class="checkbox-extra rounded bg-black border-zinc-700 text-dourado focus:ring-0 focus:ring-offset-0 cursor-pointer flex-shrink-0" data-nome="${s.nome}" data-preco="${s.preco}">
+                            <div class="min-w-0 flex-1">
+                                <span class="font-bold text-white group-hover:text-amber-200 transition text-xs truncate block">✂️ ${s.nome}</span>
                                 <p class="text-[10px] text-zinc-400">Adicional</p>
                             </div>
                         </div>
-                        <span class="font-bold text-dourado font-mono">+ R$ ${s.preco.toFixed(2)}</span>
+                        <span class="font-bold text-dourado font-mono text-xs flex-shrink-0 whitespace-nowrap">+ R$ ${s.preco.toFixed(2)}</span>
                     </label>
                 `;
             });
