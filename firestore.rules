@@ -76,7 +76,7 @@ service cloud.firestore {
     }
 
     match /configuracoes/{configId} {
-      allow read: if true;
+      allow read: if configId != 'pagamento_privado';
       allow write: if isAdmin();
     }
 
