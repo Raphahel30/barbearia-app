@@ -20,10 +20,8 @@ service cloud.firestore {
     }
 
     match /agendamentos/{agendamentoId} {
-      // M5: Leitura permitida ao dono do agendamento ou admins. Criação exige autenticação.
-      allow read: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || isAdmin()
-      );
+      // Leitura pública necessária para checagem de horários ocupados na grade e painel do cliente
+      allow read: if true;
       allow create: if isAuthenticated();
       allow update, delete: if isAuthenticated();
     }
@@ -49,8 +47,7 @@ service cloud.firestore {
     }
 
     match /assinaturasClientes/{userId} {
-      // Leitura apenas pelo próprio usuário ou admins
-      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow read: if isAuthenticated();
       allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
     }
 
