@@ -2180,8 +2180,8 @@
                 }
 
                 snapshot.docChanges().forEach((change) => {
+                    const ag = change.doc.data();
                     if (change.type === "added") {
-                        const ag = change.doc.data();
                         const agoraIso = new Date().toISOString().slice(0, 16);
                         if (ag.dataHora && ag.dataHora >= agoraIso) {
                             const horaFmt = (ag.dataHora || '').replace('T', ' às ');
@@ -2195,17 +2195,32 @@
                                 `EMAÚS - ${ag.isPlano ? '👑 Agendamento VIP' : '📅 Novo Agendamento'}`,
                                 `${ag.cliente || 'Cliente'} • ${ag.servico || 'Corte'} • ${horaFmt}`
                             );
-                            buscarAgendamentosFirestore(false);
                         }
+                        buscarAgendamentosFirestore(false);
+                    } else if (change.type === "modified") {
+                        const ehCancelado = ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'reembolsado';
+                        if (ehCancelado) {
+                            tocarSomNotificacao('cancelamento');
+                            exibirToastNotificacao(
+                                '🚫 Agendamento Cancelado',
+                                `${ag.cliente || 'Cliente'} cancelou o horário ${(ag.dataHora || '').replace('T', ' às ')}.`,
+                                'cancelamento'
+                            );
+                            dispararNotificacaoNativa(
+                                'EMAÚS - Agendamento Cancelado',
+                                `${ag.cliente || 'Cliente'} cancelou o horário ${(ag.dataHora || '').replace('T', ' às ')}.`
+                            );
+                        }
+                        buscarAgendamentosFirestore(false);
                     } else if (change.type === "removed") {
                         tocarSomNotificacao('cancelamento');
                         exibirToastNotificacao(
-                            '🚫 Agendamento Cancelado',
-                            'Um agendamento foi cancelado na agenda.',
+                            '🚫 Agendamento Removido',
+                            'Um agendamento foi removido da agenda.',
                             'cancelamento'
                         );
                         dispararNotificacaoNativa(
-                            'EMAÚS - Agendamento Cancelado',
+                            'EMAÚS - Agendamento Removido',
                             'Um horário foi liberado na agenda.'
                         );
                         buscarAgendamentosFirestore(false);
@@ -3472,7 +3487,7 @@
                     }
                 }
 
-                if ((ag.dataHora || '').startsWith(hojeStr)) {
+                if ((ag.dataHora || '').startsWith(hojeStr) && !ehCanceladoOuEstornado) {
                     atendimentosHojeList.push(ag);
                 }
             });
@@ -4026,7 +4041,11 @@
                 if (labelResumo) labelResumo.innerHTML = "📋 Visualizando Todos os Agendamentos (Histórico Geral)";
                 if (subtitulo) subtitulo.innerText = "Histórico Geral de Agendamentos";
             } else {
-                listaFiltrada = window.listaAgendamentosMemoria.filter(ag => ag.dataHora && ag.dataHora.startsWith(dataFiltroAgendaSelecionada));
+                listaFiltrada = window.listaAgendamentosMemoria.filter(ag => {
+                    if (!ag.dataHora || !ag.dataHora.startsWith(dataFiltroAgendaSelecionada)) return false;
+                    const ehCancelado = ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'reembolsado';
+                    return !ehCancelado;
+                });
                 listaFiltrada.sort((a, b) => a.dataHora.localeCompare(b.dataHora));
 
                 const [ano, mes, dia] = dataFiltroAgendaSelecionada.split('-').map(Number);
@@ -4074,6 +4093,7 @@
                 const id = ag.id;
                 const ehConcluido = ag.status === 'concluido';
                 const ehFalta = ag.status === 'falta';
+                const ehCancelado = ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'reembolsado';
 
                 const uData = (ag.userId && mapaUsuariosAdmin.get(ag.userId)) || (ag.email && mapaUsuariosAdmin.get(ag.email.toLowerCase().trim()));
                 const nomeClienteFinal = uData?.nome || ag.cliente || 'Cliente';
@@ -4105,7 +4125,9 @@
                 }
 
                 let statusBadge = "";
-                if (ehConcluido) {
+                if (ehCancelado) {
+                    statusBadge = '<span class="bg-red-950 text-red-400 border border-red-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">❌ Cancelado</span>';
+                } else if (ehConcluido) {
                     statusBadge = '<span class="bg-green-950 text-green-400 border border-green-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">✅ Compareceu</span>';
                 } else if (ehFalta) {
                     statusBadge = '<span class="bg-red-950 text-red-400 border border-red-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">🚫 Não Compareceu</span>';
@@ -4142,7 +4164,7 @@
                         </td>
                         <td class="p-3.5 text-right whitespace-nowrap">
                             <div id="botoesAcao_${id}" class="inline-flex items-center gap-1">
-                                ${(!ehConcluido && !ehFalta) ? `
+                                ${(!ehConcluido && !ehFalta && !ehCancelado) ? `
                                     <button onclick="confirmarPresencaAdmin('${id}')" id="btnPresenca_${id}" class="bg-green-600 hover:bg-green-700 text-white px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer" title="Confirmar comparecimento">✓ Compareceu</button>
                                     <button onclick="marcarFaltaAdmin('${id}')" id="btnFalta_${id}" class="bg-amber-700 hover:bg-amber-800 text-white px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer" title="Marcar que o cliente não compareceu">✕ Faltou</button>
                                 ` : ''}
