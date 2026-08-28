@@ -1195,7 +1195,7 @@
 
     <!-- BARRA DE NAVEGAÇÃO INFERIOR FIXA NO MOBILE (BOTTOM NAV BAR) -->
     <nav id="bottomNavCliente" class="hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur-xl border-t border-zinc-800/80 px-2 py-1.5 sm:hidden shadow-[0_-8px_25px_rgba(0,0,0,0.6)]">
-        <div class="max-w-md mx-auto grid grid-cols-4 items-center gap-1">
+        <div id="bnavGridContainer" class="max-w-md mx-auto grid grid-cols-4 items-center gap-1">
             <!-- 1. Agenda -->
             <button type="button" id="bnavItemAgendamentos" onclick="window.alternarAbaCliente('agendamentos')" class="flex flex-col items-center justify-center py-1.5 px-1 rounded-xl text-dourado transition-all active:scale-95 cursor-pointer">
                 <svg class="w-5 h-5 text-[#D4AF37] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
@@ -1403,6 +1403,37 @@
         const bnavItemPerfil = document.getElementById('bnavItemPerfil');
         const bottomNavCliente = document.getElementById('bottomNavCliente');
 
+        // ==========================================
+        // CONTROLE DE MÓDULOS ATIVOS (LOJA E PLANOS)
+        // ==========================================
+        let configModuloPlanosAtivo = true;
+        let configModuloLojaAtivo = true;
+
+        function aplicarVisibilidadeModulosCliente() {
+            // 1. Abas Desktop
+            if (btnTabClienteProdutos) btnTabClienteProdutos.classList.toggle('hidden', !configModuloLojaAtivo);
+            if (btnTabClientePlanos) btnTabClientePlanos.classList.toggle('hidden', !configModuloPlanosAtivo);
+
+            // 2. Itens da Barra Inferior Mobile (Bottom Nav)
+            if (bnavItemProdutos) bnavItemProdutos.classList.toggle('hidden', !configModuloLojaAtivo);
+            if (bnavItemPlanos) bnavItemPlanos.classList.toggle('hidden', !configModuloPlanosAtivo);
+
+            // 3. Bloco de Venda Casada / Cross-sell no Agendamento
+            const secaoCrossSell = document.getElementById('secaoProdutosCrossSell');
+            if (secaoCrossSell) secaoCrossSell.classList.toggle('hidden', !configModuloLojaAtivo);
+
+            // 4. Ajuste dinâmico de colunas no grid da Bottom Nav para centralizar perfeitamente
+            const bnavGrid = document.getElementById('bnavGridContainer');
+            if (bnavGrid) {
+                let totalVisiveis = 2; // Agendamentos + Perfil são fixos
+                if (configModuloLojaAtivo) totalVisiveis++;
+                if (configModuloPlanosAtivo) totalVisiveis++;
+
+                bnavGrid.className = `max-w-md mx-auto grid grid-cols-${totalVisiveis} items-center gap-1`;
+            }
+        }
+        window.aplicarVisibilidadeModulosCliente = aplicarVisibilidadeModulosCliente;
+
         function atualizarEstilosNavegacaoCliente(aba) {
             const topAtivo = "flex-1 pb-2.5 font-bold text-dourado border-b-2 border-dourado cursor-pointer text-xs sm:text-sm uppercase tracking-tight sm:tracking-normal transition text-center";
             const topInativo = "flex-1 pb-2.5 font-bold text-zinc-500 hover:text-zinc-300 cursor-pointer text-xs sm:text-sm uppercase tracking-tight sm:tracking-normal transition text-center";
@@ -1422,6 +1453,11 @@
 
         window.alternarAbaCliente = function(aba) {
             if (window.vibrarDispositivo) window.vibrarDispositivo('clique');
+
+            // Se tentar acessar uma aba desativada pelo barbeiro, redireciona para agendamentos
+            if (aba === 'produtos' && !configModuloLojaAtivo) aba = 'agendamentos';
+            if (aba === 'planos' && !configModuloPlanosAtivo) aba = 'agendamentos';
+
             if (aba === 'agendamentos') {
                 viewClienteAgendamentos?.classList.remove('hidden');
                 viewClienteProdutos?.classList.add('hidden');
@@ -1475,6 +1511,13 @@
                         configWhatsappUrlGlobal = dataWa.servidorUrl.trim().replace(/\/+$/, '');
                     }
                 }
+                const modulosSnap = await getDoc(doc(db, "configuracoes", "modulos"));
+                if (modulosSnap.exists()) {
+                    const dataMod = modulosSnap.data();
+                    if (dataMod.moduloPlanosAtivo !== undefined) configModuloPlanosAtivo = dataMod.moduloPlanosAtivo === true;
+                    if (dataMod.moduloLojaAtivo !== undefined) configModuloLojaAtivo = dataMod.moduloLojaAtivo === true;
+                }
+                aplicarVisibilidadeModulosCliente();
             } catch (e) { console.error(e); }
         }
 
@@ -5257,6 +5300,9 @@
                 if (modalSucessoCompraProduto) modalSucessoCompraProduto.classList.add('hidden');
             });
         }
+
+        // Inicialização global de configurações e visibilidade de módulos
+        try { carregarConfiguracoesGerais(); } catch (e) {}
     </script>
 </body>
 </html>

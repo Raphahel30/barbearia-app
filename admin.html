@@ -665,6 +665,26 @@
                     </div>
                 </div>
 
+                <!-- Controle de Visibilidade do Módulo de Planos Mensais no Site -->
+                <div class="card-dark p-4 sm:p-5 rounded-2xl border border-zinc-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-amber-950/60 border border-dourado/40 flex items-center justify-center text-xl shadow-inner">
+                            👑
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-sm font-bold text-white uppercase">Aba de Planos Mensais no Site</h3>
+                                <span id="badgeStatusModuloPlanos" class="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-green-950 text-green-400 border border-green-800">Ativado no Site</span>
+                            </div>
+                            <p class="text-xs text-zinc-400">Ative ou desative a exibição da aba de planos e pacotes mensais no site dos clientes.</p>
+                        </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                        <input type="checkbox" id="checkModuloPlanosAtivo" class="sr-only peer" checked>
+                        <div class="w-11 h-6 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-dourado"></div>
+                    </label>
+                </div>
+
                 <!-- Gestão de Planos Mensais / Assinaturas VIP -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4 border-t border-zinc-800/80">
                     <div class="card-dark p-6 rounded-2xl border border-zinc-800 space-y-4">
@@ -750,6 +770,26 @@
 
                 <!-- Painel de Gestão e Lista de Produtos -->
                 <div class="card-dark p-6 rounded-2xl border border-zinc-800 space-y-5 shadow-xl">
+                    <!-- Controle de Visibilidade do Módulo de Loja no Site -->
+                    <div class="p-4 rounded-2xl border border-zinc-800 bg-zinc-900/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-dourado/10 border border-dourado/30 flex items-center justify-center text-xl shadow-inner">
+                                🛍️
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="text-sm font-bold text-white uppercase">Aba de Loja & Produtos no Site</h3>
+                                    <span id="badgeStatusModuloLoja" class="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-green-950 text-green-400 border border-green-800">Ativado no Site</span>
+                                </div>
+                                <p class="text-xs text-zinc-400">Ative ou desative a exibição da loja de produtos e venda casada para os clientes.</p>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                            <input type="checkbox" id="checkModuloLojaAtivo" class="sr-only peer" checked>
+                            <div class="w-11 h-6 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-dourado"></div>
+                        </label>
+                    </div>
+
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-zinc-800 pb-4">
                         <div>
                             <h2 class="text-xl font-bold text-white uppercase flex items-center gap-2">
@@ -2017,8 +2057,10 @@
             } else if (nomeAba === 'services') {
                 carregarServicosAdmin();
                 carregarPlanosAdmin();
+                carregarStatusModulosSite();
             } else if (nomeAba === 'products') {
                 carregarProdutosAdmin();
+                carregarStatusModulosSite();
             } else if (nomeAba === 'blockDays' || nomeAba === 'calendar' || nomeAba === 'closedDays') {
                 carregarDiasBloqueadosAdmin();
                 carregarExpedienteAdmin();
@@ -2148,6 +2190,7 @@
                     try { carregarStatusWhatsAppBot(); } catch (e) { console.warn(e); }
                     try { carregarAdministradoresPainel(); } catch (e) { console.warn(e); }
                     try { carregarConfigMultiBarbeiro(); carregarBarbeirosAdmin(); } catch (e) { console.warn(e); }
+                    try { carregarStatusModulosSite(); } catch (e) { console.warn(e); }
                     try { iniciarMonitoramentoTempoRealAdmin(); } catch (e) { console.warn(e); }
                     return;
                 } else {
@@ -4629,6 +4672,89 @@
 
         document.getElementById('inputBuscarProdutoAdmin')?.addEventListener('input', renderizarProdutosAdmin);
         document.getElementById('selectFiltroEstoqueAdmin')?.addEventListener('change', renderizarProdutosAdmin);
+
+        // ==========================================
+        // CONTROLE DE VISIBILIDADE DOS MÓDULOS NO SITE (LOJA E PLANOS)
+        // ==========================================
+        async function carregarStatusModulosSite() {
+            try {
+                const snap = await getDoc(doc(db, "configuracoes", "modulos"));
+                let moduloPlanosAtivo = true;
+                let moduloLojaAtivo = true;
+
+                if (snap.exists()) {
+                    const data = snap.data();
+                    if (data.moduloPlanosAtivo !== undefined) moduloPlanosAtivo = data.moduloPlanosAtivo === true;
+                    if (data.moduloLojaAtivo !== undefined) moduloLojaAtivo = data.moduloLojaAtivo === true;
+                }
+
+                const checkPlanos = document.getElementById('checkModuloPlanosAtivo');
+                const badgePlanos = document.getElementById('badgeStatusModuloPlanos');
+                if (checkPlanos) checkPlanos.checked = moduloPlanosAtivo;
+                if (badgePlanos) {
+                    badgePlanos.className = moduloPlanosAtivo 
+                        ? "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-green-950 text-green-400 border border-green-800" 
+                        : "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-zinc-800 text-zinc-400";
+                    badgePlanos.innerText = moduloPlanosAtivo ? "Ativado no Site" : "Desativado no Site";
+                }
+
+                const checkLoja = document.getElementById('checkModuloLojaAtivo');
+                const badgeLoja = document.getElementById('badgeStatusModuloLoja');
+                if (checkLoja) checkLoja.checked = moduloLojaAtivo;
+                if (badgeLoja) {
+                    badgeLoja.className = moduloLojaAtivo 
+                        ? "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-green-950 text-green-400 border border-green-800" 
+                        : "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-zinc-800 text-zinc-400";
+                    badgeLoja.innerText = moduloLojaAtivo ? "Ativado no Site" : "Desativado no Site";
+                }
+            } catch (e) {
+                console.warn("Erro ao carregar status dos módulos:", e);
+            }
+        }
+        window.carregarStatusModulosSite = carregarStatusModulosSite;
+
+        async function alternarModuloSite(nomeModulo, ativo) {
+            try {
+                const updateData = { atualizadoEm: new Date().toISOString() };
+                if (nomeModulo === 'planos') {
+                    updateData.moduloPlanosAtivo = ativo;
+                    const badgePlanos = document.getElementById('badgeStatusModuloPlanos');
+                    if (badgePlanos) {
+                        badgePlanos.className = ativo 
+                            ? "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-green-950 text-green-400 border border-green-800" 
+                            : "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-zinc-800 text-zinc-400";
+                        badgePlanos.innerText = ativo ? "Ativado no Site" : "Desativado no Site";
+                    }
+                } else if (nomeModulo === 'loja') {
+                    updateData.moduloLojaAtivo = ativo;
+                    const badgeLoja = document.getElementById('badgeStatusModuloLoja');
+                    if (badgeLoja) {
+                        badgeLoja.className = ativo 
+                            ? "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-green-950 text-green-400 border border-green-800" 
+                            : "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-zinc-800 text-zinc-400";
+                        badgeLoja.innerText = ativo ? "Ativado no Site" : "Desativado no Site";
+                    }
+                }
+                await setDoc(doc(db, "configuracoes", "modulos"), updateData, { merge: true });
+                exibirToastNotificacao(
+                    `⚙️ Módulo ${nomeModulo === 'planos' ? 'Planos Mensais' : 'Loja & Estoque'}`,
+                    ativo ? 'Ativado com sucesso no site dos clientes!' : 'Desativado e ocultado no site dos clientes!',
+                    'config'
+                );
+            } catch (err) {
+                console.error("Erro ao alterar módulo:", err);
+                alert("Erro ao alterar visibilidade do módulo: " + err.message);
+            }
+        }
+        window.alternarModuloSite = alternarModuloSite;
+
+        document.getElementById('checkModuloPlanosAtivo')?.addEventListener('change', (e) => {
+            alternarModuloSite('planos', e.target.checked);
+        });
+
+        document.getElementById('checkModuloLojaAtivo')?.addEventListener('change', (e) => {
+            alternarModuloSite('loja', e.target.checked);
+        });
 
         document.getElementById('btnSalvarBloqueio')?.addEventListener('click', async () => {
             const dataBloq = document.getElementById('inputDataBloqueio')?.value;
