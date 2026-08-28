@@ -379,66 +379,28 @@
         </div>
 
         <div id="viewClienteAgendamentos" class="space-y-6">
-            <!-- BANNER DE DESTAQUE VIP DO CLIENTE -->
-            <div id="cardStatusVipAgendamento" class="hidden p-4 rounded-xl bg-gradient-to-r from-amber-950/80 via-black to-amber-950/80 border-2 border-dourado text-zinc-200 text-xs shadow-xl space-y-2">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <span class="text-2xl">👑</span>
-                        <div>
-                            <span class="font-extrabold text-dourado uppercase tracking-wider text-xs sm:text-sm">Assinatura VIP Ativa</span>
-                            <p id="labelNomePlanoVipAgendamento" class="text-[11px] text-zinc-300 font-medium">Plano Mensal</p>
-                        </div>
-                    </div>
-                    <span id="badgeSemanaAtualVip" class="bg-green-500 text-black px-2.5 py-1 rounded-full font-extrabold text-[10px] uppercase shadow">1 Corte Semanal Gratuito</span>
-                </div>
-                <p id="labelDescricaoSemanaVip" class="text-amber-200/90 text-[11px] leading-relaxed">
-                    ✨ Escolha uma data e horário abaixo para agendar seu atendimento exclusivo com <strong>R$ 0,00 de taxa de reserva</strong> (100% isento)!
-                </p>
-            </div>
-
-            <!-- CARD DE DESTAQUE DA FIDELIDADE NA TELA PRINCIPAL -->
-            <div id="cardDestaqueFidelidadeDashboard" class="hidden bg-gradient-to-r from-amber-950/60 via-black to-zinc-950 p-4 rounded-2xl border border-dourado/40 space-y-2.5 shadow-lg">
-                <div class="flex items-center justify-between gap-2">
-                    <div class="flex items-center gap-2.5">
-                        <div class="w-10 h-10 rounded-xl bg-dourado/10 border border-dourado/30 flex items-center justify-center text-xl shadow-inner flex-shrink-0">
-                            ✂️
+            <!-- CARD DO PLANO MENSAL ATIVO DO CLIENTE -->
+            <div id="cardStatusVipAgendamento" class="hidden p-4 rounded-2xl bg-gradient-to-r from-amber-950/70 via-black to-zinc-950 border border-dourado/50 text-zinc-200 text-xs shadow-xl space-y-2.5 transition-all">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-dourado/15 border border-dourado/40 flex items-center justify-center text-xl shadow-inner flex-shrink-0">
+                            👑
                         </div>
                         <div>
                             <div class="flex items-center gap-2">
-                                <h3 class="text-xs font-bold text-white uppercase tracking-wide">Cartão Fidelidade</h3>
-                                <span id="badgeFidelidadeDashboard" class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-dourado/20 text-dourado">0 / 10 Selos</span>
+                                <span class="font-extrabold text-dourado uppercase tracking-wider text-xs">Plano Mensal Ativo</span>
                             </div>
-                            <p id="textoResumoFidelidadeDashboard" class="text-[11px] text-zinc-400">Acumule selos e ganhe benefícios exclusivos!</p>
+                            <p id="labelNomePlanoVipAgendamento" class="text-[11px] text-zinc-300 font-medium truncate">Plano Mensal</p>
                         </div>
                     </div>
-                    <button type="button" onclick="window.abrirModalPerfilCliente()" class="text-[10px] font-bold text-dourado hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 px-2.5 py-1.5 rounded-lg transition whitespace-nowrap cursor-pointer">
-                        Ver Selos →
-                    </button>
-                </div>
-                <div class="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-zinc-800">
-                    <div id="barraProgressoFidelidadeDashboard" class="bg-gradient-to-r from-amber-500 to-yellow-300 h-full transition-all duration-500" style="width: 0%"></div>
-                </div>
-            </div>
-
-            <!-- CARD DE DESTAQUE DO PRESENTE DE ANIVERSÁRIO (DASHBOARD) -->
-            <div id="cardDestaqueAniversarioDashboard" class="hidden bg-gradient-to-r from-purple-950/60 via-black to-zinc-950 p-4 rounded-2xl border border-purple-500/40 space-y-2.5 shadow-lg">
-                <div class="flex items-center justify-between gap-2">
-                    <div class="flex items-center gap-2.5">
-                        <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-xl shadow-inner flex-shrink-0">
-                            🎂
-                        </div>
-                        <div>
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <h3 class="text-xs font-bold text-white uppercase tracking-wide">Presente de Aniversário</h3>
-                                <span id="badgeDestaqueAniversarioDashboard" class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-700">Aguardando Data</span>
-                            </div>
-                            <p id="textoResumoAniversarioDashboard" class="text-[11px] text-zinc-400">Cadastre sua data de nascimento para desbloquear seu presente!</p>
-                        </div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span id="badgeSemanaAtualVip" class="bg-green-500 text-black px-2.5 py-1 rounded-full font-extrabold text-[10px] uppercase shadow">1 Corte Semanal</span>
+                        <button type="button" onclick="window.abrirModalAgendamentoMensalista ? window.abrirModalAgendamentoMensalista() : document.getElementById('btnTabClientePlanos')?.click()" class="bg-dourado hover:bg-[#C5A028] text-black font-extrabold px-3 py-1 rounded-lg text-[10px] uppercase tracking-wider transition cursor-pointer shadow flex items-center gap-1 whitespace-nowrap">
+                            <span>📅</span> Agendar do Plano
+                        </button>
                     </div>
-                    <button type="button" onclick="window.abrirModalPerfilCliente()" class="text-[10px] font-bold text-purple-300 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-purple-800/80 px-2.5 py-1.5 rounded-lg transition whitespace-nowrap cursor-pointer">
-                        Ver Presente →
-                    </button>
                 </div>
+                <p id="labelDescricaoSemanaVip" class="text-amber-200/90 text-[11px] leading-relaxed border-t border-zinc-800/80 pt-2"></p>
             </div>
 
             <div class="bg-black p-4 rounded-lg border border-zinc-800 space-y-3">
@@ -732,11 +694,11 @@
                 <div id="itemTermoPlanos" class="hidden flex items-start gap-2.5 border-t border-zinc-800/80 pt-2">
                     <span class="text-base text-purple-400">👑</span>
                     <div class="space-y-1">
-                        <strong class="text-white block">Regras do Pacote Mensal VIP:</strong>
+                        <strong class="text-white block">Regras do Plano Mensal:</strong>
                         <ul class="list-disc list-inside space-y-1 text-[11px] text-zinc-300">
                             <li><strong>Regra das 4 Semanas:</strong> 30 dias divididos em 4 semanas (1 corte por semana).</li>
                             <li><strong>Expiração Automática:</strong> Se a semana fechar sem uso, o corte da respectiva semana expira e não acumula.</li>
-                            <li><strong>Sem Estorno Financeiro:</strong> O pacote mensal não possui devolução financeira.</li>
+                            <li><strong>Sem Estorno Financeiro:</strong> O plano mensal não possui devolução financeira.</li>
                             <li><strong>Cancelamento pelo Barbeiro:</strong> Se o barbeiro cancelar seu horário, o crédito do corte da semana permanece 100% ativo para você reagendar.</li>
                             <li><strong>Cancelamento pelo Cliente:</strong> Se você cancelar com mais de 3h de antecedência, o corte da semana é liberado para reagendar. Cancelamentos com 3 horas ou menos resultam na perda do crédito da semana.</li>
                         </ul>
@@ -951,7 +913,7 @@
         </div>
     </div>
 
-    <!-- MODAL DE AGENDAMENTO EXCLUSIVO DO PLANO MENSAL VIP -->
+    <!-- MODAL DE AGENDAMENTO EXCLUSIVO DO PLANO MENSAL -->
     <div id="modalAgendamentoMensalista" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
         <div class="bg-zinc-900 border border-dourado/80 p-5 sm:p-7 rounded-3xl max-w-lg w-full shadow-2xl space-y-4 relative my-auto sm:my-6 max-h-[92vh] overflow-y-auto text-left">
             <button id="btnFecharModalAgendamentoMensalista" type="button" class="absolute top-4 right-4 text-zinc-400 hover:text-white text-xl font-bold transition">&times;</button>
@@ -962,7 +924,7 @@
                     <span class="text-[10px] font-extrabold uppercase tracking-widest text-dourado bg-dourado/10 border border-dourado/30 px-2.5 py-0.5 rounded-full">Área do Mensalista</span>
                 </div>
                 <h2 class="text-lg sm:text-xl font-extrabold text-white uppercase tracking-wide">Agendar Horário do Plano Mensal</h2>
-                <p id="subtituloSemanaModalMensalista" class="text-xs text-zinc-400">Semana 1 de 4 • Plano VIP</p>
+                <p id="subtituloSemanaModalMensalista" class="text-xs text-zinc-400">Semana 1 de 4 • Plano Mensal</p>
             </div>
 
             <!-- Card do Serviço Incluso no Plano -->
@@ -2682,7 +2644,7 @@
                                         badgeSemanaVip.className = "bg-green-500 text-black px-2.5 py-1 rounded-full font-extrabold text-[10px] uppercase shadow animate-pulse";
                                         badgeSemanaVip.innerText = `Semana ${info.semanaAtualInfo.numero}: 1 Corte Disponível`;
                                     }
-                                    if (descSemanaVip) descSemanaVip.innerHTML = `👑 Você possui <strong>1 corte incluso no seu plano</strong> para esta semana. Para agendar os serviços do seu plano com <strong>R$ 0,00</strong> ou adicionar extras, clique na aba <strong>Planos Mensais</strong>.`;
+                                    if (descSemanaVip) descSemanaVip.innerHTML = `👑 Você possui <strong>1 corte incluso no seu plano</strong> para esta semana. Para agendar com <strong>R$ 0,00</strong> ou incluir extras, clique em <strong>Agendar do Plano</strong> acima.`;
                                 } else if (info.semanaAtualInfo.status === 'agendado') {
                                     if (badgeSemanaVip) {
                                         badgeSemanaVip.className = "bg-blue-500 text-white px-2.5 py-1 rounded-full font-extrabold text-[10px] uppercase shadow";
@@ -2804,7 +2766,7 @@
                             <div class="space-y-4">
                                 <div class="flex justify-between items-start">
                                     <div>
-                                        <span class="text-[10px] font-bold uppercase tracking-widest text-dourado bg-dourado/10 border border-dourado/30 px-2 py-0.5 rounded-full">Assinante VIP</span>
+                                        <span class="text-[10px] font-bold uppercase tracking-widest text-dourado bg-dourado/10 border border-dourado/30 px-2 py-0.5 rounded-full">Plano Mensal Ativo</span>
                                         <h3 class="text-xl font-bold text-white uppercase mt-1.5">${info.nomePlano}</h3>
                                         <p class="text-xs text-zinc-400">Ativado em: <strong class="text-white">${info.dataPagtoFormatada}</strong> • Válido até: <strong class="text-zinc-200">${info.dataFimFormatada}</strong></p>
                                     </div>
@@ -3949,7 +3911,7 @@
 
                         let financeiroBadge = "";
                         if (ag.isPlano) {
-                            financeiroBadge = `<span class="text-[11px] text-purple-300 font-bold bg-purple-950/80 px-2 py-0.5 rounded border border-purple-800">👑 Plano VIP (R$ 0,00 restante)</span>`;
+                            financeiroBadge = `<span class="text-[11px] text-purple-300 font-bold bg-purple-950/80 px-2 py-0.5 rounded border border-purple-800">👑 Plano Mensal (R$ 0,00)</span>`;
                         } else if (ag.modalidadePagamento === 'total' || valorRestante === 0) {
                             financeiroBadge = `<span class="text-[11px] text-green-300 font-bold bg-green-950/80 px-2 py-0.5 rounded border border-green-800">✅ 100% Quitado (R$ 0,00 restante)</span>`;
                         } else {
@@ -3970,7 +3932,7 @@
                             <div id="itemMeusAgendamentos_${agId}" class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-zinc-900/90 p-3.5 rounded-2xl border border-zinc-800 gap-3 shadow-md">
                                 <div class="space-y-1.5">
                                     <div class="flex items-center gap-2 flex-wrap">
-                                        <p class="font-bold text-dourado text-sm">${ag.servico || 'Corte'} ${ag.isPlano ? '<span class="text-xs text-purple-400 font-bold">(VIP)</span>' : ''}</p>
+                                        <p class="font-bold text-dourado text-sm">${ag.servico || 'Corte'} ${ag.isPlano ? '<span class="text-xs text-purple-400 font-bold">(Plano Mensal)</span>' : ''}</p>
                                         <span class="text-xs text-zinc-300 bg-zinc-800 px-2 py-0.5 rounded font-mono">📅 ${ag.dataHora.replace('T', ' às ')}</span>
                                     </div>
                                     ${financeiroBadge}
@@ -4025,10 +3987,10 @@
             if (isPlano) {
                 if (diffHoras > 3) {
                     planoPerdeuCredito = false;
-                    msgConfirmacao = `Deseja cancelar o agendamento VIP de "${servico}" em ${dataHora.replace('T', ' às ')}?\n\n👑 Como faltam mais de 3 horas para o atendimento (${diffHoras.toFixed(1)}h de antecedência), o crédito do corte desta semana voltará a ficar DISPONÍVEL para você reagendar no sistema.`;
+                    msgConfirmacao = `Deseja cancelar o agendamento do Plano Mensal de "${servico}" em ${dataHora.replace('T', ' às ')}?\n\n👑 Como faltam mais de 3 horas para o atendimento (${diffHoras.toFixed(1)}h de antecedência), o crédito do corte desta semana voltará a ficar DISPONÍVEL para você reagendar no sistema.`;
                 } else {
                     planoPerdeuCredito = true;
-                    msgConfirmacao = `⚠️ ATENÇÃO - CANCELAMENTO COM 3 HORAS OU MENOS (${diffHoras > 0 ? diffHoras.toFixed(1) + 'h restantes' : 'horário já iniciado'}):\n\nConforme as regras do Pacote Mensal VIP, ao cancelar com 3 horas ou menos de antecedência, você PERDERÁ o corte desta semana (não será possível reagendar nesta semana).\n\nDeseja realmente cancelar o agendamento e perder o crédito desta semana?`;
+                    msgConfirmacao = `⚠️ ATENÇÃO - CANCELAMENTO COM 3 HORAS OU MENOS (${diffHoras > 0 ? diffHoras.toFixed(1) + 'h restantes' : 'horário já iniciado'}):\n\nConforme as regras do Plano Mensal, ao cancelar com 3 horas ou menos de antecedência, você PERDERÁ o corte desta semana (não será possível reagendar nesta semana).\n\nDeseja realmente cancelar o agendamento e perder o crédito desta semana?`;
                 }
             } else if (diffHoras >= 3) {
                 elegivelEstorno = true;
@@ -4144,9 +4106,9 @@
                 let alertMsg = "";
                 if (isPlano) {
                     if (planoPerdeuCredito) {
-                        alertMsg = "Agendamento VIP cancelado. Conforme a regra de antecedência mínima de 3 horas, o corte desta semana foi perdido e não poderá ser reagendado.";
+                        alertMsg = "Agendamento do Plano Mensal cancelado. Conforme a regra de antecedência mínima de 3 horas, o corte desta semana foi perdido e não poderá ser reagendado.";
                     } else {
-                        alertMsg = "Agendamento VIP cancelado com sucesso! Como cancelou com mais de 3 horas de antecedência, seu corte semanal está liberado para reagendamento.";
+                        alertMsg = "Agendamento do Plano Mensal cancelado com sucesso! Como cancelou com mais de 3 horas de antecedência, seu corte semanal está liberado para reagendamento.";
                     }
                 } else if (elegivelEstorno) {
                     alertMsg = `Agendamento cancelado com sucesso!${estornoMsg || ' Seu estorno será processado conforme os Termos e Condições.'}` ;
