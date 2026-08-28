@@ -5933,7 +5933,7 @@
             // Tenta enviar via Bot backend primeiro
             try {
                 exibirToastNotificacao("🎂 Disparando Parabéns", `Enviando mensagem para ${nome}...`, "info");
-                const res = await fetch('/api/whatsapp/notificar-aniversario', {
+                const res = await fetch(`${getBackendUrlAtivo()}/api/whatsapp/notificar-aniversario`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -6603,36 +6603,14 @@
         const urlParamsMp = new URLSearchParams(window.location.search);
         if (urlParamsMp.has('mp_status')) {
             const mpStatus = urlParamsMp.get('mp_status');
-            const tokenRetornado = urlParamsMp.get('token');
-            const userIdRetornado = urlParamsMp.get('user_id');
-            const pubKeyRetornada = urlParamsMp.get('pub_key');
             const msg = document.getElementById('msgConfigMpStatus');
 
             if (mpStatus === 'sucesso') {
                 (async () => {
-                    if (tokenRetornado && tokenRetornado.length > 15) {
-                        try {
-                            await setDoc(doc(db, "configuracoes", "pagamento"), {
-                                mpAccessToken: tokenRetornado,
-                                mpUserId: userIdRetornado || "",
-                                mpPublicKey: pubKeyRetornada || "",
-                                mpConectadoViaOAuth: true,
-                                atualizadoEm: new Date()
-                            }, { merge: true });
-
-                            await fetch(`${getBackendUrlAtivo()}/api/configuracoes/mercadopago`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ accessToken: tokenRetornado })
-                            }).catch(() => {});
-                        } catch(err) { console.error("Erro ao sincronizar Firestore:", err); }
-                    }
-
                     if (msg) {
                         msg.className = "text-xs text-center font-bold text-green-400 bg-green-950/60 p-3 rounded-lg border border-green-700";
                         msg.innerText = "🎉 Conta do Mercado Pago conectada com sucesso em 1 clique!";
                     }
-
                     await carregarConfiguracoesMercadoPago();
                 })();
             } else if (mpStatus === 'erro') {

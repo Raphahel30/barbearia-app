@@ -4,8 +4,12 @@ node_modules/
 .firebase/
 server/sessions/
 sessions/
-*firebase-service-account.json
-firebase-service-account.json
+*firebase-service-account*.json
+firebase-service-account*.json
+*service-account*.json
+*.key
+*.pem
 *.log
 .DS_Store
 Thumbs.db
+

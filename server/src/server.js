@@ -551,7 +551,7 @@ app.get('/api/auth/mercadopago/callback', async (req, res) => {
             console.warn("Aviso ao salvar OAuth no Firestore:", fsErr);
         }
 
-        return res.redirect(`${APP_SITE_URL}/admin.html?mp_status=sucesso&user_id=${encodeURIComponent(tokenData.user_id || '')}&token=${encodeURIComponent(tokenData.access_token || '')}&pub_key=${encodeURIComponent(tokenData.public_key || '')}`);
+        return res.redirect(`${APP_SITE_URL}/admin.html?mp_status=sucesso`);
 
     } catch (err) {
         console.error("Erro no processamento do callback OAuth:", err);
