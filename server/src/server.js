@@ -301,6 +301,103 @@ app.use('/api/pagamento/', limiterPagamento);
 app.use('/api/auth/recuperar-senha', limiterAuth);
 app.use('/api/whatsapp/', limiterWhatsApp);
 
+// Lista de e-mails autorizados como Administradores do sistema
+const ADMIN_EMAILS = [
+    'rafaelcassu@hotmail.com',
+    'cassurafael30@gmail.com',
+    'admin@emausbarbearia.com'
+];
+
+// Validador de Token de Autenticação do Firebase Admin
+async function validarTokenFirebaseAdmin(idToken) {
+    if (!idToken || typeof idToken !== 'string') return null;
+    return new Promise((resolve) => {
+        const req = https.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`, (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                try {
+                    const parsed = JSON.parse(data);
+                    if (parsed && parsed.email) {
+                        resolve(parsed);
+                    } else {
+                        resolve(null);
+                    }
+                } catch (e) { resolve(null); }
+            });
+        });
+        req.on('error', () => resolve(null));
+    });
+}
+
+// Middleware de Proteção de Rotas Administrativas
+async function verificarAdminMiddleware(req, res, next) {
+    try {
+        const authHeader = req.headers['authorization'] || '';
+        const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
+
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                error: 'Acesso negado. Token de autorização não fornecido.'
+            });
+        }
+
+        const decoded = await validarTokenFirebaseAdmin(token);
+        if (!decoded || !decoded.email) {
+            return res.status(403).json({
+                success: false,
+                error: 'Acesso negado. Token de administrador inválido ou expirado.'
+            });
+        }
+
+        const emailLower = decoded.email.toLowerCase().trim();
+        if (!ADMIN_EMAILS.includes(emailLower)) {
+            console.warn(`[Segurança] Tentativa de acesso não autorizado por: ${emailLower}`);
+            return res.status(403).json({
+                success: false,
+                error: 'Acesso restrito. Este usuário não possui privilégios de Administrador.'
+            });
+        }
+
+        req.adminUser = decoded;
+        next();
+    } catch (err) {
+        console.error('Erro no middleware de autenticação admin:', err);
+        return res.status(500).json({ success: false, error: 'Erro interno ao validar credenciais.' });
+    }
+}
+
+// Middleware para Estorno: Permite Admin OU Cliente Autenticado no Firebase
+async function verificarAuthEstornoMiddleware(req, res, next) {
+    try {
+        const authHeader = req.headers['authorization'] || '';
+        const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
+
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                error: 'Acesso negado. Token de autenticação não fornecido para processar estorno.'
+            });
+        }
+
+        const decoded = await validarTokenFirebaseAdmin(token);
+        if (!decoded || !decoded.email) {
+            return res.status(403).json({
+                success: false,
+                error: 'Acesso negado. Token de autenticação inválido ou expirado.'
+            });
+        }
+
+        req.authUser = decoded;
+        req.ehAdmin = ADMIN_EMAILS.includes(decoded.email.toLowerCase().trim());
+        next();
+    } catch (err) {
+        console.error('Erro na validação de estorno:', err);
+        return res.status(500).json({ success: false, error: 'Erro interno ao validar autenticação.' });
+    }
+}
+
 // Rota raiz para verificação imediata de uptime no Render e UptimeRobot
 app.get('/', (req, res) => {
     const waStatus = obterStatusWhatsApp();
@@ -591,7 +688,7 @@ app.get('/api/auth/mercadopago/status', (req, res) => {
 });
 
 // Desconecta a conta do Mercado Pago
-app.post('/api/auth/mercadopago/desconectar', async (req, res) => {
+app.post('/api/auth/mercadopago/desconectar', verificarAdminMiddleware, async (req, res) => {
     try {
         activeAccessToken = '';
         client = new MercadoPagoConfig({ accessToken: 'DUMMY_TOKEN', options: { timeout: 10000 } });
@@ -664,7 +761,7 @@ app.post('/api/auth/mercadopago/desconectar', async (req, res) => {
 });
 
 // Endpoint to update or test Mercado Pago token from admin dashboard
-app.post('/api/configuracoes/mercadopago', (req, res) => {
+app.post('/api/configuracoes/mercadopago', verificarAdminMiddleware, (req, res) => {
     const { accessToken } = req.body;
     if (accessToken && accessToken.trim()) {
         activeAccessToken = accessToken.trim();
@@ -678,7 +775,7 @@ app.post('/api/configuracoes/mercadopago', (req, res) => {
 });
 
 // Endpoint de Teste em tempo real do Token do Mercado Pago
-app.post(['/api/pagamento/testar-token', '/api/configuracoes/mercadopago/testar'], async (req, res) => {
+app.post(['/api/pagamento/testar-token', '/api/configuracoes/mercadopago/testar'], verificarAdminMiddleware, async (req, res) => {
     const { accessToken } = req.body;
     let tokenParaTestar = (accessToken && accessToken.trim()) ? accessToken.trim() : activeAccessToken;
 
@@ -927,7 +1024,7 @@ app.get('/api/pagamento/status/:id', async (req, res) => {
 });
 
 // Endpoint to process automatic refund (Devolução Pix ou Estorno Cartão)
-app.post('/api/pagamento/estorno', async (req, res) => {
+app.post('/api/pagamento/estorno', verificarAuthEstornoMiddleware, async (req, res) => {
     try {
         const { paymentId, amount, reason } = req.body;
 
@@ -1210,7 +1307,7 @@ async function sincronizarEstornoNoFirestore(paymentId, amount = 0) {
 }
 
 // C1: Alias para compatibilidade — /api/mercadopago/reembolsar-pagamento → /api/pagamento/estorno
-app.post('/api/mercadopago/reembolsar-pagamento', async (req, res) => {
+app.post('/api/mercadopago/reembolsar-pagamento', verificarAdminMiddleware, async (req, res) => {
     // Redireciona para o handler de estorno existente, repassando o body
     req.url = '/api/pagamento/estorno';
     app.handle(req, res);
@@ -1282,7 +1379,7 @@ app.get('/api/whatsapp/status', (req, res) => {
 });
 
 // Inicia ou reinicia conexão para gerar QR Code
-app.post('/api/whatsapp/conectar', async (req, res) => {
+app.post('/api/whatsapp/conectar', verificarAdminMiddleware, async (req, res) => {
     try {
         const waStatus = obterStatusWhatsApp();
         const force = waStatus.status !== 'connected';
@@ -1294,7 +1391,7 @@ app.post('/api/whatsapp/conectar', async (req, res) => {
 });
 
 // Gera Código de Pareamento de 8 dígitos para conectar direto pelo celular (sem câmera)
-app.post('/api/whatsapp/codigo-pareamento', async (req, res) => {
+app.post('/api/whatsapp/codigo-pareamento', verificarAdminMiddleware, async (req, res) => {
     try {
         const { telefone } = req.body;
         if (!telefone) {
@@ -1309,7 +1406,7 @@ app.post('/api/whatsapp/codigo-pareamento', async (req, res) => {
 });
 
 // Desconecta a sessão do WhatsApp
-app.post('/api/whatsapp/desconectar', async (req, res) => {
+app.post('/api/whatsapp/desconectar', verificarAdminMiddleware, async (req, res) => {
     try {
         const result = await desconectarWhatsApp();
         return res.json(result);
@@ -1329,7 +1426,7 @@ app.post('/api/whatsapp/enviar', async (req, res) => {
 });
 
 // Teste rápido para o WhatsApp do Barbeiro
-app.post('/api/whatsapp/testar-barbeiro', async (req, res) => {
+app.post('/api/whatsapp/testar-barbeiro', verificarAdminMiddleware, async (req, res) => {
     try {
         const { numero } = req.body;
         if (!numero || String(numero).replace(/\D/g, '').length < 10) {
@@ -1473,7 +1570,7 @@ app.post('/api/whatsapp/notificar-agendamento', async (req, res) => {
 });
 
 // Notificação de aviso de expiração de corte semanal para assinantes VIP
-app.post('/api/whatsapp/lembrete-expiracao-plano', async (req, res) => {
+app.post('/api/whatsapp/lembrete-expiracao-plano', verificarAdminMiddleware, async (req, res) => {
     try {
         const { cliente, telefone, nomePlano, semanaNumero, diasRestantesSemana, dataLimiteSemana } = req.body;
         if (!telefone) {
@@ -1497,7 +1594,7 @@ app.post('/api/whatsapp/lembrete-expiracao-plano', async (req, res) => {
 });
 
 // Disparo em lote de lembretes para múltiplos clientes com crédito expirando
-app.post('/api/whatsapp/disparar-lembretes-expiracao-lote', async (req, res) => {
+app.post('/api/whatsapp/disparar-lembretes-expiracao-lote', verificarAdminMiddleware, async (req, res) => {
     try {
         const { listaClientes } = req.body;
         if (!Array.isArray(listaClientes) || listaClientes.length === 0) {
@@ -1698,7 +1795,7 @@ app.post('/api/whatsapp/notificar-compra-produto', async (req, res) => {
 });
 
 // Notificação Instantânea de Parabéns e Presente de Aniversário (Cliente)
-app.post('/api/whatsapp/notificar-aniversario', async (req, res) => {
+app.post('/api/whatsapp/notificar-aniversario', verificarAdminMiddleware, async (req, res) => {
     try {
         const { cliente, telefone, descricaoRecompensa, mensagemCustomizada } = req.body;
         if (!telefone) {

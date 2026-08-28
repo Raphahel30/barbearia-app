@@ -2006,6 +2006,22 @@
             return BACKEND_URL;
         }
 
+        async function getAdminAuthHeaders() {
+            try {
+                const user = auth.currentUser;
+                if (user) {
+                    const token = await user.getIdToken();
+                    return {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    };
+                }
+            } catch (e) {
+                console.warn('Erro ao obter token de autorização do administrador:', e);
+            }
+            return { 'Content-Type': 'application/json' };
+        }
+
         let whatsAppNumeroAtivo = "";
 
         // ==========================================
@@ -3275,7 +3291,7 @@
                     try {
                         await fetch(`${getBackendUrlAtivo()}/api/mercadopago/reembolsar-pagamento`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: await getAdminAuthHeaders(),
                             body: JSON.stringify({ paymentId: idPagamento, valorReembolso: precoPlano })
                         });
                     } catch (errEst) {
@@ -3322,7 +3338,7 @@
             try {
                 const resp = await fetch(`${getBackendUrlAtivo()}/api/whatsapp/lembrete-expiracao-plano`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: await getAdminAuthHeaders(),
                     body: JSON.stringify({
                         cliente,
                         telefone,
@@ -3378,7 +3394,7 @@
 
                 const resp = await fetch(`${getBackendUrlAtivo()}/api/whatsapp/disparar-lembretes-expiracao-lote`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: await getAdminAuthHeaders(),
                     body: JSON.stringify({
                         clientes: listaPayload,
                         whatsappBarbeiro: whatsAppNumeroAtivo
@@ -4358,7 +4374,7 @@
                 try {
                     const resp = await fetch(`${getBackendUrlAtivo()}/api/pagamento/estorno`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: await getAdminAuthHeaders(),
                         body: JSON.stringify({
                             paymentId: paymentId,
                             amount: valor,
@@ -5935,7 +5951,7 @@
                 exibirToastNotificacao("🎂 Disparando Parabéns", `Enviando mensagem para ${nome}...`, "info");
                 const res = await fetch(`${getBackendUrlAtivo()}/api/whatsapp/notificar-aniversario`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: await getAdminAuthHeaders(),
                     body: JSON.stringify({
                         cliente: nome,
                         telefone: telefone,
@@ -6417,11 +6433,13 @@
                     if (blocoDesconectado) blocoDesconectado.classList.add('hidden');
 
                     // Sincroniza em segundo plano com a memória ativa do backend
-                    fetch(`${getBackendUrlAtivo()}/api/configuracoes/mercadopago`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ accessToken: tokenAtivo })
-                    }).catch(() => {});
+                    getAdminAuthHeaders().then(authHeaders => {
+                        fetch(`${getBackendUrlAtivo()}/api/configuracoes/mercadopago`, {
+                            method: 'POST',
+                            headers: authHeaders,
+                            body: JSON.stringify({ accessToken: tokenAtivo })
+                        }).catch(() => {});
+                    });
 
                     return;
                 }
@@ -6474,7 +6492,10 @@
 
                 try {
                     try {
-                        await fetch(`${getBackendUrlAtivo()}/api/auth/mercadopago/desconectar`, { method: 'POST' });
+                        await fetch(`${getBackendUrlAtivo()}/api/auth/mercadopago/desconectar`, {
+                            method: 'POST',
+                            headers: await getAdminAuthHeaders()
+                        });
                     } catch (errApi) {
                         console.warn("Aviso ao notificar servidor no desconectar:", errApi);
                     }
@@ -6573,7 +6594,7 @@
 
                     await fetch(`${getBackendUrlAtivo()}/api/configuracoes/mercadopago`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: await getAdminAuthHeaders(),
                         body: JSON.stringify({ accessToken: token })
                     });
 
@@ -6601,7 +6622,7 @@
                     const token = document.getElementById('inputMpAccessToken')?.value.trim() || '';
                     const resp = await fetch(`${getBackendUrlAtivo()}/api/pagamento/testar-token`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: await getAdminAuthHeaders(),
                         body: JSON.stringify({ accessToken: token })
                     });
                     const data = await resp.json();
@@ -6779,7 +6800,7 @@
                 const backendUrl = getBackendUrlAtivo();
                 const res = await fetch(`${backendUrl}/api/whatsapp/testar-barbeiro`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: await getAdminAuthHeaders(),
                     body: JSON.stringify({ numero: numeroFinal })
                 });
                 const data = await res.json();
@@ -6865,7 +6886,10 @@
             if (confirm("Deseja realmente desconectar o WhatsApp que envia as mensagens para conectar um novo número?")) {
                 try {
                     const backendUrl = getBackendUrlAtivo();
-                    await fetch(`${backendUrl}/api/whatsapp/desconectar`, { method: 'POST' });
+                    await fetch(`${backendUrl}/api/whatsapp/desconectar`, {
+                        method: 'POST',
+                        headers: await getAdminAuthHeaders()
+                    });
                     if (pollingRoboCentralInterval) clearInterval(pollingRoboCentralInterval);
                     await carregarStatusWhatsAppBot();
                     alert("WhatsApp desconectado com sucesso! Agora você pode digitar o novo número e clicar em 'Gerar Código'.");
@@ -6911,7 +6935,7 @@
                 const backendUrl = getBackendUrlAtivo();
                 const res = await fetch(`${backendUrl}/api/whatsapp/codigo-pareamento`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: await getAdminAuthHeaders(),
                     body: JSON.stringify({ telefone: numeroFinal })
                 });
                 const data = await res.json();

@@ -4150,9 +4150,17 @@
                 // 1. Executa estorno automático pelo Mercado Pago se elegível (+3h para avulso)
                 if (!isPlano && elegivelEstorno && idPagamento && idPagamento !== 'manual' && idPagamento !== 'plano_vip' && valorPago > 0) {
                     try {
+                        let clientAuthHeaders = { 'Content-Type': 'application/json' };
+                        try {
+                            if (auth.currentUser) {
+                                const idToken = await auth.currentUser.getIdToken();
+                                clientAuthHeaders['Authorization'] = `Bearer ${idToken}`;
+                            }
+                        } catch (eAuth) { console.warn("Aviso ao obter token do cliente:", eAuth); }
+
                         const respEstorno = await fetch(`${getBackendUrlAtivo()}/api/pagamento/estorno`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: clientAuthHeaders,
                             body: JSON.stringify({
                                 paymentId: idPagamento,
                                 amount: valorPago,
