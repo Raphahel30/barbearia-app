@@ -1457,6 +1457,32 @@ app.post('/api/whatsapp/notificar-compra-produto', async (req, res) => {
     }
 });
 
+// Notificação Instantânea de Parabéns e Presente de Aniversário (Cliente)
+app.post('/api/whatsapp/notificar-aniversario', async (req, res) => {
+    try {
+        const { cliente, telefone, descricaoRecompensa, mensagemCustomizada } = req.body;
+        if (!telefone) {
+            return res.status(400).json({ success: false, error: 'Telefone do cliente é obrigatório.' });
+        }
+
+        const msgAniversario = mensagemCustomizada || 
+            `🎂 *EMAÚS Barbearia - Feliz Aniversário!* 🎉\n\n` +
+            `Fala, *${cliente || 'Amigo'}*! Tudo bem?\n\n` +
+            `A equipe da *EMAÚS Barbearia* deseja a você um Feliz Aniversário, com muita saúde, sucesso e realizações! ✂️✨\n\n` +
+            `🎁 Para comemorar o seu dia com estilo, preparamos um presente especial para você:\n` +
+            `👉 *${descricaoRecompensa || 'Desconto Especial no seu próximo corte'}*\n\n` +
+            `Acesse nosso site para resgatar seu presente e agendar seu horário:\n` +
+            `🔗 ${APP_SITE_URL}\n\n` +
+            `_EMAÚS Barbearia • Atendimento de Alta Performance_`;
+
+        const resultado = await enviarMensagemWhatsApp(telefone, msgAniversario);
+        return res.json({ success: true, resultado });
+    } catch (err) {
+        console.error('Erro na rota notificar-aniversario:', err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // Rota para disparar checagem e envio de lembretes 4h antes (pode ser chamada por Cron ou manualmente)
 app.all('/api/whatsapp/disparar-lembretes-4h', async (req, res) => {
     try {

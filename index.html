@@ -94,6 +94,10 @@
                 <input type="email" id="regEmail" autocomplete="email" class="w-full px-3 py-2 bg-black rounded border border-zinc-800 focus:outline-none focus:border-dourado text-white">
             </div>
             <div>
+                <label class="block text-sm font-medium mb-1 text-zinc-300">Data de Nascimento (Para Presente de Aniversário 🎂)</label>
+                <input type="date" id="regDataNascimento" class="w-full px-3 py-2 bg-black rounded border border-zinc-800 focus:outline-none focus:border-dourado text-white cursor-pointer">
+            </div>
+            <div>
                 <label class="block text-sm font-medium mb-1 text-zinc-300">Senha</label>
                 <input type="password" id="regPassword" autocomplete="new-password" placeholder="Mínimo 6 caracteres" class="w-full px-3 py-2 bg-black rounded border border-zinc-800 focus:outline-none focus:border-dourado text-white">
             </div>
@@ -138,6 +142,10 @@
                 <div>
                     <label class="block text-xs font-semibold uppercase text-zinc-300 mb-1">Número de WhatsApp (com DDD)</label>
                     <input type="tel" id="googleTelefoneWhatsApp" placeholder="(11) 99999-9999" class="w-full px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-zinc-300 mb-1">Data de Nascimento 🎂 (Opcional)</label>
+                    <input type="date" id="googleDataNascimento" class="w-full px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado cursor-pointer">
                 </div>
             </div>
 
@@ -202,6 +210,13 @@
                     <input type="email" id="perfilEmailCliente" readonly class="w-full px-3.5 py-2.5 bg-zinc-950 rounded-lg border border-zinc-800 text-zinc-400 cursor-not-allowed font-mono text-[11px]">
                 </div>
 
+                <!-- Data de Nascimento (Presente de Aniversário 🎂) -->
+                <div>
+                    <label class="block font-semibold text-zinc-300 uppercase mb-1">Data de Nascimento 🎂</label>
+                    <input type="date" id="perfilDataNascimentoCliente" class="w-full px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white focus:outline-none focus:border-dourado font-medium cursor-pointer">
+                    <p class="text-[10px] text-zinc-500 mt-0.5">Cadastre sua data para desbloquear benefícios e presentes especiais no seu aniversário!</p>
+                </div>
+
                 <!-- Card de Redefinição de Senha -->
                 <div class="bg-black/60 p-3.5 rounded-xl border border-zinc-800 space-y-2">
                     <div class="flex items-center justify-between">
@@ -256,6 +271,31 @@
                         <span id="badgeRecompensaProntaPerfil" class="hidden text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-green-500 text-black uppercase animate-pulse flex-shrink-0">
                             🎉 Liberada!
                         </span>
+                    </div>
+                </div>
+
+                <!-- CARD DO PRESENTE DE ANIVERSÁRIO VIP (PERFIL) -->
+                <div id="cardAniversarioPerfilCliente" class="bg-gradient-to-br from-purple-950/40 via-black to-zinc-950 p-4 rounded-2xl border border-purple-500/40 space-y-2.5 shadow-xl">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🎂</span>
+                            <div>
+                                <h3 class="text-xs font-bold text-purple-300 uppercase tracking-wide">Presente de Aniversário</h3>
+                                <p id="subtextoDataAniversarioPerfil" class="text-[10px] text-zinc-400">Benefício exclusivo no seu mês</p>
+                            </div>
+                        </div>
+                        <span id="badgeStatusAniversarioPerfil" class="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-700">
+                            Aguardando Data
+                        </span>
+                    </div>
+                    <div id="boxDescricaoAniversarioPerfil" class="bg-black/90 p-3 rounded-xl border border-zinc-800 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="text-base flex-shrink-0">🎁</span>
+                            <div class="truncate">
+                                <span id="textoStatusAniversarioPerfil" class="text-xs font-bold text-white block">Cadastre sua data de nascimento</span>
+                                <span id="textoValidadeAniversarioPerfil" class="text-[10px] text-zinc-400 block truncate"></span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -376,7 +416,28 @@
                     </button>
                 </div>
                 <div class="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-zinc-800">
-                    <div id="barraProgressoFidelidadeDashboard" class="bg-gradient-to-r from-amber-500 to-yellow-300 h-full transition-all duration-300" style="width: 0%"></div>
+                    <div id="barraProgressoFidelidadeDashboard" class="bg-gradient-to-r from-amber-500 to-yellow-300 h-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- CARD DE DESTAQUE DO PRESENTE DE ANIVERSÁRIO (DASHBOARD) -->
+            <div id="cardDestaqueAniversarioDashboard" class="hidden bg-gradient-to-r from-purple-950/60 via-black to-zinc-950 p-4 rounded-2xl border border-purple-500/40 space-y-2.5 shadow-lg">
+                <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-xl shadow-inner flex-shrink-0">
+                            🎂
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h3 class="text-xs font-bold text-white uppercase tracking-wide">Presente de Aniversário</h3>
+                                <span id="badgeDestaqueAniversarioDashboard" class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-700">Aguardando Data</span>
+                            </div>
+                            <p id="textoResumoAniversarioDashboard" class="text-[11px] text-zinc-400">Cadastre sua data de nascimento para desbloquear seu presente!</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="window.abrirModalPerfilCliente()" class="text-[10px] font-bold text-purple-300 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-purple-800/80 px-2.5 py-1.5 rounded-lg transition whitespace-nowrap cursor-pointer">
+                        Ver Presente →
+                    </button>
                 </div>
             </div>
 
@@ -484,6 +545,26 @@
                         <input type="checkbox" id="checkAplicarRecompensaFidelidade" class="w-4 h-4 rounded text-dourado bg-zinc-900 border-zinc-700 focus:ring-0 cursor-pointer" checked>
                         <span id="labelAplicarRecompensaFidelidade" class="text-xs font-extrabold text-white">
                             ✓ Aplicar Recompensa Fidelidade
+                        </span>
+                    </label>
+                </div>
+
+                <!-- BOX CONDICIONAL: PRESENTE DE ANIVERSÁRIO VIP -->
+                <div id="boxPresenteAniversarioAgendamento" class="hidden bg-gradient-to-r from-purple-950/80 via-black to-zinc-900 border-2 border-purple-500/80 p-4 rounded-2xl space-y-2.5 shadow-xl animate-fade-in">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-2xl animate-bounce">🎂</span>
+                            <div>
+                                <h3 class="text-xs font-bold text-purple-300 uppercase tracking-wide">Presente de Aniversário Liberado!</h3>
+                                <p id="textoDescricaoPresenteAniversario" class="text-[11px] text-zinc-300">Você é nosso aniversariante especial! Resgate seu presente de aniversário neste agendamento.</p>
+                            </div>
+                        </div>
+                        <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-purple-500 text-white uppercase animate-pulse flex-shrink-0">1x no Ano 🎉</span>
+                    </div>
+                    <label class="flex items-center gap-2.5 bg-black/60 p-2.5 rounded-xl border border-purple-500/40 cursor-pointer hover:border-purple-400 transition">
+                        <input type="checkbox" id="checkAplicarPresenteAniversario" class="w-4 h-4 rounded text-purple-500 bg-zinc-900 border-zinc-700 focus:ring-0 cursor-pointer">
+                        <span id="labelAplicarPresenteAniversario" class="text-xs font-extrabold text-white">
+                            ✓ Aplicar Presente de Aniversário
                         </span>
                     </label>
                 </div>
@@ -1714,9 +1795,11 @@
             btnSalvarCadastroGoogle.innerText = "Salvando...";
 
             try {
+                const dataNasc = googleDataNascimento?.value || '';
                 const dados = {
                     nome: nome,
                     telefone: telefone,
+                    dataNascimento: dataNasc,
                     email: usuarioPendenteGoogle.email || ""
                 };
                 await setDoc(doc(db, "usuarios", usuarioPendenteGoogle.uid), dados, { merge: true });
@@ -1771,6 +1854,7 @@
             const nome = (document.getElementById('regNome')?.value || '').trim();
             const telefone = (document.getElementById('regTelefone')?.value || '').trim();
             const email = (document.getElementById('regEmail')?.value || '').trim();
+            const dataNascimento = (document.getElementById('regDataNascimento')?.value || '').trim();
             const password = document.getElementById('regPassword')?.value || '';
             if (authMsg) authMsg.innerText = "";
 
@@ -1784,7 +1868,12 @@
 
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                await setDoc(doc(db, "usuarios", userCredential.user.uid), { nome, telefone, email });
+                await setDoc(doc(db, "usuarios", userCredential.user.uid), { 
+                    nome, 
+                    telefone, 
+                    email,
+                    dataNascimento 
+                });
                 authMsg.className = "text-center text-sm text-green-400";
                 authMsg.innerText = "Conta criada com sucesso!";
             } catch (error) {
@@ -1896,6 +1985,10 @@
             if (perfilNomeCliente) perfilNomeCliente.value = dadosUsuarioAtual?.nome || auth.currentUser.displayName || '';
             if (perfilTelefoneCliente) perfilTelefoneCliente.value = dadosUsuarioAtual?.telefone || '';
             if (perfilEmailCliente) perfilEmailCliente.value = auth.currentUser.email || '';
+            
+            const perfilDataNasc = document.getElementById('perfilDataNascimentoCliente');
+            if (perfilDataNasc) perfilDataNasc.value = dadosUsuarioAtual?.dataNascimento || '';
+
             if (msgPerfilStatus) { msgPerfilStatus.innerText = ''; msgPerfilStatus.className = 'text-xs text-center font-medium min-h-[16px]'; }
             if (msgTrocaSenhaPerfil) { msgTrocaSenhaPerfil.innerText = ''; }
 
@@ -1905,6 +1998,7 @@
 
             try {
                 renderizarCartaoFidelidadeCliente();
+                renderizarCardAniversarioCliente();
                 carregarFidelidadeCliente(auth.currentUser.uid);
             } catch (e) {}
 
@@ -1926,6 +2020,7 @@
 
             const novoNome = perfilNomeCliente?.value.trim();
             const novoTelefone = perfilTelefoneCliente?.value.trim();
+            const novaDataNascimento = document.getElementById('perfilDataNascimentoCliente')?.value || '';
 
             if (!novoNome || !novoTelefone) {
                 if (msgPerfilStatus) {
@@ -1950,12 +2045,14 @@
                 const dadosAtualizados = {
                     nome: novoNome,
                     telefone: novoTelefone,
+                    dataNascimento: novaDataNascimento,
                     fotoUrl: fotoFinal,
                     email: auth.currentUser.email || '',
                     atualizadoEm: new Date().toISOString()
                 };
 
                 await setDoc(doc(db, "usuarios", auth.currentUser.uid), dadosAtualizados, { merge: true });
+                dadosUsuarioAtual = { ...dadosUsuarioAtual, ...dadosAtualizados };
 
                 // Sincroniza imediatamente com a assinatura VIP do cliente (se houver)
                 try {
@@ -2082,18 +2179,242 @@
             recompensaDisponivel: false
         };
 
+        // ==========================================
+        // PROGRAMA DE FIDELIDADE DE ANIVERSÁRIO (CLIENTE)
+        // ==========================================
+        let configAniversarioCliente = {
+            ativo: true,
+            janelaValidade: 'mes_aniversario',
+            tipoRecompensa: 'desconto_valor',
+            valorDesconto: 20.00,
+            porcentagemDesconto: 50,
+            descricaoRecompensa: 'R$ 20,00 de desconto no mês do seu aniversário'
+        };
+
+        let dadosAniversarioCliente = {
+            temData: false,
+            dataNascimento: '',
+            anoUltimoResgate: 0,
+            beneficioAtivo: false,
+            diasRestantes: 999,
+            dataFormatadaTexto: '',
+            textoStatus: '',
+            jaResgatouEsteAno: false
+        };
+
+        function calcularStatusAniversarioCliente(dataNascStr, configAniv, anoUltimoResgate) {
+            const anoAtual = new Date().getFullYear();
+            const jaResgatou = Number(anoUltimoResgate || 0) === anoAtual;
+
+            if (!dataNascStr || typeof dataNascStr !== 'string' || !dataNascStr.includes('-')) {
+                return {
+                    temData: false,
+                    dataNascimento: '',
+                    beneficioAtivo: false,
+                    diasRestantes: 999,
+                    dataFormatadaTexto: '',
+                    textoStatus: 'Data de nascimento não cadastrada',
+                    jaResgatouEsteAno: jaResgatou
+                };
+            }
+
+            const partes = dataNascStr.split('-');
+            const mesNasc = parseInt(partes[1], 10);
+            const diaNasc = parseInt(partes[2], 10);
+
+            if (isNaN(mesNasc) || isNaN(diaNasc)) {
+                return {
+                    temData: false,
+                    dataNascimento: '',
+                    beneficioAtivo: false,
+                    diasRestantes: 999,
+                    dataFormatadaTexto: '',
+                    textoStatus: 'Data inválida',
+                    jaResgatouEsteAno: jaResgatou
+                };
+            }
+
+            const agora = new Date();
+            const diaHoje = agora.getDate();
+            const mesHoje = agora.getMonth() + 1; // 1-12
+
+            // Próximo aniversário
+            let proxAniv = new Date(anoAtual, mesNasc - 1, diaNasc);
+            const hojeInicio = new Date(anoAtual, agora.getMonth(), agora.getDate());
+
+            if (proxAniv < hojeInicio) {
+                proxAniv = new Date(anoAtual + 1, mesNasc - 1, diaNasc);
+            }
+
+            const diffMs = proxAniv - hojeInicio;
+            const diasRestantes = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+            const ehHoje = diaNasc === diaHoje && mesNasc === mesHoje;
+            const ehMesAtual = mesNasc === mesHoje;
+            const ehEstaSemana = diasRestantes <= 7 || (mesNasc === mesHoje && Math.abs(diaHoje - diaNasc) <= 3);
+
+            let elegivelPelaData = false;
+            const janela = configAniv?.janelaValidade || 'mes_aniversario';
+
+            if (janela === 'mes_aniversario') {
+                elegivelPelaData = ehMesAtual;
+            } else if (janela === 'semana_aniversario') {
+                elegivelPelaData = ehEstaSemana || ehHoje;
+            } else if (janela === 'dia_exato') {
+                elegivelPelaData = ehHoje;
+            }
+
+            const beneficioAtivo = Boolean(configAniv?.ativo !== false && elegivelPelaData && !jaResgatou);
+
+            const mesesNomes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            const dataFormatadaTexto = `${String(diaNasc).padStart(2, '0')} de ${mesesNomes[mesNasc - 1] || ''}`;
+
+            let textoStatus = '';
+            if (jaResgatou) {
+                textoStatus = `Presente de ${anoAtual} já resgatado 🎉`;
+            } else if (beneficioAtivo) {
+                if (ehHoje) textoStatus = '🎉 É HOJE! Seu presente está liberado!';
+                else if (ehMesAtual) textoStatus = '🎂 É o seu mês! Seu presente está liberado!';
+                else textoStatus = '🎂 Presente de aniversário liberado!';
+            } else if (diasRestantes === 0) {
+                textoStatus = 'É hoje o seu aniversário!';
+            } else if (diasRestantes === 1) {
+                textoStatus = 'Falta apenas 1 dia para o seu aniversário!';
+            } else {
+                textoStatus = `Faltam ${diasRestantes} dias para o seu aniversário (${dataFormatadaTexto})`;
+            }
+
+            return {
+                temData: true,
+                dataNascimento: dataNascStr,
+                diaNasc,
+                mesNasc,
+                ehHoje,
+                ehMesAtual,
+                ehEstaSemana,
+                diasRestantes,
+                dataFormatadaTexto,
+                textoStatus,
+                jaResgatouEsteAno: jaResgatou,
+                beneficioAtivo
+            };
+        }
+
+        function renderizarCardAniversarioCliente() {
+            const cardPerfil = document.getElementById('cardAniversarioPerfilCliente');
+            const cardDash = document.getElementById('cardDestaqueAniversarioDashboard');
+
+            if (configAniversarioCliente.ativo === false) {
+                if (cardPerfil) cardPerfil.classList.add('hidden');
+                if (cardDash) cardDash.classList.add('hidden');
+                return;
+            } else {
+                if (cardPerfil) cardPerfil.classList.remove('hidden');
+                if (cardDash) cardDash.classList.remove('hidden');
+            }
+
+            const subtextoPerfil = document.getElementById('subtextoDataAniversarioPerfil');
+            const badgePerfil = document.getElementById('badgeStatusAniversarioPerfil');
+            const textoStatusPerfil = document.getElementById('textoStatusAniversarioPerfil');
+            const textoValidadePerfil = document.getElementById('textoValidadeAniversarioPerfil');
+
+            const badgeDash = document.getElementById('badgeDestaqueAniversarioDashboard');
+            const textoDash = document.getElementById('textoResumoAniversarioDashboard');
+
+            let descBeneficio = configAniversarioCliente.descricaoRecompensa || '';
+            if (!descBeneficio) {
+                if (configAniversarioCliente.tipoRecompensa === 'desconto_valor') descBeneficio = `R$ ${Number(configAniversarioCliente.valorDesconto || 20).toFixed(2)} de desconto`;
+                else if (configAniversarioCliente.tipoRecompensa === 'servico_gratis') descBeneficio = `Corte ou Serviço 100% Grátis`;
+                else if (configAniversarioCliente.tipoRecompensa === 'desconto_porcentagem') descBeneficio = `${configAniversarioCliente.porcentagemDesconto || 50}% de desconto`;
+                else descBeneficio = `Brinde exclusivo de aniversário`;
+            }
+
+            if (!dadosAniversarioCliente.temData) {
+                if (subtextoPerfil) subtextoPerfil.innerText = "Informe sua data de nascimento";
+                if (badgePerfil) {
+                    badgePerfil.innerText = "Sem Data";
+                    badgePerfil.className = "text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700";
+                }
+                if (textoStatusPerfil) textoStatusPerfil.innerText = "Adicione sua data no campo acima para desbloquear benefícios!";
+                if (textoValidadePerfil) textoValidadePerfil.innerText = `Recompensa configurada: ${descBeneficio}`;
+
+                if (badgeDash) {
+                    badgeDash.innerText = "Aguardando Data";
+                    badgeDash.className = "text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-700";
+                }
+                if (textoDash) textoDash.innerText = "Cadastre sua data de nascimento no seu perfil para ganhar presentes de aniversário!";
+                return;
+            }
+
+            if (subtextoPerfil) subtextoPerfil.innerText = `Aniversário: ${dadosAniversarioCliente.dataFormatadaTexto}`;
+
+            if (dadosAniversarioCliente.jaResgatouEsteAno) {
+                const anoAtual = new Date().getFullYear();
+                if (badgePerfil) {
+                    badgePerfil.innerText = "Resgatado em " + anoAtual;
+                    badgePerfil.className = "text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700";
+                }
+                if (textoStatusPerfil) textoStatusPerfil.innerText = "Você já aproveitou seu presente de aniversário este ano! 🎉";
+                if (textoValidadePerfil) textoValidadePerfil.innerText = `Próximo presente disponível em ${anoAtual + 1}`;
+
+                if (badgeDash) {
+                    badgeDash.innerText = "Presente Resgatado ✓";
+                    badgeDash.className = "text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700";
+                }
+                if (textoDash) textoDash.innerText = `Seu presente de aniversário de ${anoAtual} foi utilizado. Nos vemos no próximo ano!`;
+            } else if (dadosAniversarioCliente.beneficioAtivo) {
+                if (badgePerfil) {
+                    badgePerfil.innerText = "🎉 LIBERADO!";
+                    badgePerfil.className = "text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-purple-600 text-white animate-pulse border border-purple-400";
+                }
+                if (textoStatusPerfil) textoStatusPerfil.innerText = `Parabéns! ${descBeneficio} está liberado para você!`;
+                if (textoValidadePerfil) textoValidadePerfil.innerText = "Marque a opção de presente ao realizar seu agendamento.";
+
+                if (badgeDash) {
+                    badgeDash.innerText = "🎉 PRESENTE DISPONÍVEL!";
+                    badgeDash.className = "text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-purple-600 text-white animate-bounce border border-purple-400";
+                }
+                if (textoDash) textoDash.innerHTML = `<span class="text-purple-300 font-bold">🎉 Seu presente de aniversário está disponível! Aproveite ao agendar: ${descBeneficio}</span>`;
+            } else {
+                if (badgePerfil) {
+                    badgePerfil.innerText = `Faltam ${dadosAniversarioCliente.diasRestantes} dias`;
+                    badgePerfil.className = "text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-700";
+                }
+                if (textoStatusPerfil) textoStatusPerfil.innerText = `Seu aniversário é dia ${dadosAniversarioCliente.dataFormatadaTexto}!`;
+                if (textoValidadePerfil) textoValidadePerfil.innerText = `Seu presente (${descBeneficio}) será liberado automaticamente.`;
+
+                if (badgeDash) {
+                    badgeDash.innerText = `Faltam ${dadosAniversarioCliente.diasRestantes} dias`;
+                    badgeDash.className = "text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-700";
+                }
+                if (textoDash) textoDash.innerText = `Faltam ${dadosAniversarioCliente.diasRestantes} dias para o seu aniversário (${dadosAniversarioCliente.dataFormatadaTexto}). Prepare-se para o seu presente!`;
+            }
+        }
+        window.renderizarCardAniversarioCliente = renderizarCardAniversarioCliente;
+
         async function carregarFidelidadeCliente(userId) {
             try {
-                // 1. Carrega as configurações da campanha
-                const confSnap = await getDoc(doc(db, "configuracoes", "fidelidade"));
-                if (confSnap.exists()) {
-                    configFidelidadeCliente = { ...configFidelidadeCliente, ...confSnap.data() };
+                // 1. Carrega as configurações das campanhas (Fidelidade e Aniversário)
+                const [confFidSnap, confAnivSnap] = await Promise.all([
+                    getDoc(doc(db, "configuracoes", "fidelidade")),
+                    getDoc(doc(db, "configuracoes", "aniversario"))
+                ]);
+
+                if (confFidSnap.exists()) {
+                    configFidelidadeCliente = { ...configFidelidadeCliente, ...confFidSnap.data() };
+                }
+                if (confAnivSnap.exists()) {
+                    configAniversarioCliente = { ...configAniversarioCliente, ...confAnivSnap.data() };
                 }
 
-                // 2. Se o usuário estiver logado, busca o histórico do cliente
+                // 2. Se o usuário estiver logado, busca histórico de fidelidade e dados de nascimento
                 const uid = userId || auth.currentUser?.uid;
                 if (uid) {
-                    const fidSnap = await getDoc(doc(db, "fidelidadeClientes", uid));
+                    const [fidSnap, userSnap] = await Promise.all([
+                        getDoc(doc(db, "fidelidadeClientes", uid)),
+                        getDoc(doc(db, "usuarios", uid))
+                    ]);
+
                     if (fidSnap.exists()) {
                         dadosFidelidadeCliente = { ...dadosFidelidadeCliente, ...fidSnap.data() };
                     } else {
@@ -2104,9 +2425,20 @@
                             recompensaDisponivel: false
                         };
                     }
+
+                    if (userSnap.exists()) {
+                        const uData = userSnap.data();
+                        dadosUsuarioAtual = { ...dadosUsuarioAtual, ...uData };
+                        dadosAniversarioCliente = calcularStatusAniversarioCliente(
+                            uData.dataNascimento || '',
+                            configAniversarioCliente,
+                            uData.anoUltimoResgateAniversario || 0
+                        );
+                    }
                 }
 
                 renderizarCartaoFidelidadeCliente();
+                renderizarCardAniversarioCliente();
                 atualizarLabelPrecoTotal();
             } catch (e) {
                 console.warn("Aviso ao carregar fidelidade do cliente:", e);
@@ -3226,11 +3558,21 @@
             const badgeContadorExtras = document.getElementById('badgeContadorExtras');
             const badgeStatusProd = document.getElementById('badgeStatusProdutosResumo');
             const badgeContadorProd = document.getElementById('badgeContadorProdutos');
+            
+            // Fidelidade de Selos
             const boxFidelidade = document.getElementById('boxRecompensaFidelidadeAgendamento');
             const checkFidelidade = document.getElementById('checkAplicarRecompensaFidelidade');
             const labelCheckFidelidade = document.getElementById('labelAplicarRecompensaFidelidade');
             const descRecompensaFidelidade = document.getElementById('textoDescricaoRecompensaFidelidade');
+
+            // Fidelidade de Aniversário
+            const boxAniversario = document.getElementById('boxPresenteAniversarioAgendamento');
+            const checkAniversario = document.getElementById('checkAplicarPresenteAniversario');
+            const labelCheckAniversario = document.getElementById('labelAplicarPresenteAniversario');
+            const descRecompensaAniversario = document.getElementById('textoDescricaoPresenteAniversario');
+
             const botoesGratis = document.getElementById('botoesPagamentoFidelidadeGratis');
+            const labelTextoBtnFidelidadeGratis = document.getElementById('labelTextoBtnFidelidadeGratis');
             const botoesNormal = document.getElementById('botoesPagamentoNormal');
 
             if (!selectServico) return;
@@ -3240,19 +3582,27 @@
             const { produtos: produtosCross, subtotal: subtotalProdutos } = obterProdutosCrossSellSelecionados();
             let precoTotal = precoBase + subtotalExtras + subtotalProdutos;
 
-            // Checa Fidelidade
+            // 1. Checa Fidelidade de Selos
             const meta = Math.max(1, Number(configFidelidadeCliente.metaSelos || 10));
             const selos = Number(dadosFidelidadeCliente.selosAtuais || 0);
-            const atingiu = selos >= meta || dadosFidelidadeCliente.recompensaDisponivel === true;
-            const fidelidadeAtiva = configFidelidadeCliente.ativo !== false && atingiu && opt && opt.value !== "";
+            const atingiuFid = selos >= meta || dadosFidelidadeCliente.recompensaDisponivel === true;
+            const fidelidadeAtiva = configFidelidadeCliente.ativo !== false && atingiuFid && opt && opt.value !== "";
 
             if (boxFidelidade) {
                 boxFidelidade.classList.toggle('hidden', !fidelidadeAtiva);
             }
 
-            let valorDescontoFidelidade = 0;
-            let ehGratisTotalFidelidade = false;
+            // 2. Checa Fidelidade de Aniversário
+            const aniversarioAtivo = configAniversarioCliente.ativo !== false && dadosAniversarioCliente.beneficioAtivo === true && opt && opt.value !== "";
 
+            if (boxAniversario) {
+                boxAniversario.classList.toggle('hidden', !aniversarioAtivo);
+            }
+
+            let valorDescontoFidelidade = 0;
+            let valorDescontoAniversario = 0;
+
+            // Formatação do box de fidelidade
             if (fidelidadeAtiva) {
                 let textoBeneficio = "";
                 if (configFidelidadeCliente.tipoRecompensa === 'servico_gratis') {
@@ -3271,42 +3621,86 @@
                 if (descRecompensaFidelidade) {
                     descRecompensaFidelidade.innerText = `Você atingiu ${selos} selos! Resgate seu benefício agora: ${configFidelidadeCliente.descricaoRecompensa || textoBeneficio}.`;
                 }
+            }
 
-                if (checkFidelidade && checkFidelidade.checked) {
-                    if (configFidelidadeCliente.tipoRecompensa === 'servico_gratis') {
-                        valorDescontoFidelidade = precoBase;
-                        precoTotal = Math.max(0, precoTotal - precoBase);
-                        if (precoTotal === 0) ehGratisTotalFidelidade = true;
-                    } else if (configFidelidadeCliente.tipoRecompensa === 'desconto_valor') {
-                        const desc = Number(configFidelidadeCliente.valorDesconto || 15);
-                        valorDescontoFidelidade = Math.min(precoTotal, desc);
-                        precoTotal = Math.max(0, precoTotal - desc);
-                        if (precoTotal === 0) ehGratisTotalFidelidade = true;
-                    } else if (configFidelidadeCliente.tipoRecompensa === 'desconto_porcentagem') {
-                        const pctDesc = Number(configFidelidadeCliente.porcentagemDesconto || 20);
-                        const desc = (precoTotal * pctDesc) / 100;
-                        valorDescontoFidelidade = desc;
-                        precoTotal = Math.max(0, precoTotal - desc);
-                        if (precoTotal === 0) ehGratisTotalFidelidade = true;
-                    }
+            // Formatação do box de aniversário
+            if (aniversarioAtivo) {
+                let textoBeneficioAniv = "";
+                if (configAniversarioCliente.tipoRecompensa === 'servico_gratis') {
+                    textoBeneficioAniv = `Corte ou Serviço 100% Grátis (- R$ ${precoBase.toFixed(2)})`;
+                } else if (configAniversarioCliente.tipoRecompensa === 'desconto_valor') {
+                    textoBeneficioAniv = `- R$ ${Number(configAniversarioCliente.valorDesconto || 20).toFixed(2)} de abatimento`;
+                } else if (configAniversarioCliente.tipoRecompensa === 'desconto_porcentagem') {
+                    textoBeneficioAniv = `- ${configAniversarioCliente.porcentagemDesconto || 50}% de desconto`;
+                } else {
+                    textoBeneficioAniv = `Presente: ${configAniversarioCliente.descricaoRecompensa || 'Brinde Especial'}`;
+                }
+
+                if (labelCheckAniversario) {
+                    labelCheckAniversario.innerText = `✓ Aplicar Presente de Aniversário (${textoBeneficioAniv})`;
+                }
+                if (descRecompensaAniversario) {
+                    descRecompensaAniversario.innerText = `Parabéns aniversariante! Desfrute do seu presente exclusivo: ${configAniversarioCliente.descricaoRecompensa || textoBeneficioAniv}.`;
                 }
             }
+
+            // Aplicação dos descontos
+            const aplicarFidelidade = fidelidadeAtiva && checkFidelidade && checkFidelidade.checked;
+            const aplicarAniversario = aniversarioAtivo && checkAniversario && checkAniversario.checked;
+
+            if (aplicarFidelidade) {
+                if (configFidelidadeCliente.tipoRecompensa === 'servico_gratis') {
+                    valorDescontoFidelidade = Math.min(precoTotal, precoBase);
+                } else if (configFidelidadeCliente.tipoRecompensa === 'desconto_valor') {
+                    const desc = Number(configFidelidadeCliente.valorDesconto || 15);
+                    valorDescontoFidelidade = Math.min(precoTotal, desc);
+                } else if (configFidelidadeCliente.tipoRecompensa === 'desconto_porcentagem') {
+                    const pctDesc = Number(configFidelidadeCliente.porcentagemDesconto || 20);
+                    valorDescontoFidelidade = Math.min(precoTotal, (precoTotal * pctDesc) / 100);
+                }
+                precoTotal = Math.max(0, precoTotal - valorDescontoFidelidade);
+            }
+
+            if (aplicarAniversario && precoTotal > 0) {
+                if (configAniversarioCliente.tipoRecompensa === 'servico_gratis') {
+                    valorDescontoAniversario = Math.min(precoTotal, precoBase);
+                } else if (configAniversarioCliente.tipoRecompensa === 'desconto_valor') {
+                    const descAniv = Number(configAniversarioCliente.valorDesconto || 20);
+                    valorDescontoAniversario = Math.min(precoTotal, descAniv);
+                } else if (configAniversarioCliente.tipoRecompensa === 'desconto_porcentagem') {
+                    const pctAniv = Number(configAniversarioCliente.porcentagemDesconto || 50);
+                    valorDescontoAniversario = Math.min(precoTotal, (precoTotal * pctAniv) / 100);
+                }
+                precoTotal = Math.max(0, precoTotal - valorDescontoAniversario);
+            }
+
+            const totalDescontos = valorDescontoFidelidade + valorDescontoAniversario;
+            const ehGratisTotal = precoTotal === 0 && (aplicarFidelidade || aplicarAniversario);
 
             if (labelSubtotal) labelSubtotal.innerText = `R$ ${subtotalExtras.toFixed(2)}`;
             if (labelSubtotalProd) labelSubtotalProd.innerText = `R$ ${subtotalProdutos.toFixed(2)}`;
             
             if (labelTotal) {
-                if (valorDescontoFidelidade > 0) {
-                    labelTotal.innerText = `(R$ ${precoTotal.toFixed(2)} - Desconto R$ ${valorDescontoFidelidade.toFixed(2)})`;
+                if (totalDescontos > 0) {
+                    labelTotal.innerText = `(R$ ${precoTotal.toFixed(2)} - Desconto R$ ${totalDescontos.toFixed(2)})`;
                 } else {
                     labelTotal.innerText = `(R$ ${precoTotal.toFixed(2)})`;
                 }
             }
 
-            // Alterna botões se for 100% grátis via Fidelidade
-            if (ehGratisTotalFidelidade && fidelidadeAtiva && checkFidelidade && checkFidelidade.checked) {
+            // Alterna botões se for 100% grátis
+            if (ehGratisTotal) {
                 if (botoesGratis) botoesGratis.classList.remove('hidden');
                 if (botoesNormal) botoesNormal.classList.add('hidden');
+                if (labelTextoBtnFidelidadeGratis) {
+                    if (aplicarFidelidade && aplicarAniversario) {
+                        labelTextoBtnFidelidadeGratis.innerText = "Confirmar Fidelidade & Aniversário (100% Grátis)";
+                    } else if (aplicarAniversario) {
+                        labelTextoBtnFidelidadeGratis.innerText = "Confirmar Presente de Aniversário (100% Grátis)";
+                    } else {
+                        labelTextoBtnFidelidadeGratis.innerText = "Confirmar Atendimento Fidelidade (100% Grátis)";
+                    }
+                }
             } else {
                 if (botoesGratis) botoesGratis.classList.add('hidden');
                 if (botoesNormal) botoesNormal.classList.remove('hidden');
@@ -3476,6 +3870,10 @@
         }
 
         document.getElementById('checkAplicarRecompensaFidelidade')?.addEventListener('change', () => {
+            atualizarLabelPrecoTotal();
+        });
+
+        document.getElementById('checkAplicarPresenteAniversario')?.addEventListener('change', () => {
             atualizarLabelPrecoTotal();
         });
 
@@ -4357,6 +4755,9 @@
                         isFidelidade: !!dadosPagamentoPendente?.isFidelidade,
                         recompensaFidelidade: dadosPagamentoPendente?.descricaoFidelidade || '',
                         descontoFidelidade: dadosPagamentoPendente?.descontoFidelidade || 0,
+                        isAniversario: !!dadosPagamentoPendente?.isAniversario,
+                        recompensaAniversario: dadosPagamentoPendente?.descricaoAniversario || '',
+                        descontoAniversario: dadosPagamentoPendente?.descontoAniversario || 0,
                         extras: extras || [],
                         produtos: listaProdutosAg,
                         barbeiroId: barbeiroSelecionadoCliente?.id || 'qualquer',
@@ -4392,6 +4793,22 @@
                             dadosFidelidadeCliente.recompensaDisponivel = novaDisponibilidade;
                             carregarFidelidadeCliente(user.uid).catch(e => console.warn(e));
                         } catch (eFid) { console.warn("Aviso ao debitar selos da fidelidade:", eFid); }
+                    }
+
+                    // Se aplicou presente de aniversário com abatimento de valor no checkout
+                    if (dadosPagamentoPendente?.isAniversario) {
+                        try {
+                            const anoAtual = new Date().getFullYear();
+                            await setDoc(doc(db, "usuarios", user.uid), {
+                                anoUltimoResgateAniversario: anoAtual,
+                                atualizadoEm: new Date().toISOString()
+                            }, { merge: true });
+
+                            dadosAniversarioCliente.anoUltimoResgate = anoAtual;
+                            dadosAniversarioCliente.jaResgatouEsteAno = true;
+                            dadosAniversarioCliente.beneficioAtivo = false;
+                            carregarFidelidadeCliente(user.uid).catch(e => console.warn(e));
+                        } catch (eAniv) { console.warn("Aviso ao registrar resgate de aniversario:", eAniv); }
                     }
 
                     if (msgStatus) {
@@ -4722,23 +5139,38 @@
             const atingiu = selos >= meta || dadosFidelidadeCliente.recompensaDisponivel === true;
             const aplicarFidelidade = configFidelidadeCliente.ativo !== false && atingiu && checkFidelidade && checkFidelidade.checked;
 
+            // Calcula presente de aniversário se ativo e selecionado
+            const checkAniversario = document.getElementById('checkAplicarPresenteAniversario');
+            const aplicarAniversario = configAniversarioCliente.ativo !== false && dadosAniversarioCliente.beneficioAtivo === true && checkAniversario && checkAniversario.checked;
+
             let precoFinalCalculado = precoTotal;
             let valorDescontoFidelidade = 0;
+            let valorDescontoAniversario = 0;
 
             if (aplicarFidelidade) {
                 if (configFidelidadeCliente.tipoRecompensa === 'servico_gratis') {
-                    valorDescontoFidelidade = precoBase;
-                    precoFinalCalculado = Math.max(0, precoTotal - precoBase);
+                    valorDescontoFidelidade = Math.min(precoFinalCalculado, precoBase);
                 } else if (configFidelidadeCliente.tipoRecompensa === 'desconto_valor') {
                     const desc = Number(configFidelidadeCliente.valorDesconto || 15);
-                    valorDescontoFidelidade = Math.min(precoTotal, desc);
-                    precoFinalCalculado = Math.max(0, precoTotal - desc);
+                    valorDescontoFidelidade = Math.min(precoFinalCalculado, desc);
                 } else if (configFidelidadeCliente.tipoRecompensa === 'desconto_porcentagem') {
                     const pct = Number(configFidelidadeCliente.porcentagemDesconto || 20);
-                    const desc = (precoTotal * pct) / 100;
-                    valorDescontoFidelidade = desc;
-                    precoFinalCalculado = Math.max(0, precoTotal - desc);
+                    valorDescontoFidelidade = Math.min(precoFinalCalculado, (precoFinalCalculado * pct) / 100);
                 }
+                precoFinalCalculado = Math.max(0, precoFinalCalculado - valorDescontoFidelidade);
+            }
+
+            if (aplicarAniversario && precoFinalCalculado > 0) {
+                if (configAniversarioCliente.tipoRecompensa === 'servico_gratis') {
+                    valorDescontoAniversario = Math.min(precoFinalCalculado, precoBase);
+                } else if (configAniversarioCliente.tipoRecompensa === 'desconto_valor') {
+                    const descAniv = Number(configAniversarioCliente.valorDesconto || 20);
+                    valorDescontoAniversario = Math.min(precoFinalCalculado, descAniv);
+                } else if (configAniversarioCliente.tipoRecompensa === 'desconto_porcentagem') {
+                    const pctAniv = Number(configAniversarioCliente.porcentagemDesconto || 50);
+                    valorDescontoAniversario = Math.min(precoFinalCalculado, (precoFinalCalculado * pctAniv) / 100);
+                }
+                precoFinalCalculado = Math.max(0, precoFinalCalculado - valorDescontoAniversario);
             }
 
             return { 
@@ -4753,6 +5185,9 @@
                 descontoFidelidade: valorDescontoFidelidade,
                 isFidelidade: aplicarFidelidade && valorDescontoFidelidade > 0,
                 descricaoFidelidade: configFidelidadeCliente.descricaoRecompensa || '',
+                descontoAniversario: valorDescontoAniversario,
+                isAniversario: aplicarAniversario && valorDescontoAniversario > 0,
+                descricaoAniversario: configAniversarioCliente.descricaoRecompensa || 'Presente de Aniversário',
                 data, 
                 horario 
             };
@@ -4901,19 +5336,30 @@
                     }
                 }
 
-                // 2. Salva o agendamento
+                // 2. Determina titulo e salva o agendamento
+                let sufixoTitulo = "(🎁 Fidelidade VIP)";
+                if (dados.isFidelidade && dados.isAniversario) {
+                    sufixoTitulo = "(🎁 Fidelidade VIP & 🎂 Aniversário)";
+                } else if (dados.isAniversario) {
+                    sufixoTitulo = "(🎂 Presente de Aniversário)";
+                }
+
                 await addDoc(collection(db, "agendamentos"), {
                     userId: user.uid,
                     cliente: nomeCliente,
                     telefone: telefoneCliente,
-                    servico: `${servico} (🎁 Fidelidade VIP)`,
+                    servico: `${servico} ${sufixoTitulo}`,
                     preco: 0.00,
                     taxaReservaPaga: 0.00,
                     modalidadePagamento: 'fidelidade_resgate',
                     idPagamento: 'fidelidade_resgate',
-                    metodoPagamento: 'Fidelidade VIP (Recompensa)',
-                    isFidelidade: true,
-                    recompensaFidelidade: dados.descricaoFidelidade || 'Corte Grátis',
+                    metodoPagamento: dados.isAniversario ? 'Presente de Aniversário' : 'Fidelidade VIP (Recompensa)',
+                    isFidelidade: !!dados.isFidelidade,
+                    recompensaFidelidade: dados.descricaoFidelidade || '',
+                    descontoFidelidade: dados.descontoFidelidade || 0,
+                    isAniversario: !!dados.isAniversario,
+                    recompensaAniversario: dados.descricaoAniversario || '',
+                    descontoAniversario: dados.descontoAniversario || 0,
                     extras: extras || [],
                     produtos: produtos || [],
                     barbeiroId: barbeiroSelecionadoCliente?.id || 'qualquer',
@@ -4924,31 +5370,46 @@
                     criadoEm: new Date()
                 });
 
-                // 3. Debita os selos do cliente e incrementa recompensas usadas
-                const meta = Math.max(1, Number(configFidelidadeCliente.metaSelos || 10));
-                const selosAtuais = Number(dadosFidelidadeCliente.selosAtuais || 0);
-                const novosSelos = Math.max(0, selosAtuais - meta);
-                const novasRecompensasUsadas = Number(dadosFidelidadeCliente.recompensasUtilizadas || 0) + 1;
-                const novaDisponibilidade = novosSelos >= meta;
+                // 3. Debita os selos da fidelidade se foi aplicada
+                if (dados.isFidelidade) {
+                    const meta = Math.max(1, Number(configFidelidadeCliente.metaSelos || 10));
+                    const selosAtuais = Number(dadosFidelidadeCliente.selosAtuais || 0);
+                    const novosSelos = Math.max(0, selosAtuais - meta);
+                    const novasRecompensasUsadas = Number(dadosFidelidadeCliente.recompensasUtilizadas || 0) + 1;
+                    const novaDisponibilidade = novosSelos >= meta;
 
-                await setDoc(doc(db, "fidelidadeClientes", user.uid), {
-                    userId: user.uid,
-                    clienteNome: nomeCliente,
-                    clienteTelefone: telefoneCliente,
-                    selosAtuais: novosSelos,
-                    totalHistorico: dadosFidelidadeCliente.totalHistorico || selosAtuais,
-                    recompensasUtilizadas: novasRecompensasUsadas,
-                    recompensaDisponivel: novaDisponibilidade,
-                    atualizadoEm: new Date().toISOString()
-                }, { merge: true });
+                    await setDoc(doc(db, "fidelidadeClientes", user.uid), {
+                        userId: user.uid,
+                        clienteNome: nomeCliente,
+                        clienteTelefone: telefoneCliente,
+                        selosAtuais: novosSelos,
+                        totalHistorico: dadosFidelidadeCliente.totalHistorico || selosAtuais,
+                        recompensasUtilizadas: novasRecompensasUsadas,
+                        recompensaDisponivel: novaDisponibilidade,
+                        atualizadoEm: new Date().toISOString()
+                    }, { merge: true });
 
-                dadosFidelidadeCliente.selosAtuais = novosSelos;
-                dadosFidelidadeCliente.recompensasUtilizadas = novasRecompensasUsadas;
-                dadosFidelidadeCliente.recompensaDisponivel = novaDisponibilidade;
+                    dadosFidelidadeCliente.selosAtuais = novosSelos;
+                    dadosFidelidadeCliente.recompensasUtilizadas = novasRecompensasUsadas;
+                    dadosFidelidadeCliente.recompensaDisponivel = novaDisponibilidade;
+                }
+
+                // 4. Registra o resgate de aniversário no cadastro do cliente (1x ao ano)
+                if (dados.isAniversario) {
+                    const anoAtual = new Date().getFullYear();
+                    await setDoc(doc(db, "usuarios", user.uid), {
+                        anoUltimoResgateAniversario: anoAtual,
+                        atualizadoEm: new Date().toISOString()
+                    }, { merge: true });
+
+                    dadosAniversarioCliente.anoUltimoResgate = anoAtual;
+                    dadosAniversarioCliente.jaResgatouEsteAno = true;
+                    dadosAniversarioCliente.beneficioAtivo = false;
+                }
 
                 if (msgStatus) {
                     msgStatus.className = "mt-2 text-center text-sm font-bold text-green-400";
-                    msgStatus.innerText = "🎉 Agendamento de Fidelidade Confirmado com Sucesso!";
+                    msgStatus.innerText = "🎉 Agendamento Gratuito Confirmado com Sucesso!";
                 }
 
                 // Limpa campos

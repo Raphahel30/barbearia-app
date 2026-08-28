@@ -971,6 +971,139 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- ========================================================= -->
+                <!-- 🎂 SEÇÃO FIDELIDADE DE ANIVERSÁRIO & ANIVERSARIANTES      -->
+                <!-- ========================================================= -->
+                <div class="card-dark p-6 rounded-3xl border border-zinc-800 space-y-6 shadow-xl">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-zinc-800 pb-4">
+                        <div class="flex items-center gap-3.5">
+                            <div class="w-12 h-12 rounded-2xl bg-purple-950/60 border border-purple-500/40 flex items-center justify-center text-2xl shadow-inner flex-shrink-0">
+                                🎂
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <h3 class="text-lg font-bold text-white uppercase tracking-wide">Fidelidade de Aniversário</h3>
+                                    <span id="badgeStatusModuloAniversario" class="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-green-950 text-green-400 border border-green-800">Ativado</span>
+                                </div>
+                                <p class="text-xs text-zinc-400">Presenteie seus clientes no mês ou semana do aniversário e fortaleça a fidelização.</p>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                            <input type="checkbox" id="checkAniversarioAtivo" class="sr-only peer" checked>
+                            <div class="w-11 h-6 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                        </label>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Configurações do Presente de Aniversário -->
+                        <div class="bg-black/60 p-5 rounded-2xl border border-zinc-800/80 space-y-3.5">
+                            <div class="flex items-center gap-2 border-b border-zinc-800 pb-2.5">
+                                <span class="text-base">⚙️</span>
+                                <h4 class="text-xs font-bold text-white uppercase tracking-wider">Regras do Presente</h4>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">
+                                    Janela de Validade do Presente
+                                </label>
+                                <select id="selectAniversarioJanela" class="w-full px-3 py-2 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs font-bold focus:outline-none focus:border-purple-400 cursor-pointer">
+                                    <option value="mes_aniversario" selected>📅 Todo o Mês do Aniversário (Recomendado)</option>
+                                    <option value="semana_aniversario">⏳ Na Semana do Aniversário (±3 dias)</option>
+                                    <option value="dia_exato">🎯 Apenas no Dia do Aniversário</option>
+                                </select>
+                                <p class="text-[10px] text-zinc-500 mt-1">Período em que o cliente poderá resgatar o benefício no agendamento.</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">
+                                    Tipo de Recompensa de Aniversário
+                                </label>
+                                <select id="selectAniversarioTipoRecompensa" class="w-full px-3 py-2 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs font-bold focus:outline-none focus:border-purple-400 cursor-pointer">
+                                    <option value="desconto_valor" selected>💵 Desconto em Dinheiro (R$ a Abater)</option>
+                                    <option value="servico_gratis">✂️ Corte / Atendimento 100% Grátis</option>
+                                    <option value="desconto_porcentagem">% Porcentagem de Desconto (ex: 50% OFF)</option>
+                                    <option value="brinde">🛍️ Brinde Especial no Balcão</option>
+                                </select>
+                            </div>
+
+                            <!-- Valor em R$ -->
+                            <div id="containerAniversarioValorDesconto">
+                                <label class="block text-xs font-semibold text-purple-400 uppercase mb-1">
+                                    Valor do Desconto (R$)
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-2 text-zinc-400 text-xs font-bold">R$</span>
+                                    <input type="number" id="inputAniversarioValorDesconto" value="20.00" step="1.00" min="1" class="w-full pl-9 pr-3 py-2 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs font-bold focus:outline-none focus:border-purple-400">
+                                </div>
+                            </div>
+
+                            <!-- Porcentagem % -->
+                            <div id="containerAniversarioPorcentagemDesconto" class="hidden">
+                                <label class="block text-xs font-semibold text-purple-400 uppercase mb-1">
+                                    Porcentagem de Desconto (%)
+                                </label>
+                                <input type="number" id="inputAniversarioPorcentagemDesconto" value="50" step="5" min="1" max="100" class="w-full px-3 py-2 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs font-bold focus:outline-none focus:border-purple-400">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">
+                                    Título do Presente para o Cliente
+                                </label>
+                                <input type="text" id="inputAniversarioDescricaoRecompensa" value="🎉 Presente de Aniversário: R$ 20,00 de desconto no corte!" class="w-full px-3 py-2 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs font-medium focus:outline-none focus:border-purple-400">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">
+                                    Mensagem de Felicitações (WhatsApp)
+                                </label>
+                                <textarea id="textareaAniversarioMensagemWhatsapp" rows="3" class="w-full px-3 py-2 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs font-mono focus:outline-none focus:border-purple-400" placeholder="Mensagem personalizada de parabéns"></textarea>
+                                <p class="text-[10px] text-zinc-500 mt-1">Tags disponíveis: {cliente}, {presente}, {site}</p>
+                            </div>
+
+                            <button id="btnSalvarConfigAniversario" type="button" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-extrabold py-2.5 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-1.5">
+                                <span>💾</span> Salvar Regras de Aniversário
+                            </button>
+                            <p id="msgConfigAniversarioStatus" class="text-xs text-center font-medium min-h-[16px]"></p>
+                        </div>
+
+                        <!-- Tabela e Gestão de Aniversariantes -->
+                        <div class="bg-black/60 p-5 rounded-2xl border border-zinc-800/80 space-y-4 lg:col-span-2 flex flex-col">
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-zinc-800 pb-3">
+                                <div>
+                                    <h4 class="text-base font-bold text-white uppercase flex items-center gap-2">
+                                        <span>🎉</span> Lista de Aniversariantes
+                                    </h4>
+                                    <p class="text-xs text-zinc-400">Envie mensagens de parabéns e acompanhe quem já utilizou o presente.</p>
+                                </div>
+                                <div class="w-full sm:w-60">
+                                    <input type="text" id="inputBuscaAniversarianteAdmin" placeholder="🔍 Buscar aniversariante..." class="w-full px-3 py-1.5 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs focus:outline-none focus:border-purple-400">
+                                </div>
+                            </div>
+
+                            <!-- Filtros Rápidos -->
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <button type="button" onclick="window.filtrarAniversariantesAdmin('mes')" id="btnFiltroAnivMes" class="px-3 py-1 rounded-lg text-xs font-bold bg-purple-600 text-white border border-purple-500 transition cursor-pointer">
+                                    📅 Deste Mês (<span id="countAnivMes">0</span>)
+                                </button>
+                                <button type="button" onclick="window.filtrarAniversariantesAdmin('proximos30')" id="btnFiltroAnivProx30" class="px-3 py-1 rounded-lg text-xs font-bold bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800 transition cursor-pointer">
+                                    ⏳ Próximos 30 Dias (<span id="countAnivProx30">0</span>)
+                                </button>
+                                <button type="button" onclick="window.filtrarAniversariantesAdmin('hojeSemana')" id="btnFiltroAnivHojeSemana" class="px-3 py-1 rounded-lg text-xs font-bold bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800 transition cursor-pointer">
+                                    ⚡ Hoje / Esta Semana (<span id="countAnivHojeSemana">0</span>)
+                                </button>
+                                <button type="button" onclick="window.filtrarAniversariantesAdmin('todos')" id="btnFiltroAnivTodos" class="px-3 py-1 rounded-lg text-xs font-bold bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800 transition cursor-pointer">
+                                    👥 Todos com Data (<span id="countAnivTodos">0</span>)
+                                </button>
+                            </div>
+
+                            <!-- Lista Renderizada -->
+                            <div id="listaAniversariantesAdmin" class="space-y-2.5 max-h-[460px] overflow-y-auto pr-1 flex-1">
+                                <div class="p-8 text-center text-zinc-500 text-xs">Carregando aniversariantes...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- 4. ABA: CALENDÁRIO & HORÁRIOS DE EXPEDIENTE -->
@@ -2217,6 +2350,8 @@
             } else if (nomeAba === 'fidelity') {
                 carregarConfiguracoesFidelidadeAdmin();
                 carregarClientesFidelidadeAdmin();
+                carregarConfiguracoesAniversarioAdmin();
+                carregarAniversariantesAdmin();
                 carregarStatusModulosSite();
             } else if (nomeAba === 'blockDays' || nomeAba === 'calendar' || nomeAba === 'closedDays') {
                 carregarDiasBloqueadosAdmin();
@@ -2348,7 +2483,12 @@
                     try { carregarAdministradoresPainel(); } catch (e) { console.warn(e); }
                     try { carregarConfigMultiBarbeiro(); carregarBarbeirosAdmin(); } catch (e) { console.warn(e); }
                     try { carregarStatusModulosSite(); } catch (e) { console.warn(e); }
-                    try { carregarConfiguracoesFidelidadeAdmin(); carregarClientesFidelidadeAdmin(); } catch (e) { console.warn(e); }
+                    try { 
+                        carregarConfiguracoesFidelidadeAdmin(); 
+                        carregarClientesFidelidadeAdmin(); 
+                        carregarConfiguracoesAniversarioAdmin();
+                        carregarAniversariantesAdmin();
+                    } catch (e) { console.warn(e); }
                     try { iniciarMonitoramentoTempoRealAdmin(); } catch (e) { console.warn(e); }
                     return;
                 } else {
@@ -5268,6 +5408,423 @@
                 console.error("Erro ao resgatar recompensa:", err);
                 alert("Erro ao processar resgate: " + err.message);
             }
+        };
+
+        // ==========================================
+        // PROGRAMA DE FIDELIDADE DE ANIVERSÁRIO (ADMIN)
+        // ==========================================
+        let configAniversarioCache = {
+            ativo: true,
+            janelaValidade: 'mes_aniversario',
+            tipoRecompensa: 'desconto_valor',
+            valorDesconto: 20.00,
+            porcentagemDesconto: 50,
+            descricaoRecompensa: '🎉 Presente de Aniversário: R$ 20,00 de desconto no corte!',
+            mensagemWhatsapp: `🎂 *EMAÚS Barbearia - Feliz Aniversário!* 🎉\n\nFala, *{cliente}*! Tudo bem?\n\nA equipe da *EMAÚS Barbearia* deseja a você um Feliz Aniversário, com muita saúde, sucesso e realizações! ✂️✨\n\n🎁 Para comemorar o seu dia com estilo, preparamos um presente especial para você:\n👉 *{presente}*\n\nAgende seu horário pelo nosso site para resgatar seu presente:\n🔗 {site}\n\n_EMAÚS Barbearia • Atendimento de Alta Performance_`
+        };
+
+        let listaAniversariantesMemoria = [];
+        let filtroAniversarioAtual = 'mes';
+
+        async function carregarConfiguracoesAniversarioAdmin() {
+            try {
+                const snap = await getDoc(doc(db, "configuracoes", "aniversario"));
+                if (snap.exists()) {
+                    configAniversarioCache = { ...configAniversarioCache, ...snap.data() };
+                }
+
+                const check = document.getElementById('checkAniversarioAtivo');
+                const badge = document.getElementById('badgeStatusModuloAniversario');
+                const selJanela = document.getElementById('selectAniversarioJanela');
+                const selTipo = document.getElementById('selectAniversarioTipoRecompensa');
+                const inpVal = document.getElementById('inputAniversarioValorDesconto');
+                const inpPct = document.getElementById('inputAniversarioPorcentagemDesconto');
+                const inpDesc = document.getElementById('inputAniversarioDescricaoRecompensa');
+                const txtMsg = document.getElementById('textareaAniversarioMensagemWhatsapp');
+
+                if (check) check.checked = configAniversarioCache.ativo !== false;
+                if (badge) {
+                    badge.className = configAniversarioCache.ativo !== false
+                        ? "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-green-950 text-green-400 border border-green-800"
+                        : "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-zinc-800 text-zinc-400";
+                    badge.innerText = configAniversarioCache.ativo !== false ? "Ativado" : "Desativado";
+                }
+                if (selJanela) selJanela.value = configAniversarioCache.janelaValidade || 'mes_aniversario';
+                if (selTipo) {
+                    selTipo.value = configAniversarioCache.tipoRecompensa || 'desconto_valor';
+                    alternarCamposTipoRecompensaAniversario(selTipo.value);
+                }
+                if (inpVal) inpVal.value = Number(configAniversarioCache.valorDesconto || 20).toFixed(2);
+                if (inpPct) inpPct.value = Number(configAniversarioCache.porcentagemDesconto || 50);
+                if (inpDesc) inpDesc.value = configAniversarioCache.descricaoRecompensa || '';
+                if (txtMsg) txtMsg.value = configAniversarioCache.mensagemWhatsapp || '';
+            } catch (err) {
+                console.error("Erro ao carregar configuracoes de aniversario:", err);
+            }
+        }
+        window.carregarConfiguracoesAniversarioAdmin = carregarConfiguracoesAniversarioAdmin;
+
+        function alternarCamposTipoRecompensaAniversario(tipo) {
+            const containerVal = document.getElementById('containerAniversarioValorDesconto');
+            const containerPct = document.getElementById('containerAniversarioPorcentagemDesconto');
+            if (containerVal) containerVal.classList.toggle('hidden', tipo !== 'desconto_valor');
+            if (containerPct) containerPct.classList.toggle('hidden', tipo !== 'desconto_porcentagem');
+        }
+
+        document.getElementById('selectAniversarioTipoRecompensa')?.addEventListener('change', (e) => {
+            alternarCamposTipoRecompensaAniversario(e.target.value);
+        });
+
+        document.getElementById('checkAniversarioAtivo')?.addEventListener('change', async (e) => {
+            const ativo = e.target.checked;
+            const badge = document.getElementById('badgeStatusModuloAniversario');
+            if (badge) {
+                badge.className = ativo 
+                    ? "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-green-950 text-green-400 border border-green-800" 
+                    : "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-zinc-800 text-zinc-400";
+                badge.innerText = ativo ? "Ativado" : "Desativado";
+            }
+            try {
+                await setDoc(doc(db, "configuracoes", "aniversario"), { ativo, atualizadoEm: new Date().toISOString() }, { merge: true });
+                configAniversarioCache.ativo = ativo;
+                exibirToastNotificacao(
+                    "🎂 Fidelidade de Aniversário",
+                    ativo ? 'Ativado e visível no site!' : 'Pausado e desativado.',
+                    'config'
+                );
+            } catch (err) {
+                console.warn(err);
+            }
+        });
+
+        document.getElementById('btnSalvarConfigAniversario')?.addEventListener('click', async () => {
+            const btn = document.getElementById('btnSalvarConfigAniversario');
+            const msg = document.getElementById('msgConfigAniversarioStatus');
+
+            const janelaValidade = document.getElementById('selectAniversarioJanela')?.value || 'mes_aniversario';
+            const tipoRecompensa = document.getElementById('selectAniversarioTipoRecompensa')?.value || 'desconto_valor';
+            const valorDesconto = parseFloat(document.getElementById('inputAniversarioValorDesconto')?.value || 20);
+            const porcentagemDesconto = parseFloat(document.getElementById('inputAniversarioPorcentagemDesconto')?.value || 50);
+            const descricaoRecompensa = (document.getElementById('inputAniversarioDescricaoRecompensa')?.value || '').trim();
+            const mensagemWhatsapp = (document.getElementById('textareaAniversarioMensagemWhatsapp')?.value || '').trim();
+            const ativo = document.getElementById('checkAniversarioAtivo')?.checked ?? true;
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<span>⏳</span> Salvando...`;
+            }
+            if (msg) {
+                msg.className = "text-xs text-center font-medium text-amber-300";
+                msg.innerText = "Salvando regras de aniversário no banco...";
+            }
+
+            try {
+                const payload = {
+                    ativo,
+                    janelaValidade,
+                    tipoRecompensa,
+                    valorDesconto: isNaN(valorDesconto) ? 20.00 : valorDesconto,
+                    porcentagemDesconto: isNaN(porcentagemDesconto) ? 50 : porcentagemDesconto,
+                    descricaoRecompensa: descricaoRecompensa || 'Presente de Aniversário da Barbearia',
+                    mensagemWhatsapp: mensagemWhatsapp || configAniversarioCache.mensagemWhatsapp,
+                    atualizadoEm: new Date().toISOString()
+                };
+
+                await setDoc(doc(db, "configuracoes", "aniversario"), payload, { merge: true });
+                configAniversarioCache = { ...configAniversarioCache, ...payload };
+
+                if (msg) {
+                    msg.className = "text-xs text-center font-bold text-green-400";
+                    msg.innerText = "✅ Regras de Aniversário salvas com sucesso!";
+                    setTimeout(() => { if (msg) msg.innerText = ""; }, 4000);
+                }
+
+                exibirToastNotificacao("🎂 Fidelidade de Aniversário", "Regras atualizadas com sucesso!", "sucesso");
+            } catch (err) {
+                console.error("Erro ao salvar regras de aniversario:", err);
+                if (msg) {
+                    msg.className = "text-xs text-center font-medium text-red-400";
+                    msg.innerText = "Erro: " + err.message;
+                }
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<span>💾</span> Salvar Regras de Aniversário`;
+                }
+            }
+        });
+
+        // Helpers de Cálculo de Aniversário
+        function calcularDadosAniversario(dataNascStr) {
+            if (!dataNascStr) return null;
+            // Trata formatos YYYY-MM-DD ou DD/MM/YYYY
+            let dia = 0, mes = 0, anoNasc = 0;
+            if (dataNascStr.includes('-')) {
+                const partes = dataNascStr.split('-');
+                if (partes.length === 3) {
+                    anoNasc = parseInt(partes[0], 10);
+                    mes = parseInt(partes[1], 10);
+                    dia = parseInt(partes[2], 10);
+                }
+            } else if (dataNascStr.includes('/')) {
+                const partes = dataNascStr.split('/');
+                if (partes.length === 3) {
+                    dia = parseInt(partes[0], 10);
+                    mes = parseInt(partes[1], 10);
+                    anoNasc = parseInt(partes[2], 10);
+                }
+            }
+            if (!dia || !mes) return null;
+
+            const hoje = new Date();
+            const anoAtual = hoje.getFullYear();
+            const mesAtual = hoje.getMonth() + 1; // 1-12
+            const diaAtual = hoje.getDate();
+
+            // Data do próximo aniversário no ano civil
+            let proximoAniv = new Date(anoAtual, mes - 1, dia);
+            const hojeZerado = new Date(anoAtual, hoje.getMonth(), hoje.getDate());
+            if (proximoAniv < hojeZerado) {
+                proximoAniv = new Date(anoAtual + 1, mes - 1, dia);
+            }
+
+            const diffTempo = proximoAniv.getTime() - hojeZerado.getTime();
+            const diasRestantes = Math.round(diffTempo / (1000 * 60 * 60 * 24));
+
+            // Checa se está no mês atual
+            const ehMesAtual = mes === mesAtual;
+
+            // Checa se é hoje
+            const ehHoje = mes === mesAtual && dia === diaAtual;
+
+            // Checa se é esta semana (diasRestantes <= 7 ou ocorreu nos últimos 3 dias)
+            const ehEstaSemana = diasRestantes >= 0 && diasRestantes <= 7;
+
+            const mesesNomes = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+            const dataFormatadaTexto = `${String(dia).padStart(2, '0')} de ${mesesNomes[mes - 1]}`;
+
+            let idade = 0;
+            if (anoNasc > 1900 && anoNasc <= anoAtual) {
+                idade = anoAtual - anoNasc;
+            }
+
+            return {
+                dia,
+                mes,
+                anoNasc,
+                idade,
+                diasRestantes,
+                ehMesAtual,
+                ehHoje,
+                ehEstaSemana,
+                dataFormatadaTexto,
+                dataNascIso: `${String(dia).padStart(2, '0')}/${String(mes).padStart(2, '0')}`
+            };
+        }
+
+        async function carregarAniversariantesAdmin() {
+            const container = document.getElementById('listaAniversariantesAdmin');
+            if (container) container.innerHTML = "<div class='p-8 text-center text-zinc-500 text-xs'>Carregando aniversariantes...</div>";
+
+            try {
+                const snapUsers = await getDocs(collection(db, "usuarios"));
+                const lista = [];
+
+                snapUsers.forEach(d => {
+                    const u = d.data();
+                    const dataNasc = u.dataNascimento || u.dataNasc || '';
+                    if (dataNasc) {
+                        const calc = calcularDadosAniversario(dataNasc);
+                        if (calc) {
+                            lista.push({
+                                userId: d.id,
+                                nome: u.nome || u.displayName || 'Cliente',
+                                telefone: u.telefone || u.whatsapp || '',
+                                fotoUrl: u.fotoUrl || '',
+                                dataNascimento: dataNasc,
+                                anoUltimoResgate: Number(u.anoUltimoResgateAniversario || 0),
+                                ...calc
+                            });
+                        }
+                    }
+                });
+
+                lista.sort((a, b) => a.diasRestantes - b.diasRestantes);
+                listaAniversariantesMemoria = lista;
+
+                // Contadores dos Filtros
+                const anivMes = lista.filter(c => c.ehMesAtual).length;
+                const anivProx30 = lista.filter(c => c.diasRestantes <= 30).length;
+                const anivHojeSem = lista.filter(c => c.ehEstaSemana || c.ehHoje).length;
+                const anivTodos = lista.length;
+
+                const elMes = document.getElementById('countAnivMes');
+                const elProx30 = document.getElementById('countAnivProx30');
+                const elHojeSem = document.getElementById('countAnivHojeSemana');
+                const elTodos = document.getElementById('countAnivTodos');
+
+                if (elMes) elMes.innerText = anivMes;
+                if (elProx30) elProx30.innerText = anivProx30;
+                if (elHojeSem) elHojeSem.innerText = anivHojeSem;
+                if (elTodos) elTodos.innerText = anivTodos;
+
+                renderizarListaAniversariantesAdmin();
+            } catch (err) {
+                console.error("Erro ao carregar aniversariantes:", err);
+                if (container) container.innerHTML = `<div class='p-8 text-center text-red-400 text-xs'>Erro: ${err.message}</div>`;
+            }
+        }
+        window.carregarAniversariantesAdmin = carregarAniversariantesAdmin;
+
+        window.filtrarAniversariantesAdmin = function(tipo) {
+            filtroAniversarioAtual = tipo;
+            const bMes = document.getElementById('btnFiltroAnivMes');
+            const bProx = document.getElementById('btnFiltroAnivProx30');
+            const bSem = document.getElementById('btnFiltroAnivHojeSemana');
+            const bTodos = document.getElementById('btnFiltroAnivTodos');
+
+            const resetClass = "px-3 py-1 rounded-lg text-xs font-bold bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800 transition cursor-pointer";
+            const activeClass = "px-3 py-1 rounded-lg text-xs font-bold bg-purple-600 text-white border border-purple-500 transition cursor-pointer";
+
+            if (bMes) bMes.className = tipo === 'mes' ? activeClass : resetClass;
+            if (bProx) bProx.className = tipo === 'proximos30' ? activeClass : resetClass;
+            if (bSem) bSem.className = tipo === 'hojeSemana' ? activeClass : resetClass;
+            if (bTodos) bTodos.className = tipo === 'todos' ? activeClass : resetClass;
+
+            renderizarListaAniversariantesAdmin();
+        };
+
+        function renderizarListaAniversariantesAdmin() {
+            const container = document.getElementById('listaAniversariantesAdmin');
+            if (!container) return;
+
+            const busca = (document.getElementById('inputBuscaAniversarianteAdmin')?.value || '').trim().toLowerCase();
+            const anoAtual = new Date().getFullYear();
+
+            let filtrados = listaAniversariantesMemoria.filter(c => {
+                if (busca) {
+                    const matchNome = c.nome && c.nome.toLowerCase().includes(busca);
+                    const matchTel = c.telefone && c.telefone.includes(busca);
+                    const matchData = c.dataFormatadaTexto && c.dataFormatadaTexto.toLowerCase().includes(busca);
+                    if (!matchNome && !matchTel && !matchData) return false;
+                }
+
+                if (filtroAniversarioAtual === 'mes') return c.ehMesAtual;
+                if (filtroAniversarioAtual === 'proximos30') return c.diasRestantes <= 30;
+                if (filtroAniversarioAtual === 'hojeSemana') return c.ehEstaSemana || c.ehHoje;
+                return true;
+            });
+
+            if (filtrados.length === 0) {
+                container.innerHTML = "<div class='p-8 text-center text-zinc-500 text-xs'>Nenhum aniversariante encontrado neste filtro.</div>";
+                return;
+            }
+
+            let html = "";
+            filtrados.forEach(c => {
+                const jaResgatouEsteAno = c.anoUltimoResgate === anoAtual;
+                let badgeDias = "";
+                if (c.ehHoje) {
+                    badgeDias = `<span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-purple-500 text-white uppercase animate-bounce">🎉 É HOJE!</span>`;
+                } else if (c.diasRestantes === 1) {
+                    badgeDias = `<span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-purple-900/60 text-purple-300 border border-purple-700">Amanhã</span>`;
+                } else if (c.diasRestantes <= 7) {
+                    badgeDias = `<span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-800">Em ${c.diasRestantes} dias</span>`;
+                } else {
+                    badgeDias = `<span class="text-[9px] font-semibold text-zinc-400">Em ${c.diasRestantes} dias</span>`;
+                }
+
+                let badgeStatusPresente = "";
+                if (jaResgatouEsteAno) {
+                    badgeStatusPresente = `<span class="text-[10px] font-bold text-green-400 flex items-center gap-1">✓ Presente de ${anoAtual} Resgatado</span>`;
+                } else if (c.ehMesAtual || c.ehEstaSemana) {
+                    badgeStatusPresente = `<span class="text-[10px] font-bold text-amber-300 flex items-center gap-1">🎁 Presente Liberado para Agendar</span>`;
+                } else {
+                    badgeStatusPresente = `<span class="text-[10px] text-zinc-500">Benefício bloqueado (Fora do período)</span>`;
+                }
+
+                html += `
+                    <div class="bg-black/80 border ${c.ehHoje ? 'border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.2)]' : 'border-zinc-800'} p-3.5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition hover:border-zinc-700">
+                        <div class="flex items-center gap-3 flex-1 min-w-0">
+                            <div class="w-11 h-11 rounded-xl bg-purple-950/40 border border-purple-800/60 flex items-center justify-center text-xl overflow-hidden flex-shrink-0">
+                                ${c.fotoUrl ? `<img src="${c.fotoUrl}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='🎂'" alt="${c.nome}">` : '🎂'}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <h5 class="text-sm font-bold text-white truncate">${c.nome}</h5>
+                                    ${badgeDias}
+                                </div>
+                                <div class="flex items-center gap-2.5 text-xs text-zinc-400 mt-0.5 flex-wrap">
+                                    <span class="font-bold text-purple-300">🎂 ${c.dataFormatadaTexto}</span>
+                                    ${c.idade ? `<span class="text-zinc-500">(${c.idade} anos)</span>` : ''}
+                                    <span class="text-zinc-600">•</span>
+                                    ${c.telefone ? `<span class="font-mono text-zinc-400">📱 ${c.telefone}</span>` : '<span class="text-zinc-600">Sem WhatsApp</span>'}
+                                </div>
+                                <div class="mt-1">
+                                    ${badgeStatusPresente}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
+                            <button onclick="window.enviarParabensWhatsappAdmin('${c.userId}', '${c.nome.replace(/'/g, "\\'")}', '${c.telefone}', '${c.dataFormatadaTexto}')" class="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs uppercase transition cursor-pointer shadow flex items-center gap-1.5" title="Enviar Parabéns com Presente no WhatsApp">
+                                <span>🎂</span>
+                                <span>Enviar Parabéns</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        document.getElementById('inputBuscaAniversarianteAdmin')?.addEventListener('input', renderizarListaAniversariantesAdmin);
+
+        window.enviarParabensWhatsappAdmin = async function(userId, nome, telefone, dataNascTexto) {
+            if (!telefone) {
+                alert("Este cliente não possui número de WhatsApp cadastrado.");
+                return;
+            }
+
+            const presente = configAniversarioCache.descricaoRecompensa || 'Desconto especial no corte';
+            const site = window.location.origin;
+
+            let msg = configAniversarioCache.mensagemWhatsapp || 
+                `🎂 *EMAÚS Barbearia - Feliz Aniversário!* 🎉\n\nFala, *{cliente}*! Tudo bem?\n\nA equipe da *EMAÚS Barbearia* deseja a você um Feliz Aniversário, com muita saúde, sucesso e realizações! ✂️✨\n\n🎁 Para comemorar o seu dia com estilo, preparamos um presente especial para você:\n👉 *{presente}*\n\nAgende seu horário pelo nosso site para resgatar seu presente:\n🔗 {site}\n\n_EMAÚS Barbearia • Atendimento de Alta Performance_`;
+
+            msg = msg.replace(/\{cliente\}/g, nome || 'Amigo')
+                     .replace(/\{presente\}/g, presente)
+                     .replace(/\{site\}/g, site);
+
+            // Tenta enviar via Bot backend primeiro
+            try {
+                exibirToastNotificacao("🎂 Disparando Parabéns", `Enviando mensagem para ${nome}...`, "info");
+                const res = await fetch('/api/whatsapp/notificar-aniversario', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cliente: nome,
+                        telefone: telefone,
+                        descricaoRecompensa: presente,
+                        mensagemCustomizada: msg
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (window.vibrarDispositivo) window.vibrarDispositivo('sucesso');
+                    exibirToastNotificacao("🎉 Parabéns Enviado!", `Mensagem entregue no WhatsApp de ${nome}!`, "sucesso");
+                    return;
+                }
+            } catch (eBot) {
+                console.warn("Bot offline ou falhou, abrindo WhatsApp Web:", eBot);
+            }
+
+            // Fallback: Abre WhatsApp direto
+            let num = telefone.replace(/\D/g, '');
+            if (!num.startsWith('55') && num.length >= 10) num = '55' + num;
+            const waUrl = `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
+            window.open(waUrl, '_blank');
         };
 
         // ==========================================
