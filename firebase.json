@@ -26,6 +26,10 @@
       {
         "source": "/redefinir-senha",
         "destination": "/redefinir-senha.html"
+      },
+      {
+        "source": "/termos",
+        "destination": "/termos.html"
       }
     ]
   }
