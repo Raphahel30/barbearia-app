@@ -1432,7 +1432,9 @@
                         navigator.vibrate(25); // micro toque de botão
                     }
                 }
-            } catch (e) {}
+            } catch (e) {
+                // Haptic feedback pode não ser suportado ou bloqueado no dispositivo
+            }
         };
 
         const authScreen = document.getElementById('authScreen');
@@ -1464,7 +1466,9 @@
             authMsg.innerText = "✅ Senha alterada com sucesso! Digite seu e-mail e sua nova senha para entrar.";
             try {
                 window.history.replaceState({}, document.title, window.location.pathname);
-            } catch (e) {}
+            } catch (e) {
+                console.warn("[EMAÚS:HISTORICO] Aviso ao limpar parâmetros de URL:", e);
+            }
         }
 
         // Variável de controle para saber o que está sendo pago no Modal Pix (agendamento ou plano)
@@ -1508,6 +1512,34 @@
             if (authMsg) authMsg.innerText = "";
         });
 
+        // Tradução amigável e segura de erros do Firebase Auth
+        function traduzirErroAuth(error) {
+            if (!error) return "Ocorreu um erro inesperado. Tente novamente.";
+            const code = error.code || error.message || '';
+            if (code.includes('invalid-credential') || code.includes('wrong-password') || code.includes('user-not-found')) {
+                return "E-mail ou senha incorretos. Verifique suas credenciais.";
+            }
+            if (code.includes('email-already-in-use')) {
+                return "Este e-mail já está cadastrado. Tente entrar ou recupere sua senha.";
+            }
+            if (code.includes('weak-password')) {
+                return "A senha deve ter no mínimo 6 caracteres.";
+            }
+            if (code.includes('invalid-email')) {
+                return "Digite um endereço de e-mail válido.";
+            }
+            if (code.includes('network-request-failed')) {
+                return "Falha de conexão com a internet. Verifique sua rede e tente novamente.";
+            }
+            if (code.includes('too-many-requests')) {
+                return "Muitas tentativas sem sucesso. Aguarde alguns instantes e tente novamente.";
+            }
+            if (code.includes('popup-closed-by-user') || code.includes('cancelled-popup-request')) {
+                return "Janela de login fechada antes da conclusão.";
+            }
+            return error.message || "Erro ao processar autenticação.";
+        }
+
         document.getElementById('btnEnviarRecuperacao')?.addEventListener('click', async () => {
             const emailRecup = (document.getElementById('forgotEmail')?.value || '').trim();
             const btnEnviar = document.getElementById('btnEnviarRecuperacao');
@@ -1516,7 +1548,7 @@
             if (!emailRecup) {
                 if (authMsg) {
                     authMsg.className = "text-center text-sm text-red-400";
-                    authMsg.innerText = "Insira o seu e-mail!";
+                    authMsg.innerText = "Por favor, insira o seu e-mail cadastrado!";
                 }
                 return;
             }
@@ -1544,10 +1576,13 @@
                 btnEnviar.disabled = false;
                 btnEnviar.innerText = "Enviar E-mail de Recuperação";
             } catch (error) {
+                console.warn("[EMAÚS:AUTH] Erro ao enviar recuperação de senha:", error);
                 btnEnviar.disabled = false;
                 btnEnviar.innerText = "Enviar E-mail de Recuperação";
-                authMsg.className = "text-center text-sm text-red-400";
-                authMsg.innerText = "Erro ao enviar: " + error.message;
+                if (authMsg) {
+                    authMsg.className = "text-center text-sm text-red-400";
+                    authMsg.innerText = "Erro ao enviar: " + traduzirErroAuth(error);
+                }
             }
         });
 
@@ -1802,14 +1837,16 @@
 
         // Botão de Login Rápido com Google
         document.getElementById('btnGoogleLogin')?.addEventListener('click', async () => {
-            authMsg.innerText = "";
+            if (authMsg) authMsg.innerText = "";
             try {
                 await signInWithPopup(auth, googleProvider);
             } catch (error) {
-                console.error("Erro no login Google:", error);
+                console.warn("[EMAÚS:AUTH] Erro no login Google:", error);
                 if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
-                    authMsg.className = "text-center text-sm text-red-400";
-                    authMsg.innerText = "Erro ao entrar com Google: " + error.message;
+                    if (authMsg) {
+                        authMsg.className = "text-center text-sm text-red-400";
+                        authMsg.innerText = "Erro ao entrar com Google: " + traduzirErroAuth(error);
+                    }
                 }
             }
         });
@@ -1821,16 +1858,17 @@
             if (!email || !password) {
                 if (authMsg) {
                     authMsg.className = "text-center text-sm text-red-400";
-                    authMsg.innerText = "Preencha e-mail e senha!";
+                    authMsg.innerText = "Por favor, preencha o e-mail e a senha!";
                 }
                 return;
             }
             try {
                 await signInWithEmailAndPassword(auth, email, password);
             } catch (error) {
+                console.warn("[EMAÚS:AUTH] Erro no login:", error);
                 if (authMsg) {
                     authMsg.className = "text-center text-sm text-red-400";
-                    authMsg.innerText = "Erro: " + error.message;
+                    authMsg.innerText = traduzirErroAuth(error);
                 }
             }
         });
@@ -1846,7 +1884,7 @@
             if (!nome || !telefone || !email || !password) {
                 if (authMsg) {
                     authMsg.className = "text-center text-sm text-red-400";
-                    authMsg.innerText = "Preencha todos os campos!";
+                    authMsg.innerText = "Por favor, preencha todos os campos obrigatórios!";
                 }
                 return;
             }
@@ -1859,11 +1897,16 @@
                     email,
                     dataNascimento 
                 });
-                authMsg.className = "text-center text-sm text-green-400";
-                authMsg.innerText = "Conta criada com sucesso!";
+                if (authMsg) {
+                    authMsg.className = "text-center text-sm text-green-400 font-bold";
+                    authMsg.innerText = "✅ Conta criada com sucesso!";
+                }
             } catch (error) {
-                authMsg.className = "text-center text-sm text-red-400";
-                authMsg.innerText = "Erro: " + error.message;
+                console.warn("[EMAÚS:AUTH] Erro no cadastro:", error);
+                if (authMsg) {
+                    authMsg.className = "text-center text-sm text-red-400";
+                    authMsg.innerText = traduzirErroAuth(error);
+                }
             }
         });
 
@@ -1985,7 +2028,9 @@
                 renderizarCartaoFidelidadeCliente();
                 renderizarCardAniversarioCliente();
                 carregarFidelidadeCliente(auth.currentUser.uid);
-            } catch (e) {}
+            } catch (e) {
+                console.warn("[EMAÚS:PERFIL] Aviso ao carregar fidelidade/aniversário no perfil:", e);
+            }
 
             if (modalPerfilCliente) modalPerfilCliente.classList.remove('hidden');
         }
@@ -3904,7 +3949,7 @@
                     // Exibe na lista de ocupados APENAS se a data/hora for no futuro ou hoje
                     if (ag.dataHora && ag.dataHora >= agora) {
                         temHorariosOcupadosFuturos = true;
-                        divOcupados.innerHTML += `<div>❌ ${ag.dataHora.replace('T', ' às ')}</div>`;
+                        divOcupados.innerHTML += `<div>❌ ${(ag.dataHora || '').replace('T', ' às ')}</div>`;
                     }
 
                     // Meus agendamentos ativos futuros
@@ -3956,7 +4001,7 @@
                                 <div class="space-y-1.5">
                                     <div class="flex items-center gap-2 flex-wrap">
                                         <p class="font-bold text-dourado text-sm">${ag.servico || 'Corte'} ${ag.isPlano ? '<span class="text-xs text-purple-400 font-bold">(Plano Mensal)</span>' : ''}</p>
-                                        <span class="text-xs text-zinc-300 bg-zinc-800 px-2 py-0.5 rounded font-mono">📅 ${ag.dataHora.replace('T', ' às ')}</span>
+                                        <span class="text-xs text-zinc-300 bg-zinc-800 px-2 py-0.5 rounded font-mono">📅 ${(ag.dataHora || '').replace('T', ' às ')}</span>
                                     </div>
                                     ${financeiroBadge}
                                     <div class="pt-0.5">${badgeCancelamentoInfo}</div>
@@ -5967,7 +6012,9 @@
                             inputNome.value = uDoc.data().nome || "";
                             if (inputTel && !inputTel.value) inputTel.value = uDoc.data().telefone || "";
                         }
-                    } catch (e) {}
+                    } catch (e) {
+                        console.warn("[EMAÚS:LOJA] Aviso ao carregar dados do comprador:", e);
+                    }
                 }
             }
 
@@ -6406,7 +6453,11 @@
         }
 
         // Inicialização global de configurações e visibilidade de módulos
-        try { carregarConfiguracoesGerais(); } catch (e) {}
+        try { 
+            carregarConfiguracoesGerais(); 
+        } catch (e) { 
+            console.warn("[EMAÚS:INIT] Erro ao carregar configurações gerais:", e); 
+        }
     </script>
 </body>
 </html>

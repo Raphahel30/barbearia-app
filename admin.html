@@ -2184,7 +2184,7 @@
                         const ag = change.doc.data();
                         const agoraIso = new Date().toISOString().slice(0, 16);
                         if (ag.dataHora && ag.dataHora >= agoraIso) {
-                            const horaFmt = ag.dataHora.replace('T', ' às ');
+                            const horaFmt = (ag.dataHora || '').replace('T', ' às ');
                             tocarSomNotificacao(ag.isPlano ? 'vip' : 'novo');
                             exibirToastNotificacao(
                                 ag.isPlano ? '👑 Novo Agendamento VIP' : '📅 Novo Agendamento',
@@ -2320,7 +2320,9 @@
                         navigator.vibrate(25);
                     }
                 }
-            } catch (e) {}
+            } catch (e) {
+                // Haptic feedback pode não ser suportado ou bloqueado no dispositivo
+            }
         };
 
         const btnAbrirSidebar = document.getElementById('btnAbrirSidebar');
@@ -3470,7 +3472,7 @@
                     }
                 }
 
-                if (ag.dataHora.startsWith(hojeStr)) {
+                if ((ag.dataHora || '').startsWith(hojeStr)) {
                     atendimentosHojeList.push(ag);
                 }
             });
@@ -3485,7 +3487,7 @@
             }
 
             // Ordena atendimentos de hoje por hora cronológica crescente
-            atendimentosHojeList.sort((a, b) => a.dataHora.localeCompare(b.dataHora));
+            atendimentosHojeList.sort((a, b) => (a.dataHora || '').localeCompare(b.dataHora || ''));
 
             if (listaHojeDiv) {
                 if (atendimentosHojeList.length === 0) {
@@ -3517,11 +3519,13 @@
                             statusBadge = '<span class="text-xs bg-blue-950 text-blue-400 border border-blue-800 px-2.5 py-1 rounded font-semibold">📅 Agendado</span>';
                         }
 
+                        const horaExibicao = (ag.dataHora && ag.dataHora.includes('T')) ? ag.dataHora.split('T')[1] : (ag.dataHora || '--:--');
+
                         htmlHoje += `
                             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-black p-3 rounded-xl border border-zinc-800 gap-2 shadow-md">
                                 <div>
                                     <p class="font-bold text-white">${ag.cliente || 'Cliente'} ${ag.isPlano ? '<span class="text-dourado text-[11px] font-bold">(VIP)</span>' : ''}</p>
-                                    <p class="text-xs text-zinc-400">${ag.servico || 'Corte'} - <strong class="text-dourado">${ag.dataHora.split('T')[1]}</strong></p>
+                                    <p class="text-xs text-zinc-400">${ag.servico || 'Corte'} - <strong class="text-dourado">${horaExibicao}</strong></p>
                                     <div class="mt-1">${infoFinanceiraHoje}</div>
                                 </div>
                                 <div>${statusBadge}</div>
@@ -4015,10 +4019,10 @@
                 let telLimpo = telefoneClienteFinal ? telefoneClienteFinal.replace(/\D/g, '') : '';
                 if (telLimpo && !telLimpo.startsWith('55')) telLimpo = '55' + telLimpo;
 
-                const msgZap = encodeURIComponent(`Olá ${nomeClienteFinal}! Confirmando seu horário na EMAÚS Barbearia dia ${ag.dataHora.replace('T', ' às ')} (${ag.servico || 'Corte'}). Tudo certo?`);
+                const msgZap = encodeURIComponent(`Olá ${nomeClienteFinal}! Confirmando seu horário na EMAÚS Barbearia dia ${(ag.dataHora || '').replace('T', ' às ')} (${ag.servico || 'Corte'}). Tudo certo?`);
                 const linkZap = telLimpo ? `https://wa.me/${telLimpo}?text=${msgZap}` : '#';
 
-                const dataFormatada = ag.dataHora.replace('T', ' às ');
+                const dataFormatada = (ag.dataHora || '').replace('T', ' às ');
                 const precoTotal = Number(ag.preco || 0);
                 const valorPagoNum = Number(ag.taxaReservaPaga !== undefined ? ag.taxaReservaPaga : (ag.isPlano ? 0 : 10));
                 const valorRestante = Math.max(0, precoTotal - valorPagoNum);
