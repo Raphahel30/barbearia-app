@@ -4439,6 +4439,7 @@
                 btn.innerHTML = "⏳ Excluindo...";
             }
 
+            try {
                 // 1. Marca como cancelado no Firestore (preservando o histórico financeiro e contábil)
                 await updateDoc(doc(db, "agendamentos", id), {
                     status: 'cancelado',
