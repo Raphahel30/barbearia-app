@@ -2,8 +2,8 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel do Barbeiro | EMAUS Barbearia</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0">
+    <title>Painel do Barbeiro | EMAÚS Barbearia</title>
     
     <!-- PWA & Mobile Meta Tags -->
     <link rel="manifest" href="manifest-admin.json">
@@ -20,6 +20,14 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
+        html, body {
+            overflow-x: hidden;
+            width: 100%;
+            min-height: 100%;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            color-scheme: dark;
+        }
         body { font-family: 'Montserrat', sans-serif; background-color: #09090b; color: #ffffff; }
         h1, h2, h3, h4 { font-family: 'Oswald', sans-serif; letter-spacing: 0.5px; }
         .text-dourado { color: #D4AF37; }
@@ -27,6 +35,18 @@
         .bg-dourado:hover { background-color: #C5A028; }
         .border-dourado { border-color: #D4AF37; }
         .card-dark { background-color: #121215; border: 1px solid #27272a; }
+        
+        /* Barra de rolagem suave e compacta */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #09090b; }
+        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #D4AF37; }
+
+        input[type="date"] { min-height: 40px; }
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.8) sepia(1) saturate(5) hue-rotate(5deg);
+            cursor: pointer;
+        }
         
         /* Estilos do Menu Lateral (Sidebar) */
         .sidebar-link {

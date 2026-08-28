@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0">
     <title>EMAÚS Barbearia - Agendamento Online</title>
 
     <!-- PWA & Mobile Meta Tags -->
@@ -19,8 +19,16 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://sdk.mercadopago.com/js/v2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
     <style>
+        html, body {
+            overflow-x: hidden;
+            width: 100%;
+            min-height: 100%;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            color-scheme: dark;
+        }
         body { font-family: 'Montserrat', sans-serif; background-color: #000000; color: #ffffff; }
         h1, h2, h3 { font-family: 'Oswald', sans-serif; letter-spacing: 1px; }
         .text-dourado { color: #D4AF37; }
@@ -29,9 +37,24 @@
         .border-dourado { border-color: #D4AF37; }
         @keyframes pulse-gold { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
         .animate-pulse-gold { animation: pulse-gold 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        
+        /* Barra de rolagem suave e compacta para mobile e desktop */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #09090b; }
+        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #D4AF37; }
+
+        /* Estilização nativa dark para input de data no iOS e Android */
+        input[type="date"] {
+            min-height: 40px;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.8) sepia(1) saturate(5) hue-rotate(5deg);
+            cursor: pointer;
+        }
     </style>
 </head>
-<body class="bg-black text-white min-h-screen p-4 flex flex-col items-center justify-start">
+<body class="bg-black text-white min-h-screen px-3 py-4 sm:p-6 flex flex-col items-center justify-start overflow-x-hidden antialiased">
 
     <div id="authScreen" class="max-w-md w-full bg-zinc-900/95 backdrop-blur p-8 rounded-2xl shadow-2xl border border-zinc-800 space-y-6 my-auto">
         <div class="flex flex-col items-center justify-center text-center space-y-2 pb-1">
@@ -158,9 +181,9 @@
     </div>
 
     <!-- MODAL DE GESTÃO DO PERFIL DO CLIENTE -->
-    <div id="modalPerfilCliente" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
-        <div class="bg-zinc-900 border border-zinc-700 hover:border-dourado/60 p-6 sm:p-7 rounded-3xl max-w-md w-full space-y-4 shadow-2xl relative my-6 animate-fade-in transition duration-200">
-            <button id="btnFecharModalPerfilCliente" type="button" class="absolute top-4 right-4 text-zinc-400 hover:text-white text-xl font-bold transition cursor-pointer">&times;</button>
+    <div id="modalPerfilCliente" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
+        <div class="bg-zinc-900 border border-zinc-700 hover:border-dourado/60 p-4 sm:p-6 rounded-2xl sm:rounded-3xl max-w-md w-full space-y-4 shadow-2xl relative my-auto sm:my-6 max-h-[92vh] overflow-y-auto animate-fade-in transition duration-200">
+            <button id="btnFecharModalPerfilCliente" type="button" class="absolute top-4 right-4 text-zinc-400 hover:text-white text-xl font-bold transition cursor-pointer p-1">&times;</button>
             
             <div class="text-center space-y-2">
                 <!-- Avatar / Foto de Perfil com Botão de Upload -->
@@ -190,30 +213,30 @@
                 <p class="text-xs text-zinc-400">Atualize sua foto, dados pessoais e informações de contato.</p>
             </div>
 
-            <form id="formPerfilCliente" class="space-y-3.5 pt-2 text-left text-xs">
+            <form id="formPerfilCliente" class="space-y-3.5 pt-1 text-left text-xs">
                 <!-- Nome Completo -->
                 <div>
                     <label class="block font-semibold text-zinc-300 uppercase mb-1">Nome Completo *</label>
-                    <input type="text" id="perfilNomeCliente" required placeholder="Seu nome completo" class="w-full px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white focus:outline-none focus:border-dourado font-medium">
+                    <input type="text" id="perfilNomeCliente" required placeholder="Seu nome completo" class="w-full px-3.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white focus:outline-none focus:border-dourado font-medium text-xs sm:text-sm">
                 </div>
 
                 <!-- Telefone / WhatsApp -->
                 <div>
                     <label class="block font-semibold text-zinc-300 uppercase mb-1">WhatsApp / Telefone *</label>
-                    <input type="tel" id="perfilTelefoneCliente" required placeholder="(11) 99999-9999" class="w-full px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white focus:outline-none focus:border-dourado font-medium">
+                    <input type="tel" id="perfilTelefoneCliente" required placeholder="(11) 99999-9999" class="w-full px-3.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white focus:outline-none focus:border-dourado font-medium text-xs sm:text-sm">
                     <p class="text-[10px] text-zinc-500 mt-0.5">Usado para o envio de confirmações e lembretes de agendamento.</p>
                 </div>
 
                 <!-- E-mail de Acesso -->
                 <div>
                     <label class="block font-semibold text-zinc-300 uppercase mb-1">E-mail Cadastrado</label>
-                    <input type="email" id="perfilEmailCliente" readonly class="w-full px-3.5 py-2.5 bg-zinc-950 rounded-lg border border-zinc-800 text-zinc-400 cursor-not-allowed font-mono text-[11px]">
+                    <input type="email" id="perfilEmailCliente" readonly class="w-full px-3.5 py-2.5 bg-zinc-950 rounded-xl border border-zinc-800 text-zinc-400 cursor-not-allowed font-mono text-[11px]">
                 </div>
 
                 <!-- Data de Nascimento (Presente de Aniversário 🎂) -->
                 <div>
                     <label class="block font-semibold text-zinc-300 uppercase mb-1">Data de Nascimento 🎂</label>
-                    <input type="date" id="perfilDataNascimentoCliente" class="w-full px-3.5 py-2.5 bg-black rounded-lg border border-zinc-700 text-white focus:outline-none focus:border-dourado font-medium cursor-pointer">
+                    <input type="date" id="perfilDataNascimentoCliente" class="w-full px-3.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white focus:outline-none focus:border-dourado font-medium text-xs sm:text-sm cursor-pointer">
                     <p class="text-[10px] text-zinc-500 mt-0.5">Cadastre sua data para desbloquear benefícios e presentes especiais no seu aniversário!</p>
                 </div>
 
@@ -229,8 +252,8 @@
                 </div>
 
                 <!-- CARD GAMIFICADO DO PROGRAMA DE FIDELIDADE VIP -->
-                <div id="cardFidelidadePerfilCliente" class="bg-gradient-to-br from-amber-950/40 via-black to-zinc-950 p-4 rounded-2xl border border-dourado/40 space-y-3 shadow-xl">
-                    <div class="flex items-center justify-between">
+                <div id="cardFidelidadePerfilCliente" class="bg-gradient-to-br from-amber-950/40 via-black to-zinc-950 p-3.5 sm:p-4 rounded-2xl border border-dourado/40 space-y-3 shadow-xl">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2">
                         <div class="flex items-center gap-2">
                             <span class="text-xl">👑</span>
                             <div>
@@ -238,13 +261,13 @@
                                 <p class="text-[10px] text-zinc-400">Acumule selos e ganhe benefícios</p>
                             </div>
                         </div>
-                        <span id="badgeFidelidadeStatusPerfil" class="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-dourado/20 text-dourado border border-dourado/40">
+                        <span id="badgeFidelidadeStatusPerfil" class="self-start sm:self-auto text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-dourado/20 text-dourado border border-dourado/40">
                             0 / 10 Selos
                         </span>
                     </div>
 
                     <!-- Grid Interativo de Selos Dourados -->
-                    <div id="gridSelosFidelidadePerfil" class="grid grid-cols-5 gap-2 pt-1 pb-1">
+                    <div id="gridSelosFidelidadePerfil" class="grid grid-cols-5 gap-1.5 sm:gap-2 pt-1 pb-1">
                         <!-- Gerado dinamicamente via JS -->
                     </div>
 
@@ -275,8 +298,8 @@
                 </div>
 
                 <!-- CARD DO PRESENTE DE ANIVERSÁRIO VIP (PERFIL) -->
-                <div id="cardAniversarioPerfilCliente" class="bg-gradient-to-br from-purple-950/40 via-black to-zinc-950 p-4 rounded-2xl border border-purple-500/40 space-y-2.5 shadow-xl">
-                    <div class="flex items-center justify-between">
+                <div id="cardAniversarioPerfilCliente" class="bg-gradient-to-br from-purple-950/40 via-black to-zinc-950 p-3.5 sm:p-4 rounded-2xl border border-purple-500/40 space-y-2.5 shadow-xl">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2">
                         <div class="flex items-center gap-2">
                             <span class="text-xl">🎂</span>
                             <div>
@@ -284,7 +307,7 @@
                                 <p id="subtextoDataAniversarioPerfil" class="text-[10px] text-zinc-400">Benefício exclusivo no seu mês</p>
                             </div>
                         </div>
-                        <span id="badgeStatusAniversarioPerfil" class="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-700">
+                        <span id="badgeStatusAniversarioPerfil" class="self-start sm:self-auto text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-700">
                             Aguardando Data
                         </span>
                     </div>
@@ -301,11 +324,11 @@
 
                 <p id="msgPerfilStatus" class="text-xs text-center font-medium min-h-[16px]"></p>
 
-                <div class="grid grid-cols-2 gap-3 pt-2">
-                    <button id="btnCancelarPerfilCliente" type="button" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-2.5 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer">
+                <div class="grid grid-cols-2 gap-2.5 sm:gap-3 pt-2">
+                    <button id="btnCancelarPerfilCliente" type="button" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-3 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer">
                         Cancelar
                     </button>
-                    <button id="btnSalvarPerfilCliente" type="submit" class="bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-2.5 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-1">
+                    <button id="btnSalvarPerfilCliente" type="submit" class="bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-1">
                         <span>💾</span> Salvar
                     </button>
                 </div>
@@ -313,33 +336,33 @@
         </div>
     </div>
 
-    <div id="clientDashboard" class="hidden max-w-2xl w-full mx-auto bg-zinc-900/95 backdrop-blur p-6 sm:p-8 rounded-2xl shadow-2xl border border-zinc-800 space-y-6 my-4 pb-20 sm:pb-8">
+    <div id="clientDashboard" class="hidden max-w-2xl w-full mx-auto bg-zinc-900/95 backdrop-blur p-4 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl shadow-2xl border border-zinc-800 space-y-5 sm:space-y-6 my-2 sm:my-4 pb-24 sm:pb-8">
         
         <!-- Header da Área do Cliente com Avatar e Logo -->
-        <div class="flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-zinc-800/80 pb-5">
-            <div class="flex items-center gap-3.5">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 border-b border-zinc-800/80 pb-4 sm:pb-5">
+            <div class="flex items-center gap-3 min-w-0">
                 <div class="relative flex-shrink-0 cursor-pointer" onclick="window.abrirModalPerfilCliente()" title="Clique para gerenciar seu perfil">
-                    <img id="avatarHeaderCliente" src="" alt="Minha Foto" class="w-12 h-12 rounded-full object-cover border-2 border-dourado bg-black shadow-[0_0_12px_rgba(212,175,55,0.35)] hidden" onerror="this.classList.add('hidden'); document.getElementById('logoHeaderPadrao')?.classList.remove('hidden');" />
-                    <img id="logoHeaderPadrao" src="logo.jpg" alt="EMAÚS Logo" class="w-12 h-12 object-cover rounded-xl border border-dourado/40 p-0.5 bg-black shadow-[0_0_12px_rgba(212,175,55,0.25)]" onerror="this.onerror=null; this.src='logo.png';" />
+                    <img id="avatarHeaderCliente" src="" alt="Minha Foto" class="w-11 h-11 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-dourado bg-black shadow-[0_0_12px_rgba(212,175,55,0.35)] hidden" onerror="this.classList.add('hidden'); document.getElementById('logoHeaderPadrao')?.classList.remove('hidden');" />
+                    <img id="logoHeaderPadrao" src="logo.jpg" alt="EMAÚS Logo" class="w-11 h-11 sm:w-12 sm:h-12 object-cover rounded-xl border border-dourado/40 p-0.5 bg-black shadow-[0_0_12px_rgba(212,175,55,0.25)]" onerror="this.onerror=null; this.src='logo.png';" />
                 </div>
-                <div>
-                    <h1 class="text-xl sm:text-2xl font-bold text-white uppercase tracking-wide flex items-center gap-2">
-                        EMAÚS Barbearia
-                        <span class="text-[10px] bg-amber-950 text-dourado border border-amber-700 font-bold px-2 py-0.5 rounded uppercase">Cliente</span>
+                <div class="min-w-0">
+                    <h1 class="text-lg sm:text-2xl font-bold text-white uppercase tracking-wide flex items-center gap-2 truncate">
+                        <span>EMAÚS Barbearia</span>
+                        <span class="text-[9px] sm:text-[10px] bg-amber-950 text-dourado border border-amber-700 font-bold px-2 py-0.5 rounded uppercase flex-shrink-0">Cliente</span>
                     </h1>
-                    <p id="clientWelcome" class="text-xs text-zinc-400 font-medium"></p>
+                    <p id="clientWelcome" class="text-xs text-zinc-400 font-medium truncate"></p>
                 </div>
             </div>
-            <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 justify-center sm:justify-end w-full sm:w-auto">
+            <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 justify-start sm:justify-end w-full sm:w-auto">
                 <button id="btnAbrirPerfilCliente" class="text-xs bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 hover:border-dourado px-3 py-2 rounded-xl transition font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-md" title="Gerenciar meus dados cadastrados">
                     <svg class="w-4 h-4 text-[#D4AF37] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                     <span>Meu Perfil</span>
                 </button>
-                <button id="btnInstalarAppCliente" class="text-xs bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-500/70 px-3.5 py-2 rounded-xl transition font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-md" title="Instalar aplicativo na tela inicial">
+                <button id="btnInstalarAppCliente" class="text-xs bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-500/70 px-3 sm:px-3.5 py-2 rounded-xl transition font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-md" title="Instalar aplicativo na tela inicial">
                     <svg class="w-4 h-4 text-[#D4AF37] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
                     <span id="labelInstalarClienteHeader">Instalar App</span>
                 </button>
-                <button class="btnLogout bg-red-600/90 hover:bg-red-600 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-lg inline-flex items-center gap-1.5">
+                <button class="btnLogout bg-red-600/90 hover:bg-red-600 text-white px-3 sm:px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-lg inline-flex items-center gap-1.5">
                     <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                     <span>Sair</span>
                 </button>
@@ -347,13 +370,13 @@
         </div>
 
         <!-- BANNER DE INSTALAÇÃO DO APP CLIENTE -->
-        <div id="bannerInstalarAppCliente" class="bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 p-4 rounded-2xl border border-amber-500/40 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xl">
+        <div id="bannerInstalarAppCliente" class="bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 p-3.5 sm:p-4 rounded-2xl border border-amber-500/40 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-xl">
             <div class="flex items-center gap-3">
-                <div class="w-11 h-11 bg-amber-950/80 border border-amber-500/50 rounded-xl flex items-center justify-center text-[#D4AF37] flex-shrink-0 shadow-inner">
-                    <svg class="w-6 h-6 text-[#D4AF37]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                <div class="w-10 h-10 sm:w-11 sm:h-11 bg-amber-950/80 border border-amber-500/50 rounded-xl flex items-center justify-center text-[#D4AF37] flex-shrink-0 shadow-inner">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6 text-[#D4AF37]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
                 </div>
-                <div>
-                    <p class="text-xs font-bold text-white uppercase tracking-wide">Instale o App da EMAÚS no seu Celular</p>
+                <div class="min-w-0">
+                    <p class="text-xs font-bold text-white uppercase tracking-wide">Instale o App no seu Celular</p>
                     <p class="text-[11px] text-zinc-400">Acesse direto da sua tela inicial com 1 toque para agendar mais rápido!</p>
                 </div>
             </div>
@@ -378,15 +401,15 @@
             </button>
         </div>
 
-        <div id="viewClienteAgendamentos" class="space-y-6">
+        <div id="viewClienteAgendamentos" class="space-y-5 sm:space-y-6">
             <!-- CARD DO PLANO MENSAL ATIVO DO CLIENTE -->
-            <div id="cardStatusVipAgendamento" class="hidden p-4 rounded-2xl bg-gradient-to-r from-amber-950/70 via-black to-zinc-950 border border-dourado/50 text-zinc-200 text-xs shadow-xl space-y-2.5 transition-all">
+            <div id="cardStatusVipAgendamento" class="hidden p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-amber-950/70 via-black to-zinc-950 border border-dourado/50 text-zinc-200 text-xs shadow-xl space-y-2.5 transition-all">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
                         <div class="w-10 h-10 rounded-xl bg-dourado/15 border border-dourado/40 flex items-center justify-center text-xl shadow-inner flex-shrink-0">
                             👑
                         </div>
-                        <div>
+                        <div class="min-w-0">
                             <div class="flex items-center gap-2">
                                 <span class="font-extrabold text-dourado uppercase tracking-wider text-xs">Plano Mensal Ativo</span>
                             </div>
@@ -395,7 +418,7 @@
                     </div>
                     <div class="flex items-center gap-2 flex-wrap">
                         <span id="badgeSemanaAtualVip" class="bg-green-500 text-black px-2.5 py-1 rounded-full font-extrabold text-[10px] uppercase shadow">1 Corte Semanal</span>
-                        <button type="button" onclick="window.abrirModalAgendamentoMensalista ? window.abrirModalAgendamentoMensalista() : document.getElementById('btnTabClientePlanos')?.click()" class="bg-dourado hover:bg-[#C5A028] text-black font-extrabold px-3 py-1 rounded-lg text-[10px] uppercase tracking-wider transition cursor-pointer shadow flex items-center gap-1 whitespace-nowrap">
+                        <button type="button" onclick="window.abrirModalAgendamentoMensalista ? window.abrirModalAgendamentoMensalista() : document.getElementById('btnTabClientePlanos')?.click()" class="bg-dourado hover:bg-[#C5A028] text-black font-extrabold px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wider transition cursor-pointer shadow flex items-center gap-1 whitespace-nowrap">
                             <span>📅</span> Agendar do Plano
                         </button>
                     </div>
@@ -403,19 +426,19 @@
                 <p id="labelDescricaoSemanaVip" class="text-amber-200/90 text-[11px] leading-relaxed border-t border-zinc-800/80 pt-2"></p>
             </div>
 
-            <div class="bg-black p-4 rounded-lg border border-zinc-800 space-y-3">
-                <h2 class="text-md font-semibold text-dourado uppercase tracking-wide">Meus Agendamentos Ativos</h2>
+            <div class="bg-black p-4 rounded-xl sm:rounded-2xl border border-zinc-800 space-y-3">
+                <h2 class="text-sm sm:text-md font-semibold text-dourado uppercase tracking-wide">Meus Agendamentos Ativos</h2>
                 <div id="meusAgendamentosLista" class="space-y-2 text-sm text-zinc-300">
                     <p class="text-xs text-zinc-500">A carregar os seus agendamentos...</p>
                 </div>
             </div>
 
-            <div id="agendamentoForm" class="space-y-4 bg-black p-4 rounded-lg border border-zinc-800">
-                <h2 class="text-lg font-semibold text-dourado uppercase tracking-wide">Novo Agendamento</h2>
+            <div id="agendamentoForm" class="space-y-4 bg-black p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-zinc-800">
+                <h2 class="text-base sm:text-lg font-semibold text-dourado uppercase tracking-wide">Novo Agendamento</h2>
 
                 <div>
-                    <label class="block text-sm font-medium mb-1 text-zinc-300">Serviço Principal</label>
-                    <select id="servico" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-800 focus:outline-none focus:border-dourado text-white">
+                    <label class="block text-xs sm:text-sm font-medium mb-1 text-zinc-300">Serviço Principal</label>
+                    <select id="servico" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-800 focus:outline-none focus:border-dourado text-white text-xs sm:text-sm">
                         <option value="">A carregar serviços...</option>
                     </select>
                 </div>
@@ -426,13 +449,13 @@
                         <div class="flex items-center gap-2.5 min-w-0">
                             <span class="text-base flex-shrink-0">➕</span>
                             <div class="truncate">
-                                <span class="text-xs font-bold text-zinc-200 uppercase tracking-wide block">Deseja adicionar outros serviços?</span>
-                                <span id="badgeStatusExtrasResumo" class="text-[11px] text-zinc-400 font-medium">Opcional • Nenhum adicional selecionado</span>
+                                <span class="text-xs font-bold text-zinc-200 uppercase tracking-wide block truncate">Deseja adicionar outros serviços?</span>
+                                <span id="badgeStatusExtrasResumo" class="text-[11px] text-zinc-400 font-medium truncate block">Opcional • Nenhum adicional selecionado</span>
                             </div>
                         </div>
                         <div class="flex items-center gap-2 flex-shrink-0">
                             <span id="badgeContadorExtras" class="hidden bg-dourado/20 text-dourado border border-dourado/40 px-2 py-0.5 rounded text-[10px] font-bold uppercase whitespace-nowrap">+ R$ 0,00</span>
-                            <span id="iconeToggleExtras" class="text-[11px] text-zinc-400 font-bold bg-zinc-900 border border-zinc-700 px-2.5 py-1 rounded-lg transition hover:text-white">Ver Serviços ▾</span>
+                            <span id="iconeToggleExtras" class="text-[11px] text-zinc-400 font-bold bg-zinc-900 border border-zinc-700 px-2.5 py-1 rounded-lg transition hover:text-white whitespace-nowrap">Ver Serviços ▾</span>
                         </div>
                     </button>
                     
@@ -456,13 +479,13 @@
                         <div class="flex items-center gap-2.5 min-w-0">
                             <span class="text-base flex-shrink-0">🧴</span>
                             <div class="truncate">
-                                <span class="text-xs font-bold text-zinc-200 uppercase tracking-wide block">Levar um produto junto?</span>
-                                <span id="badgeStatusProdutosResumo" class="text-[11px] text-zinc-400 font-medium">Opcional • Pomadas, óleos e cosméticos</span>
+                                <span class="text-xs font-bold text-zinc-200 uppercase tracking-wide block truncate">Levar um produto junto?</span>
+                                <span id="badgeStatusProdutosResumo" class="text-[11px] text-zinc-400 font-medium truncate block">Opcional • Pomadas, óleos e cosméticos</span>
                             </div>
                         </div>
                         <div class="flex items-center gap-2 flex-shrink-0">
                             <span id="badgeContadorProdutos" class="hidden bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded text-[10px] font-bold uppercase whitespace-nowrap">+ R$ 0,00</span>
-                            <span id="iconeToggleProdutos" class="text-[11px] text-zinc-400 font-bold bg-zinc-900 border border-zinc-700 px-2.5 py-1 rounded-lg transition hover:text-white">Ver Produtos ▾</span>
+                            <span id="iconeToggleProdutos" class="text-[11px] text-zinc-400 font-bold bg-zinc-900 border border-zinc-700 px-2.5 py-1 rounded-lg transition hover:text-white whitespace-nowrap">Ver Produtos ▾</span>
                         </div>
                     </button>
                     
@@ -493,7 +516,7 @@
                 </div>
 
                 <!-- BOX DE RECOMPENSA DE FIDELIDADE (EXIBIDO QUANDO DISPONÍVEL) -->
-                <div id="boxRecompensaFidelidadeAgendamento" class="hidden bg-gradient-to-r from-amber-950/80 via-black to-amber-950/80 border-2 border-amber-500 p-4 rounded-2xl space-y-2.5 shadow-xl animate-fade-in">
+                <div id="boxRecompensaFidelidadeAgendamento" class="hidden bg-gradient-to-r from-amber-950/80 via-black to-amber-950/80 border-2 border-amber-500 p-3.5 sm:p-4 rounded-2xl space-y-2.5 shadow-xl animate-fade-in">
                     <div class="flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2">
                             <span class="text-2xl animate-bounce">🎁</span>
@@ -512,7 +535,7 @@
                 </div>
 
                 <!-- BOX CONDICIONAL: PRESENTE DE ANIVERSÁRIO VIP -->
-                <div id="boxPresenteAniversarioAgendamento" class="hidden bg-gradient-to-r from-purple-950/80 via-black to-zinc-900 border-2 border-purple-500/80 p-4 rounded-2xl space-y-2.5 shadow-xl animate-fade-in">
+                <div id="boxPresenteAniversarioAgendamento" class="hidden bg-gradient-to-r from-purple-950/80 via-black to-zinc-900 border-2 border-purple-500/80 p-3.5 sm:p-4 rounded-2xl space-y-2.5 shadow-xl animate-fade-in">
                     <div class="flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2">
                             <span class="text-2xl animate-bounce">🎂</span>
@@ -531,21 +554,21 @@
                     </label>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div>
-                        <label class="block text-sm font-medium mb-1 text-zinc-300">Data do Atendimento</label>
-                        <input type="date" id="dataAtendimento" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-800 focus:outline-none focus:border-dourado text-white">
+                        <label class="block text-xs sm:text-sm font-medium mb-1 text-zinc-300">Data do Atendimento</label>
+                        <input type="date" id="dataAtendimento" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-800 focus:outline-none focus:border-dourado text-white text-xs sm:text-sm">
                         <p id="avisoDataBloqueiada" class="text-xs text-red-500 mt-1 hidden font-semibold">⚠️ Barbearia fechada nesta data.</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1 text-zinc-300">Horário (De 1 em 1 hora)</label>
-                        <select id="horarioGrade" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-800 focus:outline-none focus:border-dourado text-white">
+                        <label class="block text-xs sm:text-sm font-medium mb-1 text-zinc-300">Horário (De 1 em 1 hora)</label>
+                        <select id="horarioGrade" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-800 focus:outline-none focus:border-dourado text-white text-xs sm:text-sm">
                             <option value="">Selecione a data primeiro</option>
                         </select>
                     </div>
                 </div>
 
-                <div id="containerBotoesAgendamento" class="space-y-2.5">
+                <div id="containerBotoesAgendamento" class="space-y-2.5 pt-1">
                     <!-- Botão Especial de Agendamento 100% Grátis via Fidelidade -->
                     <div id="botoesPagamentoFidelidadeGratis" class="hidden">
                         <button id="btnConfirmarFidelidadeGratis" type="button" class="w-full bg-green-500 hover:bg-green-400 text-black font-extrabold py-3.5 px-4 rounded-xl transition uppercase tracking-wider cursor-pointer text-xs flex items-center justify-center gap-2 shadow-xl animate-pulse">
@@ -554,15 +577,15 @@
                         </button>
                     </div>
 
-                    <div id="botoesPagamentoNormal" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                        <button id="btnPagarTaxaReserva" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-bold py-2.5 px-3 rounded-lg transition uppercase tracking-wide cursor-pointer text-xs flex flex-col items-center justify-center shadow-lg gap-0.5">
+                    <div id="botoesPagamentoNormal" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                        <button id="btnPagarTaxaReserva" type="button" class="w-full min-h-[48px] bg-dourado hover:bg-[#C5A028] text-black font-bold py-3 px-3 rounded-xl transition uppercase tracking-wide cursor-pointer text-xs flex flex-col items-center justify-center shadow-lg gap-0.5">
                             <span class="inline-flex items-center justify-center gap-1.5 font-extrabold">
                                 <svg class="w-4 h-4 fill-current flex-shrink-0" viewBox="0 0 512 512"><path d="M112.57 391.77L154.2 350.14c12.49-12.49 12.49-32.74 0-45.24L79.79 230.49l74.41-74.41c12.49-12.49 12.49-32.74 0-45.24L112.57 69.21c-12.49-12.49-32.74-12.49-45.24 0L6.71 130.83c-8.94 8.94-8.94 23.44 0 32.38l67.28 67.28 67.28 67.28-67.28 67.28-67.28 67.28c-8.94 8.94-8.94 23.44 0 32.38l60.62 60.62c12.5 12.5 32.75 12.5 45.24 0zm286.86-322.56L357.8 110.84c-12.49 12.49-12.49 32.74 0 45.24l74.41 74.41-74.41 74.41c-12.49 12.49-12.49 32.74 0 45.24l41.63 41.63c12.49 12.49 32.74 12.49 45.24 0l60.62-60.62c8.94-8.94 8.94-23.44 0-32.38l-67.28-67.28-67.28-67.28 67.28-67.28 67.28-67.28c8.94-8.94 8.94-23.44 0-32.38l-60.62-60.62c-12.5-12.49-32.75-12.49-45.24 0zM256 160.83l-47.53 47.53c-12.49 12.49-12.49 32.74 0 45.24L256 301.13l47.53-47.53c12.49-12.49 12.49-32.74 0-45.24L256 160.83z"/></svg>
                                 Pagar Taxa de Reserva
                             </span>
                             <span class="text-[11px] font-normal opacity-90">(R$ 10,00)</span>
                         </button>
-                        <button id="btnPagarValorTotal" type="button" class="w-full bg-zinc-800 hover:bg-zinc-700 text-dourado border border-dourado/60 font-bold py-2.5 px-3 rounded-lg transition uppercase tracking-wide cursor-pointer text-xs flex flex-col items-center justify-center shadow-lg gap-0.5">
+                        <button id="btnPagarValorTotal" type="button" class="w-full min-h-[48px] bg-zinc-800 hover:bg-zinc-700 text-dourado border border-dourado/60 font-bold py-3 px-3 rounded-xl transition uppercase tracking-wide cursor-pointer text-xs flex flex-col items-center justify-center shadow-lg gap-0.5">
                             <span class="inline-flex items-center justify-center gap-1.5 font-extrabold text-dourado">
                                 <svg class="w-4 h-4 fill-current flex-shrink-0 text-dourado" viewBox="0 0 512 512"><path d="M112.57 391.77L154.2 350.14c12.49-12.49 12.49-32.74 0-45.24L79.79 230.49l74.41-74.41c12.49-12.49 12.49-32.74 0-45.24L112.57 69.21c-12.49-12.49-32.74-12.49-45.24 0L6.71 130.83c-8.94 8.94-8.94 23.44 0 32.38l67.28 67.28 67.28 67.28-67.28 67.28-67.28 67.28c-8.94 8.94-8.94 23.44 0 32.38l60.62 60.62c12.5 12.5 32.75 12.5 45.24 0zm286.86-322.56L357.8 110.84c-12.49 12.49-12.49 32.74 0 45.24l74.41 74.41-74.41 74.41c-12.49 12.49-12.49 32.74 0 45.24l41.63 41.63c12.49 12.49 32.74 12.49 45.24 0l60.62-60.62c8.94-8.94 8.94-23.44 0-32.38l-67.28-67.28-67.28-67.28 67.28-67.28 67.28-67.28c8.94-8.94 8.94-23.44 0-32.38l-60.62-60.62c-12.5-12.49-32.75-12.49-45.24 0zM256 160.83l-47.53 47.53c-12.49 12.49-12.49 32.74 0 45.24L256 301.13l47.53-47.53c12.49-12.49 12.49-32.74 0-45.24L256 160.83z"/></svg>
                                 Pagar Valor Total
@@ -724,46 +747,46 @@
         </div>
     </div>
 
-    <div id="modalPix" class="hidden fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-        <div class="bg-zinc-900 border border-dourado p-6 rounded-2xl max-w-md w-full space-y-4 text-center shadow-2xl relative my-auto sm:my-8 max-h-[92vh] overflow-y-auto">
+    <div id="modalPix" class="hidden fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
+        <div class="bg-zinc-900 border border-dourado p-4 sm:p-6 rounded-2xl sm:rounded-3xl max-w-md w-full space-y-4 text-center shadow-2xl relative my-auto sm:my-6 max-h-[92vh] overflow-y-auto">
             <!-- Botão Fechar no Topo -->
-            <button id="btnFecharModalTopo" type="button" class="absolute top-4 right-4 text-zinc-400 hover:text-white text-xl font-bold transition">&times;</button>
+            <button id="btnFecharModalTopo" type="button" class="absolute top-4 right-4 text-zinc-400 hover:text-white text-xl font-bold transition p-1">&times;</button>
             
             <h2 id="modalPixTitulo" class="text-xl font-bold text-dourado uppercase tracking-wide">Pagamento Seguro</h2>
             <p id="modalPixDesc" class="text-xs text-zinc-300">Escolha a melhor forma para concluir o seu pagamento:</p>
             
             <!-- Abas de Pagamento (Pix / Crédito / Débito) -->
             <div class="flex border-b border-zinc-800 gap-1 pt-2">
-                <button id="tabPagamentoPix" type="button" class="flex-1 pb-2 font-bold text-[11px] sm:text-xs text-dourado border-b-2 border-dourado uppercase transition cursor-pointer flex items-center justify-center gap-1">
+                <button id="tabPagamentoPix" type="button" class="flex-1 pb-2 font-bold text-xs text-dourado border-b-2 border-dourado uppercase transition cursor-pointer flex items-center justify-center gap-1">
                     <span>📱</span> Pix
                 </button>
-                <button id="tabPagamentoCredito" type="button" class="flex-1 pb-2 font-bold text-[11px] sm:text-xs text-zinc-500 uppercase transition cursor-pointer flex items-center justify-center gap-1 hover:text-zinc-300">
+                <button id="tabPagamentoCredito" type="button" class="flex-1 pb-2 font-bold text-xs text-zinc-500 uppercase transition cursor-pointer flex items-center justify-center gap-1 hover:text-zinc-300">
                     <span>💳</span> Crédito
                 </button>
-                <button id="tabPagamentoDebito" type="button" class="flex-1 pb-2 font-bold text-[11px] sm:text-xs text-zinc-500 uppercase transition cursor-pointer flex items-center justify-center gap-1 hover:text-zinc-300">
+                <button id="tabPagamentoDebito" type="button" class="flex-1 pb-2 font-bold text-xs text-zinc-500 uppercase transition cursor-pointer flex items-center justify-center gap-1 hover:text-zinc-300">
                     <span>💳</span> Débito
                 </button>
             </div>
 
             <!-- CONTEÚDO DA ABA PIX AUTOMÁTICO -->
-            <div id="viewPagamentoPix" class="space-y-4 pt-2">
+            <div id="viewPagamentoPix" class="space-y-3.5 pt-1">
                 <!-- Estado: Carregando / Gerando QR Code -->
-                <div id="pixLoadingState" class="p-6 bg-black rounded-xl border border-zinc-800 space-y-3">
+                <div id="pixLoadingState" class="p-6 bg-black rounded-2xl border border-zinc-800 space-y-3">
                     <div class="inline-block w-8 h-8 border-4 border-dourado border-t-transparent rounded-full animate-spin"></div>
                     <p class="text-xs text-zinc-300 font-medium">Gerando QR Code Pix seguro pelo Mercado Pago...</p>
                 </div>
 
                 <!-- Estado: QR Code Ativo Gerado -->
                 <div id="pixActiveState" class="space-y-3 hidden">
-                    <div class="bg-black p-4 rounded-xl border border-zinc-800 space-y-3">
+                    <div class="bg-black p-4 rounded-2xl border border-zinc-800 space-y-3">
                         <div class="flex justify-between items-center px-1">
                             <span class="text-xs text-zinc-400 font-semibold uppercase">Valor a Pagar:</span>
-                            <span id="pixValorDisplay" class="text-sm font-bold text-dourado bg-zinc-900 px-2 py-0.5 rounded border border-zinc-700">R$ 10,00</span>
+                            <span id="pixValorDisplay" class="text-sm font-bold text-dourado bg-zinc-900 px-2.5 py-0.5 rounded-lg border border-zinc-700">R$ 10,00</span>
                         </div>
 
                         <!-- Imagem do QR Code -->
-                        <div class="bg-white p-3 rounded-lg inline-block mx-auto shadow-inner">
-                            <img id="pixQrImage" src="" alt="QR Code Pix" class="w-44 h-44 object-contain mx-auto">
+                        <div class="bg-white p-3 rounded-xl inline-block mx-auto shadow-inner">
+                            <img id="pixQrImage" src="" alt="QR Code Pix" class="w-40 h-40 sm:w-44 sm:h-44 object-contain mx-auto">
                         </div>
 
                         <p class="text-[11px] text-zinc-400">Aponte a câmera no app do seu banco ou use o Copia e Cola:</p>
@@ -772,15 +795,15 @@
                         <div class="space-y-1.5 text-left">
                             <label class="block text-[11px] font-semibold text-zinc-300 uppercase">Código Pix Copia e Cola:</label>
                             <div class="flex gap-1.5">
-                                <input type="text" id="pixCodeInput" readonly class="w-full px-2.5 py-2 bg-zinc-900 rounded border border-zinc-700 text-xs text-zinc-200 focus:outline-none select-all font-mono">
-                                <button id="btnCopiarPix" type="button" class="bg-dourado hover:bg-[#C5A028] text-black font-bold px-3 py-2 rounded text-xs transition cursor-pointer whitespace-nowrap flex items-center gap-1">
+                                <input type="text" id="pixCodeInput" readonly class="w-full min-w-0 flex-1 px-3 py-2 bg-zinc-900 rounded-xl border border-zinc-700 text-xs text-zinc-200 focus:outline-none select-all font-mono">
+                                <button id="btnCopiarPix" type="button" class="bg-dourado hover:bg-[#C5A028] text-black font-bold px-3.5 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap flex items-center gap-1 shadow">
                                     📋 Copiar
                                 </button>
                             </div>
                         </div>
 
                         <!-- Status em Tempo Real -->
-                        <div id="pixStatusBadge" class="flex items-center justify-center gap-2 text-xs text-amber-300 bg-amber-950/40 p-2.5 rounded-lg border border-amber-800/60 font-medium">
+                        <div id="pixStatusBadge" class="flex items-center justify-center gap-2 text-xs text-amber-300 bg-amber-950/40 p-2.5 rounded-xl border border-amber-800/60 font-medium">
                             <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
                             <span>Aguardando pagamento... (Baixa Automática)</span>
                         </div>
@@ -788,21 +811,21 @@
                 </div>
 
                 <!-- Estado: Fallback / Chave Manual (se o servidor local estiver offline) -->
-                <div id="pixManualFallback" class="bg-black p-3.5 rounded-xl border border-zinc-800 text-left space-y-2 hidden">
+                <div id="pixManualFallback" class="bg-black p-4 rounded-2xl border border-zinc-800 text-left space-y-2 hidden">
                     <p class="text-xs text-amber-400 font-semibold">ℹ️ Opção Chave Pix Direta (InfinitePay):</p>
                     <div class="text-[11px] text-zinc-300 space-y-0.5">
                         <p>Favorecido: <span class="text-white font-medium">Aldo Alves Rodrigues Neto</span></p>
                         <p>Chave Celular: <strong class="text-dourado font-mono text-xs">11953789095</strong></p>
                     </div>
-                    <button id="btnConfirmarPixManual" type="button" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded text-xs uppercase cursor-pointer transition">
+                    <button id="btnConfirmarPixManual" type="button" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl text-xs uppercase cursor-pointer transition shadow-lg">
                         Já fiz o Pix Manual, Confirmar!
                     </button>
                 </div>
             </div>
 
             <!-- CONTEÚDO DA ABA CARTÃO DE CRÉDITO -->
-            <div id="viewPagamentoCredito" class="space-y-3 pt-2 text-left hidden">
-                <div class="bg-black p-4 rounded-xl border border-zinc-800 space-y-3">
+            <div id="viewPagamentoCredito" class="space-y-3 pt-1 text-left hidden">
+                <div class="bg-black p-4 rounded-2xl border border-zinc-800 space-y-3">
                     <div class="flex justify-between items-center">
                         <span class="text-xs text-zinc-400 uppercase font-semibold">Total no Crédito:</span>
                         <span id="cartaoCreditoValorDisplay" class="text-sm font-bold text-dourado">R$ 10,00</span>
@@ -815,38 +838,38 @@
 
                     <div>
                         <label class="block text-xs text-zinc-300 mb-1 font-medium">Número do Cartão de Crédito</label>
-                        <input type="text" id="cartaoCreditoNumero" placeholder="0000 0000 0000 0000" maxlength="19" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-cartao-format">
+                        <input type="text" id="cartaoCreditoNumero" placeholder="0000 0000 0000 0000" maxlength="19" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-cartao-format">
                     </div>
 
                     <div>
                         <label class="block text-xs text-zinc-300 mb-1 font-medium">Nome do Titular (como impresso)</label>
-                        <input type="text" id="cartaoCreditoNome" placeholder="NOME COMPLETO" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-700 text-white text-xs uppercase focus:outline-none focus:border-dourado">
+                        <input type="text" id="cartaoCreditoNome" placeholder="NOME COMPLETO" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs uppercase focus:outline-none focus:border-dourado">
                     </div>
 
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="block text-xs text-zinc-300 mb-1 font-medium">Validade (MM/AA)</label>
-                            <input type="text" id="cartaoCreditoValidade" placeholder="MM/AA" maxlength="5" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-validade-format">
+                            <input type="text" id="cartaoCreditoValidade" placeholder="MM/AA" maxlength="5" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-validade-format">
                         </div>
                         <div>
                             <label class="block text-xs text-zinc-300 mb-1 font-medium">CVV</label>
-                            <input type="password" id="cartaoCreditoCvv" placeholder="123" maxlength="4" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono">
+                            <input type="password" id="cartaoCreditoCvv" placeholder="123" maxlength="4" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono">
                         </div>
                     </div>
 
                     <div>
                         <label class="block text-xs text-zinc-300 mb-1 font-medium">CPF do Titular</label>
-                        <input type="text" id="cartaoCreditoCpf" placeholder="000.000.000-00" maxlength="14" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-cpf-format">
+                        <input type="text" id="cartaoCreditoCpf" placeholder="000.000.000-00" maxlength="14" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-cpf-format">
                     </div>
 
                     <div>
                         <label class="block text-xs text-zinc-300 mb-1 font-medium">Parcelas</label>
-                        <select id="cartaoCreditoParcelas" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado cursor-pointer">
+                        <select id="cartaoCreditoParcelas" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado cursor-pointer">
                             <option value="1">1x à vista (Sem Juros)</option>
                         </select>
                     </div>
 
-                    <button id="btnPagarCartaoCredito" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-bold py-2.5 rounded text-xs uppercase transition cursor-pointer tracking-wide mt-2 shadow-lg flex items-center justify-center gap-1.5">
+                    <button id="btnPagarCartaoCredito" type="button" class="w-full min-h-[44px] bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl text-xs uppercase transition cursor-pointer tracking-wide mt-2 shadow-lg flex items-center justify-center gap-1.5">
                         <span>💳</span> Pagar no Cartão de Crédito
                     </button>
                     <p id="msgCartaoCreditoStatus" class="text-xs text-center font-medium min-h-[16px]"></p>
@@ -854,8 +877,8 @@
             </div>
 
             <!-- CONTEÚDO DA ABA CARTÃO DE DÉBITO -->
-            <div id="viewPagamentoDebito" class="space-y-3 pt-2 text-left hidden">
-                <div class="bg-black p-4 rounded-xl border border-zinc-800 space-y-3">
+            <div id="viewPagamentoDebito" class="space-y-3 pt-1 text-left hidden">
+                <div class="bg-black p-4 rounded-2xl border border-zinc-800 space-y-3">
                     <div class="flex justify-between items-center">
                         <span class="text-xs text-zinc-400 uppercase font-semibold">Total no Débito:</span>
                         <span id="cartaoDebitoValorDisplay" class="text-sm font-bold text-dourado">R$ 10,00</span>
@@ -866,38 +889,38 @@
                         <span>Taxa da operadora (+<strong id="spanTaxaDebitoPercent">1.99%</strong>) inclusa no valor total.</span>
                     </p>
 
-                    <div class="p-2.5 bg-zinc-900/90 rounded-lg border border-zinc-800 text-[11px] text-zinc-300 flex items-center gap-2">
+                    <div class="p-2.5 bg-zinc-900/90 rounded-xl border border-zinc-800 text-[11px] text-zinc-300 flex items-center gap-2">
                         <span class="text-base">💳</span>
                         <span>Pagamento via <strong>Cartão de Débito</strong> (Cobrança à vista 1x).</span>
                     </div>
 
                     <div>
                         <label class="block text-xs text-zinc-300 mb-1 font-medium">Número do Cartão de Débito</label>
-                        <input type="text" id="cartaoDebitoNumero" placeholder="0000 0000 0000 0000" maxlength="19" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-cartao-format">
+                        <input type="text" id="cartaoDebitoNumero" placeholder="0000 0000 0000 0000" maxlength="19" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-cartao-format">
                     </div>
 
                     <div>
                         <label class="block text-xs text-zinc-300 mb-1 font-medium">Nome do Titular (como impresso)</label>
-                        <input type="text" id="cartaoDebitoNome" placeholder="NOME COMPLETO" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-700 text-white text-xs uppercase focus:outline-none focus:border-dourado">
+                        <input type="text" id="cartaoDebitoNome" placeholder="NOME COMPLETO" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs uppercase focus:outline-none focus:border-dourado">
                     </div>
 
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="block text-xs text-zinc-300 mb-1 font-medium">Validade (MM/AA)</label>
-                            <input type="text" id="cartaoDebitoValidade" placeholder="MM/AA" maxlength="5" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-validade-format">
+                            <input type="text" id="cartaoDebitoValidade" placeholder="MM/AA" maxlength="5" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-validade-format">
                         </div>
                         <div>
                             <label class="block text-xs text-zinc-300 mb-1 font-medium">CVV</label>
-                            <input type="password" id="cartaoDebitoCvv" placeholder="123" maxlength="4" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono">
+                            <input type="password" id="cartaoDebitoCvv" placeholder="123" maxlength="4" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono">
                         </div>
                     </div>
 
                     <div>
                         <label class="block text-xs text-zinc-300 mb-1 font-medium">CPF do Titular</label>
-                        <input type="text" id="cartaoDebitoCpf" placeholder="000.000.000-00" maxlength="14" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-cpf-format">
+                        <input type="text" id="cartaoDebitoCpf" placeholder="000.000.000-00" maxlength="14" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-cpf-format">
                     </div>
 
-                    <button id="btnPagarCartaoDebito" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-bold py-2.5 rounded text-xs uppercase transition cursor-pointer tracking-wide mt-2 shadow-lg flex items-center justify-center gap-1.5">
+                    <button id="btnPagarCartaoDebito" type="button" class="w-full min-h-[44px] bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl text-xs uppercase transition cursor-pointer tracking-wide mt-2 shadow-lg flex items-center justify-center gap-1.5">
                         <span>💳</span> Pagar no Cartão de Débito
                     </button>
                     <p id="msgCartaoDebitoStatus" class="text-xs text-center font-medium min-h-[16px]"></p>
@@ -906,7 +929,7 @@
 
             <!-- Botão Voltar/Fechar -->
             <div class="pt-2">
-                <button id="btnFecharModal" type="button" class="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-2 rounded text-xs font-bold uppercase transition cursor-pointer">
+                <button id="btnFecharModal" type="button" class="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-2.5 rounded-xl text-xs font-bold uppercase transition cursor-pointer">
                     Voltar
                 </button>
             </div>
@@ -914,9 +937,9 @@
     </div>
 
     <!-- MODAL DE AGENDAMENTO EXCLUSIVO DO PLANO MENSAL -->
-    <div id="modalAgendamentoMensalista" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
-        <div class="bg-zinc-900 border border-dourado/80 p-5 sm:p-7 rounded-3xl max-w-lg w-full shadow-2xl space-y-4 relative my-auto sm:my-6 max-h-[92vh] overflow-y-auto text-left">
-            <button id="btnFecharModalAgendamentoMensalista" type="button" class="absolute top-4 right-4 text-zinc-400 hover:text-white text-xl font-bold transition">&times;</button>
+    <div id="modalAgendamentoMensalista" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
+        <div class="bg-zinc-900 border border-dourado/80 p-4 sm:p-7 rounded-2xl sm:rounded-3xl max-w-lg w-full shadow-2xl space-y-4 relative my-auto sm:my-6 max-h-[92vh] overflow-y-auto text-left">
+            <button id="btnFecharModalAgendamentoMensalista" type="button" class="absolute top-4 right-4 text-zinc-400 hover:text-white text-xl font-bold transition p-1">&times;</button>
             
             <div class="space-y-1">
                 <div class="flex items-center gap-2">
@@ -928,7 +951,7 @@
             </div>
 
             <!-- Card do Serviço Incluso no Plano -->
-            <div class="bg-black/90 p-4 rounded-2xl border border-dourado/40 space-y-2">
+            <div class="bg-black/90 p-3.5 sm:p-4 rounded-2xl border border-dourado/40 space-y-2">
                 <div class="flex items-center justify-between">
                     <span class="text-xs font-bold uppercase text-zinc-300">✂️ Serviço Incluso no Plano:</span>
                     <span class="bg-green-950 text-green-400 border border-green-700 px-2 py-0.5 rounded text-[10px] font-extrabold uppercase">100% Isento (R$ 0,00)</span>
@@ -953,12 +976,12 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <div>
                     <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">Data do Atendimento</label>
-                    <input type="date" id="inputDataAgendamentoMensalista" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-800 focus:outline-none focus:border-dourado text-white text-xs cursor-pointer">
+                    <input type="date" id="inputDataAgendamentoMensalista" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-800 focus:outline-none focus:border-dourado text-white text-xs cursor-pointer">
                     <p id="avisoDataBloqueadaMensalista" class="text-xs text-red-500 mt-1 hidden font-semibold">⚠️ Barbearia fechada nesta data.</p>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">Horário (De 1 em 1 hora)</label>
-                    <select id="selectHorarioAgendamentoMensalista" class="w-full px-3 py-2 bg-zinc-900 rounded border border-zinc-800 focus:outline-none focus:border-dourado text-white text-xs cursor-pointer">
+                    <select id="selectHorarioAgendamentoMensalista" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-800 focus:outline-none focus:border-dourado text-white text-xs cursor-pointer">
                         <option value="">Selecione a data primeiro</option>
                     </select>
                 </div>
@@ -997,19 +1020,19 @@
     </div>
 
     <!-- MODAL DE CONFIRMAÇÃO DE AGENDAMENTO (PROFISSIONAL E RESUMIDO) -->
-    <div id="modalConfirmacaoSucesso" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
-        <div class="bg-zinc-900 border border-zinc-700 p-6 rounded-2xl max-w-md w-full text-center shadow-2xl space-y-4 relative my-auto sm:my-8 max-h-[92vh] overflow-y-auto">
+    <div id="modalConfirmacaoSucesso" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
+        <div class="bg-zinc-900 border border-zinc-700 p-5 sm:p-7 rounded-2xl sm:rounded-3xl max-w-md w-full text-center shadow-2xl space-y-4 relative my-auto sm:my-8 max-h-[92vh] overflow-y-auto">
             <div class="mx-auto w-12 h-12 bg-black border border-dourado rounded-full flex items-center justify-center text-xl shadow-lg">
                 ✓
             </div>
             
             <div class="space-y-1">
-                <h2 class="text-xl font-bold text-white uppercase tracking-wider">Agendamento Confirmado</h2>
+                <h2 class="text-lg sm:text-xl font-bold text-white uppercase tracking-wider">Agendamento Confirmado</h2>
                 <p class="text-xs text-zinc-400">Seu horário foi reservado com sucesso na <strong>EMAÚS Barbearia</strong>.</p>
             </div>
 
             <!-- Resumo do Atendimento -->
-            <div class="bg-black p-4 rounded-xl border border-zinc-800 space-y-2 text-left text-xs">
+            <div class="bg-black p-4 rounded-2xl border border-zinc-800 space-y-2 text-left text-xs">
                 <div class="flex justify-between items-center border-b border-zinc-800 pb-1.5">
                     <span class="text-zinc-400">Serviço:</span>
                     <span id="sucessoServicoNome" class="font-semibold text-white text-right">...</span>
@@ -1038,7 +1061,7 @@
 
             <p class="text-[11px] text-zinc-400">Agradecemos a preferência. Solicitamos a gentileza de chegar com alguns minutos de antecedência.</p>
 
-            <button id="btnFecharSucesso" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-bold py-2.5 rounded-lg uppercase tracking-wider text-xs transition cursor-pointer shadow-lg">
+            <button id="btnFecharSucesso" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg">
                 Ver Meus Agendamentos
             </button>
         </div>
@@ -1081,9 +1104,9 @@
     </div>
 
     <!-- MODAL DE COMPRA DIRETA DE PRODUTO (PIX, CRÉDITO E DÉBITO - SEM TERMOS) -->
-    <div id="modalComprarProdutoPix" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
-        <div class="bg-zinc-900 border border-dourado p-6 sm:p-7 rounded-3xl max-w-md w-full space-y-4 text-center shadow-2xl relative my-auto sm:my-6 max-h-[92vh] overflow-y-auto animate-fade-in">
-            <button id="btnFecharModalProdutoPix" type="button" class="absolute top-4 right-4 text-zinc-400 hover:text-white text-xl font-bold transition cursor-pointer">&times;</button>
+    <div id="modalComprarProdutoPix" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
+        <div class="bg-zinc-900 border border-dourado p-4 sm:p-7 rounded-2xl sm:rounded-3xl max-w-md w-full space-y-4 text-center shadow-2xl relative my-auto sm:my-6 max-h-[92vh] overflow-y-auto animate-fade-in">
+            <button id="btnFecharModalProdutoPix" type="button" class="absolute top-4 right-4 text-zinc-400 hover:text-white text-xl font-bold transition cursor-pointer p-1">&times;</button>
             
             <div class="space-y-1">
                 <span class="text-[10px] font-bold text-dourado uppercase tracking-widest bg-dourado/10 px-3 py-1 rounded-full border border-dourado/20 inline-block">
@@ -1093,21 +1116,21 @@
             </div>
 
             <!-- Resumo do Produto Selecionado -->
-            <div class="bg-black p-4 rounded-2xl border border-zinc-800 flex items-center gap-3.5 text-left">
-                <div id="compraProdutoFoto" class="w-14 h-14 rounded-xl bg-zinc-900 border border-zinc-700 flex items-center justify-center overflow-hidden flex-shrink-0 text-2xl">
+            <div class="bg-black p-3.5 sm:p-4 rounded-2xl border border-zinc-800 flex items-center gap-3.5 text-left">
+                <div id="compraProdutoFoto" class="w-13 h-13 sm:w-14 sm:h-14 rounded-xl bg-zinc-900 border border-zinc-700 flex items-center justify-center overflow-hidden flex-shrink-0 text-2xl">
                     🧴
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2">
                         <h4 id="compraProdutoNome" class="font-bold text-white text-sm truncate">...</h4>
-                        <span id="compraProdutoVolume" class="text-[10px] bg-zinc-800 text-zinc-300 font-bold px-1.5 py-0.5 rounded"></span>
+                        <span id="compraProdutoVolume" class="text-[10px] bg-zinc-800 text-zinc-300 font-bold px-1.5 py-0.5 rounded flex-shrink-0"></span>
                     </div>
                     <p class="text-xs text-zinc-400 mt-0.5">Preço: <span id="compraProdutoPrecoUnit" class="text-dourado font-bold">R$ 0,00</span></p>
                 </div>
             </div>
 
             <!-- Seletor de Quantidade e Total -->
-            <div class="bg-zinc-950 p-3.5 rounded-xl border border-zinc-800 flex items-center justify-between">
+            <div class="bg-zinc-950 p-3 sm:p-3.5 rounded-xl border border-zinc-800 flex items-center justify-between">
                 <span class="text-xs text-zinc-300 font-semibold uppercase">Quantidade:</span>
                 <div class="flex items-center gap-3">
                     <button id="btnDiminuirQtdCompra" type="button" class="w-8 h-8 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-base flex items-center justify-center cursor-pointer border border-zinc-700">-</button>
@@ -1125,23 +1148,23 @@
             <div class="space-y-2 text-left">
                 <div>
                     <label class="block text-[11px] font-semibold text-zinc-300 uppercase mb-1">Seu Nome Completo *</label>
-                    <input type="text" id="inputNomeCompradorProduto" placeholder="Digite seu nome" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                    <input type="text" id="inputNomeCompradorProduto" placeholder="Digite seu nome" class="w-full px-3 py-2.5 bg-black rounded-xl border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
                 </div>
                 <div>
                     <label class="block text-[11px] font-semibold text-zinc-300 uppercase mb-1">WhatsApp para Confirmação *</label>
-                    <input type="tel" id="inputTelCompradorProduto" placeholder="(11) 99999-9999" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                    <input type="tel" id="inputTelCompradorProduto" placeholder="(11) 99999-9999" class="w-full px-3 py-2.5 bg-black rounded-xl border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
                 </div>
             </div>
 
             <!-- Abas de Pagamento do Produto (Pix / Crédito / Débito) -->
             <div class="flex border-b border-zinc-800 gap-1 pt-1">
-                <button id="tabProdPix" type="button" class="flex-1 pb-2 font-bold text-[11px] sm:text-xs text-dourado border-b-2 border-dourado uppercase transition cursor-pointer flex items-center justify-center gap-1">
+                <button id="tabProdPix" type="button" class="flex-1 pb-2 font-bold text-xs text-dourado border-b-2 border-dourado uppercase transition cursor-pointer flex items-center justify-center gap-1">
                     <span>📱</span> Pix
                 </button>
-                <button id="tabProdCredito" type="button" class="flex-1 pb-2 font-bold text-[11px] sm:text-xs text-zinc-500 uppercase transition cursor-pointer flex items-center justify-center gap-1 hover:text-zinc-300">
+                <button id="tabProdCredito" type="button" class="flex-1 pb-2 font-bold text-xs text-zinc-500 uppercase transition cursor-pointer flex items-center justify-center gap-1 hover:text-zinc-300">
                     <span>💳</span> Crédito
                 </button>
-                <button id="tabProdDebito" type="button" class="flex-1 pb-2 font-bold text-[11px] sm:text-xs text-zinc-500 uppercase transition cursor-pointer flex items-center justify-center gap-1 hover:text-zinc-300">
+                <button id="tabProdDebito" type="button" class="flex-1 pb-2 font-bold text-xs text-zinc-500 uppercase transition cursor-pointer flex items-center justify-center gap-1 hover:text-zinc-300">
                     <span>💳</span> Débito
                 </button>
             </div>
@@ -1162,21 +1185,21 @@
                         <p class="text-xs text-zinc-400">Escaneie o QR Code abaixo no app do seu banco:</p>
                         
                         <div class="bg-white p-2.5 rounded-xl inline-block mx-auto shadow-inner">
-                            <img id="imgPixQrProduto" src="" alt="QR Code Pix" class="w-44 h-44 object-contain mx-auto">
+                            <img id="imgPixQrProduto" src="" alt="QR Code Pix" class="w-40 h-40 sm:w-44 sm:h-44 object-contain mx-auto">
                         </div>
 
                         <div class="space-y-1 text-left">
                             <label class="block text-[10px] font-semibold text-zinc-400 uppercase">Código Pix Copia e Cola:</label>
                             <div class="flex gap-1.5">
-                                <input type="text" id="inputPixCodeProduto" readonly class="w-full px-2.5 py-2 bg-zinc-900 rounded-lg border border-zinc-700 text-[11px] text-zinc-200 focus:outline-none select-all font-mono">
-                                <button id="btnCopiarPixProduto" type="button" class="bg-dourado hover:bg-[#C5A028] text-black font-bold px-3 py-2 rounded-lg text-xs transition cursor-pointer whitespace-nowrap inline-flex items-center gap-1">
-                                    <svg class="w-3.5 h-3.5 fill-none stroke-current stroke-2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                <input type="text" id="inputPixCodeProduto" readonly class="w-full min-w-0 flex-1 px-3 py-2 bg-zinc-900 rounded-xl border border-zinc-700 text-[11px] text-zinc-200 focus:outline-none select-all font-mono">
+                                <button id="btnCopiarPixProduto" type="button" class="bg-dourado hover:bg-[#C5A028] text-black font-bold px-3.5 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap inline-flex items-center gap-1 shadow">
+                                    <svg class="w-3.5 h-3.5 fill-none stroke-current stroke-2 flex-shrink-0" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                                     <span>Copiar</span>
                                 </button>
                             </div>
                         </div>
 
-                        <div class="flex items-center justify-center gap-2 text-xs text-amber-300 bg-amber-950/40 p-2.5 rounded-lg border border-amber-800/60 font-medium">
+                        <div class="flex items-center justify-center gap-2 text-xs text-amber-300 bg-amber-950/40 p-2.5 rounded-xl border border-amber-800/60 font-medium">
                             <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
                             <span>Aguardando pagamento... (Baixa Instantânea)</span>
                         </div>
@@ -1199,38 +1222,38 @@
 
                     <div>
                         <label class="block text-xs text-zinc-300 mb-1 font-medium">Número do Cartão de Crédito</label>
-                        <input type="text" id="prodCartaoNumeroCredito" placeholder="0000 0000 0000 0000" maxlength="19" class="w-full px-3 py-2 bg-zinc-900 rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-cartao-format">
+                        <input type="text" id="prodCartaoNumeroCredito" placeholder="0000 0000 0000 0000" maxlength="19" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-cartao-format">
                     </div>
 
                     <div>
                         <label class="block text-xs text-zinc-300 mb-1 font-medium">Nome do Titular (como impresso)</label>
-                        <input type="text" id="prodCartaoNomeCredito" placeholder="NOME COMPLETO" class="w-full px-3 py-2 bg-zinc-900 rounded-lg border border-zinc-700 text-white text-xs uppercase focus:outline-none focus:border-dourado">
+                        <input type="text" id="prodCartaoNomeCredito" placeholder="NOME COMPLETO" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs uppercase focus:outline-none focus:border-dourado">
                     </div>
 
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="block text-xs text-zinc-300 mb-1 font-medium">Validade (MM/AA)</label>
-                            <input type="text" id="prodCartaoValidadeCredito" placeholder="MM/AA" maxlength="5" class="w-full px-3 py-2 bg-zinc-900 rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-validade-format">
+                            <input type="text" id="prodCartaoValidadeCredito" placeholder="MM/AA" maxlength="5" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-validade-format">
                         </div>
                         <div>
                             <label class="block text-xs text-zinc-300 mb-1 font-medium">CVV</label>
-                            <input type="password" id="prodCartaoCvvCredito" placeholder="123" maxlength="4" class="w-full px-3 py-2 bg-zinc-900 rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono">
+                            <input type="password" id="prodCartaoCvvCredito" placeholder="123" maxlength="4" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono">
                         </div>
                     </div>
 
                     <div>
                         <label class="block text-xs text-zinc-300 mb-1 font-medium">CPF do Titular</label>
-                        <input type="text" id="prodCartaoCpfCredito" placeholder="000.000.000-00" maxlength="14" class="w-full px-3 py-2 bg-zinc-900 rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-cpf-format">
+                        <input type="text" id="prodCartaoCpfCredito" placeholder="000.000.000-00" maxlength="14" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-cpf-format">
                     </div>
 
                     <div>
                         <label class="block text-xs text-zinc-300 mb-1 font-medium">Parcelas</label>
-                        <select id="prodCartaoParcelasCredito" class="w-full px-3 py-2 bg-zinc-900 rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado cursor-pointer">
+                        <select id="prodCartaoParcelasCredito" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado cursor-pointer">
                             <option value="1">1x à vista (Sem Juros)</option>
                         </select>
                     </div>
 
-                    <button id="btnPagarProdCredito" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-2 mt-2">
+                    <button id="btnPagarProdCredito" type="button" class="w-full min-h-[44px] bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-2 mt-2">
                         <svg class="w-4 h-4 fill-none stroke-current stroke-2 flex-shrink-0" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
                         <span>Confirmar Compra no Crédito</span>
                     </button>
@@ -1251,38 +1274,38 @@
                         <span>Taxa da operadora (+<strong id="spanProdTaxaDebitoPercent">1.99%</strong>) inclusa no valor total.</span>
                     </p>
 
-                    <div class="p-2.5 bg-zinc-900/90 rounded-lg border border-zinc-800 text-[11px] text-zinc-300 flex items-center gap-2">
+                    <div class="p-2.5 bg-zinc-900/90 rounded-xl border border-zinc-800 text-[11px] text-zinc-300 flex items-center gap-2">
                         <svg class="w-4 h-4 text-[#D4AF37] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
                         <span>Pagamento via <strong>Cartão de Débito</strong> (Cobrança à vista 1x).</span>
                     </div>
 
                     <div>
                         <label class="block text-xs text-zinc-300 mb-1 font-medium">Número do Cartão de Débito</label>
-                        <input type="text" id="prodCartaoNumeroDebito" placeholder="0000 0000 0000 0000" maxlength="19" class="w-full px-3 py-2 bg-zinc-900 rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-cartao-format">
+                        <input type="text" id="prodCartaoNumeroDebito" placeholder="0000 0000 0000 0000" maxlength="19" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-cartao-format">
                     </div>
 
                     <div>
                         <label class="block text-xs text-zinc-300 mb-1 font-medium">Nome do Titular (como impresso)</label>
-                        <input type="text" id="prodCartaoNomeDebito" placeholder="NOME COMPLETO" class="w-full px-3 py-2 bg-zinc-900 rounded-lg border border-zinc-700 text-white text-xs uppercase focus:outline-none focus:border-dourado">
+                        <input type="text" id="prodCartaoNomeDebito" placeholder="NOME COMPLETO" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs uppercase focus:outline-none focus:border-dourado">
                     </div>
 
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="block text-xs text-zinc-300 mb-1 font-medium">Validade (MM/AA)</label>
-                            <input type="text" id="prodCartaoValidadeDebito" placeholder="MM/AA" maxlength="5" class="w-full px-3 py-2 bg-zinc-900 rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-validade-format">
+                            <input type="text" id="prodCartaoValidadeDebito" placeholder="MM/AA" maxlength="5" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-validade-format">
                         </div>
                         <div>
                             <label class="block text-xs text-zinc-300 mb-1 font-medium">CVV</label>
-                            <input type="password" id="prodCartaoCvvDebito" placeholder="123" maxlength="4" class="w-full px-3 py-2 bg-zinc-900 rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono">
+                            <input type="password" id="prodCartaoCvvDebito" placeholder="123" maxlength="4" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono">
                         </div>
                     </div>
 
                     <div>
                         <label class="block text-xs text-zinc-300 mb-1 font-medium">CPF do Titular</label>
-                        <input type="text" id="prodCartaoCpfDebito" placeholder="000.000.000-00" maxlength="14" class="w-full px-3 py-2 bg-zinc-900 rounded-lg border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-cpf-format">
+                        <input type="text" id="prodCartaoCpfDebito" placeholder="000.000.000-00" maxlength="14" class="w-full px-3 py-2.5 bg-zinc-900 rounded-xl border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado font-mono input-cpf-format">
                     </div>
 
-                    <button id="btnPagarProdDebito" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-2 mt-2">
+                    <button id="btnPagarProdDebito" type="button" class="w-full min-h-[44px] bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-2 mt-2">
                         <svg class="w-4 h-4 fill-none stroke-current stroke-2 flex-shrink-0" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
                         <span>Confirmar Compra no Débito</span>
                     </button>
@@ -1295,8 +1318,8 @@
     </div>
 
     <!-- MODAL SUCESSO COMPRA DE PRODUTO -->
-    <div id="modalSucessoCompraProduto" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
-        <div class="bg-zinc-900 border border-green-500/80 p-6 sm:p-7 rounded-3xl max-w-md w-full text-center shadow-2xl space-y-4 relative my-auto sm:my-8 max-h-[92vh] overflow-y-auto animate-fade-in">
+    <div id="modalSucessoCompraProduto" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
+        <div class="bg-zinc-900 border border-green-500/80 p-5 sm:p-7 rounded-2xl sm:rounded-3xl max-w-md w-full text-center shadow-2xl space-y-4 relative my-auto sm:my-8 max-h-[92vh] overflow-y-auto animate-fade-in">
             <div class="mx-auto w-14 h-14 bg-green-950/80 border border-green-500/60 rounded-2xl flex items-center justify-center text-3xl shadow-lg">
                 🛍️
             </div>
@@ -1305,7 +1328,7 @@
                 <span class="text-[10px] font-extrabold text-green-400 uppercase tracking-widest bg-green-950 px-3 py-1 rounded-full border border-green-800">
                     Pagamento Aprovado!
                 </span>
-                <h2 class="text-xl font-bold text-white uppercase tracking-wider mt-2">Compra Concluída com Sucesso</h2>
+                <h2 class="text-lg sm:text-xl font-bold text-white uppercase tracking-wider mt-2">Compra Concluída com Sucesso</h2>
                 <p class="text-xs text-zinc-300">Seu pedido foi registrado e os produtos já estão reservados para você!</p>
             </div>
 
@@ -1333,8 +1356,8 @@
         </div>
     </div>
 
-    <!-- BARRA DE NAVEGAÇÃO INFERIOR FIXA NO MOBILE (BOTTOM NAV BAR) -->
-    <nav id="bottomNavCliente" class="hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur-xl border-t border-zinc-800/80 px-2 py-1.5 sm:hidden shadow-[0_-8px_25px_rgba(0,0,0,0.6)]">
+    <!-- BARRA DE NAVEGAÇÃO INFERIOR FIXA NO MOBILE (BOTTOM NAV BAR COM SAFE AREA) -->
+    <nav id="bottomNavCliente" class="hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur-xl border-t border-zinc-800/80 px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:hidden shadow-[0_-8px_25px_rgba(0,0,0,0.6)]">
         <div id="bnavGridContainer" class="max-w-md mx-auto grid grid-cols-4 items-center gap-1">
             <!-- 1. Agenda -->
             <button type="button" id="bnavItemAgendamentos" onclick="window.alternarAbaCliente('agendamentos')" class="flex flex-col items-center justify-center py-1.5 px-1 rounded-xl text-dourado transition-all active:scale-95 cursor-pointer">
@@ -2469,16 +2492,16 @@
                     const ehUltimo = i === meta;
                     if (selado) {
                         htmlSelos += `
-                            <div class="aspect-square rounded-xl bg-gradient-to-br from-amber-400 via-[#D4AF37] to-yellow-600 flex flex-col items-center justify-center p-1 shadow-[0_0_10px_rgba(212,175,55,0.4)] border border-amber-300 transform scale-105 transition-all">
-                                <svg class="w-5 h-5 text-black fill-current" viewBox="0 0 512 512"><path d="M112.57 391.77L154.2 350.14c12.49-12.49 12.49-32.74 0-45.24L79.79 230.49l74.41-74.41c12.49-12.49 12.49-32.74 0-45.24L112.57 69.21c-12.49-12.49-32.74-12.49-45.24 0L6.71 130.83c-8.94 8.94-8.94 23.44 0 32.38l67.28 67.28 67.28 67.28-67.28 67.28-67.28 67.28c-8.94 8.94-8.94 23.44 0 32.38l60.62 60.62c12.5 12.5 32.75 12.5 45.24 0zm286.86-322.56L357.8 110.84c-12.49 12.49-12.49 32.74 0 45.24l74.41 74.41-74.41 74.41c-12.49 12.49-12.49 32.74 0 45.24l41.63 41.63c12.49 12.49 32.74 12.49 45.24 0l60.62-60.62c8.94-8.94 8.94-23.44 0-32.38l-67.28-67.28-67.28-67.28 67.28-67.28 67.28-67.28c8.94-8.94 8.94-23.44 0-32.38l-60.62-60.62c-12.5-12.49-32.75-12.49-45.24 0zM256 160.83l-47.53 47.53c-12.49 12.49-12.49 32.74 0 45.24L256 301.13l47.53-47.53c12.49-12.49 12.49-32.74 0-45.24L256 160.83z"/></svg>
-                                <span class="text-[9px] font-black text-black leading-none">${i}</span>
+                            <div class="min-w-0 aspect-square rounded-xl bg-gradient-to-br from-amber-400 via-[#D4AF37] to-yellow-600 flex flex-col items-center justify-center p-0.5 sm:p-1 shadow-[0_0_8px_rgba(212,175,55,0.4)] border border-amber-300 transform scale-105 transition-all">
+                                <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-black fill-current flex-shrink-0" viewBox="0 0 512 512"><path d="M112.57 391.77L154.2 350.14c12.49-12.49 12.49-32.74 0-45.24L79.79 230.49l74.41-74.41c12.49-12.49 12.49-32.74 0-45.24L112.57 69.21c-12.49-12.49-32.74-12.49-45.24 0L6.71 130.83c-8.94 8.94-8.94 23.44 0 32.38l67.28 67.28 67.28 67.28-67.28 67.28-67.28 67.28c-8.94 8.94-8.94 23.44 0 32.38l60.62 60.62c12.5 12.5 32.75 12.5 45.24 0zm286.86-322.56L357.8 110.84c-12.49 12.49-12.49 32.74 0 45.24l74.41 74.41-74.41 74.41c-12.49 12.49-12.49 32.74 0 45.24l41.63 41.63c12.49 12.49 32.74 12.49 45.24 0l60.62-60.62c8.94-8.94 8.94-23.44 0-32.38l-67.28-67.28-67.28-67.28 67.28-67.28 67.28-67.28c8.94-8.94 8.94-23.44 0-32.38l-60.62-60.62c-12.5-12.49-32.75-12.49-45.24 0zM256 160.83l-47.53 47.53c-12.49 12.49-12.49 32.74 0 45.24L256 301.13l47.53-47.53c12.49-12.49 12.49-32.74 0-45.24L256 160.83z"/></svg>
+                                <span class="text-[8px] sm:text-[9px] font-black text-black leading-none mt-0.5">${i}</span>
                             </div>
                         `;
                     } else {
                         htmlSelos += `
-                            <div class="aspect-square rounded-xl bg-zinc-950/80 border ${ehUltimo ? 'border-dashed border-dourado/60 text-dourado' : 'border-zinc-800 text-zinc-600'} flex flex-col items-center justify-center p-1 transition-all">
-                                <span class="text-xs ${ehUltimo ? 'text-dourado animate-pulse' : 'text-zinc-600'}">${ehUltimo ? '🎁' : '✂️'}</span>
-                                <span class="text-[9px] font-bold mt-0.5 leading-none">${i}</span>
+                            <div class="min-w-0 aspect-square rounded-xl bg-zinc-950/80 border ${ehUltimo ? 'border-dashed border-dourado/60 text-dourado' : 'border-zinc-800 text-zinc-600'} flex flex-col items-center justify-center p-0.5 sm:p-1 transition-all">
+                                <span class="text-[10px] sm:text-xs ${ehUltimo ? 'text-dourado animate-pulse' : 'text-zinc-600'}">${ehUltimo ? '🎁' : '✂️'}</span>
+                                <span class="text-[8px] sm:text-[9px] font-bold mt-0.5 leading-none">${i}</span>
                             </div>
                         `;
                     }
