@@ -182,6 +182,10 @@
                         <svg class="w-4 h-4 text-[#D4AF37] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
                         <span>Loja & Estoque</span>
                     </button>
+                    <button id="tabNavFidelity" class="sidebar-link w-full text-left inline-flex items-center gap-2.5">
+                        <svg class="w-4 h-4 text-[#D4AF37] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"></path></svg>
+                        <span>Fidelidade VIP</span>
+                    </button>
                 </div>
 
                 <!-- BLOCO 3: SISTEMA & CONFIGURAÇÕES -->
@@ -818,6 +822,153 @@
                     <!-- Grid de Produtos Cadastrados -->
                     <div id="gridProdutosAdmin" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pt-1">
                         <p class="text-xs text-zinc-500 text-center col-span-full py-8">Carregando produtos...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ABA: GESTÃO DO PROGRAMA DE FIDELIDADE DIGITAL VIP -->
+            <section id="viewFidelity" class="space-y-6 hidden">
+                <!-- Header e Visibilidade no Site -->
+                <div class="card-dark p-5 rounded-3xl border border-zinc-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-12 h-12 rounded-2xl bg-amber-950/60 border border-dourado/40 flex items-center justify-center text-2xl shadow-inner flex-shrink-0">
+                            🎁
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h2 class="text-lg font-bold text-white uppercase tracking-wide">Programa Fidelidade VIP</h2>
+                                <span id="badgeStatusModuloFidelidade" class="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-green-950 text-green-400 border border-green-800">Ativado no Site</span>
+                            </div>
+                            <p class="text-xs text-zinc-400">Cartão de selos digitais gamificado para incentivar o cliente a retornar sempre.</p>
+                        </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                        <input type="checkbox" id="checkModuloFidelidadeAtivo" class="sr-only peer" checked>
+                        <div class="w-11 h-6 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-dourado"></div>
+                    </label>
+                </div>
+
+                <!-- Métricas Rápidas do Programa -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="card-dark p-5 rounded-2xl border border-zinc-800 flex items-center justify-between shadow-lg">
+                        <div>
+                            <p class="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Clientes no Programa</p>
+                            <h3 id="statTotalClientesFidelidade" class="text-2xl font-bold text-white mt-1">0</h3>
+                        </div>
+                        <div class="w-11 h-11 rounded-xl bg-dourado/10 border border-dourado/20 flex items-center justify-center text-xl">
+                            👥
+                        </div>
+                    </div>
+                    <div class="card-dark p-5 rounded-2xl border border-zinc-800 flex items-center justify-between shadow-lg">
+                        <div>
+                            <p class="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Selos Distribuídos</p>
+                            <h3 id="statTotalSelosDistribuidos" class="text-2xl font-bold text-amber-400 mt-1">0</h3>
+                        </div>
+                        <div class="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-xl">
+                            ✂️
+                        </div>
+                    </div>
+                    <div class="card-dark p-5 rounded-2xl border border-zinc-800 flex items-center justify-between shadow-lg">
+                        <div>
+                            <p class="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Recompensas Prontas</p>
+                            <h3 id="statRecompensasProntas" class="text-2xl font-bold text-green-400 mt-1">0</h3>
+                        </div>
+                        <div class="w-11 h-11 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center text-xl">
+                            🎉
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Configurações da Campanha e Recompensa -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="card-dark p-6 rounded-3xl border border-zinc-800 space-y-4">
+                        <div class="flex items-center gap-2 border-b border-zinc-800 pb-3">
+                            <span class="text-xl">⚙️</span>
+                            <div>
+                                <h3 class="text-base font-bold text-white uppercase">Regras da Recompensa</h3>
+                                <p class="text-[11px] text-zinc-400">Configure a meta e o benefício do cliente.</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3.5">
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">
+                                    Meta de Cortes / Atendimentos
+                                </label>
+                                <select id="selectFidelidadeMetaSelos" class="w-full px-3 py-2.5 bg-black rounded-xl border border-zinc-700 text-white text-xs font-bold focus:outline-none focus:border-dourado cursor-pointer">
+                                    <option value="3">3 cortes (Ciclo Curto)</option>
+                                    <option value="5">5 cortes (Ciclo Rápido)</option>
+                                    <option value="8">8 cortes (Recomendado)</option>
+                                    <option value="10" selected>10 cortes (Padrão Tradicional)</option>
+                                    <option value="12">12 cortes (Ciclo Longo)</option>
+                                </select>
+                                <p class="text-[10px] text-zinc-500 mt-1">Quantidade de selos necessária para desbloquear o benefício.</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">
+                                    Tipo de Recompensa
+                                </label>
+                                <select id="selectFidelidadeTipoRecompensa" class="w-full px-3 py-2.5 bg-black rounded-xl border border-zinc-700 text-white text-xs font-bold focus:outline-none focus:border-dourado cursor-pointer">
+                                    <option value="desconto_valor" selected>💵 Desconto em Dinheiro (R$ a Abater)</option>
+                                    <option value="servico_gratis">✂️ Corte / Atendimento Grátis (100% OFF)</option>
+                                    <option value="brinde">🧴 Produto / Brinde Físico (ex: Pomada)</option>
+                                    <option value="desconto_porcentagem">% Porcentagem de Desconto</option>
+                                </select>
+                            </div>
+
+                            <!-- Campo Condicional: Valor em R$ a abater -->
+                            <div id="containerFidelidadeValorDesconto">
+                                <label class="block text-xs font-semibold text-amber-400 uppercase mb-1">
+                                    Valor a Abater do Agendamento (R$)
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-2.5 text-zinc-400 text-xs font-bold">R$</span>
+                                    <input type="number" id="inputFidelidadeValorDesconto" value="15.00" step="0.50" min="1" class="w-full pl-9 pr-3 py-2 bg-black rounded-xl border border-zinc-700 text-white text-xs font-bold focus:outline-none focus:border-dourado">
+                                </div>
+                                <p class="text-[10px] text-zinc-500 mt-1">Este valor será descontado automaticamente do total quando o cliente resgatar.</p>
+                            </div>
+
+                            <!-- Campo Condicional: Porcentagem % -->
+                            <div id="containerFidelidadePorcentagemDesconto" class="hidden">
+                                <label class="block text-xs font-semibold text-amber-400 uppercase mb-1">
+                                    Porcentagem de Desconto (%)
+                                </label>
+                                <div class="relative">
+                                    <input type="number" id="inputFidelidadePorcentagemDesconto" value="20" step="5" min="1" max="100" class="w-full px-3 py-2 bg-black rounded-xl border border-zinc-700 text-white text-xs font-bold focus:outline-none focus:border-dourado">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">
+                                    Título da Recompensa exibido para o Cliente
+                                </label>
+                                <input type="text" id="inputFidelidadeDescricaoRecompensa" value="R$ 15,00 de desconto no próximo corte" placeholder="Ex: R$ 15,00 de desconto no corte" class="w-full px-3 py-2 bg-black rounded-xl border border-zinc-700 text-white text-xs font-medium focus:outline-none focus:border-dourado">
+                            </div>
+
+                            <button id="btnSalvarConfigFidelidade" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-1.5">
+                                <span>💾</span> Salvar Regras de Fidelidade
+                            </button>
+                            <p id="msgConfigFidelidadeStatus" class="text-xs text-center font-medium min-h-[16px]"></p>
+                        </div>
+                    </div>
+
+                    <!-- Gestão de Selos dos Clientes -->
+                    <div class="card-dark p-6 rounded-3xl border border-zinc-800 space-y-4 lg:col-span-2">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-zinc-800 pb-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-white uppercase">Clientes e Selos Acumulados</h3>
+                                <p class="text-xs text-zinc-400">Gerencie a pontuação e conceda selos manuais quando necessário.</p>
+                            </div>
+                            <div class="w-full sm:w-64">
+                                <input type="text" id="inputBuscaClienteFidelidade" placeholder="🔍 Buscar cliente ou WhatsApp..." class="w-full px-3 py-2 bg-black rounded-xl border border-zinc-700 text-white text-xs focus:outline-none focus:border-dourado">
+                            </div>
+                        </div>
+
+                        <!-- Lista dos Clientes do Programa -->
+                        <div id="listaClientesFidelidadeAdmin" class="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+                            <div class="p-8 text-center text-zinc-500 text-xs">Carregando dados de fidelidade...</div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -1961,6 +2112,7 @@
             vipClients: "👑 Clientes Mensalistas VIP",
             services: "✂️ Serviços & Planos",
             products: "🛍️ Loja & Estoque de Produtos",
+            fidelity: "🎁 Programa Fidelidade VIP",
             blockDays: "🗓️ Calendário & Horários de Expediente",
             payments: "💳 Mercado Pago",
             whatsapp: "🤖 WhatsApp Bot",
@@ -1975,6 +2127,7 @@
             vipClients: { btn: document.getElementById('tabNavVipClients'), view: document.getElementById('viewVipClients') },
             services: { btn: document.getElementById('tabNavServices'), view: document.getElementById('viewServices') },
             products: { btn: document.getElementById('tabNavProducts'), view: document.getElementById('viewProducts') },
+            fidelity: { btn: document.getElementById('tabNavFidelity'), view: document.getElementById('viewFidelity') },
             blockDays: { btn: document.getElementById('tabNavBlockDays'), view: document.getElementById('viewBlockDays') },
             payments: { btn: document.getElementById('tabNavPayments'), view: document.getElementById('viewPayments') },
             whatsapp: { btn: document.getElementById('tabNavWhatsApp'), view: document.getElementById('viewWhatsApp') },
@@ -2060,6 +2213,10 @@
                 carregarStatusModulosSite();
             } else if (nomeAba === 'products') {
                 carregarProdutosAdmin();
+                carregarStatusModulosSite();
+            } else if (nomeAba === 'fidelity') {
+                carregarConfiguracoesFidelidadeAdmin();
+                carregarClientesFidelidadeAdmin();
                 carregarStatusModulosSite();
             } else if (nomeAba === 'blockDays' || nomeAba === 'calendar' || nomeAba === 'closedDays') {
                 carregarDiasBloqueadosAdmin();
@@ -2191,6 +2348,7 @@
                     try { carregarAdministradoresPainel(); } catch (e) { console.warn(e); }
                     try { carregarConfigMultiBarbeiro(); carregarBarbeirosAdmin(); } catch (e) { console.warn(e); }
                     try { carregarStatusModulosSite(); } catch (e) { console.warn(e); }
+                    try { carregarConfiguracoesFidelidadeAdmin(); carregarClientesFidelidadeAdmin(); } catch (e) { console.warn(e); }
                     try { iniciarMonitoramentoTempoRealAdmin(); } catch (e) { console.warn(e); }
                     return;
                 } else {
@@ -3839,6 +3997,40 @@
                     } catch (errP) { console.warn("Erro ao atualizar assinatura:", errP); }
                 }
 
+                // Atribuição automática de +1 Selo no Cartão Fidelidade
+                if (ag && ag.userId && !ag.isPlano) {
+                    try {
+                        const snapConfFid = await getDoc(doc(db, "configuracoes", "fidelidade"));
+                        const confFid = snapConfFid.exists() ? snapConfFid.data() : { ativo: true, metaSelos: 10 };
+                        if (confFid.ativo !== false) {
+                            const meta = Number(confFid.metaSelos || 10);
+                            const docFidRef = doc(db, "fidelidadeClientes", ag.userId);
+                            const snapFid = await getDoc(docFidRef);
+                            const dataFid = snapFid.exists() ? snapFid.data() : { selosAtuais: 0, totalHistorico: 0 };
+                            const novosSelos = Number(dataFid.selosAtuais || 0) + 1;
+                            const novoTotal = Number(dataFid.totalHistorico || 0) + 1;
+                            const disponivel = novosSelos >= meta;
+
+                            await setDoc(docFidRef, {
+                                clienteNome: ag.cliente || 'Cliente',
+                                clienteTelefone: ag.telefone || '',
+                                selosAtuais: novosSelos,
+                                totalHistorico: novoTotal,
+                                recompensaDisponivel: disponivel,
+                                atualizadoEm: new Date().toISOString()
+                            }, { merge: true });
+
+                            if (disponivel) {
+                                exibirToastNotificacao("🎁 Recompensa Fidelidade Desbloqueada!", `${ag.cliente} completou ${meta} selos e ganhou recompensa!`, "vip");
+                            } else {
+                                exibirToastNotificacao("✂️ +1 Selo Concedido", `Fidelidade: ${ag.cliente} (${novosSelos}/${meta} selos).`, "info");
+                            }
+                        }
+                    } catch (errFid) {
+                        console.warn("Aviso ao atribuir selo de fidelidade:", errFid);
+                    }
+                }
+
                 if (ag) ag.status = 'concluido';
                 atualizarMetricasOverviewComDados(window.listaAgendamentosMemoria);
                 renderizarTabelaAgendamentos();
@@ -4681,18 +4873,418 @@
         document.getElementById('selectFiltroEstoqueAdmin')?.addEventListener('change', renderizarProdutosAdmin);
 
         // ==========================================
-        // CONTROLE DE VISIBILIDADE DOS MÓDULOS NO SITE (LOJA E PLANOS)
+        // GESTÃO DO PROGRAMA DE FIDELIDADE DIGITAL VIP
+        // ==========================================
+        let listaClientesFidelidadeMemoria = [];
+        let configFidelidadeCache = {
+            ativo: true,
+            metaSelos: 10,
+            tipoRecompensa: 'desconto_valor',
+            valorDesconto: 15.00,
+            porcentagemDesconto: 20,
+            descricaoRecompensa: 'R$ 15,00 de desconto no próximo corte'
+        };
+
+        function atualizarVisibilidadeCamposRecompensaAdmin(tipo) {
+            const containerValor = document.getElementById('containerFidelidadeValorDesconto');
+            const containerPorc = document.getElementById('containerFidelidadePorcentagemDesconto');
+            const inputDesc = document.getElementById('inputFidelidadeDescricaoRecompensa');
+            const inputVal = document.getElementById('inputFidelidadeValorDesconto');
+
+            if (tipo === 'desconto_valor') {
+                if (containerValor) containerValor.classList.remove('hidden');
+                if (containerPorc) containerPorc.classList.add('hidden');
+                if (inputDesc && (!inputDesc.value || inputDesc.value.includes('Corte / Atendimento Grátis') || inputDesc.value.includes('Pomada') || inputDesc.value.includes('%'))) {
+                    const val = inputVal ? Number(inputVal.value || 15).toFixed(2) : '15,00';
+                    inputDesc.value = `R$ ${val} de desconto no próximo corte`;
+                }
+            } else if (tipo === 'desconto_porcentagem') {
+                if (containerValor) containerValor.classList.add('hidden');
+                if (containerPorc) containerPorc.classList.remove('hidden');
+                if (inputDesc) inputDesc.value = `20% de desconto no próximo atendimento`;
+            } else if (tipo === 'servico_gratis') {
+                if (containerValor) containerValor.classList.add('hidden');
+                if (containerPorc) containerPorc.classList.add('hidden');
+                if (inputDesc) inputDesc.value = `1 Corte de Cabelo Grátis (100% OFF)`;
+            } else if (tipo === 'brinde') {
+                if (containerValor) containerValor.classList.add('hidden');
+                if (containerPorc) containerPorc.classList.add('hidden');
+                if (inputDesc) inputDesc.value = `1 Pomada Modeladora Premium Grátis`;
+            }
+        }
+
+        document.getElementById('selectFidelidadeTipoRecompensa')?.addEventListener('change', (e) => {
+            atualizarVisibilidadeCamposRecompensaAdmin(e.target.value);
+        });
+
+        async function carregarConfiguracoesFidelidadeAdmin() {
+            try {
+                const snap = await getDoc(doc(db, "configuracoes", "fidelidade"));
+                if (snap.exists()) {
+                    const data = snap.data();
+                    configFidelidadeCache = { ...configFidelidadeCache, ...data };
+                }
+
+                const selectMeta = document.getElementById('selectFidelidadeMetaSelos');
+                const selectTipo = document.getElementById('selectFidelidadeTipoRecompensa');
+                const inputVal = document.getElementById('inputFidelidadeValorDesconto');
+                const inputPorc = document.getElementById('inputFidelidadePorcentagemDesconto');
+                const inputDesc = document.getElementById('inputFidelidadeDescricaoRecompensa');
+                const checkAtivo = document.getElementById('checkModuloFidelidadeAtivo');
+                const badgeStatus = document.getElementById('badgeStatusModuloFidelidade');
+
+                if (selectMeta) selectMeta.value = String(configFidelidadeCache.metaSelos || 10);
+                if (selectTipo) selectTipo.value = configFidelidadeCache.tipoRecompensa || 'desconto_valor';
+                if (inputVal) inputVal.value = configFidelidadeCache.valorDesconto !== undefined ? configFidelidadeCache.valorDesconto : 15.00;
+                if (inputPorc) inputPorc.value = configFidelidadeCache.porcentagemDesconto !== undefined ? configFidelidadeCache.porcentagemDesconto : 20;
+                if (inputDesc) inputDesc.value = configFidelidadeCache.descricaoRecompensa || 'R$ 15,00 de desconto no próximo corte';
+
+                const ativo = configFidelidadeCache.ativo !== false;
+                if (checkAtivo) checkAtivo.checked = ativo;
+                if (badgeStatus) {
+                    badgeStatus.className = ativo 
+                        ? "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-green-950 text-green-400 border border-green-800" 
+                        : "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-zinc-800 text-zinc-400";
+                    badgeStatus.innerText = ativo ? "Ativado no Site" : "Desativado no Site";
+                }
+
+                atualizarVisibilidadeCamposRecompensaAdmin(configFidelidadeCache.tipoRecompensa || 'desconto_valor');
+
+            } catch (e) {
+                console.warn("Erro ao carregar configurações de fidelidade:", e);
+            }
+        }
+        window.carregarConfiguracoesFidelidadeAdmin = carregarConfiguracoesFidelidadeAdmin;
+
+        document.getElementById('btnSalvarConfigFidelidade')?.addEventListener('click', async () => {
+            const btn = document.getElementById('btnSalvarConfigFidelidade');
+            const msg = document.getElementById('msgConfigFidelidadeStatus');
+            const meta = Number(document.getElementById('selectFidelidadeMetaSelos')?.value || 10);
+            const tipo = document.getElementById('selectFidelidadeTipoRecompensa')?.value || 'desconto_valor';
+            const val = Number(document.getElementById('inputFidelidadeValorDesconto')?.value || 15);
+            const porc = Number(document.getElementById('inputFidelidadePorcentagemDesconto')?.value || 20);
+            const desc = (document.getElementById('inputFidelidadeDescricaoRecompensa')?.value || '').trim() || 'Desconto no próximo corte';
+            const ativo = document.getElementById('checkModuloFidelidadeAtivo')?.checked ?? true;
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<span>⏳ Salvando...</span>`;
+            }
+            if (msg) msg.innerText = "";
+
+            try {
+                const configData = {
+                    ativo,
+                    metaSelos: meta,
+                    tipoRecompensa: tipo,
+                    valorDesconto: val,
+                    porcentagemDesconto: porc,
+                    descricaoRecompensa: desc,
+                    atualizadoEm: new Date().toISOString()
+                };
+
+                await setDoc(doc(db, "configuracoes", "fidelidade"), configData, { merge: true });
+                await setDoc(doc(db, "configuracoes", "modulos"), { moduloFidelidadeAtivo: ativo }, { merge: true });
+                configFidelidadeCache = configData;
+
+                if (msg) {
+                    msg.className = "text-xs text-center font-bold text-green-400";
+                    msg.innerText = "✅ Regras do Programa Fidelidade salvas com sucesso!";
+                    setTimeout(() => { if (msg) msg.innerText = ""; }, 3500);
+                }
+                if (window.vibrarDispositivo) window.vibrarDispositivo('sucesso');
+                exibirToastNotificacao("🎁 Fidelidade Atualizada", "Novas regras de fidelidade já estão ativas no sistema.", "info");
+
+                await carregarClientesFidelidadeAdmin();
+            } catch (err) {
+                console.error("Erro ao salvar fidelidade:", err);
+                if (msg) {
+                    msg.className = "text-xs text-center font-medium text-red-400";
+                    msg.innerText = "Erro ao salvar: " + err.message;
+                }
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<span>💾</span> Salvar Regras de Fidelidade`;
+                }
+            }
+        });
+
+        document.getElementById('checkModuloFidelidadeAtivo')?.addEventListener('change', async (e) => {
+            const ativo = e.target.checked;
+            const badge = document.getElementById('badgeStatusModuloFidelidade');
+            if (badge) {
+                badge.className = ativo 
+                    ? "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-green-950 text-green-400 border border-green-800" 
+                    : "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-zinc-800 text-zinc-400";
+                badge.innerText = ativo ? "Ativado no Site" : "Desativado no Site";
+            }
+            try {
+                await setDoc(doc(db, "configuracoes", "fidelidade"), { ativo, atualizadoEm: new Date().toISOString() }, { merge: true });
+                await setDoc(doc(db, "configuracoes", "modulos"), { moduloFidelidadeAtivo: ativo }, { merge: true });
+                configFidelidadeCache.ativo = ativo;
+                exibirToastNotificacao(
+                    "🎁 Programa Fidelidade",
+                    ativo ? 'Ativado e visível no site dos clientes!' : 'Pausado e ocultado no site dos clientes.',
+                    'config'
+                );
+            } catch (err) {
+                console.warn(err);
+            }
+        });
+
+        async function carregarClientesFidelidadeAdmin() {
+            const container = document.getElementById('listaClientesFidelidadeAdmin');
+            if (container) container.innerHTML = "<div class='p-8 text-center text-zinc-500 text-xs'>Carregando clientes e selos...</div>";
+
+            try {
+                const snapFid = await getDocs(collection(db, "fidelidadeClientes"));
+                const mapaFid = new Map();
+                snapFid.forEach(d => {
+                    mapaFid.set(d.id, { id: d.id, ...d.data() });
+                });
+
+                // Carrega usuários para completar nomes/telefones caso não estejam na fidelidade
+                const snapUsers = await getDocs(collection(db, "usuarios"));
+                const lista = [];
+
+                snapUsers.forEach(uDoc => {
+                    const u = uDoc.data();
+                    const fid = mapaFid.get(uDoc.id) || {
+                        selosAtuais: 0,
+                        totalHistorico: 0,
+                        recompensasUtilizadas: 0,
+                        recompensaDisponivel: false
+                    };
+
+                    lista.push({
+                        userId: uDoc.id,
+                        nome: u.nome || u.displayName || 'Cliente',
+                        telefone: u.telefone || u.whatsapp || '',
+                        fotoUrl: u.fotoUrl || '',
+                        selosAtuais: Number(fid.selosAtuais || 0),
+                        totalHistorico: Number(fid.totalHistorico || fid.selosAtuais || 0),
+                        recompensasUtilizadas: Number(fid.recompensasUtilizadas || 0),
+                        recompensaDisponivel: fid.recompensaDisponivel || false,
+                        atualizadoEm: fid.atualizadoEm || ''
+                    });
+                });
+
+                // Também adiciona registros de fidelidade que possam não estar em usuarios
+                mapaFid.forEach((fid, uId) => {
+                    if (!lista.some(item => item.userId === uId)) {
+                        lista.push({
+                            userId: uId,
+                            nome: fid.clienteNome || 'Cliente',
+                            telefone: fid.clienteTelefone || '',
+                            fotoUrl: fid.fotoUrl || '',
+                            selosAtuais: Number(fid.selosAtuais || 0),
+                            totalHistorico: Number(fid.totalHistorico || fid.selosAtuais || 0),
+                            recompensasUtilizadas: Number(fid.recompensasUtilizadas || 0),
+                            recompensaDisponivel: fid.recompensaDisponivel || false,
+                            atualizadoEm: fid.atualizadoEm || ''
+                        });
+                    }
+                });
+
+                lista.sort((a, b) => b.selosAtuais - a.selosAtuais || (a.nome || '').localeCompare(b.nome || ''));
+                listaClientesFidelidadeMemoria = lista;
+
+                // Atualiza contadores
+                const meta = Number(configFidelidadeCache.metaSelos || 10);
+                const totalClientes = lista.length;
+                const totalSelos = lista.reduce((acc, c) => acc + c.totalHistorico, 0);
+                const prontas = lista.filter(c => c.selosAtuais >= meta || c.recompensaDisponivel).length;
+
+                const elTot = document.getElementById('statTotalClientesFidelidade');
+                const elSel = document.getElementById('statTotalSelosDistribuidos');
+                const elPront = document.getElementById('statRecompensasProntas');
+                if (elTot) elTot.innerText = totalClientes;
+                if (elSel) elSel.innerText = totalSelos;
+                if (elPront) elPront.innerText = prontas;
+
+                renderizarListaClientesFidelidadeAdmin();
+            } catch (err) {
+                console.error("Erro ao carregar lista de fidelidade:", err);
+                if (container) container.innerHTML = `<div class='p-8 text-center text-red-400 text-xs'>Erro ao carregar dados: ${err.message}</div>`;
+            }
+        }
+        window.carregarClientesFidelidadeAdmin = carregarClientesFidelidadeAdmin;
+
+        function renderizarListaClientesFidelidadeAdmin() {
+            const container = document.getElementById('listaClientesFidelidadeAdmin');
+            if (!container) return;
+
+            const busca = (document.getElementById('inputBuscaClienteFidelidade')?.value || '').trim().toLowerCase();
+            const meta = Number(configFidelidadeCache.metaSelos || 10);
+
+            let filtrados = listaClientesFidelidadeMemoria.filter(c => {
+                if (!busca) return true;
+                const matchNome = c.nome && c.nome.toLowerCase().includes(busca);
+                const matchTel = c.telefone && c.telefone.includes(busca);
+                return matchNome || matchTel;
+            });
+
+            if (filtrados.length === 0) {
+                container.innerHTML = "<div class='p-8 text-center text-zinc-500 text-xs'>Nenhum cliente encontrado com este filtro.</div>";
+                return;
+            }
+
+            let html = "";
+            filtrados.forEach(c => {
+                const selos = Math.max(0, c.selosAtuais);
+                const atingiuMeta = selos >= meta || c.recompensaDisponivel;
+                const pct = Math.min(100, Math.round((selos / meta) * 100));
+
+                let whatsHref = "";
+                if (c.telefone) {
+                    let num = c.telefone.replace(/\D/g, '');
+                    if (!num.startsWith('55') && num.length >= 10) num = '55' + num;
+                    whatsHref = `https://wa.me/${num}`;
+                }
+
+                // Grid visual de mini selos
+                let selosGridHtml = "";
+                for (let i = 1; i <= meta; i++) {
+                    if (i <= selos) {
+                        selosGridHtml += `<span class="w-5 h-5 rounded-full bg-dourado text-black text-[10px] font-extrabold flex items-center justify-center shadow-sm" title="Selo ${i} Conquistado">✂️</span>`;
+                    } else {
+                        selosGridHtml += `<span class="w-5 h-5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-600 text-[10px] font-bold flex items-center justify-center" title="Selo ${i} Pendente">${i}</span>`;
+                    }
+                }
+
+                html += `
+                    <div class="bg-black/80 border ${atingiuMeta ? 'border-amber-500 shadow-[0_0_15px_rgba(212,175,55,0.15)]' : 'border-zinc-800'} p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition hover:border-zinc-700">
+                        <div class="flex items-center gap-3.5 flex-1 min-w-0">
+                            <div class="w-12 h-12 rounded-xl bg-zinc-900 border ${atingiuMeta ? 'border-amber-500' : 'border-zinc-800'} flex items-center justify-center text-xl overflow-hidden flex-shrink-0">
+                                ${c.fotoUrl ? `<img src="${c.fotoUrl}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='👑'" alt="${c.nome}">` : '👑'}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <h4 class="text-sm font-bold text-white truncate">${c.nome}</h4>
+                                    ${atingiuMeta 
+                                        ? `<span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500 text-black uppercase animate-pulse">🎉 Recompensa Pronta!</span>` 
+                                        : `<span class="text-[10px] font-semibold text-zinc-400">${selos}/${meta} selos</span>`}
+                                </div>
+                                <div class="flex items-center gap-3 text-xs text-zinc-400 mt-0.5 flex-wrap">
+                                    ${c.telefone ? `<a href="${whatsHref}" target="_blank" class="hover:text-green-400 transition flex items-center gap-1 font-mono">📱 ${c.telefone}</a>` : '<span class="text-zinc-600">Sem telefone</span>'}
+                                    <span class="text-zinc-600">•</span>
+                                    <span class="text-zinc-500 text-[11px]">Total Histórico: <strong>${c.totalHistorico}</strong> cortes</span>
+                                </div>
+
+                                <!-- Barra de Progresso e Mini Selos -->
+                                <div class="mt-2.5 space-y-1.5 max-w-md">
+                                    <div class="flex items-center gap-1 flex-wrap">
+                                        ${selosGridHtml}
+                                    </div>
+                                    <div class="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-zinc-800">
+                                        <div class="bg-gradient-to-r from-amber-500 to-yellow-300 h-full transition-all duration-300" style="width: ${pct}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ações Rápidas de Ajuste de Selo -->
+                        <div class="flex items-center gap-1.5 self-end sm:self-center flex-shrink-0">
+                            <button onclick="window.ajustarSelosClienteAdmin('${c.userId}', -1)" class="w-8 h-8 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-700 font-bold text-sm transition cursor-pointer flex items-center justify-center" title="Remover 1 Selo">
+                                -1
+                            </button>
+                            <button onclick="window.ajustarSelosClienteAdmin('${c.userId}', 1)" class="px-3 py-1.5 rounded-lg bg-dourado hover:bg-[#C5A028] text-black font-extrabold text-xs uppercase transition cursor-pointer shadow flex items-center gap-1" title="Adicionar 1 Selo">
+                                <span>+1 Selo</span>
+                            </button>
+                            ${atingiuMeta ? `
+                                <button onclick="window.resgatarRecompensaClienteAdmin('${c.userId}')" class="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-500 text-white font-extrabold text-xs uppercase transition cursor-pointer shadow flex items-center gap-1" title="Dar Recompensa e Iniciar Novo Ciclo">
+                                    <span>🎁 Resgatar</span>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        document.getElementById('inputBuscaClienteFidelidade')?.addEventListener('input', renderizarListaClientesFidelidadeAdmin);
+
+        window.ajustarSelosClienteAdmin = async function(userId, delta) {
+            if (!userId) return;
+            const meta = Number(configFidelidadeCache.metaSelos || 10);
+            try {
+                const docRef = doc(db, "fidelidadeClientes", userId);
+                const snap = await getDoc(docRef);
+                let dados = snap.exists() ? snap.data() : { selosAtuais: 0, totalHistorico: 0, recompensasUtilizadas: 0 };
+
+                let novosSelos = Math.max(0, Number(dados.selosAtuais || 0) + delta);
+                let novoTotal = Math.max(novosSelos, Number(dados.totalHistorico || 0) + (delta > 0 ? delta : 0));
+                let disponivel = novosSelos >= meta;
+
+                await setDoc(docRef, {
+                    selosAtuais: novosSelos,
+                    totalHistorico: novoTotal,
+                    recompensaDisponivel: disponivel,
+                    atualizadoEm: new Date().toISOString()
+                }, { merge: true });
+
+                if (window.vibrarDispositivo) window.vibrarDispositivo(delta > 0 ? 'sucesso' : 'clique');
+                exibirToastNotificacao(
+                    "✂️ Selo Atualizado",
+                    delta > 0 ? `+1 Selo adicionado com sucesso (${novosSelos}/${meta})!` : `1 Selo removido (${novosSelos}/${meta}).`,
+                    'info'
+                );
+
+                await carregarClientesFidelidadeAdmin();
+            } catch (err) {
+                console.error("Erro ao ajustar selos:", err);
+                alert("Erro ao alterar selos: " + err.message);
+            }
+        };
+
+        window.resgatarRecompensaClienteAdmin = async function(userId) {
+            if (!userId) return;
+            if (!confirm("Confirmar o resgate da recompensa deste cliente e iniciar um novo ciclo de selos?")) return;
+            const meta = Number(configFidelidadeCache.metaSelos || 10);
+            try {
+                const docRef = doc(db, "fidelidadeClientes", userId);
+                const snap = await getDoc(docRef);
+                let dados = snap.exists() ? snap.data() : { selosAtuais: meta, totalHistorico: meta, recompensasUtilizadas: 0 };
+
+                let sobra = Math.max(0, Number(dados.selosAtuais || meta) - meta);
+                let utilizadas = Number(dados.recompensasUtilizadas || 0) + 1;
+
+                await setDoc(docRef, {
+                    selosAtuais: sobra,
+                    recompensasUtilizadas: utilizadas,
+                    recompensaDisponivel: sobra >= meta,
+                    ultimoResgateEm: new Date().toISOString(),
+                    atualizadoEm: new Date().toISOString()
+                }, { merge: true });
+
+                if (window.vibrarDispositivo) window.vibrarDispositivo('sucesso');
+                exibirToastNotificacao("🎉 Recompensa Resgatada", "Novo ciclo de fidelidade iniciado para o cliente!", "vip");
+
+                await carregarClientesFidelidadeAdmin();
+            } catch (err) {
+                console.error("Erro ao resgatar recompensa:", err);
+                alert("Erro ao processar resgate: " + err.message);
+            }
+        };
+
+        // ==========================================
+        // CONTROLE DE VISIBILIDADE DOS MÓDULOS NO SITE (LOJA, PLANOS E FIDELIDADE)
         // ==========================================
         async function carregarStatusModulosSite() {
             try {
                 const snap = await getDoc(doc(db, "configuracoes", "modulos"));
                 let moduloPlanosAtivo = true;
                 let moduloLojaAtivo = true;
+                let moduloFidelidadeAtivo = true;
 
                 if (snap.exists()) {
                     const data = snap.data();
                     if (data.moduloPlanosAtivo !== undefined) moduloPlanosAtivo = data.moduloPlanosAtivo === true;
                     if (data.moduloLojaAtivo !== undefined) moduloLojaAtivo = data.moduloLojaAtivo === true;
+                    if (data.moduloFidelidadeAtivo !== undefined) moduloFidelidadeAtivo = data.moduloFidelidadeAtivo === true;
                 }
 
                 const checkPlanos = document.getElementById('checkModuloPlanosAtivo');
@@ -4713,6 +5305,16 @@
                         ? "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-green-950 text-green-400 border border-green-800" 
                         : "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-zinc-800 text-zinc-400";
                     badgeLoja.innerText = moduloLojaAtivo ? "Ativado no Site" : "Desativado no Site";
+                }
+
+                const checkFid = document.getElementById('checkModuloFidelidadeAtivo');
+                const badgeFid = document.getElementById('badgeStatusModuloFidelidade');
+                if (checkFid) checkFid.checked = moduloFidelidadeAtivo;
+                if (badgeFid) {
+                    badgeFid.className = moduloFidelidadeAtivo 
+                        ? "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-green-950 text-green-400 border border-green-800" 
+                        : "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-zinc-800 text-zinc-400";
+                    badgeFid.innerText = moduloFidelidadeAtivo ? "Ativado no Site" : "Desativado no Site";
                 }
             } catch (e) {
                 console.warn("Erro ao carregar status dos módulos:", e);
@@ -4741,10 +5343,19 @@
                             : "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-zinc-800 text-zinc-400";
                         badgeLoja.innerText = ativo ? "Ativado no Site" : "Desativado no Site";
                     }
+                } else if (nomeModulo === 'fidelidade') {
+                    updateData.moduloFidelidadeAtivo = ativo;
+                    const badgeFid = document.getElementById('badgeStatusModuloFidelidade');
+                    if (badgeFid) {
+                        badgeFid.className = ativo 
+                            ? "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-green-950 text-green-400 border border-green-800" 
+                            : "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-zinc-800 text-zinc-400";
+                        badgeFid.innerText = ativo ? "Ativado no Site" : "Desativado no Site";
+                    }
                 }
                 await setDoc(doc(db, "configuracoes", "modulos"), updateData, { merge: true });
                 exibirToastNotificacao(
-                    `⚙️ Módulo ${nomeModulo === 'planos' ? 'Planos Mensais' : 'Loja & Estoque'}`,
+                    `⚙️ Módulo ${nomeModulo === 'planos' ? 'Planos Mensais' : (nomeModulo === 'loja' ? 'Loja & Estoque' : 'Fidelidade VIP')}`,
                     ativo ? 'Ativado com sucesso no site dos clientes!' : 'Desativado e ocultado no site dos clientes!',
                     'config'
                 );

@@ -213,6 +213,52 @@
                     <p id="msgTrocaSenhaPerfil" class="text-[11px] text-zinc-400 leading-tight"></p>
                 </div>
 
+                <!-- CARD GAMIFICADO DO PROGRAMA DE FIDELIDADE VIP -->
+                <div id="cardFidelidadePerfilCliente" class="bg-gradient-to-br from-amber-950/40 via-black to-zinc-950 p-4 rounded-2xl border border-dourado/40 space-y-3 shadow-xl">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">👑</span>
+                            <div>
+                                <h3 class="text-xs font-bold text-dourado uppercase tracking-wide">Cartão Fidelidade EMAÚS</h3>
+                                <p class="text-[10px] text-zinc-400">Acumule selos e ganhe benefícios</p>
+                            </div>
+                        </div>
+                        <span id="badgeFidelidadeStatusPerfil" class="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-dourado/20 text-dourado border border-dourado/40">
+                            0 / 10 Selos
+                        </span>
+                    </div>
+
+                    <!-- Grid Interativo de Selos Dourados -->
+                    <div id="gridSelosFidelidadePerfil" class="grid grid-cols-5 gap-2 pt-1 pb-1">
+                        <!-- Gerado dinamicamente via JS -->
+                    </div>
+
+                    <!-- Barra de Progresso Animada -->
+                    <div class="space-y-1">
+                        <div class="w-full bg-zinc-900 h-2 rounded-full overflow-hidden border border-zinc-800">
+                            <div id="barraProgressoFidelidadePerfil" class="bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-300 h-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                        <div class="flex justify-between items-center text-[10px] text-zinc-400">
+                            <span id="textoFaltamSelosPerfil">Faltam cortes para a recompensa</span>
+                            <span id="textoPercentualFidelidadePerfil" class="font-bold text-dourado font-mono">0%</span>
+                        </div>
+                    </div>
+
+                    <!-- Box de Recompensa Ativa -->
+                    <div class="bg-black/90 p-3 rounded-xl border border-zinc-800/90 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="text-lg flex-shrink-0">🎁</span>
+                            <div class="truncate">
+                                <span class="text-[10px] text-zinc-400 uppercase font-semibold block">Sua Próxima Recompensa:</span>
+                                <span id="textoDescricaoRecompensaPerfil" class="text-xs font-bold text-white truncate block">Desconto no próximo corte</span>
+                            </div>
+                        </div>
+                        <span id="badgeRecompensaProntaPerfil" class="hidden text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-green-500 text-black uppercase animate-pulse flex-shrink-0">
+                            🎉 Liberada!
+                        </span>
+                    </div>
+                </div>
+
                 <p id="msgPerfilStatus" class="text-xs text-center font-medium min-h-[16px]"></p>
 
                 <div class="grid grid-cols-2 gap-3 pt-2">
@@ -310,6 +356,30 @@
                 </p>
             </div>
 
+            <!-- CARD DE DESTAQUE DA FIDELIDADE NA TELA PRINCIPAL -->
+            <div id="cardDestaqueFidelidadeDashboard" class="hidden bg-gradient-to-r from-amber-950/60 via-black to-zinc-950 p-4 rounded-2xl border border-dourado/40 space-y-2.5 shadow-lg">
+                <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-10 h-10 rounded-xl bg-dourado/10 border border-dourado/30 flex items-center justify-center text-xl shadow-inner flex-shrink-0">
+                            ✂️
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-xs font-bold text-white uppercase tracking-wide">Cartão Fidelidade</h3>
+                                <span id="badgeFidelidadeDashboard" class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-dourado/20 text-dourado">0 / 10 Selos</span>
+                            </div>
+                            <p id="textoResumoFidelidadeDashboard" class="text-[11px] text-zinc-400">Acumule selos e ganhe benefícios exclusivos!</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="window.abrirModalPerfilCliente()" class="text-[10px] font-bold text-dourado hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 px-2.5 py-1.5 rounded-lg transition whitespace-nowrap cursor-pointer">
+                        Ver Selos →
+                    </button>
+                </div>
+                <div class="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-zinc-800">
+                    <div id="barraProgressoFidelidadeDashboard" class="bg-gradient-to-r from-amber-500 to-yellow-300 h-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+
             <div class="bg-black p-4 rounded-lg border border-zinc-800 space-y-3">
                 <h2 class="text-md font-semibold text-dourado uppercase tracking-wide">Meus Agendamentos Ativos</h2>
                 <div id="meusAgendamentosLista" class="space-y-2 text-sm text-zinc-300">
@@ -399,6 +469,25 @@
                     </div>
                 </div>
 
+                <!-- BOX DE RECOMPENSA DE FIDELIDADE (EXIBIDO QUANDO DISPONÍVEL) -->
+                <div id="boxRecompensaFidelidadeAgendamento" class="hidden bg-gradient-to-r from-amber-950/80 via-black to-amber-950/80 border-2 border-amber-500 p-4 rounded-2xl space-y-2.5 shadow-xl animate-fade-in">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-2xl animate-bounce">🎁</span>
+                            <div>
+                                <h3 class="text-xs font-bold text-amber-300 uppercase tracking-wide">Recompensa Fidelidade Desbloqueada!</h3>
+                                <p id="textoDescricaoRecompensaFidelidade" class="text-[11px] text-zinc-300">Você completou seus selos e pode resgatar seu benefício neste agendamento.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <label class="flex items-center gap-2.5 bg-black/60 p-2.5 rounded-xl border border-amber-500/40 cursor-pointer hover:border-amber-400 transition">
+                        <input type="checkbox" id="checkAplicarRecompensaFidelidade" class="w-4 h-4 rounded text-dourado bg-zinc-900 border-zinc-700 focus:ring-0 cursor-pointer" checked>
+                        <span id="labelAplicarRecompensaFidelidade" class="text-xs font-extrabold text-white">
+                            ✓ Aplicar Recompensa Fidelidade
+                        </span>
+                    </label>
+                </div>
+
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium mb-1 text-zinc-300">Data do Atendimento</label>
@@ -414,6 +503,14 @@
                 </div>
 
                 <div id="containerBotoesAgendamento" class="space-y-2.5">
+                    <!-- Botão Especial de Agendamento 100% Grátis via Fidelidade -->
+                    <div id="botoesPagamentoFidelidadeGratis" class="hidden">
+                        <button id="btnConfirmarFidelidadeGratis" type="button" class="w-full bg-green-500 hover:bg-green-400 text-black font-extrabold py-3.5 px-4 rounded-xl transition uppercase tracking-wider cursor-pointer text-xs flex items-center justify-center gap-2 shadow-xl animate-pulse">
+                            <span class="text-base">🎉</span>
+                            <span id="labelTextoBtnFidelidadeGratis">Confirmar Atendimento Fidelidade (100% Grátis)</span>
+                        </button>
+                    </div>
+
                     <div id="botoesPagamentoNormal" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         <button id="btnPagarTaxaReserva" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-bold py-2.5 px-3 rounded-lg transition uppercase tracking-wide cursor-pointer text-xs flex flex-col items-center justify-center shadow-lg gap-0.5">
                             <span class="inline-flex items-center justify-center gap-1.5 font-extrabold">
@@ -1558,6 +1655,7 @@
             carregarServicosCliente();
             carregarProdutosCliente();
             carregarBarbeirosCliente();
+            carregarFidelidadeCliente(user.uid);
             carregarConfiguracoesGerais();
             verificarSeBarbeariaFechadaHoje();
         }
@@ -1805,6 +1903,11 @@
             const fotoAtual = dadosUsuarioAtual?.fotoUrl || auth.currentUser.photoURL || '';
             atualizarPreviewFotoPerfilModal(fotoAtual);
 
+            try {
+                renderizarCartaoFidelidadeCliente();
+                carregarFidelidadeCliente(auth.currentUser.uid);
+            } catch (e) {}
+
             if (modalPerfilCliente) modalPerfilCliente.classList.remove('hidden');
         }
         window.abrirModalPerfilCliente = abrirModalPerfilCliente;
@@ -1959,6 +2062,152 @@
                 btnTrocarSenhaPerfil.innerText = "Tentar Novamente";
             }
         });
+
+        // ==========================================
+        // PROGRAMA DE FIDELIDADE VIP GAMIFICADO (CLIENTE)
+        // ==========================================
+        let configFidelidadeCliente = {
+            ativo: true,
+            metaSelos: 10,
+            tipoRecompensa: 'desconto_valor',
+            valorDesconto: 15.00,
+            porcentagemDesconto: 20,
+            descricaoRecompensa: 'R$ 15,00 de desconto no próximo corte'
+        };
+
+        let dadosFidelidadeCliente = {
+            selosAtuais: 0,
+            totalHistorico: 0,
+            recompensasUtilizadas: 0,
+            recompensaDisponivel: false
+        };
+
+        async function carregarFidelidadeCliente(userId) {
+            try {
+                // 1. Carrega as configurações da campanha
+                const confSnap = await getDoc(doc(db, "configuracoes", "fidelidade"));
+                if (confSnap.exists()) {
+                    configFidelidadeCliente = { ...configFidelidadeCliente, ...confSnap.data() };
+                }
+
+                // 2. Se o usuário estiver logado, busca o histórico do cliente
+                const uid = userId || auth.currentUser?.uid;
+                if (uid) {
+                    const fidSnap = await getDoc(doc(db, "fidelidadeClientes", uid));
+                    if (fidSnap.exists()) {
+                        dadosFidelidadeCliente = { ...dadosFidelidadeCliente, ...fidSnap.data() };
+                    } else {
+                        dadosFidelidadeCliente = {
+                            selosAtuais: 0,
+                            totalHistorico: 0,
+                            recompensasUtilizadas: 0,
+                            recompensaDisponivel: false
+                        };
+                    }
+                }
+
+                renderizarCartaoFidelidadeCliente();
+                atualizarLabelPrecoTotal();
+            } catch (e) {
+                console.warn("Aviso ao carregar fidelidade do cliente:", e);
+            }
+        }
+        window.carregarFidelidadeCliente = carregarFidelidadeCliente;
+
+        function renderizarCartaoFidelidadeCliente() {
+            const cardPerfil = document.getElementById('cardFidelidadePerfilCliente');
+            const cardDashboard = document.getElementById('cardDestaqueFidelidadeDashboard');
+
+            if (configFidelidadeCliente.ativo === false) {
+                if (cardPerfil) cardPerfil.classList.add('hidden');
+                if (cardDashboard) cardDashboard.classList.add('hidden');
+                return;
+            } else {
+                if (cardPerfil) cardPerfil.classList.remove('hidden');
+                if (cardDashboard) cardDashboard.classList.remove('hidden');
+            }
+
+            const selos = Number(dadosFidelidadeCliente.selosAtuais || 0);
+            const meta = Math.max(1, Number(configFidelidadeCliente.metaSelos || 10));
+            const atingiu = selos >= meta || dadosFidelidadeCliente.recompensaDisponivel === true;
+            const pct = Math.min(100, Math.round((selos / meta) * 100));
+
+            // 1. Renderiza no Modal Meu Perfil
+            const badgePerfil = document.getElementById('badgeFidelidadeStatusPerfil');
+            const gridSelos = document.getElementById('gridSelosFidelidadePerfil');
+            const barraPerfil = document.getElementById('barraProgressoFidelidadePerfil');
+            const textoFaltam = document.getElementById('textoFaltamSelosPerfil');
+            const textoPct = document.getElementById('textoPercentualFidelidadePerfil');
+            const descRecompensa = document.getElementById('textoDescricaoRecompensaPerfil');
+            const badgePronta = document.getElementById('badgeRecompensaProntaPerfil');
+
+            if (badgePerfil) badgePerfil.innerText = `${selos} / ${meta} Selos`;
+            if (barraPerfil) barraPerfil.style.width = `${pct}%`;
+            if (textoPct) textoPct.innerText = `${pct}%`;
+            if (descRecompensa) {
+                let textoRec = configFidelidadeCliente.descricaoRecompensa || '';
+                if (!textoRec) {
+                    if (configFidelidadeCliente.tipoRecompensa === 'desconto_valor') textoRec = `R$ ${Number(configFidelidadeCliente.valorDesconto || 15).toFixed(2)} de desconto`;
+                    else if (configFidelidadeCliente.tipoRecompensa === 'servico_gratis') textoRec = `Corte ou Serviço 100% Grátis`;
+                    else if (configFidelidadeCliente.tipoRecompensa === 'desconto_porcentagem') textoRec = `${configFidelidadeCliente.porcentagemDesconto || 20}% de desconto`;
+                    else textoRec = `Brinde exclusivo da Barbearia`;
+                }
+                descRecompensa.innerText = textoRec;
+            }
+
+            if (textoFaltam) {
+                if (atingiu) {
+                    textoFaltam.innerHTML = `<span class="text-green-400 font-bold">🎉 Meta atingida! Recompensa disponível!</span>`;
+                } else {
+                    const faltam = meta - selos;
+                    textoFaltam.innerText = `Faltam ${faltam} corte${faltam > 1 ? 's' : ''} para a recompensa`;
+                }
+            }
+
+            if (badgePronta) {
+                badgePronta.classList.toggle('hidden', !atingiu);
+            }
+
+            if (gridSelos) {
+                let htmlSelos = "";
+                for (let i = 1; i <= meta; i++) {
+                    const selado = i <= selos;
+                    const ehUltimo = i === meta;
+                    if (selado) {
+                        htmlSelos += `
+                            <div class="aspect-square rounded-xl bg-gradient-to-br from-amber-400 via-[#D4AF37] to-yellow-600 flex flex-col items-center justify-center p-1 shadow-[0_0_10px_rgba(212,175,55,0.4)] border border-amber-300 transform scale-105 transition-all">
+                                <svg class="w-5 h-5 text-black fill-current" viewBox="0 0 512 512"><path d="M112.57 391.77L154.2 350.14c12.49-12.49 12.49-32.74 0-45.24L79.79 230.49l74.41-74.41c12.49-12.49 12.49-32.74 0-45.24L112.57 69.21c-12.49-12.49-32.74-12.49-45.24 0L6.71 130.83c-8.94 8.94-8.94 23.44 0 32.38l67.28 67.28 67.28 67.28-67.28 67.28-67.28 67.28c-8.94 8.94-8.94 23.44 0 32.38l60.62 60.62c12.5 12.5 32.75 12.5 45.24 0zm286.86-322.56L357.8 110.84c-12.49 12.49-12.49 32.74 0 45.24l74.41 74.41-74.41 74.41c-12.49 12.49-12.49 32.74 0 45.24l41.63 41.63c12.49 12.49 32.74 12.49 45.24 0l60.62-60.62c8.94-8.94 8.94-23.44 0-32.38l-67.28-67.28-67.28-67.28 67.28-67.28 67.28-67.28c8.94-8.94 8.94-23.44 0-32.38l-60.62-60.62c-12.5-12.49-32.75-12.49-45.24 0zM256 160.83l-47.53 47.53c-12.49 12.49-12.49 32.74 0 45.24L256 301.13l47.53-47.53c12.49-12.49 12.49-32.74 0-45.24L256 160.83z"/></svg>
+                                <span class="text-[9px] font-black text-black leading-none">${i}</span>
+                            </div>
+                        `;
+                    } else {
+                        htmlSelos += `
+                            <div class="aspect-square rounded-xl bg-zinc-950/80 border ${ehUltimo ? 'border-dashed border-dourado/60 text-dourado' : 'border-zinc-800 text-zinc-600'} flex flex-col items-center justify-center p-1 transition-all">
+                                <span class="text-xs ${ehUltimo ? 'text-dourado animate-pulse' : 'text-zinc-600'}">${ehUltimo ? '🎁' : '✂️'}</span>
+                                <span class="text-[9px] font-bold mt-0.5 leading-none">${i}</span>
+                            </div>
+                        `;
+                    }
+                }
+                gridSelos.innerHTML = htmlSelos;
+            }
+
+            // 2. Renderiza no Card do Dashboard
+            const badgeDash = document.getElementById('badgeFidelidadeDashboard');
+            const barraDash = document.getElementById('barraProgressoFidelidadeDashboard');
+            const textoDash = document.getElementById('textoResumoFidelidadeDashboard');
+
+            if (badgeDash) badgeDash.innerText = `${selos} / ${meta} Selos`;
+            if (barraDash) barraDash.style.width = `${pct}%`;
+            if (textoDash) {
+                if (atingiu) {
+                    textoDash.innerHTML = `<span class="text-green-400 font-bold">🎉 Recompensa disponível para o seu agendamento!</span>`;
+                } else {
+                    const faltam = meta - selos;
+                    textoDash.innerText = `Falta${faltam > 1 ? 'm' : ''} ${faltam} corte${faltam > 1 ? 's' : ''} para ganhar: ${configFidelidadeCliente.descricaoRecompensa || 'sua recompensa'}`;
+                }
+            }
+        }
 
         // ==========================================
         // MÁSCARAS DE DIGITAÇÃO AMIGÁVEIS (UX)
@@ -2977,17 +3226,91 @@
             const badgeContadorExtras = document.getElementById('badgeContadorExtras');
             const badgeStatusProd = document.getElementById('badgeStatusProdutosResumo');
             const badgeContadorProd = document.getElementById('badgeContadorProdutos');
+            const boxFidelidade = document.getElementById('boxRecompensaFidelidadeAgendamento');
+            const checkFidelidade = document.getElementById('checkAplicarRecompensaFidelidade');
+            const labelCheckFidelidade = document.getElementById('labelAplicarRecompensaFidelidade');
+            const descRecompensaFidelidade = document.getElementById('textoDescricaoRecompensaFidelidade');
+            const botoesGratis = document.getElementById('botoesPagamentoFidelidadeGratis');
+            const botoesNormal = document.getElementById('botoesPagamentoNormal');
 
             if (!selectServico) return;
             const opt = selectServico.options[selectServico.selectedIndex];
             const precoBase = opt && opt.value !== "" ? parseFloat(opt.getAttribute('data-preco') || 0) : 0;
             const { extras, subtotal: subtotalExtras } = obterExtrasSelecionados();
             const { produtos: produtosCross, subtotal: subtotalProdutos } = obterProdutosCrossSellSelecionados();
-            const precoTotal = precoBase + subtotalExtras + subtotalProdutos;
+            let precoTotal = precoBase + subtotalExtras + subtotalProdutos;
+
+            // Checa Fidelidade
+            const meta = Math.max(1, Number(configFidelidadeCliente.metaSelos || 10));
+            const selos = Number(dadosFidelidadeCliente.selosAtuais || 0);
+            const atingiu = selos >= meta || dadosFidelidadeCliente.recompensaDisponivel === true;
+            const fidelidadeAtiva = configFidelidadeCliente.ativo !== false && atingiu && opt && opt.value !== "";
+
+            if (boxFidelidade) {
+                boxFidelidade.classList.toggle('hidden', !fidelidadeAtiva);
+            }
+
+            let valorDescontoFidelidade = 0;
+            let ehGratisTotalFidelidade = false;
+
+            if (fidelidadeAtiva) {
+                let textoBeneficio = "";
+                if (configFidelidadeCliente.tipoRecompensa === 'servico_gratis') {
+                    textoBeneficio = `Corte ou Serviço 100% Grátis (- R$ ${precoBase.toFixed(2)})`;
+                } else if (configFidelidadeCliente.tipoRecompensa === 'desconto_valor') {
+                    textoBeneficio = `- R$ ${Number(configFidelidadeCliente.valorDesconto || 15).toFixed(2)} de abatimento`;
+                } else if (configFidelidadeCliente.tipoRecompensa === 'desconto_porcentagem') {
+                    textoBeneficio = `- ${configFidelidadeCliente.porcentagemDesconto || 20}% de desconto`;
+                } else {
+                    textoBeneficio = `Resgatar Brinde Exclusivo (${configFidelidadeCliente.descricaoRecompensa || 'Brinde'})`;
+                }
+
+                if (labelCheckFidelidade) {
+                    labelCheckFidelidade.innerText = `✓ Aplicar Recompensa de Fidelidade (${textoBeneficio})`;
+                }
+                if (descRecompensaFidelidade) {
+                    descRecompensaFidelidade.innerText = `Você atingiu ${selos} selos! Resgate seu benefício agora: ${configFidelidadeCliente.descricaoRecompensa || textoBeneficio}.`;
+                }
+
+                if (checkFidelidade && checkFidelidade.checked) {
+                    if (configFidelidadeCliente.tipoRecompensa === 'servico_gratis') {
+                        valorDescontoFidelidade = precoBase;
+                        precoTotal = Math.max(0, precoTotal - precoBase);
+                        if (precoTotal === 0) ehGratisTotalFidelidade = true;
+                    } else if (configFidelidadeCliente.tipoRecompensa === 'desconto_valor') {
+                        const desc = Number(configFidelidadeCliente.valorDesconto || 15);
+                        valorDescontoFidelidade = Math.min(precoTotal, desc);
+                        precoTotal = Math.max(0, precoTotal - desc);
+                        if (precoTotal === 0) ehGratisTotalFidelidade = true;
+                    } else if (configFidelidadeCliente.tipoRecompensa === 'desconto_porcentagem') {
+                        const pctDesc = Number(configFidelidadeCliente.porcentagemDesconto || 20);
+                        const desc = (precoTotal * pctDesc) / 100;
+                        valorDescontoFidelidade = desc;
+                        precoTotal = Math.max(0, precoTotal - desc);
+                        if (precoTotal === 0) ehGratisTotalFidelidade = true;
+                    }
+                }
+            }
 
             if (labelSubtotal) labelSubtotal.innerText = `R$ ${subtotalExtras.toFixed(2)}`;
             if (labelSubtotalProd) labelSubtotalProd.innerText = `R$ ${subtotalProdutos.toFixed(2)}`;
-            if (labelTotal) labelTotal.innerText = `(R$ ${precoTotal.toFixed(2)})`;
+            
+            if (labelTotal) {
+                if (valorDescontoFidelidade > 0) {
+                    labelTotal.innerText = `(R$ ${precoTotal.toFixed(2)} - Desconto R$ ${valorDescontoFidelidade.toFixed(2)})`;
+                } else {
+                    labelTotal.innerText = `(R$ ${precoTotal.toFixed(2)})`;
+                }
+            }
+
+            // Alterna botões se for 100% grátis via Fidelidade
+            if (ehGratisTotalFidelidade && fidelidadeAtiva && checkFidelidade && checkFidelidade.checked) {
+                if (botoesGratis) botoesGratis.classList.remove('hidden');
+                if (botoesNormal) botoesNormal.classList.add('hidden');
+            } else {
+                if (botoesGratis) botoesGratis.classList.add('hidden');
+                if (botoesNormal) botoesNormal.classList.remove('hidden');
+            }
 
             // Atualiza badge de extras
             if (badgeStatusExtras && badgeContadorExtras) {
@@ -3151,6 +3474,10 @@
                 atualizarLabelPrecoTotal();
             });
         }
+
+        document.getElementById('checkAplicarRecompensaFidelidade')?.addEventListener('change', () => {
+            atualizarLabelPrecoTotal();
+        });
 
         function atualizarBotoesAgendamentoParaData(dataSelecionada) {
             atualizarLabelPrecoTotal();
@@ -4027,6 +4354,9 @@
                         modalidadePagamento: modalidade || 'taxa',
                         idPagamento: paymentId,
                         metodoPagamento: metodo,
+                        isFidelidade: !!dadosPagamentoPendente?.isFidelidade,
+                        recompensaFidelidade: dadosPagamentoPendente?.descricaoFidelidade || '',
+                        descontoFidelidade: dadosPagamentoPendente?.descontoFidelidade || 0,
                         extras: extras || [],
                         produtos: listaProdutosAg,
                         barbeiroId: barbeiroSelecionadoCliente?.id || 'qualquer',
@@ -4036,6 +4366,33 @@
                         dataHora: dataHoraCompleta,
                         criadoEm: new Date()
                     });
+
+                    // Se aplicou recompensa de fidelidade com abatimento de valor no checkout
+                    if (dadosPagamentoPendente?.isFidelidade) {
+                        try {
+                            const meta = Math.max(1, Number(configFidelidadeCliente.metaSelos || 10));
+                            const selosAtuais = Number(dadosFidelidadeCliente.selosAtuais || 0);
+                            const novosSelos = Math.max(0, selosAtuais - meta);
+                            const novasRecompensasUsadas = Number(dadosFidelidadeCliente.recompensasUtilizadas || 0) + 1;
+                            const novaDisponibilidade = novosSelos >= meta;
+
+                            await setDoc(doc(db, "fidelidadeClientes", user.uid), {
+                                userId: user.uid,
+                                clienteNome: nomeCliente,
+                                clienteTelefone: telefoneCliente,
+                                selosAtuais: novosSelos,
+                                totalHistorico: dadosFidelidadeCliente.totalHistorico || selosAtuais,
+                                recompensasUtilizadas: novasRecompensasUsadas,
+                                recompensaDisponivel: novaDisponibilidade,
+                                atualizadoEm: new Date().toISOString()
+                            }, { merge: true });
+
+                            dadosFidelidadeCliente.selosAtuais = novosSelos;
+                            dadosFidelidadeCliente.recompensasUtilizadas = novasRecompensasUsadas;
+                            dadosFidelidadeCliente.recompensaDisponivel = novaDisponibilidade;
+                            carregarFidelidadeCliente(user.uid).catch(e => console.warn(e));
+                        } catch (eFid) { console.warn("Aviso ao debitar selos da fidelidade:", eFid); }
+                    }
 
                     if (msgStatus) {
                         msgStatus.className = "text-center text-sm text-green-400 font-bold";
@@ -4050,6 +4407,7 @@
                     if (elServ) elServ.value = "";
                     renderizarOpcoesExtras();
                     carregarPainelCliente(user.uid);
+                    carregarFidelidadeCliente(user.uid).catch(e => console.warn(e));
 
                     // Abre a tela de agradecimento e confirmação com valores
                     exibirModalSucessoAgendamento(servico, dataHoraCompleta, nomeCliente, precoTotalNum, valorEfetivoPago, false);
@@ -4357,6 +4715,32 @@
                 nomeServicoCompleto += ` [📦 + ${produtosCross.map(p => p.nome).join(', ')}]`;
             }
 
+            // Calcula abatimento da fidelidade se ativo e selecionado
+            const checkFidelidade = document.getElementById('checkAplicarRecompensaFidelidade');
+            const meta = Math.max(1, Number(configFidelidadeCliente.metaSelos || 10));
+            const selos = Number(dadosFidelidadeCliente.selosAtuais || 0);
+            const atingiu = selos >= meta || dadosFidelidadeCliente.recompensaDisponivel === true;
+            const aplicarFidelidade = configFidelidadeCliente.ativo !== false && atingiu && checkFidelidade && checkFidelidade.checked;
+
+            let precoFinalCalculado = precoTotal;
+            let valorDescontoFidelidade = 0;
+
+            if (aplicarFidelidade) {
+                if (configFidelidadeCliente.tipoRecompensa === 'servico_gratis') {
+                    valorDescontoFidelidade = precoBase;
+                    precoFinalCalculado = Math.max(0, precoTotal - precoBase);
+                } else if (configFidelidadeCliente.tipoRecompensa === 'desconto_valor') {
+                    const desc = Number(configFidelidadeCliente.valorDesconto || 15);
+                    valorDescontoFidelidade = Math.min(precoTotal, desc);
+                    precoFinalCalculado = Math.max(0, precoTotal - desc);
+                } else if (configFidelidadeCliente.tipoRecompensa === 'desconto_porcentagem') {
+                    const pct = Number(configFidelidadeCliente.porcentagemDesconto || 20);
+                    const desc = (precoTotal * pct) / 100;
+                    valorDescontoFidelidade = desc;
+                    precoFinalCalculado = Math.max(0, precoTotal - desc);
+                }
+            }
+
             return { 
                 servico: nomeServicoCompleto,
                 servicoBase: servicoBase,
@@ -4365,27 +4749,33 @@
                 produtos: produtosCross,
                 subtotalProdutos: subtotalProdutos,
                 preco: precoTotal, 
+                precoFinal: precoFinalCalculado,
+                descontoFidelidade: valorDescontoFidelidade,
+                isFidelidade: aplicarFidelidade && valorDescontoFidelidade > 0,
+                descricaoFidelidade: configFidelidadeCliente.descricaoRecompensa || '',
                 data, 
                 horario 
             };
         }
 
-        // Acionador do botão "Pagar Taxa de Reserva (R$ 10,00)" no fluxo geral (Cobra taxa normalmente para todos)
+        // Acionador do botão "Pagar Taxa de Reserva" (com abatimento proporcional se fidelidade ativa)
         const btnPagarTaxaReserva = document.getElementById('btnPagarTaxaReserva');
         if (btnPagarTaxaReserva) {
             btnPagarTaxaReserva.addEventListener('click', async () => {
                 const dadosForm = await validarFormAgendamento();
                 if (!dadosForm) return;
 
+                const taxaCobrar = Math.min(10.00, dadosForm.precoFinal);
+
                 processarAberturaPagamento('agendamento', {
                     ...dadosForm,
                     modalidade: 'taxa',
-                    valorCobrado: 10.00
+                    valorCobrado: taxaCobrar
                 });
             });
         }
 
-        // Acionador do botão "Pagar Valor Total" no fluxo geral (Cobra total normalmente para todos)
+        // Acionador do botão "Pagar Valor Total" (com abatimento de fidelidade se ativo)
         const btnPagarValorTotal = document.getElementById('btnPagarValorTotal');
         if (btnPagarValorTotal) {
             btnPagarValorTotal.addEventListener('click', async () => {
@@ -4395,9 +4785,212 @@
                 processarAberturaPagamento('agendamento', {
                     ...dadosForm,
                     modalidade: 'total',
-                    valorCobrado: dadosForm.preco
+                    valorCobrado: dadosForm.precoFinal
                 });
             });
+        }
+
+        // Acionador do botão de Atendimento 100% Grátis via Fidelidade
+        const btnConfirmarFidelidadeGratis = document.getElementById('btnConfirmarFidelidadeGratis');
+        if (btnConfirmarFidelidadeGratis) {
+            btnConfirmarFidelidadeGratis.addEventListener('click', async () => {
+                const dadosForm = await validarFormAgendamento();
+                if (!dadosForm) return;
+
+                if (dadosForm.precoFinal > 0) {
+                    alert(`O valor com adicionais/produtos é R$ ${dadosForm.precoFinal.toFixed(2)}. Por favor, escolha Pagar Taxa ou Pagar Total.`);
+                    return;
+                }
+
+                await executarAgendamentoFidelidadeGratuito(dadosForm);
+            });
+        }
+
+        async function executarAgendamentoFidelidadeGratuito(dados) {
+            if (isSalvandoAgendamento) {
+                console.warn("⚠️ Processamento em andamento.");
+                return;
+            }
+            isSalvandoAgendamento = true;
+
+            const user = auth.currentUser;
+            if (!user) {
+                isSalvandoAgendamento = false;
+                alert("Por favor, faça login para agendar.");
+                return;
+            }
+
+            const btnConfirmar = document.getElementById('btnConfirmarFidelidadeGratis');
+            if (btnConfirmar) {
+                btnConfirmar.disabled = true;
+                btnConfirmar.innerHTML = `<span>⏳ Confirmando Atendimento Fidelidade...</span>`;
+            }
+
+            let nomeCliente = user.email;
+            let telefoneCliente = "Não informado";
+            try {
+                const userDoc = await getDoc(doc(db, "usuarios", user.uid));
+                if (userDoc.exists()) {
+                    nomeCliente = userDoc.data().nome || user.email;
+                    telefoneCliente = userDoc.data().telefone || "Não informado";
+                }
+            } catch (e) { console.error(e); }
+
+            try {
+                const { servico, data, horario, extras, produtos } = dados;
+                const dataHoraCompleta = `${data}T${horario}`;
+                const msgStatus = document.getElementById('msgStatus');
+
+                // Idempotência e concorrência pré-agendamento
+                const queryConcorrencia = await getDocs(query(
+                    collection(db, "agendamentos"),
+                    where("dataHora", "==", dataHoraCompleta)
+                ));
+
+                let jaExiste = false;
+                let slotOcupadoOutro = false;
+                const barbeiroAlvoId = (modoMultiBarbeiroCliente && barbeiroSelecionadoCliente) ? barbeiroSelecionadoCliente.id : 'qualquer';
+
+                queryConcorrencia.forEach(d => {
+                    const agData = d.data();
+                    if (agData.status === 'confirmado' || agData.status === 'pendente') {
+                        if (agData.userId === user.uid) {
+                            jaExiste = true;
+                        } else {
+                            if (modoMultiBarbeiroCliente && barbeiroAlvoId !== 'qualquer') {
+                                if (agData.barbeiroId === barbeiroAlvoId) slotOcupadoOutro = true;
+                            } else if (!modoMultiBarbeiroCliente) {
+                                slotOcupadoOutro = true;
+                            }
+                        }
+                    }
+                });
+
+                if (jaExiste) {
+                    console.warn("⚠️ Agendamento de fidelidade já registrado.");
+                    await carregarPainelCliente(user.uid);
+                    await carregarFidelidadeCliente(user.uid);
+                    exibirModalSucessoAgendamento(`${servico} (🎁 Fidelidade VIP)`, dataHoraCompleta, nomeCliente, 0, 0, false);
+                    return;
+                }
+
+                if (slotOcupadoOutro) {
+                    alert("⚠️ Este horário acabou de ser reservado por outro cliente. Por favor, escolha outro horário disponível.");
+                    isSalvandoAgendamento = false;
+                    const selectHorario = document.getElementById('horarioGrade');
+                    const avisoBloqueio = document.getElementById('avisoDataBloqueiada');
+                    await carregarGradeHorariosPadrao(data, selectHorario, avisoBloqueio);
+                    return;
+                }
+
+                // 1. Debita estoque de produtos se houver
+                if (Array.isArray(produtos) && produtos.length > 0) {
+                    for (const p of produtos) {
+                        if (p.id && p.quantidade > 0) {
+                            try {
+                                const prodSnap = await getDoc(doc(db, "produtos", p.id));
+                                if (prodSnap.exists()) {
+                                    const estAtual = Number(prodSnap.data().estoque || 0);
+                                    await updateDoc(doc(db, "produtos", p.id), {
+                                        estoque: Math.max(0, estAtual - p.quantidade),
+                                        atualizadoEm: new Date().toISOString()
+                                    });
+                                }
+                            } catch (eEst) { console.warn(eEst); }
+                        }
+                    }
+                }
+
+                // 2. Salva o agendamento
+                await addDoc(collection(db, "agendamentos"), {
+                    userId: user.uid,
+                    cliente: nomeCliente,
+                    telefone: telefoneCliente,
+                    servico: `${servico} (🎁 Fidelidade VIP)`,
+                    preco: 0.00,
+                    taxaReservaPaga: 0.00,
+                    modalidadePagamento: 'fidelidade_resgate',
+                    idPagamento: 'fidelidade_resgate',
+                    metodoPagamento: 'Fidelidade VIP (Recompensa)',
+                    isFidelidade: true,
+                    recompensaFidelidade: dados.descricaoFidelidade || 'Corte Grátis',
+                    extras: extras || [],
+                    produtos: produtos || [],
+                    barbeiroId: barbeiroSelecionadoCliente?.id || 'qualquer',
+                    barbeiroNome: barbeiroSelecionadoCliente?.nome || 'Barbearia EMAÚS',
+                    barbeiroWhatsapp: barbeiroSelecionadoCliente?.whatsapp || '',
+                    status: 'confirmado',
+                    dataHora: dataHoraCompleta,
+                    criadoEm: new Date()
+                });
+
+                // 3. Debita os selos do cliente e incrementa recompensas usadas
+                const meta = Math.max(1, Number(configFidelidadeCliente.metaSelos || 10));
+                const selosAtuais = Number(dadosFidelidadeCliente.selosAtuais || 0);
+                const novosSelos = Math.max(0, selosAtuais - meta);
+                const novasRecompensasUsadas = Number(dadosFidelidadeCliente.recompensasUtilizadas || 0) + 1;
+                const novaDisponibilidade = novosSelos >= meta;
+
+                await setDoc(doc(db, "fidelidadeClientes", user.uid), {
+                    userId: user.uid,
+                    clienteNome: nomeCliente,
+                    clienteTelefone: telefoneCliente,
+                    selosAtuais: novosSelos,
+                    totalHistorico: dadosFidelidadeCliente.totalHistorico || selosAtuais,
+                    recompensasUtilizadas: novasRecompensasUsadas,
+                    recompensaDisponivel: novaDisponibilidade,
+                    atualizadoEm: new Date().toISOString()
+                }, { merge: true });
+
+                dadosFidelidadeCliente.selosAtuais = novosSelos;
+                dadosFidelidadeCliente.recompensasUtilizadas = novasRecompensasUsadas;
+                dadosFidelidadeCliente.recompensaDisponivel = novaDisponibilidade;
+
+                if (msgStatus) {
+                    msgStatus.className = "mt-2 text-center text-sm font-bold text-green-400";
+                    msgStatus.innerText = "🎉 Agendamento de Fidelidade Confirmado com Sucesso!";
+                }
+
+                // Limpa campos
+                const elData = document.getElementById('dataAtendimento');
+                const elGrade = document.getElementById('horarioGrade');
+                const elServ = document.getElementById('servico');
+                if (elData) elData.value = "";
+                if (elGrade) elGrade.innerHTML = "<option value=''>Selecione a data primeiro</option>";
+                if (elServ) elServ.value = "";
+                renderizarOpcoesExtras();
+                atualizarLabelPrecoTotal();
+
+                await carregarPainelCliente(user.uid);
+                await carregarFidelidadeCliente(user.uid);
+
+                exibirModalSucessoAgendamento(`${servico} (🎁 Fidelidade VIP)`, dataHoraCompleta, nomeCliente, 0, 0, false);
+
+                // Disparo WhatsApp Bot
+                dispararNotificacaoAutomaticaWhatsApp({
+                    cliente: nomeCliente,
+                    telefone: telefoneCliente,
+                    servico: `${servico} (🎁 Fidelidade VIP)`,
+                    dataHora: dataHoraCompleta,
+                    preco: 0,
+                    taxaReservaPaga: 0,
+                    modalidade: 'fidelidade_resgate',
+                    produtos: produtos || [],
+                    isPlano: false,
+                    barbeiroNome: barbeiroSelecionadoCliente?.nome || '',
+                    barbeiroWhatsapp: barbeiroSelecionadoCliente?.whatsapp || ''
+                });
+
+            } catch (err) {
+                console.error("Erro ao registrar agendamento de fidelidade:", err);
+                alert("Erro ao confirmar agendamento de fidelidade: " + err.message);
+            } finally {
+                isSalvandoAgendamento = false;
+                if (btnConfirmar) {
+                    btnConfirmar.disabled = false;
+                    btnConfirmar.innerHTML = `<span class="text-base">🎉</span><span id="labelTextoBtnFidelidadeGratis">Confirmar Atendimento Fidelidade (100% Grátis)</span>`;
+                }
+            }
         }
 
         // Confirmação Manual do Pix (Fallback)
