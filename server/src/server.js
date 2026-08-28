@@ -267,6 +267,7 @@ function requestResetOobCode(token, email) {
 }
 
 const app = express();
+app.set('trust proxy', 1);
 const port = process.env.PORT || 3000;
 const APP_SITE_URL = process.env.APP_SITE_URL || 'https://agendamento-barbearia-e8ffb.web.app';
 const SELF_URL = process.env.SELF_URL || 'https://barbearia-app-1bf5.onrender.com';
@@ -313,14 +314,52 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// M1: Rate limiting — protege endpoints críticos
-const limiterGeral = rateLimit({ windowMs: 60 * 1000, max: 60, standardHeaders: true, legacyHeaders: false, message: { error: 'Muitas requisições. Aguarde 1 minuto.' } });
-const limiterPagamento = rateLimit({ windowMs: 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false, message: { error: 'Muitas tentativas de pagamento. Aguarde 1 minuto.' } });
-const limiterAuth = rateLimit({ windowMs: 15 * 60 * 1000, max: 5, standardHeaders: true, legacyHeaders: false, message: { error: 'Muitas tentativas de recuperação de senha. Tente novamente em 15 minutos.' } });
-const limiterWhatsApp = rateLimit({ windowMs: 60 * 1000, max: 20, standardHeaders: true, legacyHeaders: false, message: { error: 'Muitas requisições ao WhatsApp. Aguarde 1 minuto.' } });
+// M1: Rate limiting — protege endpoints com limites dimensionados para produção e SPAs em tempo real
+const limiterGeral = rateLimit({ 
+    windowMs: 60 * 1000, 
+    max: 300, 
+    standardHeaders: true, 
+    legacyHeaders: false, 
+    message: { error: 'Muitas requisições. Aguarde 1 minuto.' } 
+});
+
+const limiterPagamentoCriacao = rateLimit({ 
+    windowMs: 60 * 1000, 
+    max: 60, 
+    standardHeaders: true, 
+    legacyHeaders: false, 
+    message: { error: 'Muitas tentativas de pagamento. Aguarde 1 minuto.' } 
+});
+
+const limiterEstorno = rateLimit({ 
+    windowMs: 60 * 1000, 
+    max: 60, 
+    standardHeaders: true, 
+    legacyHeaders: false, 
+    message: { error: 'Muitas solicitações de estorno. Aguarde 1 minuto.' } 
+});
+
+const limiterAuth = rateLimit({ 
+    windowMs: 15 * 60 * 1000, 
+    max: 20, 
+    standardHeaders: true, 
+    legacyHeaders: false, 
+    message: { error: 'Muitas tentativas de recuperação de senha. Tente novamente em 15 minutos.' } 
+});
+
+const limiterWhatsApp = rateLimit({ 
+    windowMs: 60 * 1000, 
+    max: 120, 
+    standardHeaders: true, 
+    legacyHeaders: false, 
+    message: { error: 'Muitas requisições ao WhatsApp. Aguarde 1 minuto.' } 
+});
 
 app.use('/api/', limiterGeral);
-app.use('/api/pagamento/', limiterPagamento);
+app.use('/api/pagamento/pix', limiterPagamentoCriacao);
+app.use('/api/pagamento/cartao', limiterPagamentoCriacao);
+app.use('/api/pagamento/estorno', limiterEstorno);
+app.use('/api/mercadopago/reembolsar-pagamento', limiterEstorno);
 app.use('/api/auth/recuperar-senha', limiterAuth);
 app.use('/api/whatsapp/', limiterWhatsApp);
 
