@@ -3618,6 +3618,38 @@
                 pollingIntervalPix = null;
             }
 
+            // Validação pró-ativa de concorrência antes de abrir pagamento
+            if (tipo === 'agendamento' && dados.data && dados.horario) {
+                const dataHoraAlvo = `${dados.data}T${dados.horario}`;
+                const user = auth.currentUser;
+                const barbeiroAlvoId = (modoMultiBarbeiroCliente && barbeiroSelecionadoCliente) ? barbeiroSelecionadoCliente.id : 'qualquer';
+                try {
+                    const snapCheck = await getDocs(query(collection(db, "agendamentos"), where("dataHora", "==", dataHoraAlvo)));
+                    let ocupadoOutro = false;
+                    snapCheck.forEach(d => {
+                        const ag = d.data();
+                        if (ag.status === 'confirmado' || ag.status === 'pendente') {
+                            if (!user || ag.userId !== user.uid) {
+                                if (modoMultiBarbeiroCliente && barbeiroAlvoId !== 'qualquer') {
+                                    if (ag.barbeiroId === barbeiroAlvoId) ocupadoOutro = true;
+                                } else if (!modoMultiBarbeiroCliente) {
+                                    ocupadoOutro = true;
+                                }
+                            }
+                        }
+                    });
+                    if (ocupadoOutro) {
+                        alert("⚠️ Este horário acabou de ser reservado por outro cliente. Por favor, escolha outro horário disponível na grade antes de efetuar o pagamento.");
+                        const selectHora = document.getElementById('horarioGrade');
+                        const avisoBloqueio = document.getElementById('avisoDataBloqueada');
+                        if (selectHora && dados.data) await carregarGradeHorariosPadrao(dados.data, selectHora, avisoBloqueio);
+                        return;
+                    }
+                } catch (errCheck) {
+                    console.warn("Aviso ao checar concorrência pré-pagamento:", errCheck);
+                }
+            }
+
             await carregarConfiguracoesTaxasPagamento();
 
             let valorPagar = 10.00;
