@@ -26,24 +26,6 @@ process.on('unhandledRejection', (reason) => {
 });
 
 import serviceAccount from './firebaseServiceAccount.js';
-import { initializeApp, cert, getApps } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
-
-let firebaseAdminApp = null;
-let firebaseAdminAuth = null;
-
-// Inicializa o Firebase Admin SDK usando o serviceAccount carregado
-if (serviceAccount && serviceAccount.private_key) {
-    try {
-        firebaseAdminApp = getApps().length ? getApps()[0] : initializeApp({
-            credential: cert(serviceAccount)
-        });
-        firebaseAdminAuth = getAuth(firebaseAdminApp);
-        console.log('✅ [Firebase Admin SDK] Inicializado com sucesso!');
-    } catch (e) {
-        console.warn('Aviso na inicialização do Firebase Admin SDK:', e.message);
-    }
-}
 
 dotenv.config();
 
@@ -333,21 +315,60 @@ const ADMIN_EMAILS = [
     'admin@emausbarbearia.com'
 ];
 
-// Validador criptográfico nativo de ID Tokens do Firebase Authentication
+let publicCertsCache = null;
+let publicCertsExpiry = 0;
+
+// Busca e armazena em cache as chaves públicas oficiais do Firebase Auth (Google x509)
+async function getFirebasePublicCerts() {
+    const now = Date.now();
+    if (publicCertsCache && now < publicCertsExpiry) {
+        return publicCertsCache;
+    }
+    return new Promise((resolve) => {
+        https.get('https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com', (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                try {
+                    publicCertsCache = JSON.parse(data);
+                    publicCertsExpiry = now + 60 * 60 * 1000; // Cache por 1 hora
+                    resolve(publicCertsCache);
+                } catch (e) { resolve(null); }
+            });
+        }).on('error', () => resolve(null));
+    });
+}
+
+// Validador criptográfico nativo de ID Tokens do Firebase Authentication (RS256)
 async function validarTokenFirebaseAdmin(idToken) {
     if (!idToken || typeof idToken !== 'string') return null;
     try {
-        if (!firebaseAdminAuth && firebaseAdminApp) {
-            firebaseAdminAuth = getAuth(firebaseAdminApp);
-        }
-        if (firebaseAdminAuth) {
-            const decoded = await firebaseAdminAuth.verifyIdToken(idToken);
-            return decoded;
-        }
+        const parts = idToken.split('.');
+        if (parts.length !== 3) return null;
+
+        const header = JSON.parse(Buffer.from(parts[0], 'base64url').toString('utf8'));
+        const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+
+        const now = Math.floor(Date.now() / 1000);
+        // 1. Valida expiração, projeto e emissor oficial do Firebase Auth
+        if (payload.exp && payload.exp < now) return null;
+        if (payload.iss !== 'https://securetoken.google.com/agendamento-barbearia-e8ffb') return null;
+        if (payload.aud !== 'agendamento-barbearia-e8ffb') return null;
+
+        // 2. Valida assinatura criptográfica RSA-SHA256 com a chave pública correspondente
+        const certs = await getFirebasePublicCerts();
+        if (!certs || !certs[header.kid]) return null;
+
+        const publicKey = certs[header.kid];
+        const verifier = crypto.createVerify('RSA-SHA256');
+        verifier.update(`${parts[0]}.${parts[1]}`);
+        const isValid = verifier.verify(publicKey, parts[2], 'base64url');
+
+        return isValid ? payload : null;
     } catch (e) {
-        console.warn('[Auth] Token inválido ou expirado:', e.message);
+        console.warn('[Auth] Erro ao validar token Firebase:', e.message);
+        return null;
     }
-    return null;
 }
 
 // Middleware de Proteção de Rotas Administrativas
