@@ -26,6 +26,23 @@ process.on('unhandledRejection', (reason) => {
 });
 
 import serviceAccount from './firebaseServiceAccount.js';
+import { initializeApp, cert, getApps } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+
+let firebaseAdminApp = null;
+let firebaseAdminAuth = null;
+
+if (serviceAccount && serviceAccount.private_key) {
+    try {
+        firebaseAdminApp = getApps().length ? getApps()[0] : initializeApp({
+            credential: cert(serviceAccount)
+        });
+        firebaseAdminAuth = getAuth(firebaseAdminApp);
+        console.log('✅ [Firebase Admin SDK] Inicializado com sucesso!');
+    } catch (e) {
+        console.warn('Aviso na inicialização do Firebase Admin SDK:', e.message);
+    }
+}
 
 dotenv.config();
 
@@ -339,9 +356,24 @@ async function getFirebasePublicCerts() {
     });
 }
 
-// Validador criptográfico nativo de ID Tokens do Firebase Authentication (RS256)
+// Validador criptográfico de ID Tokens do Firebase Authentication (Oficial Firebase Admin SDK)
 async function validarTokenFirebaseAdmin(idToken) {
     if (!idToken || typeof idToken !== 'string') return null;
+    
+    // 1. Verificação Primária via Firebase Admin SDK oficial
+    try {
+        if (!firebaseAdminAuth && firebaseAdminApp) {
+            firebaseAdminAuth = getAuth(firebaseAdminApp);
+        }
+        if (firebaseAdminAuth) {
+            const decoded = await firebaseAdminAuth.verifyIdToken(idToken);
+            return decoded;
+        }
+    } catch (errAdmin) {
+        console.warn('[Firebase Admin SDK] Aviso na validação do token:', errAdmin.message);
+    }
+
+    // 2. Fallback de alta disponibilidade via validação nativa RS256 x509 Google
     try {
         const parts = idToken.split('.');
         if (parts.length !== 3) return null;
@@ -350,12 +382,10 @@ async function validarTokenFirebaseAdmin(idToken) {
         const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
 
         const now = Math.floor(Date.now() / 1000);
-        // 1. Valida expiração, projeto e emissor oficial do Firebase Auth
         if (payload.exp && payload.exp < now) return null;
         if (payload.iss !== 'https://securetoken.google.com/agendamento-barbearia-e8ffb') return null;
         if (payload.aud !== 'agendamento-barbearia-e8ffb') return null;
 
-        // 2. Valida assinatura criptográfica RSA-SHA256 com a chave pública correspondente
         const certs = await getFirebasePublicCerts();
         if (!certs || !certs[header.kid]) return null;
 
@@ -366,7 +396,7 @@ async function validarTokenFirebaseAdmin(idToken) {
 
         return isValid ? payload : null;
     } catch (e) {
-        console.warn('[Auth] Erro ao validar token Firebase:', e.message);
+        console.warn('[Auth] Erro no fallback de validação:', e.message);
         return null;
     }
 }
