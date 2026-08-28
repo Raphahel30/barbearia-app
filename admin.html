@@ -486,74 +486,142 @@
 
             <!-- 2. ABA: AGENDA COMPLETA DE CLIENTES -->
             <section id="viewSchedule" class="space-y-4 hidden">
-                <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-3 bg-zinc-950/90 p-4 rounded-2xl border border-zinc-800">
+                <!-- CABEÇALHO DA AGENDA COM SELETORES E ALTERNADOR DE MODO -->
+                <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-3 bg-zinc-950/90 p-4 rounded-2xl border border-zinc-800 shadow-lg">
                     <div>
                         <h2 class="text-xl font-bold text-white uppercase flex items-center gap-2">
                             <span>📅</span> Agenda de Atendimentos
                         </h2>
-                        <p id="subtituloAgendaAdmin" class="text-xs text-zinc-400">Atendimentos de Hoje</p>
+                        <p id="subtituloAgendaAdmin" class="text-xs text-zinc-400">Visão Panorâmica do Mês & Atendimentos</p>
                     </div>
                     
                     <div class="flex flex-wrap items-center gap-2">
+                        <!-- Alternador de Visualização: Mês vs Lista Geral -->
+                        <div class="inline-flex p-1 bg-black rounded-xl border border-zinc-800">
+                            <button id="btnModoCalendarioAgenda" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer bg-dourado text-black shadow-sm" title="Visualizar grade do mês">
+                                <span>🗓️</span>
+                                <span>Visão Mês</span>
+                            </button>
+                            <button id="btnModoListaAgenda" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer bg-transparent text-zinc-400 hover:text-white" title="Visualizar histórico completo em lista">
+                                <span>📋</span>
+                                <span>Histórico Geral</span>
+                            </button>
+                        </div>
+
                         <!-- Busca rápida instantânea -->
                         <div class="relative">
                             <input id="inputBuscaAgendaAdmin" type="text" placeholder="🔍 Buscar cliente..." class="bg-black border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-dourado w-36 sm:w-44">
                         </div>
 
-                        <!-- Navegador de Data & Calendário -->
-                        <div class="flex items-center gap-1.5 bg-black p-1 rounded-xl border border-zinc-800">
-                            <button id="btnAgendaHoje" class="px-2.5 py-1.5 bg-dourado text-black rounded-lg text-xs font-bold uppercase transition cursor-pointer shadow-sm" title="Ir para Hoje">
-                                Hoje
-                            </button>
-                            <button id="btnDiaAnteriorAgenda" class="px-2 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg text-xs font-bold transition cursor-pointer" title="Dia Anterior">
-                                ◀
-                            </button>
-                            <input type="date" id="inputDataFiltroAgenda" class="bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-dourado font-sans cursor-pointer font-bold">
-                            <button id="btnDiaSeguinteAgenda" class="px-2 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg text-xs font-bold transition cursor-pointer" title="Dia Seguinte">
-                                ▶
-                            </button>
-                        </div>
-
-                        <!-- Botão de Histórico Geral -->
-                        <button id="btnFiltroHistoricoGeral" class="bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white px-3 py-1.5 rounded-xl border border-zinc-800 text-xs font-bold transition cursor-pointer">
-                            📋 Histórico Geral
-                        </button>
-
+                        <!-- Botão de Recarregar -->
                         <button onclick="buscarAgendamentosFirestore(true)" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-2.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1 border border-zinc-700" title="Recarregar dados do servidor">
                             <span>🔄</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- Barra de Resumo da Data Selecionada -->
-                <div id="barraResumoDataSelecionada" class="flex justify-between items-center bg-zinc-900/60 px-4 py-2.5 rounded-xl border border-zinc-800/80 text-xs">
-                    <span id="labelDataSelecionadaFormatada" class="text-white font-bold flex items-center gap-1.5">
-                        📅 Carregando data...
-                    </span>
-                    <span id="badgeQtdAgendamentosData" class="bg-dourado/10 text-dourado border border-dourado/30 px-2.5 py-0.5 rounded-full font-bold text-[11px]">
-                        0 clientes
-                    </span>
+                <!-- 1. CONTAINER DO CALENDÁRIO MENSAL INTERATIVO -->
+                <div id="containerGradeCalendarioAdmin" class="card-dark p-4 sm:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
+                    <!-- Navegador de Mês & Ações -->
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-zinc-800/80 pb-3">
+                        <div class="flex items-center gap-2">
+                            <button id="btnMesAnteriorAgenda" class="p-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-xl border border-zinc-800 transition cursor-pointer" title="Mês Anterior">
+                                ◀
+                            </button>
+                            <h3 id="labelMesAnoCalendarioAdmin" class="text-base sm:text-lg font-extrabold text-white font-sans uppercase tracking-wide min-w-[160px] text-center">
+                                Carregando Mês...
+                            </h3>
+                            <button id="btnMesSeguinteAgenda" class="p-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-xl border border-zinc-800 transition cursor-pointer" title="Próximo Mês">
+                                ▶
+                            </button>
+                            <button id="btnMesHojeAgenda" class="ml-1 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-dourado border border-dourado/30 rounded-xl text-xs font-bold transition cursor-pointer shadow-sm">
+                                Hoje
+                            </button>
+                        </div>
+
+                        <!-- Legenda rápida de status -->
+                        <div class="flex flex-wrap items-center gap-3 text-[11px] text-zinc-400">
+                            <span class="inline-flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-green-500"></span> Com Agendamento
+                            </span>
+                            <span class="inline-flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Assinante VIP
+                            </span>
+                            <span class="inline-flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full border border-dourado bg-dourado/20"></span> Hoje
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Grade de 7 Colunas (Dias da Semana) -->
+                    <div class="grid grid-cols-7 gap-1 sm:gap-2 text-center text-[10px] sm:text-xs font-extrabold text-zinc-400 uppercase tracking-wider py-1 border-b border-zinc-800/40">
+                        <div class="text-red-400">Dom</div>
+                        <div>Seg</div>
+                        <div>Ter</div>
+                        <div>Qua</div>
+                        <div>Qui</div>
+                        <div>Sex</div>
+                        <div class="text-amber-400">Sáb</div>
+                    </div>
+
+                    <!-- Matriz dos Dias do Mês (Gerada dinamicamente via JS) -->
+                    <div id="gridDiasMesAdmin" class="grid grid-cols-7 gap-1 sm:gap-2">
+                        <!-- Células geradas dinamicamente -->
+                    </div>
                 </div>
 
-                <div class="card-dark rounded-2xl border border-zinc-800 overflow-hidden shadow-xl">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm">
-                            <thead class="bg-zinc-950/80 border-b border-zinc-800 text-xs font-bold text-dourado uppercase tracking-wider">
-                                <tr>
-                                    <th class="p-3.5">Cliente</th>
-                                    <th class="p-3.5">Contato (WhatsApp)</th>
-                                    <th class="p-3.5">Serviço & Preço</th>
-                                    <th class="p-3.5">Data & Horário</th>
-                                    <th class="p-3.5">Pagamento & Status</th>
-                                    <th class="p-3.5 text-right">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabelaAgendamentosAdmin" class="divide-y divide-zinc-800/60 text-xs">
-                                <tr>
-                                    <td colspan="6" class="p-6 text-center text-zinc-500">Carregando agendamentos...</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                <!-- 2. PAINEL DE DETALHES DOS ATENDIMENTOS DO DIA SELECIONADO -->
+                <div id="painelDetalhesDiaSelecionado" class="space-y-3">
+                    <!-- Barra de Resumo da Data Selecionada -->
+                    <div id="barraResumoDataSelecionada" class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 px-4 py-3 rounded-xl border border-zinc-800 text-xs shadow-md">
+                        <div class="flex items-center gap-2">
+                            <span class="text-base">📅</span>
+                            <div>
+                                <span id="labelDataSelecionadaFormatada" class="text-white font-bold text-sm block">
+                                    Carregando data...
+                                </span>
+                                <span id="sublabelExpedienteDia" class="text-[11px] text-zinc-400">Clique em qualquer dia do calendário acima para alternar de data.</span>
+                            </div>
+                        </div>
+
+                        <!-- Navegador Rápido de Dia Anterior / Próximo -->
+                        <div class="flex items-center gap-2 self-end sm:self-auto">
+                            <div class="flex items-center gap-1 bg-black p-1 rounded-xl border border-zinc-800">
+                                <button id="btnDiaAnteriorAgenda" class="px-2 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg text-xs font-bold transition cursor-pointer" title="Dia Anterior">
+                                    ◀
+                                </button>
+                                <input type="date" id="inputDataFiltroAgenda" class="bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-0.5 text-xs text-white focus:outline-none focus:border-dourado font-sans cursor-pointer font-bold">
+                                <button id="btnDiaSeguinteAgenda" class="px-2 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg text-xs font-bold transition cursor-pointer" title="Dia Seguinte">
+                                    ▶
+                                </button>
+                            </div>
+                            <span id="badgeQtdAgendamentosData" class="bg-dourado/10 text-dourado border border-dourado/30 px-3 py-1.5 rounded-xl font-bold text-xs">
+                                0 clientes
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Tabela dos Agendamentos -->
+                    <div class="card-dark rounded-2xl border border-zinc-800 overflow-hidden shadow-xl">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-zinc-950/80 border-b border-zinc-800 text-xs font-bold text-dourado uppercase tracking-wider">
+                                    <tr>
+                                        <th class="p-3.5">Cliente</th>
+                                        <th class="p-3.5">Contato (WhatsApp)</th>
+                                        <th class="p-3.5">Serviço & Preço</th>
+                                        <th class="p-3.5">Data & Horário</th>
+                                        <th class="p-3.5">Pagamento & Status</th>
+                                        <th class="p-3.5 text-right">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabelaAgendamentosAdmin" class="divide-y divide-zinc-800/60 text-xs">
+                                    <tr>
+                                        <td colspan="6" class="p-6 text-center text-zinc-500">Carregando agendamentos...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -3446,6 +3514,7 @@
                 console.log('[EMAÚS:AGENDAMENTOS] 📥 Carregados', lista.length, 'agendamentos do Firestore.');
 
                 atualizarMetricasOverviewComDados(lista);
+                if (typeof renderizarGradeMesAdmin === 'function') renderizarGradeMesAdmin();
                 renderizarTabelaAgendamentos();
             } catch (e) {
                 console.error("[EMAÚS:ERRO:AGENDAMENTOS] Falha ao carregar agendamentos:", e);
@@ -4006,40 +4075,260 @@
         document.getElementById('inputBuscaFaturamento')?.addEventListener('input', renderizarTabelaHistoricoFaturamento);
         document.getElementById('selectFiltroTipoFaturamento')?.addEventListener('change', renderizarTabelaHistoricoFaturamento);
 
-        let dataFiltroAgendaSelecionada = new Date().toISOString().split('T')[0];
+        // ==========================================
+        // GESTÃO DA AGENDA DE ATENDIMENTOS & CALENDÁRIO MENSAL INTERATIVO
+        // ==========================================
+        const dataHojeIso = new Date().toISOString().split('T')[0];
+        const hojeDtObj = new Date();
+        let anoCalendarioAgendaAtual = hojeDtObj.getFullYear();
+        let mesCalendarioAgendaAtual = hojeDtObj.getMonth(); // 0 a 11
+        let dataFiltroAgendaSelecionada = dataHojeIso;
         let filtroModoAgenda = 'data'; // 'data' ou 'todos'
+        let modoVisualizacaoAgenda = 'calendario'; // 'calendario' ou 'lista'
+
+        const nomesMesesPt = [
+            'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+            'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+        ];
+
+        window.alternarModoVisualizacaoAgenda = function(modo) {
+            modoVisualizacaoAgenda = modo;
+            const btnCal = document.getElementById('btnModoCalendarioAgenda');
+            const btnList = document.getElementById('btnModoListaAgenda');
+            const contCal = document.getElementById('containerGradeCalendarioAdmin');
+
+            if (modo === 'calendario') {
+                if (contCal) contCal.classList.remove('hidden');
+                if (btnCal) btnCal.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer bg-dourado text-black shadow-sm";
+                if (btnList) btnList.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer bg-transparent text-zinc-400 hover:text-white";
+                filtroModoAgenda = 'data';
+                renderizarGradeMesAdmin();
+                renderizarTabelaAgendamentos();
+            } else {
+                if (contCal) contCal.classList.add('hidden');
+                if (btnList) btnList.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer bg-dourado text-black shadow-sm";
+                if (btnCal) btnCal.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer bg-transparent text-zinc-400 hover:text-white";
+                filtroModoAgenda = 'todos';
+                renderizarTabelaAgendamentos();
+            }
+        };
+
+        window.renderizarGradeMesAdmin = function() {
+            const gridContainer = document.getElementById('gridDiasMesAdmin');
+            const labelMesAno = document.getElementById('labelMesAnoCalendarioAdmin');
+            if (!gridContainer) return;
+
+            if (labelMesAno) {
+                labelMesAno.innerText = `${nomesMesesPt[mesCalendarioAgendaAtual]} de ${anoCalendarioAgendaAtual}`;
+            }
+
+            const primeiroDiaSemana = new Date(anoCalendarioAgendaAtual, mesCalendarioAgendaAtual, 1).getDay(); // 0 = Domingo, 6 = Sábado
+            const totalDiasMes = new Date(anoCalendarioAgendaAtual, mesCalendarioAgendaAtual + 1, 0).getDate();
+            const totalDiasMesAnterior = new Date(anoCalendarioAgendaAtual, mesCalendarioAgendaAtual, 0).getDate();
+
+            // Agrupa agendamentos ativos em memória por chave de data 'YYYY-MM-DD'
+            const mapaAgendamentosPorData = {};
+            (window.listaAgendamentosMemoria || []).forEach(ag => {
+                if (!ag.dataHora) return;
+                const dataIso = ag.dataHora.split('T')[0];
+                const ehCancelado = ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'reembolsado';
+                if (ehCancelado) return;
+
+                if (!mapaAgendamentosPorData[dataIso]) {
+                    mapaAgendamentosPorData[dataIso] = { total: 0, vips: 0, concluidos: 0, pendentes: 0, items: [] };
+                }
+                mapaAgendamentosPorData[dataIso].total++;
+                if (ag.isPlano) mapaAgendamentosPorData[dataIso].vips++;
+                if (ag.status === 'concluido') mapaAgendamentosPorData[dataIso].concluidos++;
+                else mapaAgendamentosPorData[dataIso].pendentes++;
+                mapaAgendamentosPorData[dataIso].items.push(ag);
+            });
+
+            const hojeIsoStr = new Date().toISOString().split('T')[0];
+            let htmlGrid = "";
+
+            // 1. Preenchimento de dias do mês anterior
+            for (let p = primeiroDiaSemana - 1; p >= 0; p--) {
+                const diaNum = totalDiasMesAnterior - p;
+                const mesAnt = mesCalendarioAgendaAtual === 0 ? 11 : mesCalendarioAgendaAtual - 1;
+                const anoAnt = mesCalendarioAgendaAtual === 0 ? anoCalendarioAgendaAtual - 1 : anoCalendarioAgendaAtual;
+                const dataIsoPad = `${anoAnt}-${String(mesAnt + 1).padStart(2, '0')}-${String(diaNum).padStart(2, '0')}`;
+                
+                htmlGrid += `
+                    <div onclick="selecionarDiaCalendarioAdmin('${dataIsoPad}')" class="min-h-[64px] sm:min-h-[85px] p-1.5 sm:p-2 rounded-xl border border-zinc-900/60 bg-black/40 text-zinc-600 opacity-40 hover:opacity-80 transition cursor-pointer flex flex-col justify-between select-none">
+                        <div class="text-[11px] sm:text-xs font-semibold text-zinc-500">${diaNum}</div>
+                    </div>
+                `;
+            }
+
+            // 2. Dias do mês atual
+            for (let d = 1; d <= totalDiasMes; d++) {
+                const dataIso = `${anoCalendarioAgendaAtual}-${String(mesCalendarioAgendaAtual + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const infoAg = mapaAgendamentosPorData[dataIso];
+                const ehHoje = dataIso === hojeIsoStr;
+                const ehSelecionado = dataIso === dataFiltroAgendaSelecionada && filtroModoAgenda === 'data';
+
+                // Checagem de dia bloqueado
+                const dataObjDia = new Date(anoCalendarioAgendaAtual, mesCalendarioAgendaAtual, d);
+                const diaSemanaNum = dataObjDia.getDay();
+                const ehDiaSemanaBloqueado = (window.diasSemanaBloqueados || []).includes(diaSemanaNum);
+                const ehDataBloqueada = (window.diasBloqueadosBarbearia || []).includes(dataIso);
+                const ehFechado = ehDiaSemanaBloqueado || ehDataBloqueada;
+
+                let classesEstilo = "min-h-[68px] sm:min-h-[90px] p-1.5 sm:p-2 rounded-xl border transition cursor-pointer flex flex-col justify-between select-none relative group ";
+                
+                if (ehSelecionado) {
+                    classesEstilo += "border-amber-400 bg-zinc-900 shadow-lg ring-2 ring-amber-400/50 ";
+                } else if (ehHoje) {
+                    classesEstilo += "border-dourado/80 bg-dourado/10 hover:bg-dourado/15 ";
+                } else {
+                    classesEstilo += "border-zinc-800/80 bg-zinc-950/70 hover:bg-zinc-900 hover:border-zinc-700 ";
+                }
+
+                let badgesHtml = "";
+                if (ehFechado) {
+                    badgesHtml = `
+                        <div class="mt-1">
+                            <span class="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-red-950/80 text-red-400 border border-red-800/60 w-full justify-center">
+                                🔒 Fechado
+                            </span>
+                        </div>
+                    `;
+                } else if (infoAg && infoAg.total > 0) {
+                    badgesHtml = `
+                        <div class="mt-1 space-y-1">
+                            <span class="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-green-950/90 text-green-300 border border-green-800/80 w-full truncate">
+                                <span class="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0 animate-pulse"></span>
+                                <span class="truncate">${infoAg.total} ${infoAg.total === 1 ? 'cliente' : 'clientes'}</span>
+                            </span>
+                            ${infoAg.vips > 0 ? `
+                                <span class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-purple-950/80 text-purple-300 border border-purple-800/60 w-full truncate">
+                                    👑 ${infoAg.vips} VIP
+                                </span>
+                            ` : ''}
+                        </div>
+                    `;
+                } else {
+                    badgesHtml = `
+                        <div class="mt-1">
+                            <span class="text-[9px] text-zinc-600 hidden group-hover:block font-medium text-center">
+                                Livre
+                            </span>
+                        </div>
+                    `;
+                }
+
+                htmlGrid += `
+                    <div onclick="selecionarDiaCalendarioAdmin('${dataIso}')" class="${classesEstilo}" title="Ver atendimentos de ${d}/${mesCalendarioAgendaAtual + 1}/${anoCalendarioAgendaAtual}">
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs sm:text-sm font-extrabold ${ehHoje ? 'text-dourado' : (ehSelecionado ? 'text-white' : 'text-zinc-300')}">
+                                ${d}
+                            </span>
+                            ${ehHoje ? `<span class="text-[8px] sm:text-[9px] font-extrabold px-1.5 py-0.5 rounded-md bg-dourado text-black uppercase shadow-xs">Hoje</span>` : ''}
+                        </div>
+                        ${badgesHtml}
+                    </div>
+                `;
+            }
+
+            // 3. Preenchimento de dias do próximo mês para completar a matriz (grade 7 colunas)
+            const totalCelulasAteAgora = primeiroDiaSemana + totalDiasMes;
+            const celulasRestantes = totalCelulasAteAgora % 7 === 0 ? 0 : 7 - (totalCelulasAteAgora % 7);
+            for (let n = 1; n <= celulasRestantes; n++) {
+                const mesProx = mesCalendarioAgendaAtual === 11 ? 0 : mesCalendarioAgendaAtual + 1;
+                const anoProx = mesCalendarioAgendaAtual === 11 ? anoCalendarioAgendaAtual + 1 : anoCalendarioAgendaAtual;
+                const dataIsoPad = `${anoProx}-${String(mesProx + 1).padStart(2, '0')}-${String(n).padStart(2, '0')}`;
+
+                htmlGrid += `
+                    <div onclick="selecionarDiaCalendarioAdmin('${dataIsoPad}')" class="min-h-[64px] sm:min-h-[85px] p-1.5 sm:p-2 rounded-xl border border-zinc-900/60 bg-black/40 text-zinc-600 opacity-40 hover:opacity-80 transition cursor-pointer flex flex-col justify-between select-none">
+                        <div class="text-[11px] sm:text-xs font-semibold text-zinc-500">${n}</div>
+                    </div>
+                `;
+            }
+
+            gridContainer.innerHTML = htmlGrid;
+        };
+
+        window.selecionarDiaCalendarioAdmin = function(dataIso) {
+            dataFiltroAgendaSelecionada = dataIso;
+            filtroModoAgenda = 'data';
+
+            // Ajusta o mês e ano do calendário caso o usuário tenha clicado em dia do mês adjacente
+            const [ano, mes] = dataIso.split('-').map(Number);
+            anoCalendarioAgendaAtual = ano;
+            mesCalendarioAgendaAtual = mes - 1;
+
+            const inputData = document.getElementById('inputDataFiltroAgenda');
+            if (inputData) inputData.value = dataIso;
+
+            renderizarGradeMesAdmin();
+            renderizarTabelaAgendamentos();
+
+            // Scroll suave para os detalhes em dispositivos móveis
+            if (window.innerWidth < 768) {
+                const painelDetalhes = document.getElementById('painelDetalhesDiaSelecionado');
+                if (painelDetalhes) {
+                    painelDetalhes.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        };
 
         window.carregarAgendamentosAdmin = async function(modo = 'data', dataParam = null) {
             filtroModoAgenda = modo;
             if (dataParam) {
                 dataFiltroAgendaSelecionada = dataParam;
+                const [ano, mes] = dataParam.split('-').map(Number);
+                if (!isNaN(ano) && !isNaN(mes)) {
+                    anoCalendarioAgendaAtual = ano;
+                    mesCalendarioAgendaAtual = mes - 1;
+                }
             } else if (!dataFiltroAgendaSelecionada) {
                 dataFiltroAgendaSelecionada = new Date().toISOString().split('T')[0];
             }
 
             const inputData = document.getElementById('inputDataFiltroAgenda');
-            const btnHoje = document.getElementById('btnAgendaHoje');
-            const btnHist = document.getElementById('btnFiltroHistoricoGeral');
-            const hojeStr = new Date().toISOString().split('T')[0];
-
             if (inputData) inputData.value = dataFiltroAgendaSelecionada;
-
-            const btnAtivoClass = "bg-dourado text-black px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase transition cursor-pointer shadow-sm";
-            const btnInativoClass = "bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase transition cursor-pointer";
-
-            if (btnHoje) {
-                btnHoje.className = (filtroModoAgenda === 'data' && dataFiltroAgendaSelecionada === hojeStr) ? btnAtivoClass : btnInativoClass;
-            }
-            if (btnHist) {
-                btnHist.className = filtroModoAgenda === 'todos' ? "bg-dourado text-black px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shadow-sm" : "bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white px-3 py-1.5 rounded-xl border border-zinc-800 text-xs font-bold transition cursor-pointer";
-            }
 
             if (window.listaAgendamentosMemoria.length === 0) {
                 await buscarAgendamentosFirestore(false);
             } else {
+                renderizarGradeMesAdmin();
                 renderizarTabelaAgendamentos();
             }
         };
+
+        // Listeners do Alternador de Modo de Visualização (Mês / Lista Geral)
+        document.getElementById('btnModoCalendarioAgenda')?.addEventListener('click', () => alternarModoVisualizacaoAgenda('calendario'));
+        document.getElementById('btnModoListaAgenda')?.addEventListener('click', () => alternarModoVisualizacaoAgenda('lista'));
+
+        // Listeners do Navegador de Mês
+        document.getElementById('btnMesAnteriorAgenda')?.addEventListener('click', () => {
+            if (mesCalendarioAgendaAtual === 0) {
+                mesCalendarioAgendaAtual = 11;
+                anoCalendarioAgendaAtual--;
+            } else {
+                mesCalendarioAgendaAtual--;
+            }
+            renderizarGradeMesAdmin();
+        });
+
+        document.getElementById('btnMesSeguinteAgenda')?.addEventListener('click', () => {
+            if (mesCalendarioAgendaAtual === 11) {
+                mesCalendarioAgendaAtual = 0;
+                anoCalendarioAgendaAtual++;
+            } else {
+                mesCalendarioAgendaAtual++;
+            }
+            renderizarGradeMesAdmin();
+        });
+
+        document.getElementById('btnMesHojeAgenda')?.addEventListener('click', () => {
+            const agora = new Date();
+            anoCalendarioAgendaAtual = agora.getFullYear();
+            mesCalendarioAgendaAtual = agora.getMonth();
+            const hojeStr = agora.toISOString().split('T')[0];
+            selecionarDiaCalendarioAdmin(hojeStr);
+        });
 
         function renderizarTabelaAgendamentos() {
             const tabela = document.getElementById('tabelaAgendamentosAdmin');
@@ -4078,7 +4367,7 @@
                 if (window.configExpedienteCache && window.configExpedienteCache.temPausa) {
                     const pIni = window.configExpedienteCache.pausaInicio || '11:00';
                     const pFim = window.configExpedienteCache.pausaFim || '12:00';
-                    textoData += ` <span class="text-[11px] text-amber-300 font-semibold bg-amber-950/80 border border-amber-800 px-2 py-0.5 rounded-lg ml-2 inline-flex items-center gap-1">⏸️ Almoço/Pausa: ${pIni} às ${pFim}</span>`;
+                    textoData += ` <span class="text-[11px] text-amber-300 font-semibold bg-amber-950/80 border border-amber-800 px-2 py-0.5 rounded-lg ml-2 inline-flex items-center gap-1">⏸️ Almoço: ${pIni} às ${pFim}</span>`;
                 }
 
                 if (labelResumo) labelResumo.innerHTML = textoData;
@@ -4208,13 +4497,8 @@
         document.getElementById('inputDataFiltroAgenda')?.addEventListener('change', (e) => {
             const novaData = e.target.value;
             if (novaData) {
-                carregarAgendamentosAdmin('data', novaData);
+                selecionarDiaCalendarioAdmin(novaData);
             }
-        });
-
-        document.getElementById('btnAgendaHoje')?.addEventListener('click', () => {
-            const hoje = new Date().toISOString().split('T')[0];
-            carregarAgendamentosAdmin('data', hoje);
         });
 
         document.getElementById('btnDiaAnteriorAgenda')?.addEventListener('click', () => {
@@ -4225,7 +4509,7 @@
             const m = String(dt.getMonth() + 1).padStart(2, '0');
             const d = String(dt.getDate()).padStart(2, '0');
             const novaData = `${y}-${m}-${d}`;
-            carregarAgendamentosAdmin('data', novaData);
+            selecionarDiaCalendarioAdmin(novaData);
         });
 
         document.getElementById('btnDiaSeguinteAgenda')?.addEventListener('click', () => {
@@ -4236,11 +4520,7 @@
             const m = String(dt.getMonth() + 1).padStart(2, '0');
             const d = String(dt.getDate()).padStart(2, '0');
             const novaData = `${y}-${m}-${d}`;
-            carregarAgendamentosAdmin('data', novaData);
-        });
-
-        document.getElementById('btnFiltroHistoricoGeral')?.addEventListener('click', () => {
-            carregarAgendamentosAdmin('todos');
+            selecionarDiaCalendarioAdmin(novaData);
         });
 
         window.confirmarPresencaAdmin = async function(id) {
@@ -4298,6 +4578,7 @@
 
                 if (ag) ag.status = 'concluido';
                 atualizarMetricasOverviewComDados(window.listaAgendamentosMemoria);
+                if (typeof renderizarGradeMesAdmin === 'function') renderizarGradeMesAdmin();
                 renderizarTabelaAgendamentos();
             } catch (e) {
                 alert("Erro ao confirmar presença: " + e.message);
@@ -4333,6 +4614,7 @@
 
                 if (ag) ag.status = 'falta';
                 atualizarMetricasOverviewComDados(window.listaAgendamentosMemoria);
+                if (typeof renderizarGradeMesAdmin === 'function') renderizarGradeMesAdmin();
                 renderizarTabelaAgendamentos();
             } catch (e) {
                 alert("Erro ao marcar falta: " + e.message);
@@ -4521,6 +4803,7 @@
                 // 3. Atualiza na memória e UI instantaneamente (0ms de espera)
                 if (ag) ag.status = 'cancelado';
                 atualizarMetricasOverviewComDados(window.listaAgendamentosMemoria);
+                if (typeof renderizarGradeMesAdmin === 'function') renderizarGradeMesAdmin();
                 renderizarTabelaAgendamentos();
                 if (typeof carregarFaturamentoMensalAdmin === 'function') carregarFaturamentoMensalAdmin(true);
 
