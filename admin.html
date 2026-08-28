@@ -4398,7 +4398,8 @@
                 const id = ag.id;
                 const ehConcluido = ag.status === 'concluido';
                 const ehFalta = ag.status === 'falta';
-                const ehCancelado = ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'reembolsado';
+                const ehReembolsado = ag.status === 'reembolsado' || ag.estornoRealizado === true;
+                const ehCancelado = ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ehReembolsado;
 
                 const uData = (ag.userId && mapaUsuariosAdmin.get(ag.userId)) || (ag.email && mapaUsuariosAdmin.get(ag.email.toLowerCase().trim()));
                 const nomeClienteFinal = uData?.nome || ag.cliente || 'Cliente';
@@ -4430,7 +4431,9 @@
                 }
 
                 let statusBadge = "";
-                if (ehCancelado) {
+                if (ehReembolsado) {
+                    statusBadge = '<span class="bg-red-950/90 text-red-300 border border-red-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">💸 Reembolsado</span>';
+                } else if (ehCancelado) {
                     statusBadge = '<span class="bg-red-950 text-red-400 border border-red-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">❌ Cancelado</span>';
                 } else if (ehConcluido) {
                     statusBadge = '<span class="bg-green-950 text-green-400 border border-green-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">✅ Compareceu</span>';
@@ -4472,10 +4475,15 @@
                                 ${(!ehConcluido && !ehFalta && !ehCancelado) ? `
                                     <button onclick="confirmarPresencaAdmin('${id}')" id="btnPresenca_${id}" class="bg-green-600 hover:bg-green-700 text-white px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer" title="Confirmar comparecimento">✓ Compareceu</button>
                                     <button onclick="marcarFaltaAdmin('${id}')" id="btnFalta_${id}" class="bg-amber-700 hover:bg-amber-800 text-white px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer" title="Marcar que o cliente não compareceu">✕ Faltou</button>
-                                ` : ''}
-                                <button onclick="excluirAgendamentoAdmin('${id}')" id="btnExcluir_${id}" class="bg-red-600/80 hover:bg-red-600 text-white px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer" title="Cancelar e excluir agendamento">
-                                    Excluir
-                                </button>
+                                    <button onclick="excluirAgendamentoAdmin('${id}')" id="btnExcluir_${id}" class="bg-red-600/80 hover:bg-red-600 text-white px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer" title="Cancelar este agendamento">
+                                        Cancelar
+                                    </button>
+                                ` : `
+                                    <button onclick="excluirAgendamentoAdmin('${id}')" id="btnExcluir_${id}" class="bg-zinc-900 hover:bg-red-950 hover:text-red-300 text-zinc-400 px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer border border-zinc-800 hover:border-red-800 flex items-center gap-1" title="Apagar este registro histórico do sistema">
+                                        <span>🗑️</span>
+                                        <span>Apagar</span>
+                                    </button>
+                                `}
                             </div>
                         </td>
                     </tr>
@@ -4741,11 +4749,48 @@
             const userId = ag?.userId || '';
             const semanaPlano = ag?.semanaPlano || '';
             const telCliente = ag?.telefone || '';
+            const jaEstornadoOuCancelado = ag?.status === 'cancelado' || ag?.status === 'cancelado_barbeiro' || ag?.status === 'reembolsado' || ag?.estornoRealizado === true;
 
+            // =========================================================================
+            // CASO 1: AGENDAMENTO JÁ CANCELADO OU REEMBOLSADO (Exclusão do Histórico)
+            // =========================================================================
+            if (jaEstornadoOuCancelado) {
+                if (!confirm(`Deseja realmente apagar o registro histórico de ${cliente} (${servico})? Esta ação removerá o agendamento permanentemente.`)) {
+                    return;
+                }
+
+                const btn = document.getElementById(`btnExcluir_${id}`);
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = "⏳ Apagando...";
+                }
+
+                try {
+                    await deleteDoc(doc(db, "agendamentos", id));
+                    delete window.agendamentosCache[id];
+                    window.listaAgendamentosMemoria = (window.listaAgendamentosMemoria || []).filter(x => x.id !== id);
+
+                    atualizarMetricasOverviewComDados(window.listaAgendamentosMemoria);
+                    if (typeof renderizarGradeMesAdmin === 'function') renderizarGradeMesAdmin();
+                    renderizarTabelaAgendamentos();
+                    if (typeof carregarFaturamentoMensalAdmin === 'function') carregarFaturamentoMensalAdmin(true);
+                } catch (e) {
+                    alert("Erro ao excluir registro histórico: " + e.message);
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = "🗑️ Apagar";
+                    }
+                }
+                return;
+            }
+
+            // =========================================================================
+            // CASO 2: AGENDAMENTO ATIVO (Pendente ou Confirmado) -> Cancelar & Estornar
+            // =========================================================================
             let avisoMsg = "";
             if (isPlano) {
                 avisoMsg = `\n\n👑 REGRA DO PACOTE VIP: O crédito do corte da semana voltará a ficar disponível para o cliente (${cliente}) reagendar.`;
-            } else if (valorPago > 0 && idPagamento && idPagamento !== 'manual' && idPagamento !== 'plano_vip') {
+            } else if (valorPago > 0 && idPagamento && idPagamento !== 'manual' && idPagamento !== 'plano_vip' && !ag?.estornoRealizado) {
                 avisoMsg = `\n\n💳 Pagamento online detectado: R$ ${valorPago.toFixed(2)}. Após cancelar, você terá a opção de emitir o reembolso via Mercado Pago.`;
             }
 
@@ -4756,17 +4801,17 @@
             const btn = document.getElementById(`btnExcluir_${id}`);
             if (btn) {
                 btn.disabled = true;
-                btn.innerHTML = "⏳ Excluindo...";
+                btn.innerHTML = "⏳ Cancelando...";
             }
 
             try {
-                // 1. Marca como cancelado no Firestore (preservando o histórico financeiro e contábil)
+                // 1. Marca como cancelado no Firestore
                 await updateDoc(doc(db, "agendamentos", id), {
                     status: 'cancelado',
                     canceladoEm: new Date().toISOString(),
                     canceladoPor: 'barbeiro',
                     motivoCancelamento: 'Cancelado pelo administrador',
-                    estornoRealizado: false,
+                    estornoRealizado: !!ag?.estornoRealizado,
                     atualizadoEm: new Date().toISOString()
                 });
 
@@ -4820,7 +4865,7 @@
                             telefone: telCliente,
                             servico: servico,
                             canceladoPor: 'barbeiro',
-                            estornoRealizado: false,
+                            estornoRealizado: !!ag?.estornoRealizado,
                             valorEstornado: 0,
                             isPlano: isPlano,
                             whatsappBarbeiro: whatsAppNumeroAtivo
@@ -4828,8 +4873,8 @@
                     }).catch(e => console.warn("Aviso WhatsApp cancelamento:", e.message));
                 }
 
-                // 5. Se foi pago online via Mercado Pago, abre o Modal com o Botão de Reembolso Manual
-                if (!isPlano && valorPago > 0 && idPagamento && idPagamento !== 'manual' && idPagamento !== 'plano_vip') {
+                // 5. Se foi pago online via Mercado Pago E AINDA NÃO FOI ESTORNADO, abre o Modal com o Botão de Reembolso Manual
+                if (!isPlano && valorPago > 0 && idPagamento && idPagamento !== 'manual' && idPagamento !== 'plano_vip' && !ag?.estornoRealizado) {
                     dadosReembolsoPendente = {
                         agendamentoId: id,
                         paymentId: idPagamento,
