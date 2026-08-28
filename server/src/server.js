@@ -388,10 +388,12 @@ async function carregarConfiguracoesMercadoPagoFirestore() {
     try {
         const token = await getGoogleAccessToken();
         if (!token) return;
-        const data = await new Promise((resolve, reject) => {
+
+        // 1. Tenta carregar do documento protegido configuracoes/pagamento_privado
+        let data = await new Promise((resolve) => {
             const req = https.request({
                 hostname: 'firestore.googleapis.com',
-                path: `/v1/projects/${serviceAccount.project_id}/databases/(default)/documents/configuracoes/pagamento`,
+                path: `/v1/projects/${serviceAccount.project_id}/databases/(default)/documents/configuracoes/pagamento_privado`,
                 method: 'GET',
                 headers: { 'Authorization': `Bearer ${token}` }
             }, (res) => {
@@ -401,9 +403,29 @@ async function carregarConfiguracoesMercadoPagoFirestore() {
                     try { resolve(JSON.parse(body)); } catch(e) { resolve(null); }
                 });
             });
-            req.on('error', reject);
+            req.on('error', () => resolve(null));
             req.end();
         });
+
+        // 2. Fallback de migração caso ainda esteja no documento antigo
+        if (!data || !data.fields || !data.fields.mpAccessToken) {
+            data = await new Promise((resolve) => {
+                const req = https.request({
+                    hostname: 'firestore.googleapis.com',
+                    path: `/v1/projects/${serviceAccount.project_id}/databases/(default)/documents/configuracoes/pagamento`,
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }, (res) => {
+                    let body = '';
+                    res.on('data', chunk => body += chunk);
+                    res.on('end', () => {
+                        try { resolve(JSON.parse(body)); } catch(e) { resolve(null); }
+                    });
+                });
+                req.on('error', () => resolve(null));
+                req.end();
+            });
+        }
 
         if (data && data.fields && data.fields.mpAccessToken && data.fields.mpAccessToken.stringValue) {
             const tokenMp = data.fields.mpAccessToken.stringValue.trim();
@@ -412,7 +434,7 @@ async function carregarConfiguracoesMercadoPagoFirestore() {
                 client = new MercadoPagoConfig({ accessToken: activeAccessToken, options: { timeout: 10000 } });
                 paymentClient = new Payment(client);
                 refundClient = new PaymentRefund(client);
-                console.log(`💳 [Mercado Pago] Token sincronizado com sucesso do Firestore: ${activeAccessToken.slice(0, 10)}...`);
+                console.log(`💳 [Mercado Pago] Token sincronizado com sucesso de pagamento_privado: ${activeAccessToken.slice(0, 10)}...`);
             } else {
                 activeAccessToken = '';
                 client = new MercadoPagoConfig({ accessToken: 'DUMMY_TOKEN', options: { timeout: 10000 } });
@@ -530,7 +552,7 @@ app.get('/api/auth/mercadopago/callback', async (req, res) => {
                 await new Promise((resolve) => {
                     const fsReq = https.request({
                         hostname: 'firestore.googleapis.com',
-                        path: `/v1/projects/${serviceAccount.project_id}/databases/(default)/documents/configuracoes/pagamento?updateMask.fieldPaths=mpAccessToken&updateMask.fieldPaths=mpUserId&updateMask.fieldPaths=mpPublicKey&updateMask.fieldPaths=mpConectadoViaOAuth&updateMask.fieldPaths=atualizadoEm`,
+                        path: `/v1/projects/${serviceAccount.project_id}/databases/(default)/documents/configuracoes/pagamento_privado?updateMask.fieldPaths=mpAccessToken&updateMask.fieldPaths=mpUserId&updateMask.fieldPaths=mpPublicKey&updateMask.fieldPaths=mpConectadoViaOAuth&updateMask.fieldPaths=atualizadoEm`,
                         method: 'PATCH',
                         headers: {
                             'Authorization': `Bearer ${googleToken}`,
@@ -589,10 +611,11 @@ app.post('/api/auth/mercadopago/desconectar', async (req, res) => {
                     }
                 });
 
+                // Limpa documento privado
                 await new Promise((resolve) => {
                     const fsReq = https.request({
                         hostname: 'firestore.googleapis.com',
-                        path: `/v1/projects/${serviceAccount.project_id}/databases/(default)/documents/configuracoes/pagamento?updateMask.fieldPaths=mpAccessToken&updateMask.fieldPaths=mpUserId&updateMask.fieldPaths=mpPublicKey&updateMask.fieldPaths=mpConectadoViaOAuth&updateMask.fieldPaths=atualizadoEm`,
+                        path: `/v1/projects/${serviceAccount.project_id}/databases/(default)/documents/configuracoes/pagamento_privado?updateMask.fieldPaths=mpAccessToken&updateMask.fieldPaths=mpUserId&updateMask.fieldPaths=mpPublicKey&updateMask.fieldPaths=mpConectadoViaOAuth&updateMask.fieldPaths=atualizadoEm`,
                         method: 'PATCH',
                         headers: {
                             'Authorization': `Bearer ${googleToken}`,
@@ -606,6 +629,27 @@ app.post('/api/auth/mercadopago/desconectar', async (req, res) => {
                     });
                     fsReq.on('error', resolve);
                     fsReq.write(patchData);
+                    fsReq.end();
+                });
+
+                // Limpa também documento público
+                await new Promise((resolve) => {
+                    const fsReq = https.request({
+                        hostname: 'firestore.googleapis.com',
+                        path: `/v1/projects/${serviceAccount.project_id}/databases/(default)/documents/configuracoes/pagamento?updateMask.fieldPaths=mpAccessToken`,
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': `Bearer ${googleToken}`,
+                            'Content-Type': 'application/json',
+                            'Content-Length': Buffer.byteLength(JSON.stringify({ fields: { mpAccessToken: { stringValue: '' } } }))
+                        }
+                    }, (fsRes) => {
+                        let d = '';
+                        fsRes.on('data', c => d += c);
+                        fsRes.on('end', resolve);
+                    });
+                    fsReq.on('error', resolve);
+                    fsReq.write(JSON.stringify({ fields: { mpAccessToken: { stringValue: '' } } }));
                     fsReq.end();
                 });
             }

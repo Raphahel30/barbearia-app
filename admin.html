@@ -6350,8 +6350,21 @@
                 const blocoConectado = document.getElementById('blocoMpConectado');
                 const blocoDesconectado = document.getElementById('blocoMpDesconectado');
 
+                // 1. Lê taxas públicas de configuracoes/pagamento
                 const configSnap = await getDoc(doc(db, "configuracoes", "pagamento"));
                 let data = configSnap.exists() ? configSnap.data() : {};
+
+                // 2. Lê credenciais sensíveis de configuracoes/pagamento_privado
+                let dataPrivada = {};
+                try {
+                    const privSnap = await getDoc(doc(db, "configuracoes", "pagamento_privado"));
+                    if (privSnap.exists()) dataPrivada = privSnap.data();
+                } catch(ePriv) {
+                    console.warn("Aviso ao ler pagamento_privado:", ePriv);
+                }
+
+                const tokenAtivo = dataPrivada.mpAccessToken || data.mpAccessToken || '';
+                const userIdAtivo = dataPrivada.mpUserId || data.mpUserId || '';
 
                 if (data.taxaCartaoCredito !== undefined) {
                     const inputTaxaCred = document.getElementById('inputTaxaCartaoCredito');
@@ -6361,9 +6374,9 @@
                     const inputTaxaDeb = document.getElementById('inputTaxaCartaoDebito');
                     if (inputTaxaDeb) inputTaxaDeb.value = data.taxaCartaoDebito;
                 }
-                if (data.mpAccessToken) {
+                if (tokenAtivo) {
                     const inputManual = document.getElementById('inputMpAccessToken');
-                    if (inputManual) inputManual.value = data.mpAccessToken;
+                    if (inputManual) inputManual.value = tokenAtivo;
                 }
                 if (data.pixManual) {
                     const inputPix = document.getElementById('inputPixManual');
@@ -6390,13 +6403,13 @@
                     adminWhatsappGlobal = data.whatsappAdmin;
                 }
 
-                // 1. Se está salvo no Firestore e tem token válido
-                if (data.mpAccessToken && data.mpAccessToken.length > 20 && data.mpAccessToken !== 'SEU_ACCESS_TOKEN_AQUI') {
-                    const ehProducao = data.mpAccessToken.startsWith('APP_USR');
+                // 1. Se tem token válido em pagamento_privado
+                if (tokenAtivo && tokenAtivo.length > 20 && tokenAtivo !== 'SEU_ACCESS_TOKEN_AQUI') {
+                    const ehProducao = tokenAtivo.startsWith('APP_USR');
                     box.className = "p-4 rounded-xl border flex items-center justify-between bg-green-950/40 border-green-800";
                     icon.className = "w-3.5 h-3.5 rounded-full bg-green-400";
                     texto.innerText = "Mercado Pago Conectado!";
-                    sub.innerText = data.mpUserId ? `Conta ativa (ID: ${data.mpUserId}) - Pix automático ativo` : "Pronto para receber pagamentos Pix automáticos";
+                    sub.innerText = userIdAtivo ? `Conta ativa (ID: ${userIdAtivo}) - Pix automático ativo` : "Pronto para receber pagamentos Pix automáticos";
                     badge.className = `text-[10px] font-bold uppercase px-2.5 py-1 rounded ${ehProducao ? 'bg-green-600 text-white' : 'bg-amber-600 text-black'}`;
                     badge.innerText = ehProducao ? "Produção Real" : "Modo Teste";
 
@@ -6407,7 +6420,7 @@
                     fetch(`${getBackendUrlAtivo()}/api/configuracoes/mercadopago`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ accessToken: data.mpAccessToken })
+                        body: JSON.stringify({ accessToken: tokenAtivo })
                     }).catch(() => {});
 
                     return;
@@ -6466,6 +6479,16 @@
                         console.warn("Aviso ao notificar servidor no desconectar:", errApi);
                     }
 
+                    // Limpa documento privado
+                    await setDoc(doc(db, "configuracoes", "pagamento_privado"), {
+                        mpAccessToken: "",
+                        mpUserId: "",
+                        mpPublicKey: "",
+                        mpConectadoViaOAuth: false,
+                        atualizadoEm: new Date()
+                    }, { merge: true });
+
+                    // Limpa também documento público
                     await setDoc(doc(db, "configuracoes", "pagamento"), {
                         mpAccessToken: "",
                         mpUserId: "",
@@ -6542,7 +6565,8 @@
                 }
 
                 try {
-                    await setDoc(doc(db, "configuracoes", "pagamento"), {
+                    // Salva apenas no documento protegido
+                    await setDoc(doc(db, "configuracoes", "pagamento_privado"), {
                         mpAccessToken: token,
                         atualizadoEm: new Date()
                     }, { merge: true });
