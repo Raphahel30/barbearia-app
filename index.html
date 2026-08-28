@@ -2718,7 +2718,14 @@
                                         badgeSemanaVip.className = "bg-blue-500 text-white px-2.5 py-1 rounded-full font-extrabold text-[10px] uppercase shadow";
                                         badgeSemanaVip.innerText = `Semana ${info.semanaAtualInfo.numero}: Já Agendado`;
                                     }
-                                    if (descSemanaVip) descSemanaVip.innerHTML = `📅 Seu corte da Semana ${info.semanaAtualInfo.numero} já está agendado (${info.semanaAtualInfo.agendamentoData ? info.semanaAtualInfo.agendamentoData.replace('T', ' às ') : ''}).`;
+                                    if (descSemanaVip) {
+                                        descSemanaVip.innerHTML = `
+                                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 mt-1">
+                                                <span>📅 Seu corte da Semana ${info.semanaAtualInfo.numero} já está agendado (${info.semanaAtualInfo.agendamentoData ? info.semanaAtualInfo.agendamentoData.replace('T', ' às ') : ''}).</span>
+                                                <button onclick="window.cancelarAgendamentoSemanaPlano(${info.semanaAtualInfo.numero})" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shadow flex items-center gap-1">❌ Cancelar / Reagendar</button>
+                                            </div>
+                                        `;
+                                    }
                                 } else {
                                     if (badgeSemanaVip) {
                                         badgeSemanaVip.className = "bg-zinc-700 text-zinc-300 px-2.5 py-1 rounded-full font-extrabold text-[10px] uppercase shadow";
@@ -3930,7 +3937,15 @@
 
             try {
                 const querySnapshot = await getDocs(collection(db, "agendamentos"));
-                const agora = new Date().toISOString().slice(0, 16);
+                const dAgora = new Date();
+                const anoLocal = dAgora.getFullYear();
+                const mesLocal = String(dAgora.getMonth() + 1).padStart(2, '0');
+                const diaLocal = String(dAgora.getDate()).padStart(2, '0');
+                const horaLocal = String(dAgora.getHours()).padStart(2, '0');
+                const minLocal = String(dAgora.getMinutes()).padStart(2, '0');
+                const hojeDataStr = `${anoLocal}-${mesLocal}-${diaLocal}`;
+                const agoraLocalStr = `${hojeDataStr}T${horaLocal}:${minLocal}`;
+
                 let temMeusAgendamentos = false;
                 let temHorariosOcupadosFuturos = false;
 
@@ -3946,15 +3961,19 @@
                     if (!window.meusAgendamentosCache) window.meusAgendamentosCache = {};
                     window.meusAgendamentosCache[agId] = { id: agId, ...ag };
 
-                    // Exibe na lista de ocupados APENAS se a data/hora for no futuro ou hoje e estiver ativo
                     const ehCancelado = ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'reembolsado';
-                    if (ag.dataHora && ag.dataHora >= agora && !ehCancelado) {
+
+                    // Exibe na lista de ocupados APENAS se a data/hora for no futuro ou hoje e estiver ativo
+                    if (ag.dataHora && ag.dataHora >= agoraLocalStr && !ehCancelado) {
                         temHorariosOcupadosFuturos = true;
                         divOcupados.innerHTML += `<div>❌ ${(ag.dataHora || '').replace('T', ' às ')}</div>`;
                     }
 
-                    // Meus agendamentos ativos futuros
-                    if (ag.userId === userId && ag.dataHora >= agora && !ehCancelado) {
+                    // Meus agendamentos ativos (hoje ou no futuro)
+                    const agDataStr = String(ag.dataHora || '').slice(0, 10);
+                    const ehHojeOuFuturo = (ag.dataHora && ag.dataHora >= agoraLocalStr) || (agDataStr >= hojeDataStr);
+
+                    if (ag.userId === userId && ehHojeOuFuturo && !ehCancelado) {
                         temMeusAgendamentos = true;
                         const precoTotal = Number(ag.preco || 0);
                         const valorPagoExib = Number(ag.taxaReservaPaga !== undefined ? ag.taxaReservaPaga : (ag.isPlano ? 0 : 10));
@@ -4023,6 +4042,52 @@
             } catch (e) { console.error(e); }
         }
 
+        window.cancelarAgendamentoSemanaPlano = async function(numSemana) {
+            if (!auth.currentUser) {
+                alert("Você precisa estar conectado para cancelar.");
+                return;
+            }
+            try {
+                // 1. Tenta pegar agendamentoId salvo na assinatura do cliente
+                const subSnap = await getDoc(doc(db, "assinaturasClientes", auth.currentUser.uid));
+                let targetAgId = null;
+                if (subSnap.exists()) {
+                    const subData = subSnap.data();
+                    const semData = subData.semanas?.[numSemana];
+                    if (semData?.agendamentoId) targetAgId = semData.agendamentoId;
+                }
+
+                // 2. Se não achou agendamentoId direto na assinatura, busca na coleção agendamentos
+                if (!targetAgId) {
+                    const snapAgs = await getDocs(collection(db, "agendamentos"));
+                    snapAgs.forEach(dSnap => {
+                        const d = dSnap.data();
+                        if (d.userId === auth.currentUser.uid && (d.semanaPlano == numSemana || String(d.servico || '').includes(`Semana ${numSemana}`)) && d.status !== 'cancelado' && d.status !== 'reembolsado') {
+                            targetAgId = dSnap.id;
+                        }
+                    });
+                }
+
+                if (targetAgId) {
+                    await window.cancelarAgendamento(targetAgId);
+                } else {
+                    // Se o agendamento já não existe mais, reseta a semana na assinatura diretamente
+                    if (confirm(`Deseja liberar o corte da Semana ${numSemana} para reagendamento?`)) {
+                        const updateObj = {};
+                        updateObj[`semanas.${numSemana}.status`] = 'disponivel';
+                        updateObj[`semanas.${numSemana}.agendamentoId`] = null;
+                        updateObj[`semanas.${numSemana}.agendamentoData`] = null;
+                        await updateDoc(doc(db, "assinaturasClientes", auth.currentUser.uid), updateObj);
+                        alert(`Corte da Semana ${numSemana} liberado com sucesso para reagendar!`);
+                        await carregarPainelCliente(auth.currentUser.uid);
+                        await carregarPainelPlanosCliente(auth.currentUser.uid);
+                    }
+                }
+            } catch (err) {
+                alert("Erro ao cancelar agendamento do plano: " + err.message);
+            }
+        };
+
         window.cancelarAgendamento = async function(id) {
             let ag = window.meusAgendamentosCache ? window.meusAgendamentosCache[id] : null;
             if (!ag) {
@@ -4040,7 +4105,7 @@
             const cliente = ag.cliente || 'Cliente';
             const servico = ag.servico || 'Corte';
             const dataHora = ag.dataHora || '';
-            const semanaPlano = ag.semanaPlano || '';
+            let semanaPlano = ag.semanaPlano || '';
             const isPlano = !!ag.isPlano;
             const idPagamento = ag.idPagamento || '';
             const valorPago = Number(ag.taxaReservaPaga !== undefined ? ag.taxaReservaPaga : (isPlano ? 0 : 10.00));
@@ -4137,21 +4202,38 @@
                 });
 
                 // 3. Atualiza o crédito do plano VIP
-                if (isPlano && semanaPlano && auth.currentUser) {
+                if (isPlano && auth.currentUser) {
                     try {
-                        const updateObj = {};
-                        if (planoPerdeuCredito) {
-                            // Cancelamento com 3h ou menos: PERDE o corte da semana
-                            updateObj[`semanas.${semanaPlano}.status`] = 'falta';
-                            updateObj[`semanas.${semanaPlano}.canceladoEm`] = new Date().toISOString();
-                            updateObj[`semanas.${semanaPlano}.motivo`] = 'Cancelado pelo cliente com 3h ou menos de antecedência';
-                        } else {
-                            // Cancelamento com mais de 3h: LIBERA o corte da semana para reagendar
-                            updateObj[`semanas.${semanaPlano}.status`] = 'disponivel';
-                            updateObj[`semanas.${semanaPlano}.agendamentoId`] = null;
-                            updateObj[`semanas.${semanaPlano}.agendamentoData`] = null;
+                        let numSemanaTarget = semanaPlano;
+                        const subSnap = await getDoc(doc(db, "assinaturasClientes", auth.currentUser.uid));
+                        if (subSnap.exists()) {
+                            const subData = subSnap.data();
+                            const semanasObj = subData.semanas || {};
+                            if (!numSemanaTarget) {
+                                for (let sKey of Object.keys(semanasObj)) {
+                                    if (semanasObj[sKey].agendamentoId === id || semanasObj[sKey].status === 'agendado') {
+                                        numSemanaTarget = sKey;
+                                        break;
+                                    }
+                                }
+                            }
                         }
-                        await updateDoc(doc(db, "assinaturasClientes", auth.currentUser.uid), updateObj);
+
+                        if (numSemanaTarget) {
+                            const updateObj = {};
+                            if (planoPerdeuCredito) {
+                                // Cancelamento com 3h ou menos: PERDE o corte da semana
+                                updateObj[`semanas.${numSemanaTarget}.status`] = 'falta';
+                                updateObj[`semanas.${numSemanaTarget}.canceladoEm`] = new Date().toISOString();
+                                updateObj[`semanas.${numSemanaTarget}.motivo`] = 'Cancelado pelo cliente com 3h ou menos de antecedência';
+                            } else {
+                                // Cancelamento com mais de 3h: LIBERA o corte da semana para reagendar
+                                updateObj[`semanas.${numSemanaTarget}.status`] = 'disponivel';
+                                updateObj[`semanas.${numSemanaTarget}.agendamentoId`] = null;
+                                updateObj[`semanas.${numSemanaTarget}.agendamentoData`] = null;
+                            }
+                            await updateDoc(doc(db, "assinaturasClientes", auth.currentUser.uid), updateObj);
+                        }
                     } catch (errP) { console.warn("Erro ao atualizar semana na assinatura:", errP); }
                 }
 
@@ -4195,8 +4277,8 @@
                 alert(alertMsg);
 
                 if (auth.currentUser) {
-                    carregarPainelCliente(auth.currentUser.uid);
-                    carregarPainelPlanosCliente(auth.currentUser.uid);
+                    await carregarPainelCliente(auth.currentUser.uid);
+                    await carregarPainelPlanosCliente(auth.currentUser.uid);
                 }
             } catch (e) { alert("Erro ao cancelar agendamento: " + e.message); }
         };
