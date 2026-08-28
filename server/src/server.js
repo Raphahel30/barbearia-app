@@ -253,33 +253,32 @@ app.use(helmet({
     crossOriginEmbedderPolicy: false
 }));
 
-// A3: CORS restrito às origens legítimas do ecossistema
+// A3: CORS restrito e estrito exclusivamente às origens legítimas do projeto
 const ALLOWED_ORIGINS = [
     APP_SITE_URL,
     'https://agendamento-barbearia-e8ffb.web.app',
     'https://agendamento-barbearia-e8ffb.firebaseapp.com',
     'https://emaus-barbearia.vercel.app',
+    'https://barbearia-app-1bf5.onrender.com',
     'http://localhost:3000',
     'http://localhost:5000',
+    'http://localhost:5173',
+    'http://localhost:5500',
+    'http://localhost:8080',
     'http://127.0.0.1:3000',
+    'http://127.0.0.1:5000',
+    'http://127.0.0.1:5500',
+    'http://127.0.0.1:8080',
     SELF_URL
 ].filter(Boolean);
 
 app.use(cors({
     origin: (origin, callback) => {
-        // Permite requisições sem origem (ex: server-to-server, Postman, curl, webhooks)
+        // Permite requisições sem origem (ex: chamadas internas do servidor, webhooks Mercado Pago, cron jobs)
         if (!origin) return callback(null, true);
         
-        // Verifica se a origem está na lista explícita ou pertence aos domínios do projeto
-        if (
-            ALLOWED_ORIGINS.includes(origin) ||
-            origin.endsWith('.vercel.app') ||
-            origin.endsWith('.web.app') ||
-            origin.endsWith('.firebaseapp.com') ||
-            origin.endsWith('.onrender.com') ||
-            origin.includes('localhost') ||
-            origin.includes('127.0.0.1')
-        ) {
+        // Verifica se a origem está rigorosamente na lista explícita de domínios autorizados
+        if (ALLOWED_ORIGINS.includes(origin)) {
             return callback(null, true);
         }
         
