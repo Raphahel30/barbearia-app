@@ -42,6 +42,10 @@ if (!serviceAccount || !serviceAccount.private_key) {
     }
 }
 
+if (serviceAccount && serviceAccount.private_key) {
+    serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+}
+
 if (!serviceAccount || !serviceAccount.private_key) {
     console.warn('⚠️ [Firebase Auth] Nenhuma credencial de Service Account encontrada. Defina FIREBASE_SERVICE_ACCOUNT no painel do Render/Vercel.');
 }

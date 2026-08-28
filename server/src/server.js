@@ -1844,9 +1844,7 @@ app.all('/api/whatsapp/disparar-lembretes-4h', verificarAdminMiddleware, async (
     }
 });
 
-const isMain = process.argv[1] && (process.argv[1].replace(/\\/g, '/').endsWith('server.js') || process.argv[1].replace(/\\/g, '/').endsWith('server/src/server.js'));
-
-if (isMain && !process.env.VERCEL) {
+if (!process.env.VERCEL) {
     try {
         app.listen(port, '0.0.0.0', () => {
             console.log(`🚀 Servidor EMAÚS Barbearia rodando em 0.0.0.0:${port}`);
