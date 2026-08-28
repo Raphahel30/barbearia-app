@@ -11,6 +11,8 @@ services:
         value: 20.18.0
       - key: MERCADO_PAGO_ACCESS_TOKEN
         sync: false
+      - key: FIREBASE_SERVICE_ACCOUNT
+        sync: false
       - key: MP_CLIENT_ID
         sync: false
       - key: MP_CLIENT_SECRET
