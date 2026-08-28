@@ -1330,29 +1330,31 @@
             authMsg.innerText = "";
         });
 
-        document.getElementById('linkEsqueceuSenha').addEventListener('click', () => {
-            loginSection.classList.add('hidden');
-            registerSection.classList.add('hidden');
-            tabMenu.classList.add('hidden');
-            forgotSection.classList.remove('hidden');
-            authMsg.innerText = "";
+        document.getElementById('linkEsqueceuSenha')?.addEventListener('click', () => {
+            loginSection?.classList.add('hidden');
+            registerSection?.classList.add('hidden');
+            tabMenu?.classList.add('hidden');
+            forgotSection?.classList.remove('hidden');
+            if (authMsg) authMsg.innerText = "";
         });
 
-        document.getElementById('linkVoltarLogin').addEventListener('click', () => {
-            forgotSection.classList.add('hidden');
-            loginSection.classList.remove('hidden');
-            tabMenu.classList.remove('hidden');
-            authMsg.innerText = "";
+        document.getElementById('linkVoltarLogin')?.addEventListener('click', () => {
+            forgotSection?.classList.add('hidden');
+            loginSection?.classList.remove('hidden');
+            tabMenu?.classList.remove('hidden');
+            if (authMsg) authMsg.innerText = "";
         });
 
-        document.getElementById('btnEnviarRecuperacao').addEventListener('click', async () => {
-            const emailRecup = document.getElementById('forgotEmail').value.trim();
+        document.getElementById('btnEnviarRecuperacao')?.addEventListener('click', async () => {
+            const emailRecup = (document.getElementById('forgotEmail')?.value || '').trim();
             const btnEnviar = document.getElementById('btnEnviarRecuperacao');
 
-            authMsg.innerText = "";
-            if(!emailRecup) {
-                authMsg.className = "text-center text-sm text-red-400";
-                authMsg.innerText = "Insira o seu e-mail!";
+            if (authMsg) authMsg.innerText = "";
+            if (!emailRecup) {
+                if (authMsg) {
+                    authMsg.className = "text-center text-sm text-red-400";
+                    authMsg.innerText = "Insira o seu e-mail!";
+                }
                 return;
             }
 
@@ -1646,29 +1648,39 @@
             }
         });
 
-        document.getElementById('btnLogin').addEventListener('click', async () => {
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-            authMsg.innerText = "";
-            if(!email || !password) { authMsg.innerText = "Preencha e-mail e senha!"; return; }
+        document.getElementById('btnLogin')?.addEventListener('click', async () => {
+            const email = (document.getElementById('loginEmail')?.value || '').trim();
+            const password = document.getElementById('loginPassword')?.value || '';
+            if (authMsg) authMsg.innerText = "";
+            if (!email || !password) {
+                if (authMsg) {
+                    authMsg.className = "text-center text-sm text-red-400";
+                    authMsg.innerText = "Preencha e-mail e senha!";
+                }
+                return;
+            }
             try {
                 await signInWithEmailAndPassword(auth, email, password);
             } catch (error) {
-                authMsg.className = "text-center text-sm text-red-400";
-                authMsg.innerText = "Erro: " + error.message;
+                if (authMsg) {
+                    authMsg.className = "text-center text-sm text-red-400";
+                    authMsg.innerText = "Erro: " + error.message;
+                }
             }
         });
 
-        document.getElementById('btnCadastrar').addEventListener('click', async () => {
-            const nome = document.getElementById('regNome').value;
-            const telefone = document.getElementById('regTelefone').value;
-            const email = document.getElementById('regEmail').value;
-            const password = document.getElementById('regPassword').value;
-            authMsg.innerText = "";
+        document.getElementById('btnCadastrar')?.addEventListener('click', async () => {
+            const nome = (document.getElementById('regNome')?.value || '').trim();
+            const telefone = (document.getElementById('regTelefone')?.value || '').trim();
+            const email = (document.getElementById('regEmail')?.value || '').trim();
+            const password = document.getElementById('regPassword')?.value || '';
+            if (authMsg) authMsg.innerText = "";
 
             if (!nome || !telefone || !email || !password) {
-                authMsg.className = "text-center text-sm text-red-400";
-                authMsg.innerText = "Preencha todos os campos!";
+                if (authMsg) {
+                    authMsg.className = "text-center text-sm text-red-400";
+                    authMsg.innerText = "Preencha todos os campos!";
+                }
                 return;
             }
 
@@ -4156,16 +4168,28 @@
                 const dataHoraCompleta = `${data}T${horario}`;
                 const valorCobrarExtras = Number(subtotalExtras || 0);
 
-                // Idempotência: Checa se já existe agendamento VIP para esta data/hora
-                const queryExistenteVip = await getDocs(query(
+                // Idempotência & Concorrência: Checa se o usuário já possui ou se outro cliente acabou de reservar
+                const queryConcorrenciaVip = await getDocs(query(
                     collection(db, "agendamentos"),
-                    where("userId", "==", user.uid),
                     where("dataHora", "==", dataHoraCompleta)
                 ));
                 let jaExisteVip = false;
-                queryExistenteVip.forEach(d => {
-                    const st = d.data().status;
-                    if (st === 'confirmado' || st === 'pendente') jaExisteVip = true;
+                let slotOcupadoOutro = false;
+                const barbeiroAlvoId = (modoMultiBarbeiroCliente && barbeiroSelecionadoCliente) ? barbeiroSelecionadoCliente.id : 'qualquer';
+
+                queryConcorrenciaVip.forEach(d => {
+                    const agData = d.data();
+                    if (agData.status === 'confirmado' || agData.status === 'pendente') {
+                        if (d.data().userId === user.uid) {
+                            jaExisteVip = true;
+                        } else {
+                            if (modoMultiBarbeiroCliente && barbeiroAlvoId !== 'qualquer') {
+                                if (agData.barbeiroId === barbeiroAlvoId) slotOcupadoOutro = true;
+                            } else if (!modoMultiBarbeiroCliente) {
+                                slotOcupadoOutro = true;
+                            }
+                        }
+                    }
                 });
 
                 if (jaExisteVip) {
@@ -4173,6 +4197,15 @@
                     carregarPainelCliente(user.uid);
                     carregarPainelPlanosCliente(user.uid);
                     exibirModalSucessoAgendamento(`${servico} (Plano Mensal - Semana ${beneficio.semana})`, dataHoraCompleta, nomeCliente, valorCobrarExtras, 0, true);
+                    return;
+                }
+
+                if (slotOcupadoOutro) {
+                    alert("⚠️ Este horário acabou de ser reservado por outro cliente. Por favor, escolha outro horário disponível na grade.");
+                    isSalvandoAgendamento = false;
+                    const selectHora = document.getElementById('selectHorarioAgendamentoMensalista');
+                    const avisoBloqueio = document.getElementById('avisoDataBloqueadaMensalista');
+                    await carregarGradeHorariosPadrao(data, selectHora, avisoBloqueio);
                     return;
                 }
 
@@ -4253,8 +4286,8 @@
         // Função auxiliar para validar formulário de agendamento geral
         async function validarFormAgendamento() {
             const servicoSelect = document.getElementById('servico');
-            const data = document.getElementById('dataAtendimento').value;
-            const horario = document.getElementById('horarioGrade').value;
+            const data = document.getElementById('dataAtendimento')?.value || '';
+            const horario = document.getElementById('horarioGrade')?.value || '';
             const msgStatus = document.getElementById('msgStatus');
 
             if (!data || !horario || !servicoSelect || servicoSelect.value === "") {

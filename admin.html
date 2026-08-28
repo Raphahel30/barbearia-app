@@ -2091,7 +2091,7 @@
 
         if (btnEsqueciSenhaAdmin) {
             btnEsqueciSenhaAdmin.addEventListener('click', async () => {
-                const email = document.getElementById('adminEmail').value.trim();
+                const email = (document.getElementById('adminEmail')?.value || '').trim();
                 if (!email) {
                     if (adminAuthMsg) {
                         adminAuthMsg.className = "text-center text-xs font-medium text-red-400";
@@ -2771,8 +2771,10 @@
             if (opt && opt.value) {
                 const nome = opt.getAttribute('data-nome') || '';
                 const tel = opt.getAttribute('data-tel') || '';
-                if (nome) document.getElementById('inputNomeNovoMensalista').value = nome;
-                if (tel) document.getElementById('inputTelNovoMensalista').value = tel;
+                const elNome = document.getElementById('inputNomeNovoMensalista');
+                const elTel = document.getElementById('inputTelNovoMensalista');
+                if (nome && elNome) elNome.value = nome;
+                if (tel && elTel) elTel.value = tel;
             }
         });
 
@@ -2781,7 +2783,8 @@
             const opt = e.target.options[e.target.selectedIndex];
             if (opt && opt.value) {
                 const preco = opt.getAttribute('data-preco');
-                if (preco) document.getElementById('inputValorCobradoMensalista').value = parseFloat(preco).toFixed(2);
+                const elPreco = document.getElementById('inputValorCobradoMensalista');
+                if (preco && elPreco) elPreco.value = parseFloat(preco).toFixed(2);
             }
         });
 
@@ -4103,14 +4106,16 @@
             }
         };
 
-        document.getElementById('btnSalvarNovoServico').addEventListener('click', async () => {
-            const nome = document.getElementById('inputNovoServicoNome').value.trim();
-            const preco = parseFloat(document.getElementById('inputNovoServicoPreco').value);
+        document.getElementById('btnSalvarNovoServico')?.addEventListener('click', async () => {
+            const nome = (document.getElementById('inputNovoServicoNome')?.value || '').trim();
+            const preco = parseFloat(document.getElementById('inputNovoServicoPreco')?.value || '0');
             const msg = document.getElementById('msgNovoServico');
 
             if (!nome || isNaN(preco)) {
-                msg.className = "text-xs text-center font-medium text-red-400";
-                msg.innerText = "Preencha o nome e o preço corretamente!";
+                if (msg) {
+                    msg.className = "text-xs text-center font-medium text-red-400";
+                    msg.innerText = "Preencha o nome e o preço corretamente!";
+                }
                 return;
             }
 
@@ -4440,14 +4445,14 @@
         if (formProdutoAdmin) {
             formProdutoAdmin.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const id = document.getElementById('inputProdutoId').value;
-                const nome = document.getElementById('inputNomeProduto').value.trim();
-                const descricao = document.getElementById('inputDescricaoProduto').value.trim();
-                const preco = parseFloat(document.getElementById('inputPrecoProduto').value);
-                const estoque = parseInt(document.getElementById('inputEstoqueProduto').value, 10);
-                const tipoUnidade = document.getElementById('selectTipoUnidadeProduto').value;
-                const volumeUnidade = document.getElementById('inputVolumeUnidadeProduto').value.trim();
-                const urlDigitada = document.getElementById('inputFotoProdutoUrl').value.trim();
+                const id = document.getElementById('inputProdutoId')?.value || '';
+                const nome = (document.getElementById('inputNomeProduto')?.value || '').trim();
+                const descricao = (document.getElementById('inputDescricaoProduto')?.value || '').trim();
+                const preco = parseFloat(document.getElementById('inputPrecoProduto')?.value || '0');
+                const estoque = parseInt(document.getElementById('inputEstoqueProduto')?.value || '0', 10);
+                const tipoUnidade = document.getElementById('selectTipoUnidadeProduto')?.value || 'ml';
+                const volumeUnidade = (document.getElementById('inputVolumeUnidadeProduto')?.value || '').trim();
+                const urlDigitada = (document.getElementById('inputFotoProdutoUrl')?.value || '').trim();
                 const msg = document.getElementById('msgFormProdutoStatus');
                 const btnSalvar = document.getElementById('btnSalvarProdutoAdmin');
 
@@ -5181,15 +5186,17 @@
         }
 
         // 3. Botão Salvar Taxas de Cartão, Chave Pix Manual e WhatsApp
-        document.getElementById('btnSalvarConfigMp').addEventListener('click', async () => {
-            const pixManual = document.getElementById('inputPixManual').value.trim();
-            const whatsappAdmin = document.getElementById('inputWhatsappAdmin').value.replace(/\D/g, '');
-            const taxaCredito = parseFloat(document.getElementById('inputTaxaCartaoCredito')?.value || 0);
-            const taxaDebito = parseFloat(document.getElementById('inputTaxaCartaoDebito')?.value || 0);
+        document.getElementById('btnSalvarConfigMp')?.addEventListener('click', async () => {
+            const pixManual = (document.getElementById('inputPixManual')?.value || '').trim();
+            const whatsappAdmin = (document.getElementById('inputWhatsappAdmin')?.value || '').replace(/\D/g, '');
+            const taxaCredito = parseFloat(document.getElementById('inputTaxaCartaoCredito')?.value || '0');
+            const taxaDebito = parseFloat(document.getElementById('inputTaxaCartaoDebito')?.value || '0');
             const msg = document.getElementById('msgConfigMpStatus');
 
-            msg.className = "text-xs text-center font-medium text-amber-300";
-            msg.innerText = "Salvando configurações...";
+            if (msg) {
+                msg.className = "text-xs text-center font-medium text-amber-300";
+                msg.innerText = "Salvando configurações...";
+            }
 
             try {
                 await setDoc(doc(db, "configuracoes", "pagamento"), {
@@ -5200,11 +5207,15 @@
                     atualizadoEm: new Date()
                 }, { merge: true });
 
-                msg.className = "text-xs text-center font-bold text-green-400";
-                msg.innerText = "✅ Taxas, Chave Pix e WhatsApp salvos com sucesso!";
+                if (msg) {
+                    msg.className = "text-xs text-center font-bold text-green-400";
+                    msg.innerText = "✅ Taxas, Chave Pix e WhatsApp salvos com sucesso!";
+                }
             } catch (e) {
-                msg.className = "text-xs text-center font-medium text-red-400";
-                msg.innerText = "Erro ao salvar: " + e.message;
+                if (msg) {
+                    msg.className = "text-xs text-center font-medium text-red-400";
+                    msg.innerText = "Erro ao salvar: " + e.message;
+                }
             }
         });
 
@@ -5212,12 +5223,14 @@
         const btnSalvarTokenManual = document.getElementById('btnSalvarTokenManual');
         if (btnSalvarTokenManual) {
             btnSalvarTokenManual.addEventListener('click', async () => {
-                const token = document.getElementById('inputMpAccessToken').value.trim();
+                const token = (document.getElementById('inputMpAccessToken')?.value || '').trim();
                 const msg = document.getElementById('msgConfigMpStatus');
                 if (!token) return alert("Insira um token válido.");
 
-                msg.className = "text-xs text-center font-medium text-amber-300";
-                msg.innerText = "Salvando token manual...";
+                if (msg) {
+                    msg.className = "text-xs text-center font-medium text-amber-300";
+                    msg.innerText = "Salvando token manual...";
+                }
 
                 try {
                     await setDoc(doc(db, "configuracoes", "pagamento"), {
@@ -5744,19 +5757,23 @@
             }
         }
 
-        document.getElementById('btnSalvarNovoAdmin').addEventListener('click', async () => {
+        document.getElementById('btnSalvarNovoAdmin')?.addEventListener('click', async () => {
             const input = document.getElementById('inputNovoAdminEmail');
             const msg = document.getElementById('msgNovoAdminStatus');
-            const email = input.value.trim().toLowerCase();
+            const email = (input?.value || '').trim().toLowerCase();
 
             if (!email || !email.includes('@') || !email.includes('.')) {
-                msg.className = "text-xs text-center font-medium text-red-400";
-                msg.innerText = "Digite um e-mail válido!";
+                if (msg) {
+                    msg.className = "text-xs text-center font-medium text-red-400";
+                    msg.innerText = "Digite um e-mail válido!";
+                }
                 return;
             }
 
-            msg.className = "text-xs text-center font-medium text-amber-300";
-            msg.innerText = "Salvando permissão de administrador...";
+            if (msg) {
+                msg.className = "text-xs text-center font-medium text-amber-300";
+                msg.innerText = "Salvando permissão de administrador...";
+            }
 
             try {
                 const docId = email.replace(/[^a-zA-Z0-9]/g, '_');
@@ -6045,10 +6062,14 @@
                         criadoEm: new Date().toISOString()
                     });
 
-                    document.getElementById('inputNomeNovoBarbeiro').value = "";
-                    document.getElementById('inputWhatsNovoBarbeiro').value = "";
-                    document.getElementById('inputEspecialidadeNovoBarbeiro').value = "";
-                    document.getElementById('inputFotoNovoBarbeiro').value = "";
+                    const elNome = document.getElementById('inputNomeNovoBarbeiro');
+                    const elWhats = document.getElementById('inputWhatsNovoBarbeiro');
+                    const elEsp = document.getElementById('inputEspecialidadeNovoBarbeiro');
+                    const elFoto = document.getElementById('inputFotoNovoBarbeiro');
+                    if (elNome) elNome.value = "";
+                    if (elWhats) elWhats.value = "";
+                    if (elEsp) elEsp.value = "";
+                    if (elFoto) elFoto.value = "";
 
                     if (msg) {
                         msg.className = "text-xs text-center font-bold text-green-400";
