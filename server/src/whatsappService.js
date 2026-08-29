@@ -62,7 +62,10 @@ export async function iniciarWhatsApp(forceRestart = false) {
 
     try {
         const { state, saveCreds } = await useMultiFileAuthState(SESSIONS_DIR);
-        const { version } = await fetchLatestBaileysVersion().catch(() => ({ version: [2, 3000, 1043857760] }));
+        const { version } = await fetchLatestBaileysVersion().catch((e) => {
+            console.error('⚠️ [WhatsApp] Falha ao buscar versão mais recente do Baileys, usando fallback:', e.message);
+            return { version: [2, 3000, 1043857760] };
+        });
 
         sock = makeWASocket({
             version,
