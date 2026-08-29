@@ -1566,6 +1566,44 @@
                             <p id="msgCodigoPareamentoStatus" class="text-xs text-center font-medium min-h-[16px]"></p>
                         </div>
 
+                        <!-- BLOCO: CONEXÃO POR QR CODE -->
+                        <div class="pt-5 border-t border-zinc-800/80 space-y-4">
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                <div>
+                                    <h4 class="text-xs font-bold uppercase text-amber-400 flex items-center gap-1.5">
+                                        <svg class="w-4 h-4 text-[#D4AF37]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 3h3m0 0h3m-3 0v3m0-6v3"/></svg>
+                                        <span>Ativar Robô no WhatsApp (Ler QR Code)</span>
+                                    </h4>
+                                    <p class="text-[11px] text-zinc-400">Gere um QR Code e escaneie com a câmera do seu celular.</p>
+                                </div>
+                                <button id="btnGerarQrCode" type="button" class="bg-amber-500 hover:bg-amber-600 text-black font-extrabold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition cursor-pointer shadow-lg flex items-center gap-1.5 whitespace-nowrap">
+                                    <svg class="w-4 h-4 fill-current flex-shrink-0" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                    <span>Gerar QR Code</span>
+                                </button>
+                            </div>
+
+                            <!-- Exibição do QR Code -->
+                            <div id="boxQrCodeExibicao" class="hidden p-5 rounded-2xl bg-black border border-amber-500/60 text-center space-y-3.5 animate-fade-in shadow-2xl">
+                                <span class="text-[10px] font-bold text-amber-400 uppercase tracking-widest bg-amber-950/80 px-3 py-1 rounded-full border border-amber-600/50">
+                                    Escaneie o QR Code
+                                </span>
+
+                                <div class="flex items-center justify-center">
+                                    <img id="imgQrCodePareamento" src="" alt="QR Code WhatsApp" class="w-56 h-56 rounded-xl border border-zinc-700 bg-white p-2 shadow-inner">
+                                </div>
+
+                                <div class="bg-zinc-900/90 p-4 rounded-xl border border-zinc-700 text-left space-y-2 text-xs text-zinc-300">
+                                    <p class="font-bold text-amber-400 text-[11px] uppercase">📖 Como ativar no seu celular:</p>
+                                    <ol class="list-decimal list-inside space-y-1.5 text-[11px] text-zinc-300">
+                                        <li>Abra o <strong>WhatsApp</strong> no seu celular.</li>
+                                        <li>Acesse <strong>Aparelhos Conectados</strong> > Toque em <strong>Conectar um aparelho</strong>.</li>
+                                        <li>Aponte a câmera para o QR Code acima. <strong>Pronto!</strong></li>
+                                    </ol>
+                                </div>
+                            </div>
+                            <p id="msgQrCodeStatus" class="text-xs text-center font-medium min-h-[16px]"></p>
+                        </div>
+
                         <!-- Teste Instantâneo no Celular do Barbeiro -->
                         <div class="pt-4 border-t border-zinc-800/80 space-y-3">
                             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -7300,6 +7338,80 @@
                 if (btn) {
                     btn.disabled = false;
                     btn.innerHTML = `<span>⚡ Gerar Código</span>`;
+                }
+            }
+        });
+
+        // 1b. Gerar QR Code para conectar via câmera
+        document.getElementById('btnGerarQrCode')?.addEventListener('click', async () => {
+            const btn = document.getElementById('btnGerarQrCode');
+            const boxQr = document.getElementById('boxQrCodeExibicao');
+            const imgQr = document.getElementById('imgQrCodePareamento');
+            const msgStatus = document.getElementById('msgQrCodeStatus');
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<span>⏳ Gerando QR Code...</span>`;
+            }
+            if (msgStatus) {
+                msgStatus.className = "text-xs text-center font-medium text-amber-300";
+                msgStatus.innerText = "Solicitando QR Code aos servidores do WhatsApp...";
+            }
+
+            try {
+                const backendUrl = getBackendUrlAtivo();
+                await fetch(`${backendUrl}/api/whatsapp/conectar`, {
+                    method: 'POST',
+                    headers: await getAdminAuthHeaders()
+                });
+
+                // Faz polling até o QR Code ficar pronto (ou conectar direto, se já registrado)
+                let tentativas = 0;
+                const maxTentativas = 20; // ~20s
+                const poll = setInterval(async () => {
+                    tentativas++;
+                    try {
+                        const res = await fetch(`${backendUrl}/api/whatsapp/status`);
+                        const data = await res.json();
+
+                        if (data.qrCode) {
+                            if (imgQr) imgQr.src = data.qrCode;
+                            if (boxQr) boxQr.classList.remove('hidden');
+                            if (msgStatus) {
+                                msgStatus.className = "text-xs text-center font-bold text-green-400";
+                                msgStatus.innerText = "✅ QR Code pronto! Escaneie com a câmera do seu WhatsApp.";
+                            }
+                            clearInterval(poll);
+                            if (pollingRoboCentralInterval) clearInterval(pollingRoboCentralInterval);
+                            pollingRoboCentralInterval = setInterval(carregarStatusWhatsAppBot, 3000);
+                        } else if (data.status === 'connected') {
+                            if (boxQr) boxQr.classList.add('hidden');
+                            if (msgStatus) {
+                                msgStatus.className = "text-xs text-center font-bold text-green-400";
+                                msgStatus.innerText = "✅ WhatsApp já está conectado e pronto para uso!";
+                            }
+                            clearInterval(poll);
+                            await carregarStatusWhatsAppBot();
+                        } else if (tentativas >= maxTentativas) {
+                            clearInterval(poll);
+                            if (msgStatus) {
+                                msgStatus.className = "text-xs text-center font-medium text-red-400";
+                                msgStatus.innerText = "Tempo esgotado gerando o QR Code. Tente novamente.";
+                            }
+                        }
+                    } catch (pollErr) {
+                        // Ignora falhas pontuais de polling e tenta de novo até o limite
+                    }
+                }, 1000);
+            } catch (err) {
+                if (msgStatus) {
+                    msgStatus.className = "text-xs text-center font-medium text-red-400";
+                    msgStatus.innerText = "Erro de conexão: " + err.message;
+                }
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<span>⚡ Gerar QR Code</span>`;
                 }
             }
         });
