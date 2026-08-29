@@ -32,7 +32,7 @@ try {
     console.warn("Aviso ao criar diretório de sessões WhatsApp:", e.message);
 }
 
-export async function iniciarWhatsApp(forceRestart = false) {
+export async function iniciarWhatsApp(forceRestart = false, pairingNumber = null) {
     // Se já estiver conectado e não for forçado, não recria socket para não derrubar a sessão ativa
     if (status === 'connected' && sock && !forceRestart) {
         return { status, qrCode: null, userNumber: connectedUserNumber };
@@ -79,6 +79,22 @@ export async function iniciarWhatsApp(forceRestart = false) {
             generateHighQualityLinkPreview: true,
             syncFullHistory: false
         });
+
+        let pairingCodeResult = null;
+        if (pairingNumber && !state.creds?.registered) {
+            try {
+                const rawCode = await sock.requestPairingCode(pairingNumber);
+                const formattedCode = (rawCode && rawCode.length === 8 && !rawCode.includes('-'))
+                    ? `${rawCode.slice(0, 4)}-${rawCode.slice(4)}`
+                    : rawCode;
+                pairingCodeResult = { rawCode, formattedCode };
+                console.log(`📲 [WhatsApp] Código de Pareamento gerado para +${pairingNumber}: ${formattedCode}`);
+            } catch (errCode) {
+                console.error('Erro ao solicitar pairing code do Baileys:', errCode);
+                isInitializing = false;
+                throw new Error('Não foi possível gerar o código. Verifique se o número possui DDD (Ex: 11999999999) e tente novamente.');
+            }
+        }
 
         sock.ev.on('creds.update', async () => {
             try {
@@ -139,7 +155,7 @@ export async function iniciarWhatsApp(forceRestart = false) {
         });
 
         isInitializing = false;
-        return { status, qrCode: qrCodeDataUrl, userNumber: connectedUserNumber };
+        return { status, qrCode: qrCodeDataUrl, userNumber: connectedUserNumber, pairingCode: pairingCodeResult?.formattedCode || null, rawPairingCode: pairingCodeResult?.rawCode || null };
 
     } catch (err) {
         console.error('❌ [WhatsApp] Erro ao inicializar socket Baileys:', err);
@@ -202,32 +218,17 @@ export async function gerarCodigoPareamentoWhatsApp(numeroTelefone) {
         }
     } catch (e) {}
 
-    // Inicia socket limpo
-    await iniciarWhatsApp(true);
+    // Inicia socket limpo já solicitando o pairing code assim que possível (antes do QR ser gerado)
+    const initResult = await iniciarWhatsApp(true, cleanNumber);
 
-    // Aguarda o socket estabelecer o handshake inicial com os servidores do WhatsApp
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-
-    if (sock && !sock.authState?.creds?.registered) {
-        try {
-            const rawCode = await sock.requestPairingCode(cleanNumber);
-            // Formata no padrao XXXX-XXXX para facil leitura se for 8 digitos
-            const formattedCode = (rawCode && rawCode.length === 8 && !rawCode.includes('-'))
-                ? `${rawCode.slice(0, 4)}-${rawCode.slice(4)}`
-                : rawCode;
-
-            console.log(`📲 [WhatsApp] Código de Pareamento gerado para +${cleanNumber}: ${formattedCode}`);
-            return {
-                success: true,
-                status: 'pairing_code_ready',
-                pairingCode: formattedCode,
-                rawCode: rawCode,
-                userNumber: cleanNumber
-            };
-        } catch (errCode) {
-            console.error('Erro ao solicitar pairing code do Baileys:', errCode);
-            throw new Error('Não foi possível gerar o código. Verifique se o número possui DDD (Ex: 11999999999) e tente novamente.');
-        }
+    if (initResult?.pairingCode) {
+        return {
+            success: true,
+            status: 'pairing_code_ready',
+            pairingCode: initResult.pairingCode,
+            rawCode: initResult.rawPairingCode,
+            userNumber: cleanNumber
+        };
     } else {
         return {
             success: true,
