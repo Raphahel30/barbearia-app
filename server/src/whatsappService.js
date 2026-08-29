@@ -70,6 +70,15 @@ export async function gerarCodigoPareamentoWhatsApp(numeroTelefone) {
         return { success: true, status: 'connected', message: 'WhatsApp já está conectado!' };
     }
 
+    // Se já havia um socket aberto não conectado (ex: aguardando QR), encerra para iniciar modo pareamento limpo
+    if (sock && connectionStatus !== 'connected') {
+        try {
+            sock.end(new Error('Reset para código de pareamento'));
+        } catch (_) {}
+        sock = null;
+        isConnecting = false;
+    }
+
     // Inicia conexão sem QR, modo pairing code
     const resultado = await _conectar({ gerarQr: false, numeroPairing: cleanNumber });
     if (resultado.success && resultado.pairingCode) {
@@ -163,18 +172,12 @@ async function _conectar({ gerarQr = true, numeroPairing = null } = {}) {
 
         // Gerar pairing code se necessário (DEVE ser chamado antes do primeiro QR ser emitido)
         if (isNewSession && numeroPairing && !gerarQr) {
-            // Aguarda o socket inicializar (primeiro evento 'open' ou 'qr' não precisa chegar — apenas o socket conectar ao WebSocket do WA)
-            await new Promise((resolve) => {
-                const timeout = setTimeout(resolve, 4000); // máximo 4s de espera
-                sock.ev.once('connection.update', () => {
-                    clearTimeout(timeout);
-                    resolve();
-                });
-            });
+            // Aguarda 1.5s para o socket estar inicializado e pronto para solicitar o código
+            await new Promise(resolve => setTimeout(resolve, 1500));
             try {
                 const code = await sock.requestPairingCode(numeroPairing);
                 currentPairingCode = code;
-                console.log(`[WhatsApp] Código de pareamento gerado: ${code}`);
+                console.log(`[WhatsApp] Código de pareamento gerado com sucesso: ${code}`);
                 isConnecting = false;
                 return { success: true, pairingCode: code };
             } catch (pairingErr) {
