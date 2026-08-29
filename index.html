@@ -418,7 +418,7 @@
                     </div>
                     <div class="flex items-center sm:items-end flex-wrap sm:flex-col gap-2 flex-shrink-0">
                         <span id="badgeSemanaAtualVip" class="bg-green-500 text-black px-2.5 py-1 rounded-full font-extrabold text-[10px] uppercase shadow whitespace-nowrap">1 Corte Semanal</span>
-                        <button type="button" onclick="window.abrirModalAgendamentoMensalista ? window.abrirModalAgendamentoMensalista() : document.getElementById('btnTabClientePlanos')?.click()" class="bg-dourado hover:bg-[#C5A028] text-black font-extrabold px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wider transition cursor-pointer shadow flex items-center gap-1 whitespace-nowrap">
+                        <button id="btnAgendarDoPlanoBanner" type="button" onclick="window.abrirModalAgendamentoMensalista ? window.abrirModalAgendamentoMensalista() : document.getElementById('btnTabClientePlanos')?.click()" class="bg-dourado hover:bg-[#C5A028] text-black font-extrabold px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wider transition cursor-pointer shadow flex items-center gap-1 whitespace-nowrap">
                             <span>📅</span> Agendar do Plano
                         </button>
                     </div>
@@ -1398,7 +1398,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, query, where, doc, setDoc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, query, where, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDGjisHwvyBNHoZvS0DP-BTcXYufU6b5YY",
@@ -1737,6 +1737,9 @@
             }
         }
 
+        let unsubscribeRealtimeAgendamentos = null;
+        let unsubscribeRealtimeAssinatura = null;
+
         async function inicializarDashboardCliente(user, dadosUsuario) {
             authScreen.classList.add('hidden');
             clientDashboard.classList.remove('hidden');
@@ -1751,14 +1754,42 @@
             const nome = dadosUsuarioAtual.nome;
             clientWelcome.innerText = `Olá, ${nome}!`;
             atualizarAvatarHeaderCliente(dadosUsuarioAtual.fotoUrl);
-            carregarPainelCliente(user.uid);
-            carregarPainelPlanosCliente(user.uid);
+
+            // Carregamento inicial de dados
+            await carregarPainelCliente(user.uid);
+            await carregarPainelPlanosCliente(user.uid);
             carregarServicosCliente();
             carregarProdutosCliente();
             carregarBarbeirosCliente();
             carregarFidelidadeCliente(user.uid);
             carregarConfiguracoesGerais();
             verificarSeBarbeariaFechadaHoje();
+
+            // SINCRONIZAÇÃO EM TEMPO REAL COM O PAINEL ADMIN
+            if (typeof unsubscribeRealtimeAgendamentos === 'function') {
+                try { unsubscribeRealtimeAgendamentos(); } catch (e) {}
+            }
+            if (typeof unsubscribeRealtimeAssinatura === 'function') {
+                try { unsubscribeRealtimeAssinatura(); } catch (e) {}
+            }
+
+            try {
+                // Escuta alterações na coleção agendamentos (quando o barbeiro confirma presença, conclui ou cancela)
+                unsubscribeRealtimeAgendamentos = onSnapshot(collection(db, "agendamentos"), () => {
+                    if (auth.currentUser) carregarPainelCliente(auth.currentUser.uid);
+                }, (err) => console.warn("Aviso realtime agendamentos:", err));
+            } catch (eSnapAg) {
+                console.warn("Erro ao configurar snapshot agendamentos:", eSnapAg);
+            }
+
+            try {
+                // Escuta alterações na assinatura do cliente (quando o barbeiro atualiza status de semana)
+                unsubscribeRealtimeAssinatura = onSnapshot(doc(db, "assinaturasClientes", user.uid), () => {
+                    if (auth.currentUser) carregarPainelPlanosCliente(auth.currentUser.uid);
+                }, (err) => console.warn("Aviso realtime assinatura:", err));
+            } catch (eSnapAss) {
+                console.warn("Erro ao configurar snapshot assinatura:", eSnapAss);
+            }
         }
 
         onAuthStateChanged(auth, async (user) => {
@@ -1786,6 +1817,14 @@
                         await inicializarDashboardCliente(user, {});
                     }
                 } else {
+                    if (typeof unsubscribeRealtimeAgendamentos === 'function') {
+                        try { unsubscribeRealtimeAgendamentos(); } catch (e) {}
+                        unsubscribeRealtimeAgendamentos = null;
+                    }
+                    if (typeof unsubscribeRealtimeAssinatura === 'function') {
+                        try { unsubscribeRealtimeAssinatura(); } catch (e) {}
+                        unsubscribeRealtimeAssinatura = null;
+                    }
                     usuarioPendenteGoogle = null;
                     if (modalCompletarCadastroGoogle) modalCompletarCadastroGoogle.classList.add('hidden');
                     authScreen.classList.remove('hidden');
@@ -2706,6 +2745,8 @@
                         if (cardVipAg && lblNomeVipAg) {
                             cardVipAg.classList.remove('hidden');
                             lblNomeVipAg.innerText = `${info.nomePlano} • Válido até ${info.dataFimFormatada} (${info.diasRestantes} dias restantes)`;
+                            const btnBannerPlano = document.getElementById('btnAgendarDoPlanoBanner') || cardVipAg.querySelector('button');
+
                             if (info.semanaAtualInfo) {
                                 if (info.semanaAtualInfo.status === 'disponivel') {
                                     if (badgeSemanaVip) {
@@ -2713,6 +2754,11 @@
                                         badgeSemanaVip.innerText = `Semana ${info.semanaAtualInfo.numero}: 1 Corte Disponível`;
                                     }
                                     if (descSemanaVip) descSemanaVip.innerHTML = `👑 Você possui <strong>1 corte incluso no seu plano</strong> para esta semana. Para agendar com <strong>R$ 0,00</strong> ou incluir extras, clique em <strong>Agendar do Plano</strong> acima.`;
+                                    if (btnBannerPlano) {
+                                        btnBannerPlano.className = "bg-dourado hover:bg-[#C5A028] text-black font-extrabold px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wider transition cursor-pointer shadow flex items-center gap-1 whitespace-nowrap";
+                                        btnBannerPlano.innerHTML = `<span>📅</span> Agendar do Plano`;
+                                        btnBannerPlano.onclick = () => window.abrirModalAgendamentoMensalista ? window.abrirModalAgendamentoMensalista() : document.getElementById('btnTabClientePlanos')?.click();
+                                    }
                                 } else if (info.semanaAtualInfo.status === 'agendado') {
                                     if (badgeSemanaVip) {
                                         badgeSemanaVip.className = "bg-blue-500 text-white px-2.5 py-1 rounded-full font-extrabold text-[10px] uppercase shadow";
@@ -2726,10 +2772,34 @@
                                             </div>
                                         `;
                                     }
+                                    if (btnBannerPlano) {
+                                        btnBannerPlano.className = "bg-blue-900/80 hover:bg-blue-800 text-blue-200 font-extrabold px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wider transition cursor-pointer shadow flex items-center gap-1 whitespace-nowrap";
+                                        btnBannerPlano.innerHTML = `<span>📅</span> Já Agendado`;
+                                        btnBannerPlano.onclick = () => window.abrirModalAgendamentoMensalista ? window.abrirModalAgendamentoMensalista() : document.getElementById('btnTabClientePlanos')?.click();
+                                    }
+                                } else if (info.semanaAtualInfo.status === 'concluido') {
+                                    if (badgeSemanaVip) {
+                                        badgeSemanaVip.className = "bg-green-950 text-green-400 border border-green-700 px-2.5 py-1 rounded-full font-extrabold text-[10px] uppercase shadow";
+                                        badgeSemanaVip.innerText = `Semana ${info.semanaAtualInfo.numero}: Concluído ✅`;
+                                    }
+                                    if (descSemanaVip) {
+                                        const proxSem = info.semanaAtualInfo.numero < 4 ? `O corte da <strong>Semana ${info.semanaAtualInfo.numero + 1}</strong> estará liberado no início da próxima semana.` : `Você completou os 4 cortes deste ciclo mensal!`;
+                                        descSemanaVip.innerHTML = `<span class="text-green-400 font-bold">✂️ Atendimento Concluído pelo Barbeiro!</span> O seu corte da <strong>Semana ${info.semanaAtualInfo.numero}</strong> foi realizado com sucesso. ${proxSem}`;
+                                    }
+                                    if (btnBannerPlano) {
+                                        btnBannerPlano.className = "bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-extrabold px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wider transition cursor-pointer shadow flex items-center gap-1 whitespace-nowrap";
+                                        btnBannerPlano.innerHTML = `<span>👑</span> Ver Plano`;
+                                        btnBannerPlano.onclick = () => document.getElementById('btnTabClientePlanos')?.click();
+                                    }
                                 } else {
                                     if (badgeSemanaVip) {
                                         badgeSemanaVip.className = "bg-zinc-700 text-zinc-300 px-2.5 py-1 rounded-full font-extrabold text-[10px] uppercase shadow";
                                         badgeSemanaVip.innerText = `Semana ${info.semanaAtualInfo.numero}: ${info.semanaAtualInfo.status}`;
+                                    }
+                                    if (btnBannerPlano) {
+                                        btnBannerPlano.className = "bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-extrabold px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wider transition cursor-pointer shadow flex items-center gap-1 whitespace-nowrap";
+                                        btnBannerPlano.innerHTML = `<span>👑</span> Ver Plano`;
+                                        btnBannerPlano.onclick = () => document.getElementById('btnTabClientePlanos')?.click();
                                     }
                                 }
                             }
@@ -3028,7 +3098,11 @@
                 || dadosAssinaturaAtiva.semanas.find(s => s.status === 'disponivel');
 
             if (!semDisponivel) {
-                alert("Você não possui nenhum corte disponível para agendamento no seu ciclo atual.");
+                if (dadosAssinaturaAtiva.semanaAtualInfo && dadosAssinaturaAtiva.semanaAtualInfo.status === 'concluido') {
+                    alert(`✂️ O seu corte da Semana ${dadosAssinaturaAtiva.semanaAtualInfo.numero} já foi realizado com sucesso pelo barbeiro!\n\nSeu próximo corte estará liberado no início da próxima semana.`);
+                } else {
+                    alert("Você não possui nenhum corte disponível para agendamento no momento.");
+                }
                 return;
             }
 
@@ -3946,89 +4020,122 @@
                 const hojeDataStr = `${anoLocal}-${mesLocal}-${diaLocal}`;
                 const agoraLocalStr = `${hojeDataStr}T${horaLocal}:${minLocal}`;
 
-                let temMeusAgendamentos = false;
+                let temMeusAgendamentosAtivos = false;
+                let agendamentosAtivosHtml = "";
+                let atendimentosConcluidosHtml = "";
                 let temHorariosOcupadosFuturos = false;
 
                 if (querySnapshot.empty) {
                     divOcupados.innerHTML = "<span class='text-zinc-500'>Nenhum horário ocupado no momento.</span>";
-                    meusAgendamentosLista.innerHTML = "<p class='text-xs text-zinc-500'>Não possui agendamentos ativos.</p>";
+                    meusAgendamentosLista.innerHTML = "<p class='text-xs text-zinc-500'>Não possui agendamentos ativos no momento.</p>";
                     return;
                 }
 
-                querySnapshot.forEach((docSnap) => {
-                    const ag = docSnap.data();
-                    const agId = docSnap.id;
+                // Ordena agendamentos por dataHora decrescente para pegar os mais recentes primeiro
+                const docsOrdenados = [];
+                querySnapshot.forEach(docSnap => docsOrdenados.push({ id: docSnap.id, data: docSnap.data() }));
+                docsOrdenados.sort((a, b) => (b.data.dataHora || '').localeCompare(a.data.dataHora || ''));
+
+                docsOrdenados.forEach(({ id: agId, data: ag }) => {
                     if (!window.meusAgendamentosCache) window.meusAgendamentosCache = {};
                     window.meusAgendamentosCache[agId] = { id: agId, ...ag };
 
                     const ehCancelado = ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'reembolsado';
+                    const ehConcluido = ag.status === 'concluido' || ag.status === 'realizado' || ag.status === 'finalizado' || ag.concluido === true;
+                    const ehFalta = ag.status === 'falta' || ag.status === 'cancelado_tardio' || ag.status === 'perdido';
 
-                    // Exibe na lista de ocupados APENAS se a data/hora for no futuro ou hoje e estiver ativo
-                    if (ag.dataHora && ag.dataHora >= agoraLocalStr && !ehCancelado) {
+                    // Exibe na lista de ocupados APENAS se a data/hora for no futuro ou hoje e estiver ativo (não cancelado e não concluído)
+                    if (ag.dataHora && ag.dataHora >= agoraLocalStr && !ehCancelado && !ehConcluido) {
                         temHorariosOcupadosFuturos = true;
                         divOcupados.innerHTML += `<div>❌ ${(ag.dataHora || '').replace('T', ' às ')}</div>`;
                     }
 
-                    // Meus agendamentos ativos (hoje ou no futuro)
-                    const agDataStr = String(ag.dataHora || '').slice(0, 10);
-                    const ehHojeOuFuturo = (ag.dataHora && ag.dataHora >= agoraLocalStr) || (agDataStr >= hojeDataStr);
+                    if (ag.userId === userId) {
+                        const agDataStr = String(ag.dataHora || '').slice(0, 10);
+                        const ehHojeOuFuturo = (ag.dataHora && ag.dataHora >= agoraLocalStr) || (agDataStr >= hojeDataStr);
 
-                    if (ag.userId === userId && ehHojeOuFuturo && !ehCancelado) {
-                        temMeusAgendamentos = true;
-                        const precoTotal = Number(ag.preco || 0);
-                        const valorPagoExib = Number(ag.taxaReservaPaga !== undefined ? ag.taxaReservaPaga : (ag.isPlano ? 0 : 10));
-                        const valorRestante = Math.max(0, precoTotal - valorPagoExib);
+                        // 1. AGENDAMENTO ATIVO PENDENTE (Permite cancelamento / reagendamento)
+                        if (ehHojeOuFuturo && !ehCancelado && !ehConcluido && !ehFalta) {
+                            temMeusAgendamentosAtivos = true;
+                            const precoTotal = Number(ag.preco || 0);
+                            const valorPagoExib = Number(ag.taxaReservaPaga !== undefined ? ag.taxaReservaPaga : (ag.isPlano ? 0 : 10));
+                            const valorRestante = Math.max(0, precoTotal - valorPagoExib);
 
-                        const dataAgObj = new Date(ag.dataHora);
-                        const diffHorasAg = (dataAgObj.getTime() - new Date().getTime()) / (1000 * 60 * 60);
+                            const dataAgObj = new Date(ag.dataHora);
+                            const diffHorasAg = (dataAgObj.getTime() - new Date().getTime()) / (1000 * 60 * 60);
 
-                        let badgeCancelamentoInfo = "";
-                        if (ag.isPlano) {
-                            if (diffHorasAg > 3) {
-                                badgeCancelamentoInfo = `<span class="text-[10px] text-purple-300 font-semibold bg-purple-950/60 border border-purple-800/80 px-2 py-0.5 rounded inline-flex items-center gap-1">👑 Reagendamento livre (+3h antecedência)</span>`;
+                            let badgeCancelamentoInfo = "";
+                            if (ag.isPlano) {
+                                if (diffHorasAg > 3) {
+                                    badgeCancelamentoInfo = `<span class="text-[10px] text-purple-300 font-semibold bg-purple-950/60 border border-purple-800/80 px-2 py-0.5 rounded inline-flex items-center gap-1">👑 Reagendamento livre (+3h antecedência)</span>`;
+                                } else {
+                                    badgeCancelamentoInfo = `<span class="text-[10px] text-amber-300 font-semibold bg-amber-950/60 border border-amber-800/80 px-2 py-0.5 rounded inline-flex items-center gap-1">⚠️ Faltam menos de 3h (Perda do corte semanal ao cancelar)</span>`;
+                                }
                             } else {
-                                badgeCancelamentoInfo = `<span class="text-[10px] text-amber-300 font-semibold bg-amber-950/60 border border-amber-800/80 px-2 py-0.5 rounded inline-flex items-center gap-1">⚠️ Faltam menos de 3h (Perda do corte semanal ao cancelar)</span>`;
+                                if (diffHorasAg > 3) {
+                                    badgeCancelamentoInfo = `<span class="text-[10px] text-green-300 font-semibold bg-green-950/60 border border-green-800/80 px-2 py-0.5 rounded inline-flex items-center gap-1">🟢 Cancelamento com estorno automático disponível (+3h)</span>`;
+                                } else {
+                                    badgeCancelamentoInfo = `<span class="text-[10px] text-amber-300 font-semibold bg-amber-950/60 border border-amber-800/80 px-2 py-0.5 rounded inline-flex items-center gap-1">🟡 Faltam menos de 3h (Sem estorno da taxa de reserva)</span>`;
+                                }
                             }
-                        } else {
-                            if (diffHorasAg > 3) {
-                                badgeCancelamentoInfo = `<span class="text-[10px] text-green-300 font-semibold bg-green-950/60 border border-green-800/80 px-2 py-0.5 rounded inline-flex items-center gap-1">🟢 Cancelamento com estorno automático disponível (+3h)</span>`;
-                            } else {
-                                badgeCancelamentoInfo = `<span class="text-[10px] text-amber-300 font-semibold bg-amber-950/60 border border-amber-800/80 px-2 py-0.5 rounded inline-flex items-center gap-1">🟡 Faltam menos de 3h (Sem estorno da taxa de reserva)</span>`;
-                            }
-                        }
 
-                        let financeiroBadge = "";
-                        if (ag.isPlano) {
-                            financeiroBadge = `<span class="text-[11px] text-purple-300 font-bold bg-purple-950/80 px-2 py-0.5 rounded border border-purple-800">👑 Plano Mensal (R$ 0,00)</span>`;
-                        } else if (ag.modalidadePagamento === 'total' || valorRestante === 0) {
-                            financeiroBadge = `<span class="text-[11px] text-green-300 font-bold bg-green-950/80 px-2 py-0.5 rounded border border-green-800">✅ 100% Quitado (R$ 0,00 restante)</span>`;
-                        } else {
-                            financeiroBadge = `
-                                <div class="mt-1 flex items-center gap-1.5 flex-wrap text-xs">
-                                    <span class="text-zinc-400">Total: <strong class="text-zinc-200">R$ ${precoTotal.toFixed(2)}</strong></span>
-                                    <span class="text-zinc-500">•</span>
-                                    <span class="text-zinc-400">Taxa Paga: <strong class="text-green-400 font-bold">R$ ${valorPagoExib.toFixed(2)}</strong></span>
-                                    <span class="text-zinc-500">•</span>
-                                    <span class="bg-amber-950/90 text-amber-300 border border-amber-600/70 px-2 py-0.5 rounded font-extrabold shadow-sm">
-                                        💵 Restante a Pagar no Local: <strong class="text-dourado text-sm">R$ ${valorRestante.toFixed(2)}</strong>
-                                    </span>
+                            let financeiroBadge = "";
+                            if (ag.isPlano) {
+                                financeiroBadge = `<span class="text-[11px] text-purple-300 font-bold bg-purple-950/80 px-2 py-0.5 rounded border border-purple-800">👑 Plano Mensal (R$ 0,00)</span>`;
+                            } else if (ag.modalidadePagamento === 'total' || valorRestante === 0) {
+                                financeiroBadge = `<span class="text-[11px] text-green-300 font-bold bg-green-950/80 px-2 py-0.5 rounded border border-green-800">✅ 100% Quitado (R$ 0,00 restante)</span>`;
+                            } else {
+                                financeiroBadge = `
+                                    <div class="mt-1 flex items-center gap-1.5 flex-wrap text-xs">
+                                        <span class="text-zinc-400">Total: <strong class="text-zinc-200">R$ ${precoTotal.toFixed(2)}</strong></span>
+                                        <span class="text-zinc-500">•</span>
+                                        <span class="text-zinc-400">Taxa Paga: <strong class="text-green-400 font-bold">R$ ${valorPagoExib.toFixed(2)}</strong></span>
+                                        <span class="text-zinc-500">•</span>
+                                        <span class="bg-amber-950/90 text-amber-300 border border-amber-600/70 px-2 py-0.5 rounded font-extrabold shadow-sm">
+                                            💵 Restante a Pagar no Local: <strong class="text-dourado text-sm">R$ ${valorRestante.toFixed(2)}</strong>
+                                        </span>
+                                    </div>
+                                `;
+                            }
+
+                            agendamentosAtivosHtml += `
+                                <div id="itemMeusAgendamentos_${agId}" class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-zinc-900/90 p-3.5 rounded-2xl border border-zinc-800 gap-3 shadow-md">
+                                    <div class="space-y-1.5">
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <p class="font-bold text-dourado text-sm">${ag.servico || 'Corte'} ${ag.isPlano ? '<span class="text-xs text-purple-400 font-bold">(Plano Mensal)</span>' : ''}</p>
+                                            <span class="text-xs text-zinc-300 bg-zinc-800 px-2 py-0.5 rounded font-mono">📅 ${(ag.dataHora || '').replace('T', ' às ')}</span>
+                                        </div>
+                                        ${financeiroBadge}
+                                        <div class="pt-0.5">${badgeCancelamentoInfo}</div>
+                                    </div>
+                                    <button onclick="cancelarAgendamento('${agId}')" id="btnCancelarCliente_${agId}" class="bg-red-600/80 hover:bg-red-600 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer self-end sm:self-center shadow">Cancelar</button>
                                 </div>
                             `;
                         }
-
-                        meusAgendamentosLista.innerHTML += `
-                            <div id="itemMeusAgendamentos_${agId}" class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-zinc-900/90 p-3.5 rounded-2xl border border-zinc-800 gap-3 shadow-md">
-                                <div class="space-y-1.5">
-                                    <div class="flex items-center gap-2 flex-wrap">
-                                        <p class="font-bold text-dourado text-sm">${ag.servico || 'Corte'} ${ag.isPlano ? '<span class="text-xs text-purple-400 font-bold">(Plano Mensal)</span>' : ''}</p>
-                                        <span class="text-xs text-zinc-300 bg-zinc-800 px-2 py-0.5 rounded font-mono">📅 ${(ag.dataHora || '').replace('T', ' às ')}</span>
+                        // 2. ATENDIMENTO CONCLUÍDO / CONFIRMADO PELO BARBEIRO
+                        else if (ehConcluido) {
+                            if (!atendimentosConcluidosHtml) {
+                                atendimentosConcluidosHtml += `
+                                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-gradient-to-r from-green-950/40 via-black to-green-950/30 p-3.5 rounded-2xl border border-green-800/60 gap-3 shadow-md">
+                                        <div class="space-y-1">
+                                            <div class="flex items-center gap-2 flex-wrap">
+                                                <span class="text-[10px] font-black uppercase text-green-300 bg-green-950 px-2.5 py-0.5 rounded-full border border-green-700 flex items-center gap-1">
+                                                    <span>✅</span> Atendimento Concluído
+                                                </span>
+                                                <p class="font-bold text-white text-sm">${ag.servico || 'Corte'} ${ag.isPlano ? '<span class="text-xs text-purple-400 font-bold">(Plano Mensal)</span>' : ''}</p>
+                                            </div>
+                                            <div class="flex items-center gap-2 text-xs text-zinc-300">
+                                                <span class="font-mono bg-black/60 px-2 py-0.5 rounded border border-zinc-800 text-zinc-300">📅 ${(ag.dataHora || '').replace('T', ' às ')}</span>
+                                            </div>
+                                            <p class="text-[11px] text-green-300/90 font-medium">✂️ Presença confirmada pelo barbeiro. Esperamos que tenha gostado do atendimento!</p>
+                                        </div>
+                                        <span class="text-[10px] font-extrabold text-green-400 bg-green-950/90 px-3 py-1.5 rounded-xl border border-green-700/80 self-end sm:self-center shadow uppercase tracking-wider">
+                                            Realizado
+                                        </span>
                                     </div>
-                                    ${financeiroBadge}
-                                    <div class="pt-0.5">${badgeCancelamentoInfo}</div>
-                                </div>
-                                <button onclick="cancelarAgendamento('${agId}')" id="btnCancelarCliente_${agId}" class="bg-red-600/80 hover:bg-red-600 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer self-end sm:self-center shadow">Cancelar</button>
-                            </div>
-                        `;
+                                `;
+                            }
+                        }
                     }
                 });
 
@@ -4036,7 +4143,26 @@
                     divOcupados.innerHTML = "<span class='text-zinc-500'>Nenhum horário futuro ocupado no momento.</span>";
                 }
 
-                if (!temMeusAgendamentos) {
+                if (temMeusAgendamentosAtivos) {
+                    meusAgendamentosLista.innerHTML = agendamentosAtivosHtml;
+                    if (atendimentosConcluidosHtml) {
+                        meusAgendamentosLista.innerHTML += `
+                            <div class="mt-3 pt-3 border-t border-zinc-800/80 space-y-2">
+                                <p class="text-[10px] font-bold text-green-400 uppercase tracking-wider flex items-center gap-1">
+                                    <span>✂️</span> Último Atendimento Realizado:
+                                </p>
+                                ${atendimentosConcluidosHtml}
+                            </div>
+                        `;
+                    }
+                } else if (atendimentosConcluidosHtml) {
+                    meusAgendamentosLista.innerHTML = `
+                        <div class="space-y-2.5">
+                            <p class="text-xs text-zinc-400 font-medium">Nenhum corte pendente no momento.</p>
+                            ${atendimentosConcluidosHtml}
+                        </div>
+                    `;
+                } else {
                     meusAgendamentosLista.innerHTML = "<p class='text-xs text-zinc-500'>Não possui agendamentos ativos no momento.</p>";
                 }
             } catch (e) { console.error(e); }

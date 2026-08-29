@@ -3454,7 +3454,25 @@
                 const updateObj = {};
                 updateObj[`semanas.${semanaNumero}.status`] = novoStatus;
                 updateObj[`semanas.${semanaNumero}.atualizadoEm`] = new Date().toISOString();
+                if (novoStatus === 'concluido') {
+                    updateObj[`semanas.${semanaNumero}.concluidoEm`] = new Date().toISOString();
+                }
                 await updateDoc(doc(db, "assinaturasClientes", userId), updateObj);
+
+                // Se houver um agendamento vinculado àquela semana, atualiza também seu status
+                try {
+                    const snapAgs = await getDocs(query(collection(db, "agendamentos"), where("userId", "==", userId)));
+                    snapAgs.forEach(async (dSnap) => {
+                        const ag = dSnap.data();
+                        if ((ag.semanaPlano == semanaNumero || String(ag.servico || '').includes(`Semana ${semanaNumero}`)) && ag.status !== 'cancelado') {
+                            await updateDoc(doc(db, "agendamentos", dSnap.id), { 
+                                status: novoStatus === 'concluido' ? 'concluido' : (novoStatus === 'falta' ? 'falta' : 'confirmado'),
+                                atualizadoEm: new Date().toISOString()
+                            });
+                        }
+                    });
+                } catch (eAg) { console.warn("Aviso ao sincronizar agendamento da semana:", eAg); }
+
                 exibirToastNotificacao('Semana Atualizada', `Semana ${semanaNumero} marcada como "${novoStatus}".`, 'info');
                 await window.carregarClientesMensalistasAdmin();
             } catch (e) {
