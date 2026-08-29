@@ -1,13 +1,15 @@
 {
-  "name": "emaus-barbearia",
+  "name": "barbearia-backend",
   "version": "1.0.0",
-  "description": "Sistema de Gestão e Agendamento EMAUS Barbearia",
+  "description": "Backend para pagamentos Mercado Pago - EMAUS Barbearia",
+  "main": "src/server.js",
   "type": "module",
   "scripts": {
-    "start": "node server/src/server.js"
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
   },
   "dependencies": {
-    "@whiskeysockets/baileys": "^7.0.0-rc14",
+    "@whiskeysockets/baileys": "latest",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
