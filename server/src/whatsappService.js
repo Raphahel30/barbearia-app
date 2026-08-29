@@ -29,7 +29,8 @@ function callEvolutionApi(path, method = 'GET', body = null) {
         }
 
         try {
-            const url = new URL(\\);
+            const fullUrl = `${EVOLUTION_API_URL}${path}`;
+            const url = new URL(fullUrl);
             const isHttps = url.protocol === 'https:';
             const client = isHttps ? https : http;
 
@@ -45,7 +46,7 @@ function callEvolutionApi(path, method = 'GET', body = null) {
             const options = {
                 hostname: url.hostname,
                 port: url.port || (isHttps ? 443 : 80),
-                path: \\,
+                path: `${url.pathname}${url.search}`,
                 method: method,
                 headers: headers,
                 timeout: 8000
@@ -93,9 +94,9 @@ function callEvolutionApi(path, method = 'GET', body = null) {
 async function garantirInstanciaCriada() {
     if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY) return;
     try {
-        const check = await callEvolutionApi(/instance/connectionState/\);
+        const check = await callEvolutionApi(`/instance/connectionState/${EVOLUTION_INSTANCE_NAME}`);
         if (check.statusCode === 404 || (check.data && check.data.error === 'Not Found')) {
-            console.log([Evolution API] Criando instância ...);
+            console.log(`[Evolution API] Criando instância ${EVOLUTION_INSTANCE_NAME}...`);
             await callEvolutionApi('/instance/create', 'POST', {
                 instanceName: EVOLUTION_INSTANCE_NAME,
                 token: EVOLUTION_API_KEY,
@@ -125,7 +126,7 @@ export async function obterStatusWhatsApp() {
     }
 
     try {
-        const res = await callEvolutionApi(/instance/connectionState/\);
+        const res = await callEvolutionApi(`/instance/connectionState/${EVOLUTION_INSTANCE_NAME}`);
         if (res.success && res.data && res.data.instance) {
             const state = res.data.instance.state;
             const owner = res.data.instance.owner || null;
@@ -156,7 +157,7 @@ export async function iniciarWhatsApp() {
     }
 
     try {
-        const connectRes = await callEvolutionApi(/instance/connect/\);
+        const connectRes = await callEvolutionApi(`/instance/connect/${EVOLUTION_INSTANCE_NAME}`);
         if (connectRes.success && connectRes.data) {
             if (connectRes.data.base64 || connectRes.data.qrcode) {
                 cachedStatus.status = 'qr_ready';
@@ -188,7 +189,7 @@ export async function gerarCodigoPareamentoWhatsApp(numeroTelefone) {
     await garantirInstanciaCriada();
 
     try {
-        const res = await callEvolutionApi(/instance/connect/?number=\);
+        const res = await callEvolutionApi(`/instance/connect/${EVOLUTION_INSTANCE_NAME}?number=${cleanNumber}`);
         if (res.success && res.data) {
             const code = res.data.pairingCode || res.data.code || (res.data.instance && res.data.instance.pairingCode);
             if (code) {
@@ -211,7 +212,7 @@ export async function gerarCodigoPareamentoWhatsApp(numeroTelefone) {
 
 export async function desconectarWhatsApp() {
     try {
-        await callEvolutionApi(/instance/logout/\, 'DELETE');
+        await callEvolutionApi(`/instance/logout/${EVOLUTION_INSTANCE_NAME}`, 'DELETE');
         cachedStatus = { status: 'disconnected', qrCode: null, userNumber: null, lastChecked: 0 };
         return { success: true, message: 'Desconectado com sucesso' };
     } catch (e) {
@@ -225,7 +226,7 @@ export async function enviarMensagemWhatsApp(numeroDestino, texto) {
     }
 
     if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY) {
-        console.log([WhatsApp Simulado - Evolution API não configurada] Para:  | Msg: ...);
+        console.log(`[WhatsApp Simulado - Evolution API não configurada] Para: ${numeroDestino} | Msg: ${texto.slice(0, 60)}...`);
         return { success: true, simulated: true };
     }
 
@@ -245,7 +246,7 @@ export async function enviarMensagemWhatsApp(numeroDestino, texto) {
             }
         };
 
-        const res = await callEvolutionApi(/message/sendText/\, 'POST', body);
+        const res = await callEvolutionApi(`/message/sendText/${EVOLUTION_INSTANCE_NAME}`, 'POST', body);
         if (res.success) {
             return { success: true, data: res.data };
         }
