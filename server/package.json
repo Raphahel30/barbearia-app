@@ -5,6 +5,7 @@
   "main": "src/server.js",
   "type": "module",
   "scripts": {
+    "build": "npm approve-scripts --allow-scripts-pending || true",
     "start": "node src/server.js",
     "dev": "node --watch src/server.js"
   },
