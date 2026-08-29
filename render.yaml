@@ -3,7 +3,8 @@ services:
     name: emaus-barbearia-bot
     env: node
     plan: free
-    buildCommand: npm install
+    rootDir: server
+    buildCommand: npm install --ignore-scripts
     startCommand: npm start
     autoDeploy: true
     envVars:
@@ -25,10 +26,3 @@ services:
         value: https://barbearia-app-1bf5.onrender.com
       - key: APP_SITE_URL
         value: https://agendamento-barbearia-e8ffb.web.app
-      - key: EVOLUTION_API_URL
-        sync: false
-      - key: EVOLUTION_API_KEY
-        sync: false
-      - key: EVOLUTION_INSTANCE_NAME
-        value: emaus-barbearia
-
