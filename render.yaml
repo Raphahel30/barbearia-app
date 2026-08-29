@@ -3,8 +3,7 @@ services:
     name: emaus-barbearia-bot
     env: node
     plan: free
-    rootDir: server
-    buildCommand: npm install --ignore-scripts
+    buildCommand: npm install
     startCommand: npm start
     autoDeploy: true
     envVars:
