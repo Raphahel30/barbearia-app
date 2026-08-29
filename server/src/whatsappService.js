@@ -1,179 +1,56 @@
-import https from 'https';
-import http from 'http';
+import { makeWASocket, useMultiFileAuthState, DisconnectReason, makeCacheableSignalKeyStore } from '@whiskeysockets/baileys';
+import { Boom } from '@hapi/boom';
+import pino from 'pino';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Configurações da Evolution API (via variáveis de ambiente)
-const EVOLUTION_API_URL = (process.env.EVOLUTION_API_URL || '').replace(/\/$/, '');
-const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY || '';
-const EVOLUTION_INSTANCE_NAME = process.env.EVOLUTION_INSTANCE_NAME || 'emaus-barbearia';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// Cache em memória de status para respostas ultra-rápidas
-let cachedStatus = {
-    status: 'disconnected', // 'disconnected' | 'connecting' | 'qr_ready' | 'connected'
-    qrCode: null,
-    userNumber: null,
-    lastChecked: 0
-};
+// ─── PERSISTÊNCIA DE SESSÃO ──────────────────────────────────────────────────
+// Sessão salva em disco. No Render Free, o disco é efêmero entre deploys,
+// mas a reconexão via QR Code ou Código de 8 dígitos é rápida.
+// Para persistência real entre deploys, use RENDER DISK ou salve o estado
+// no Firestore (upgrade futuro).
+const SESSION_DIR = process.env.WA_SESSION_DIR || path.join(__dirname, '../../.wa_session');
 
-// Helper interno para requisições HTTP/HTTPS para a Evolution API com timeout de 8s
-function callEvolutionApi(path, method = 'GET', body = null) {
-    return new Promise((resolve) => {
-        if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY) {
-            return resolve({
-                success: false,
-                notConfigured: true,
-                message: 'Evolution API não configurada. Defina EVOLUTION_API_URL e EVOLUTION_API_KEY no painel do Render.'
-            });
-        }
+// ─── ESTADO GLOBAL ────────────────────────────────────────────────────────────
+let sock = null;
+let isConnecting = false;
+let currentQrCode = null;
+let currentPairingCode = null;
+let connectionStatus = 'disconnected'; // 'disconnected' | 'connecting' | 'connected'
+let connectedNumber = null;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 5;
+let reconnectTimer = null;
 
-        try {
-            const fullUrl = `${EVOLUTION_API_URL}${path}`;
-            const url = new URL(fullUrl);
-            const isHttps = url.protocol === 'https:';
-            const client = isHttps ? https : http;
+const logger = pino({ level: 'silent' }); // silencia logs verbosos do Baileys no console
 
-            const postData = body ? JSON.stringify(body) : null;
-            const headers = {
-                'apikey': EVOLUTION_API_KEY,
-                'Content-Type': 'application/json'
-            };
-            if (postData) {
-                headers['Content-Length'] = Buffer.byteLength(postData);
-            }
+// ─── FUNÇÕES EXPORTADAS ───────────────────────────────────────────────────────
 
-            const options = {
-                hostname: url.hostname,
-                port: url.port || (isHttps ? 443 : 80),
-                path: `${url.pathname}${url.search}`,
-                method: method,
-                headers: headers,
-                timeout: 8000
-            };
-
-            const req = client.request(options, (res) => {
-                let data = '';
-                res.on('data', chunk => data += chunk);
-                res.on('end', () => {
-                    try {
-                        const parsed = data ? JSON.parse(data) : {};
-                        resolve({
-                            statusCode: res.statusCode,
-                            success: res.statusCode >= 200 && res.statusCode < 300,
-                            data: parsed
-                        });
-                    } catch (e) {
-                        resolve({
-                            statusCode: res.statusCode,
-                            success: res.statusCode >= 200 && res.statusCode < 300,
-                            data: data
-                        });
-                    }
-                });
-            });
-
-            req.on('timeout', () => {
-                req.destroy();
-                resolve({ success: false, error: 'Timeout ao comunicar com Evolution API' });
-            });
-
-            req.on('error', (err) => {
-                resolve({ success: false, error: err.message });
-            });
-
-            if (postData) req.write(postData);
-            req.end();
-        } catch (err) {
-            resolve({ success: false, error: err.message });
-        }
-    });
-}
-
-/** Guarantees instance exists in Evolution API */
-async function garantirInstanciaCriada() {
-    if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY) return;
-    try {
-        const check = await callEvolutionApi(`/instance/connectionState/${EVOLUTION_INSTANCE_NAME}`);
-        if (check.statusCode === 404 || (check.data && check.data.error === 'Not Found')) {
-            console.log(`[Evolution API] Criando instância ${EVOLUTION_INSTANCE_NAME}...`);
-            await callEvolutionApi('/instance/create', 'POST', {
-                instanceName: EVOLUTION_INSTANCE_NAME,
-                token: EVOLUTION_API_KEY,
-                qrcode: true,
-                integration: 'WHATSAPP-BAILEYS'
-            });
-        }
-    } catch (e) {
-        console.warn('[Evolution API] Aviso ao verificar/criar instância:', e.message);
-    }
-}
-
-export async function obterStatusWhatsApp() {
-    const now = Date.now();
-    if (now - cachedStatus.lastChecked < 3000 && cachedStatus.status === 'connected') {
-        return cachedStatus;
-    }
-
-    if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY) {
-        return {
-            status: 'disconnected',
-            qrCode: null,
-            userNumber: null,
-            notConfigured: true,
-            message: 'Evolution API não configurada. Defina EVOLUTION_API_URL e EVOLUTION_API_KEY no Render.'
-        };
-    }
-
-    try {
-        const res = await callEvolutionApi(`/instance/connectionState/${EVOLUTION_INSTANCE_NAME}`);
-        if (res.success && res.data && res.data.instance) {
-            const state = res.data.instance.state;
-            const owner = res.data.instance.owner || null;
-            let statusStr = 'disconnected';
-            if (state === 'open') statusStr = 'connected';
-            else if (state === 'connecting') statusStr = 'connecting';
-
-            cachedStatus = {
-                status: statusStr,
-                qrCode: null,
-                userNumber: owner ? owner.split('@')[0] : null,
-                lastChecked: now
-            };
-            return cachedStatus;
-        }
-    } catch (e) {
-        console.warn('[Evolution API] Erro ao obter status:', e.message);
-    }
-
-    return cachedStatus;
+export function obterStatusWhatsApp() {
+    return {
+        status: connectionStatus,
+        qrCode: currentQrCode,
+        pairingCode: currentPairingCode,
+        userNumber: connectedNumber,
+        reconnectAttempts
+    };
 }
 
 export async function iniciarWhatsApp() {
-    await garantirInstanciaCriada();
-    const statusAtual = await obterStatusWhatsApp();
-    if (statusAtual.status === 'connected') {
-        return { success: true, status: 'connected', userNumber: statusAtual.userNumber };
+    if (sock && connectionStatus === 'connected') {
+        return { success: true, status: 'connected', userNumber: connectedNumber };
     }
-
-    try {
-        const connectRes = await callEvolutionApi(`/instance/connect/${EVOLUTION_INSTANCE_NAME}`);
-        if (connectRes.success && connectRes.data) {
-            if (connectRes.data.base64 || connectRes.data.qrcode) {
-                cachedStatus.status = 'qr_ready';
-                cachedStatus.qrCode = connectRes.data.base64 || connectRes.data.qrcode;
-                return { success: true, status: 'qr_ready', qrCode: cachedStatus.qrCode };
-            }
-            if (connectRes.data.instance && connectRes.data.instance.state === 'open') {
-                cachedStatus.status = 'connected';
-                return { success: true, status: 'connected' };
-            }
-        }
-    } catch (e) {
-        console.error('[Evolution API] Erro ao conectar instância:', e.message);
+    if (isConnecting) {
+        return { success: true, status: 'connecting', message: 'Conexão em andamento...' };
     }
-
-    return { success: false, status: cachedStatus.status };
+    return _conectar({ gerarQr: true });
 }
 
 export async function gerarCodigoPareamentoWhatsApp(numeroTelefone) {
@@ -185,37 +62,39 @@ export async function gerarCodigoPareamentoWhatsApp(numeroTelefone) {
     if (!cleanNumber.startsWith('55') && (cleanNumber.length === 10 || cleanNumber.length === 11)) {
         cleanNumber = '55' + cleanNumber;
     }
-
-    await garantirInstanciaCriada();
-
-    try {
-        const res = await callEvolutionApi(`/instance/connect/${EVOLUTION_INSTANCE_NAME}?number=${cleanNumber}`);
-        if (res.success && res.data) {
-            const code = res.data.pairingCode || res.data.code || (res.data.instance && res.data.instance.pairingCode);
-            if (code) {
-                cachedStatus.status = 'connecting';
-                return { success: true, pairingCode: code };
-            }
-            if (res.data.instance && res.data.instance.state === 'open') {
-                cachedStatus.status = 'connected';
-                return { success: true, status: 'connected', message: 'WhatsApp já conectado!' };
-            }
-        }
-        return {
-            success: false,
-            error: (res.data && res.data.response && res.data.response.message) || res.error || 'Não foi possível obter o código da Evolution API'
-        };
-    } catch (e) {
-        return { success: false, error: e.message };
+    if (cleanNumber.length < 12) {
+        return { success: false, error: `Número inválido: ${cleanNumber}. Use o formato com DDD e DDI (55DDD9XXXXXXXX).` };
     }
+
+    if (sock && connectionStatus === 'connected') {
+        return { success: true, status: 'connected', message: 'WhatsApp já está conectado!' };
+    }
+
+    // Inicia conexão sem QR, modo pairing code
+    const resultado = await _conectar({ gerarQr: false, numeroPairing: cleanNumber });
+    if (resultado.success && resultado.pairingCode) {
+        return { success: true, pairingCode: resultado.pairingCode };
+    }
+    return resultado;
 }
 
 export async function desconectarWhatsApp() {
     try {
-        await callEvolutionApi(`/instance/logout/${EVOLUTION_INSTANCE_NAME}`, 'DELETE');
-        cachedStatus = { status: 'disconnected', qrCode: null, userNumber: null, lastChecked: 0 };
-        return { success: true, message: 'Desconectado com sucesso' };
+        _limparReconexao();
+        if (sock) {
+            await sock.logout();
+            sock = null;
+        }
+        _limparSessao();
+        connectionStatus = 'disconnected';
+        connectedNumber = null;
+        currentQrCode = null;
+        currentPairingCode = null;
+        reconnectAttempts = 0;
+        return { success: true, message: 'Desconectado e sessão apagada com sucesso.' };
     } catch (e) {
+        connectionStatus = 'disconnected';
+        sock = null;
         return { success: false, error: e.message };
     }
 }
@@ -225,36 +104,176 @@ export async function enviarMensagemWhatsApp(numeroDestino, texto) {
         return { success: false, error: 'Número ou texto inválido' };
     }
 
-    if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY) {
-        console.log(`[WhatsApp Simulado - Evolution API não configurada] Para: ${numeroDestino} | Msg: ${texto.slice(0, 60)}...`);
-        return { success: true, simulated: true };
-    }
-
     let cleanNumber = String(numeroDestino).replace(/\D/g, '');
     if (!cleanNumber.startsWith('55') && (cleanNumber.length === 10 || cleanNumber.length === 11)) {
         cleanNumber = '55' + cleanNumber;
     }
+    const jid = `${cleanNumber}@s.whatsapp.net`;
+
+    if (!sock || connectionStatus !== 'connected') {
+        console.log(`[WhatsApp] Não conectado — mensagem descartada para ${cleanNumber}: ${texto.slice(0, 60)}...`);
+        return { success: false, error: 'WhatsApp não está conectado no momento.' };
+    }
 
     try {
-        const body = {
-            number: cleanNumber,
-            text: texto,
-            options: {
-                delay: 1200,
-                presence: 'composing',
-                linkPreview: true
-            }
-        };
-
-        const res = await callEvolutionApi(`/message/sendText/${EVOLUTION_INSTANCE_NAME}`, 'POST', body);
-        if (res.success) {
-            return { success: true, data: res.data };
-        }
-        return {
-            success: false,
-            error: (res.data && res.data.response && res.data.response.message) || res.error || 'Erro ao disparar mensagem'
-        };
+        await sock.sendMessage(jid, { text: texto });
+        return { success: true };
     } catch (err) {
+        console.error('[WhatsApp] Erro ao enviar mensagem:', err.message);
         return { success: false, error: err.message };
     }
 }
+
+// ─── LÓGICA INTERNA ───────────────────────────────────────────────────────────
+
+async function _conectar({ gerarQr = true, numeroPairing = null } = {}) {
+    if (isConnecting && !numeroPairing) {
+        return { success: true, status: 'connecting', message: 'Já aguardando conexão...' };
+    }
+
+    isConnecting = true;
+    connectionStatus = 'connecting';
+    currentQrCode = null;
+    currentPairingCode = null;
+
+    try {
+        if (!fs.existsSync(SESSION_DIR)) {
+            fs.mkdirSync(SESSION_DIR, { recursive: true });
+        }
+
+        const { state, saveCreds } = await useMultiFileAuthState(SESSION_DIR);
+        const isNewSession = !state.creds?.registered;
+
+        sock = makeWASocket({
+            auth: {
+                creds: state.creds,
+                keys: makeCacheableSignalKeyStore(state.keys, logger)
+            },
+            logger,
+            printQRInTerminal: false,
+            browser: ['EMAUS Barbearia', 'Chrome', '120.0.0'],
+            connectTimeoutMs: 60000,
+            keepAliveIntervalMs: 10000,
+            retryRequestDelayMs: 250,
+            syncFullHistory: false,
+            markOnlineOnConnect: false,
+            generateHighQualityLinkPreview: false,
+            getMessage: async () => ({ conversation: '' })
+        });
+
+        // Gerar pairing code se necessário (DEVE ser chamado antes do primeiro QR ser emitido)
+        if (isNewSession && numeroPairing && !gerarQr) {
+            // Aguarda o socket inicializar (primeiro evento 'open' ou 'qr' não precisa chegar — apenas o socket conectar ao WebSocket do WA)
+            await new Promise((resolve) => {
+                const timeout = setTimeout(resolve, 4000); // máximo 4s de espera
+                sock.ev.once('connection.update', () => {
+                    clearTimeout(timeout);
+                    resolve();
+                });
+            });
+            try {
+                const code = await sock.requestPairingCode(numeroPairing);
+                currentPairingCode = code;
+                console.log(`[WhatsApp] Código de pareamento gerado: ${code}`);
+                isConnecting = false;
+                return { success: true, pairingCode: code };
+            } catch (pairingErr) {
+                console.error('[WhatsApp] Erro ao gerar código de pareamento:', pairingErr.message);
+                isConnecting = false;
+                return { success: false, error: `Erro ao gerar código de pareamento: ${pairingErr.message}` };
+            }
+        }
+
+        // ─── EVENT HANDLERS ────────────────────────────────────────────────────
+        sock.ev.on('creds.update', saveCreds);
+
+        sock.ev.on('connection.update', async (update) => {
+            const { connection, lastDisconnect, qr } = update;
+
+            if (qr && gerarQr) {
+                currentQrCode = `data:image/png;base64,${Buffer.from(qr).toString('base64')}`;
+                // Gera QR Code como data URL para exibir no painel
+                try {
+                    const { default: QRCode } = await import('qrcode');
+                    currentQrCode = await QRCode.toDataURL(qr);
+                } catch (_) {
+                    // fallback: envia o texto bruto do QR
+                    currentQrCode = qr;
+                }
+                connectionStatus = 'connecting';
+                console.log('[WhatsApp] QR Code disponível para escaneamento.');
+            }
+
+            if (connection === 'open') {
+                isConnecting = false;
+                connectionStatus = 'connected';
+                currentQrCode = null;
+                currentPairingCode = null;
+                reconnectAttempts = 0;
+                _limparReconexao();
+                connectedNumber = sock.user?.id?.split(':')[0] || sock.user?.id?.split('@')[0] || null;
+                console.log(`[WhatsApp] ✅ Conectado! Número: ${connectedNumber}`);
+            }
+
+            if (connection === 'close') {
+                isConnecting = false;
+                const statusCode = lastDisconnect?.error instanceof Boom ? lastDisconnect.error.output.statusCode : 0;
+                const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+                const wasLoggedOut = statusCode === DisconnectReason.loggedOut;
+
+                console.log(`[WhatsApp] Conexão encerrada. Código: ${statusCode} | Reconectar: ${shouldReconnect}`);
+
+                if (wasLoggedOut) {
+                    connectionStatus = 'disconnected';
+                    connectedNumber = null;
+                    sock = null;
+                    _limparSessao();
+                    console.log('[WhatsApp] Logout detectado. Sessão apagada.');
+                } else if (shouldReconnect && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                    connectionStatus = 'connecting';
+                    reconnectAttempts++;
+                    const delay = Math.min(5000 * reconnectAttempts, 30000);
+                    console.log(`[WhatsApp] Tentativa ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS} de reconexão em ${delay / 1000}s...`);
+                    _limparReconexao();
+                    reconnectTimer = setTimeout(() => _conectar({ gerarQr: false }), delay);
+                } else {
+                    connectionStatus = 'disconnected';
+                    sock = null;
+                    console.log('[WhatsApp] Reconexão esgotada ou desconectado definitivamente.');
+                }
+            }
+        });
+
+        return { success: true, status: 'connecting', message: 'Aguardando QR Code ou código de pareamento...' };
+    } catch (err) {
+        isConnecting = false;
+        connectionStatus = 'disconnected';
+        console.error('[WhatsApp] Erro crítico ao conectar:', err.message);
+        return { success: false, error: err.message };
+    }
+}
+
+function _limparSessao() {
+    try {
+        if (fs.existsSync(SESSION_DIR)) {
+            fs.rmSync(SESSION_DIR, { recursive: true, force: true });
+        }
+    } catch (e) {
+        console.warn('[WhatsApp] Aviso ao limpar sessão:', e.message);
+    }
+}
+
+function _limparReconexao() {
+    if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+    }
+}
+
+// Auto-inicializar ao subir o servidor se houver sessão salva
+(async () => {
+    if (fs.existsSync(SESSION_DIR) && fs.readdirSync(SESSION_DIR).length > 0) {
+        console.log('[WhatsApp] Sessão anterior encontrada — reconectando automaticamente...');
+        await _conectar({ gerarQr: false }).catch(e => console.warn('[WhatsApp] Auto-reconexão falhou:', e.message));
+    }
+})();
