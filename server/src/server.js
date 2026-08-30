@@ -509,11 +509,11 @@ async function verificarAuthEstornoMiddleware(req, res, next) {
 }
 
 // Rota raiz para verificação imediata de uptime no Render e UptimeRobot
-app.get('/', (req, res) => {
-    const waStatus = obterStatusWhatsApp();
+app.get('/', async (req, res) => {
+    const waStatus = await obterStatusWhatsApp();
     res.json({
         status: 'online',
-        service: 'EMAÚS Barbearia - WhatsApp Bot & API 24/7',
+        service: 'EMAÚS Barbearia - WhatsApp Bot (Evolution API) 24/7',
         uptime: `${Math.floor(process.uptime())}s`,
         timestamp: new Date().toISOString(),
         whatsapp: {
@@ -523,8 +523,8 @@ app.get('/', (req, res) => {
     });
 });
 
-app.get('/health', (req, res) => {
-    const waStatus = obterStatusWhatsApp();
+app.get('/health', async (req, res) => {
+    const waStatus = await obterStatusWhatsApp();
     res.json({
         status: 'ok',
         uptime: process.uptime(),
@@ -1483,17 +1483,19 @@ app.post('/api/webhook', async (req, res) => {
 // ==========================================
 
 // Retorna status atual da conexão e QR Code se disponível
-app.get('/api/whatsapp/status', (req, res) => {
-    const statusInfo = obterStatusWhatsApp();
-    return res.json(statusInfo);
+app.get('/api/whatsapp/status', async (req, res) => {
+    try {
+        const statusInfo = await obterStatusWhatsApp();
+        return res.json(statusInfo);
+    } catch (e) {
+        return res.status(500).json({ status: 'disconnected', error: e.message });
+    }
 });
 
 // Inicia ou reinicia conexão para gerar QR Code
 app.post('/api/whatsapp/conectar', verificarAdminMiddleware, async (req, res) => {
     try {
-        const waStatus = obterStatusWhatsApp();
-        const force = waStatus.status !== 'connected';
-        const result = await iniciarWhatsApp(force);
+        const result = await iniciarWhatsApp();
         return res.json({ success: true, ...result });
     } catch (err) {
         return res.status(500).json({ success: false, error: err.message });
@@ -1544,7 +1546,7 @@ app.post('/api/whatsapp/testar-barbeiro', verificarAdminMiddleware, async (req, 
         }
         const msgTeste = `💈 *EMAÚS Barbearia - Teste de Notificação*\n\n` +
             `Olá, Barbeiro! ✂️\n\n` +
-            `Seu WhatsApp foi configurado com sucesso no sistema da Barbearia EMAÚS.\n\n` +
+            `Seu WhatsApp foi configurado com sucesso no sistema da Barbearia EMAÚS via Evolution API.\n\n` +
             `✅ A partir de agora, você receberá aqui todos os resumos de agendamentos, cancelamentos e vendas da loja em tempo real!\n\n` +
             `_EMAÚS Barbearia • Sistema de Gestão 24/7_`;
 
@@ -1555,11 +1557,11 @@ app.post('/api/whatsapp/testar-barbeiro', verificarAdminMiddleware, async (req, 
     }
 });
 
-function resolverNumeroBarbeiro(customNumber) {
+async function resolverNumeroBarbeiro(customNumber) {
     if (customNumber && String(customNumber).trim().replace(/\D/g, '').length >= 10) {
         return String(customNumber).trim().replace(/\D/g, '');
     }
-    const statusWa = obterStatusWhatsApp();
+    const statusWa = await obterStatusWhatsApp();
     if (statusWa && statusWa.userNumber) {
         return statusWa.userNumber;
     }
