@@ -199,24 +199,10 @@ async function _conectar({ gerarQr = true, numeroPairing = null } = {}) {
             getMessage: async () => ({ conversation: '' })
         });
 
-        // Modo Pareamento por Código de 8 Dígitos
-        if (isNewSession && numeroPairing && !gerarQr) {
-            // Aguarda 1.5s para handshake do socket
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            try {
-                const code = await sock.requestPairingCode(numeroPairing);
-                currentPairingCode = code;
-                console.log(`[WhatsApp Bot] 🔑 Código de pareamento gerado com sucesso: ${code}`);
-                isConnecting = false;
-                return { success: true, pairingCode: code };
-            } catch (pairingErr) {
-                console.error('[WhatsApp Bot] Erro ao solicitar código de pareamento:', pairingErr.message);
-                isConnecting = false;
-                return { success: false, error: `Erro ao gerar código: ${pairingErr.message}` };
-            }
-        }
-
         // ─── EVENTOS DO BAILEYS ────────────────────────────────────────────────
+        // IMPORTANTE: os listeners precisam ser registrados ANTES de pedir o
+        // código de pareamento, senão o backend nunca fica sabendo quando o
+        // celular confirma a conexão (o evento 'connection.update' é perdido).
         sock.ev.on('creds.update', saveCreds);
 
         sock.ev.on('connection.update', async (update) => {
@@ -271,6 +257,23 @@ async function _conectar({ gerarQr = true, numeroPairing = null } = {}) {
                 }
             }
         });
+
+        // Modo Pareamento por Código de 8 Dígitos
+        if (isNewSession && numeroPairing && !gerarQr) {
+            // Aguarda 1.5s para handshake do socket
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            try {
+                const code = await sock.requestPairingCode(numeroPairing);
+                currentPairingCode = code;
+                console.log(`[WhatsApp Bot] 🔑 Código de pareamento gerado com sucesso: ${code}`);
+                isConnecting = false;
+                return { success: true, pairingCode: code };
+            } catch (pairingErr) {
+                console.error('[WhatsApp Bot] Erro ao solicitar código de pareamento:', pairingErr.message);
+                isConnecting = false;
+                return { success: false, error: `Erro ao gerar código: ${pairingErr.message}` };
+            }
+        }
 
         return { success: true, status: 'connecting', message: 'Aguardando autenticação...' };
     } catch (err) {
