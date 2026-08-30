@@ -6526,9 +6526,29 @@
             }
         });
 
+        // ==========================================
+        // UTILITÁRIOS DE UNIFICAÇÃO & DEDUPLICAÇÃO POR TELEFONE
+        // ==========================================
+        function normalizarTelefoneUnificacao(tel) {
+            if (!tel) return '';
+            let digits = String(tel).replace(/\D/g, '');
+            if (digits.startsWith('55') && (digits.length === 12 || digits.length === 13)) {
+                digits = digits.slice(2);
+            }
+            return digits;
+        }
+
+        function pontuarNomeClienteUnificado(nome) {
+            if (!nome || nome === 'Cliente' || nome === 'Sem Nome' || nome === 'Cliente VIP') return 0;
+            let score = nome.length;
+            if (/[áàãâéêíóôõúçÁÀÃÂÉÊÍÓÔÕÚÇ]/.test(nome)) score += 5;
+            if (nome.includes(' ')) score += 3;
+            return score;
+        }
+
         async function carregarClientesFidelidadeAdmin() {
             const container = document.getElementById('listaClientesFidelidadeAdmin');
-            if (container) container.innerHTML = "<div class='p-8 text-center text-zinc-500 text-xs'>Carregando clientes e selos...</div>";
+            if (container) container.innerHTML = "<div class='p-8 text-center text-zinc-500 text-xs'>Carregando e unificando contas de clientes...</div>";
 
             try {
                 const snapFid = await getDocs(collection(db, "fidelidadeClientes"));
@@ -6539,7 +6559,7 @@
 
                 // Carrega usuários para completar nomes/telefones caso não estejam na fidelidade
                 const snapUsers = await getDocs(collection(db, "usuarios"));
-                const lista = [];
+                const todosRegistros = [];
 
                 snapUsers.forEach(uDoc => {
                     const u = uDoc.data();
@@ -6550,11 +6570,12 @@
                         recompensaDisponivel: false
                     };
 
-                    lista.push({
+                    todosRegistros.push({
                         userId: uDoc.id,
-                        nome: u.nome || u.displayName || 'Cliente',
-                        telefone: u.telefone || u.whatsapp || '',
-                        fotoUrl: u.fotoUrl || '',
+                        email: u.email || '',
+                        nome: u.nome || u.displayName || fid.clienteNome || 'Cliente',
+                        telefone: u.telefone || u.whatsapp || fid.clienteTelefone || '',
+                        fotoUrl: u.fotoUrl || fid.fotoUrl || '',
                         selosAtuais: Number(fid.selosAtuais || 0),
                         totalHistorico: Number(fid.totalHistorico || fid.selosAtuais || 0),
                         recompensasUtilizadas: Number(fid.recompensasUtilizadas || 0),
@@ -6565,9 +6586,10 @@
 
                 // Também adiciona registros de fidelidade que possam não estar em usuarios
                 mapaFid.forEach((fid, uId) => {
-                    if (!lista.some(item => item.userId === uId)) {
-                        lista.push({
+                    if (!todosRegistros.some(item => item.userId === uId)) {
+                        todosRegistros.push({
                             userId: uId,
+                            email: fid.clienteEmail || '',
                             nome: fid.clienteNome || 'Cliente',
                             telefone: fid.clienteTelefone || '',
                             fotoUrl: fid.fotoUrl || '',
@@ -6580,11 +6602,61 @@
                     }
                 });
 
+                // UNIFICAÇÃO AUTOMÁTICA DE CONTAS COM O MESMO NÚMERO DE TELEFONE / WHATSAPP
+                const meta = Number(configFidelidadeCache.metaSelos || 10);
+                const mapaUnificado = new Map();
+
+                todosRegistros.forEach(item => {
+                    const telKey = normalizarTelefoneUnificacao(item.telefone);
+                    const chave = telKey && telKey.length >= 8 
+                        ? `tel_${telKey}` 
+                        : (item.email ? `email_${item.email.toLowerCase().trim()}` : `uid_${item.userId}`);
+
+                    const selosItem = Number(item.selosAtuais || 0);
+                    const totalItem = Number(item.totalHistorico || selosItem || 0);
+                    const utilizItem = Number(item.recompensasUtilizadas || 0);
+
+                    if (!mapaUnificado.has(chave)) {
+                        mapaUnificado.set(chave, {
+                            ...item,
+                            selosAtuais: selosItem,
+                            totalHistorico: totalItem,
+                            recompensasUtilizadas: utilizItem,
+                            userIds: [item.userId],
+                            contasVinculadas: 1
+                        });
+                    } else {
+                        const ex = mapaUnificado.get(chave);
+                        if (item.userId && !ex.userIds.includes(item.userId)) {
+                            ex.userIds.push(item.userId);
+                            ex.contasVinculadas++;
+                        }
+
+                        // Escolhe o nome mais completo e bem pontuado
+                        if (pontuarNomeClienteUnificado(item.nome) > pontuarNomeClienteUnificado(ex.nome)) {
+                            ex.nome = item.nome;
+                        }
+
+                        // Escolhe o formato de telefone mais limpo/completo
+                        if (!ex.telefone || (item.telefone && item.telefone.length > ex.telefone.length)) {
+                            ex.telefone = item.telefone;
+                        }
+
+                        if (!ex.fotoUrl && item.fotoUrl) ex.fotoUrl = item.fotoUrl;
+
+                        // Unifica selos e métricas pegando o maior valor acumulado entre as contas
+                        ex.selosAtuais = Math.max(ex.selosAtuais, selosItem);
+                        ex.totalHistorico = Math.max(ex.totalHistorico, totalItem);
+                        ex.recompensasUtilizadas = Math.max(ex.recompensasUtilizadas, utilizItem);
+                        ex.recompensaDisponivel = ex.recompensaDisponivel || item.recompensaDisponivel || (ex.selosAtuais >= meta);
+                    }
+                });
+
+                const lista = Array.from(mapaUnificado.values());
                 lista.sort((a, b) => b.selosAtuais - a.selosAtuais || (a.nome || '').localeCompare(b.nome || ''));
                 listaClientesFidelidadeMemoria = lista;
 
                 // Atualiza contadores
-                const meta = Number(configFidelidadeCache.metaSelos || 10);
                 const totalClientes = lista.length;
                 const totalSelos = lista.reduce((acc, c) => acc + c.totalHistorico, 0);
                 const prontas = lista.filter(c => c.selosAtuais >= meta || c.recompensaDisponivel).length;
@@ -6628,6 +6700,7 @@
                 const selos = Math.max(0, c.selosAtuais);
                 const atingiuMeta = selos >= meta || c.recompensaDisponivel;
                 const pct = Math.min(100, Math.round((selos / meta) * 100));
+                const userIdsStr = (c.userIds && c.userIds.length > 0) ? c.userIds.join(',') : (c.userId || '');
 
                 let whatsHref = "";
                 if (c.telefone) {
@@ -6655,6 +6728,7 @@
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-2 flex-wrap">
                                     <h4 class="text-sm font-bold text-white truncate">${c.nome}</h4>
+                                    ${c.contasVinculadas > 1 ? `<span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-zinc-800 text-dourado border border-dourado/30" title="Contas vinculadas ao mesmo telefone unificadas automaticamente">🔗 ${c.contasVinculadas} contas unificadas</span>` : ''}
                                     ${atingiuMeta 
                                         ? `<span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500 text-black uppercase animate-pulse">🎉 Recompensa Pronta!</span>` 
                                         : `<span class="text-[10px] font-semibold text-zinc-400">${selos}/${meta} selos</span>`}
@@ -6679,14 +6753,14 @@
 
                         <!-- Ações Rápidas de Ajuste de Selo -->
                         <div class="flex items-center gap-1.5 self-end sm:self-center flex-shrink-0">
-                            <button onclick="window.ajustarSelosClienteAdmin('${c.userId}', -1)" class="w-8 h-8 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-700 font-bold text-sm transition cursor-pointer flex items-center justify-center" title="Remover 1 Selo">
+                            <button onclick="window.ajustarSelosClienteAdmin('${userIdsStr}', -1)" class="w-8 h-8 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-700 font-bold text-sm transition cursor-pointer flex items-center justify-center" title="Remover 1 Selo">
                                 -1
                             </button>
-                            <button onclick="window.ajustarSelosClienteAdmin('${c.userId}', 1)" class="px-3 py-1.5 rounded-lg bg-dourado hover:bg-[#C5A028] text-black font-extrabold text-xs uppercase transition cursor-pointer shadow flex items-center gap-1" title="Adicionar 1 Selo">
+                            <button onclick="window.ajustarSelosClienteAdmin('${userIdsStr}', 1)" class="px-3 py-1.5 rounded-lg bg-dourado hover:bg-[#C5A028] text-black font-extrabold text-xs uppercase transition cursor-pointer shadow flex items-center gap-1" title="Adicionar 1 Selo">
                                 <span>+1 Selo</span>
                             </button>
                             ${atingiuMeta ? `
-                                <button onclick="window.resgatarRecompensaClienteAdmin('${c.userId}')" class="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-500 text-white font-extrabold text-xs uppercase transition cursor-pointer shadow flex items-center gap-1" title="Dar Recompensa e Iniciar Novo Ciclo">
+                                <button onclick="window.resgatarRecompensaClienteAdmin('${userIdsStr}')" class="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-500 text-white font-extrabold text-xs uppercase transition cursor-pointer shadow flex items-center gap-1" title="Dar Recompensa e Iniciar Novo Ciclo">
                                     <span>🎁 Resgatar</span>
                                 </button>
                             ` : ''}
@@ -6700,24 +6774,38 @@
 
         document.getElementById('inputBuscaClienteFidelidade')?.addEventListener('input', renderizarListaClientesFidelidadeAdmin);
 
-        window.ajustarSelosClienteAdmin = async function(userId, delta) {
-            if (!userId) return;
+        window.ajustarSelosClienteAdmin = async function(userIdsParam, delta) {
+            if (!userIdsParam) return;
+            const userIds = typeof userIdsParam === 'string' ? userIdsParam.split(',').filter(Boolean) : [userIdsParam];
+            if (userIds.length === 0) return;
             const meta = Number(configFidelidadeCache.metaSelos || 10);
+            
             try {
-                const docRef = doc(db, "fidelidadeClientes", userId);
-                const snap = await getDoc(docRef);
-                let dados = snap.exists() ? snap.data() : { selosAtuais: 0, totalHistorico: 0, recompensasUtilizadas: 0 };
+                let selosMax = 0;
+                let totalMax = 0;
 
-                let novosSelos = Math.max(0, Number(dados.selosAtuais || 0) + delta);
-                let novoTotal = Math.max(novosSelos, Number(dados.totalHistorico || 0) + (delta > 0 ? delta : 0));
+                for (const uid of userIds) {
+                    const snap = await getDoc(doc(db, "fidelidadeClientes", uid));
+                    if (snap.exists()) {
+                        const d = snap.data();
+                        selosMax = Math.max(selosMax, Number(d.selosAtuais || 0));
+                        totalMax = Math.max(totalMax, Number(d.totalHistorico || 0));
+                    }
+                }
+
+                let novosSelos = Math.max(0, selosMax + delta);
+                let novoTotal = Math.max(novosSelos, totalMax + (delta > 0 ? delta : 0));
                 let disponivel = novosSelos >= meta;
 
-                await setDoc(docRef, {
+                // Sincroniza todas as contas associadas ao cliente
+                const promises = userIds.map(uid => setDoc(doc(db, "fidelidadeClientes", uid), {
                     selosAtuais: novosSelos,
                     totalHistorico: novoTotal,
                     recompensaDisponivel: disponivel,
                     atualizadoEm: new Date().toISOString()
-                }, { merge: true });
+                }, { merge: true }));
+
+                await Promise.all(promises);
 
                 if (window.vibrarDispositivo) window.vibrarDispositivo(delta > 0 ? 'sucesso' : 'clique');
                 exibirToastNotificacao(
@@ -6733,25 +6821,40 @@
             }
         };
 
-        window.resgatarRecompensaClienteAdmin = async function(userId) {
-            if (!userId) return;
+        window.resgatarRecompensaClienteAdmin = async function(userIdsParam) {
+            if (!userIdsParam) return;
             if (!confirm("Confirmar o resgate da recompensa deste cliente e iniciar um novo ciclo de selos?")) return;
+            const userIds = typeof userIdsParam === 'string' ? userIdsParam.split(',').filter(Boolean) : [userIdsParam];
+            if (userIds.length === 0) return;
             const meta = Number(configFidelidadeCache.metaSelos || 10);
+            
             try {
-                const docRef = doc(db, "fidelidadeClientes", userId);
-                const snap = await getDoc(docRef);
-                let dados = snap.exists() ? snap.data() : { selosAtuais: meta, totalHistorico: meta, recompensasUtilizadas: 0 };
+                let selosMax = meta;
+                let totalMax = meta;
+                let utilizMax = 0;
 
-                let sobra = Math.max(0, Number(dados.selosAtuais || meta) - meta);
-                let utilizadas = Number(dados.recompensasUtilizadas || 0) + 1;
+                for (const uid of userIds) {
+                    const snap = await getDoc(doc(db, "fidelidadeClientes", uid));
+                    if (snap.exists()) {
+                        const d = snap.data();
+                        selosMax = Math.max(selosMax, Number(d.selosAtuais || 0));
+                        totalMax = Math.max(totalMax, Number(d.totalHistorico || 0));
+                        utilizMax = Math.max(utilizMax, Number(d.recompensasUtilizadas || 0));
+                    }
+                }
 
-                await setDoc(docRef, {
+                let sobra = Math.max(0, selosMax - meta);
+                let utilizadas = utilizMax + 1;
+
+                const promises = userIds.map(uid => setDoc(doc(db, "fidelidadeClientes", uid), {
                     selosAtuais: sobra,
                     recompensasUtilizadas: utilizadas,
                     recompensaDisponivel: sobra >= meta,
                     ultimoResgateEm: new Date().toISOString(),
                     atualizadoEm: new Date().toISOString()
-                }, { merge: true });
+                }, { merge: true }));
+
+                await Promise.all(promises);
 
                 if (window.vibrarDispositivo) window.vibrarDispositivo('sucesso');
                 exibirToastNotificacao("🎉 Recompensa Resgatada", "Novo ciclo de fidelidade iniciado para o cliente!", "vip");
@@ -6981,7 +7084,7 @@
 
             try {
                 const snapUsers = await getDocs(collection(db, "usuarios"));
-                const lista = [];
+                const todosRegistrosAniv = [];
 
                 snapUsers.forEach(d => {
                     const u = d.data();
@@ -6989,8 +7092,9 @@
                     if (dataNasc) {
                         const calc = calcularDadosAniversario(dataNasc);
                         if (calc) {
-                            lista.push({
+                            todosRegistrosAniv.push({
                                 userId: d.id,
+                                email: u.email || '',
                                 nome: u.nome || u.displayName || 'Cliente',
                                 telefone: u.telefone || u.whatsapp || '',
                                 fotoUrl: u.fotoUrl || '',
@@ -7002,6 +7106,36 @@
                     }
                 });
 
+                // Unifica aniversariantes pelo telefone normalizado para evitar duplicações
+                const mapaUnificadoAniv = new Map();
+                todosRegistrosAniv.forEach(item => {
+                    const telKey = normalizarTelefoneUnificacao(item.telefone);
+                    const chave = telKey && telKey.length >= 8 
+                        ? `tel_${telKey}` 
+                        : (item.email ? `email_${item.email.toLowerCase().trim()}` : `uid_${item.userId}`);
+
+                    if (!mapaUnificadoAniv.has(chave)) {
+                        mapaUnificadoAniv.set(chave, {
+                            ...item,
+                            userIds: [item.userId]
+                        });
+                    } else {
+                        const ex = mapaUnificadoAniv.get(chave);
+                        if (item.userId && !ex.userIds.includes(item.userId)) {
+                            ex.userIds.push(item.userId);
+                        }
+                        if (pontuarNomeClienteUnificado(item.nome) > pontuarNomeClienteUnificado(ex.nome)) {
+                            ex.nome = item.nome;
+                        }
+                        if (!ex.telefone || (item.telefone && item.telefone.length > ex.telefone.length)) {
+                            ex.telefone = item.telefone;
+                        }
+                        if (!ex.fotoUrl && item.fotoUrl) ex.fotoUrl = item.fotoUrl;
+                        ex.anoUltimoResgate = Math.max(ex.anoUltimoResgate, item.anoUltimoResgate);
+                    }
+                });
+
+                const lista = Array.from(mapaUnificadoAniv.values());
                 lista.sort((a, b) => a.diasRestantes - b.diasRestantes);
                 listaAniversariantesMemoria = lista;
 
