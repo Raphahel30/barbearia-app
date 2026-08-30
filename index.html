@@ -238,129 +238,175 @@
                 </div>
 
                 <h2 class="text-xl font-bold text-white uppercase tracking-wide">Meu Perfil</h2>
-                <p class="text-xs text-zinc-400">Atualize sua foto, dados pessoais e informações de contato.</p>
+                <p class="text-xs text-zinc-400">Gerencie seus dados e acompanhe seu histórico de atendimentos.</p>
             </div>
 
-            <form id="formPerfilCliente" class="space-y-3.5 pt-1 text-left text-xs">
-                <!-- Nome Completo -->
-                <div>
-                    <label class="block font-semibold text-zinc-300 uppercase mb-1">Nome Completo *</label>
-                    <input type="text" id="perfilNomeCliente" required placeholder="Seu nome completo" class="w-full min-h-[42px] px-3.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white focus:outline-none focus:border-dourado font-medium text-xs sm:text-sm">
-                </div>
+            <!-- Abas do Modal Perfil: Meus Dados / Histórico Concluído -->
+            <div class="flex border-b border-zinc-800 gap-1 pt-1">
+                <button id="tabPerfilMeusDados" type="button" onclick="window.alternarAbaPerfil('dados')" class="flex-1 pb-2.5 min-h-[38px] font-bold text-xs text-dourado border-b-2 border-dourado uppercase transition cursor-pointer flex items-center justify-center gap-1.5">
+                    <svg class="w-4 h-4 text-[#D4AF37] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                    <span>Meus Dados</span>
+                </button>
+                <button id="tabPerfilHistorico" type="button" onclick="window.alternarAbaPerfil('historico')" class="flex-1 pb-2.5 min-h-[38px] font-bold text-xs text-zinc-500 uppercase transition cursor-pointer flex items-center justify-center gap-1.5 hover:text-zinc-300">
+                    <svg class="w-4 h-4 text-current flex-shrink-0 opacity-80" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                    <span>Histórico Concluído</span>
+                    <span id="badgeQtdHistoricoPerfil" class="bg-zinc-800 text-dourado font-mono text-[10px] px-1.5 py-0.2 rounded-full border border-zinc-700 font-bold hidden">0</span>
+                </button>
+            </div>
 
-                <!-- Telefone / WhatsApp -->
-                <div>
-                    <label class="block font-semibold text-zinc-300 uppercase mb-1">WhatsApp / Telefone *</label>
-                    <input type="tel" id="perfilTelefoneCliente" required placeholder="(11) 99999-9999" class="w-full min-h-[42px] px-3.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white focus:outline-none focus:border-dourado font-medium text-xs sm:text-sm">
-                    <p class="text-[10px] text-zinc-500 mt-1">Usado para o envio de confirmações e lembretes de agendamento.</p>
-                </div>
+            <!-- VIEW 1: MEUS DADOS -->
+            <div id="viewPerfilDados" class="space-y-3.5 pt-1">
+                <form id="formPerfilCliente" class="space-y-3.5 text-left text-xs">
+                    <!-- Nome Completo -->
+                    <div>
+                        <label class="block font-semibold text-zinc-300 uppercase mb-1">Nome Completo *</label>
+                        <input type="text" id="perfilNomeCliente" required placeholder="Seu nome completo" class="w-full min-h-[42px] px-3.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white focus:outline-none focus:border-dourado font-medium text-xs sm:text-sm">
+                    </div>
 
-                <!-- E-mail de Acesso -->
-                <div>
-                    <label class="block font-semibold text-zinc-300 uppercase mb-1">E-mail Cadastrado</label>
-                    <input type="email" id="perfilEmailCliente" readonly class="w-full min-w-0 min-h-[42px] px-3.5 py-2.5 bg-zinc-950 rounded-xl border border-zinc-800 text-zinc-400 cursor-not-allowed font-mono text-[11px] select-all truncate">
-                </div>
+                    <!-- Telefone / WhatsApp -->
+                    <div>
+                        <label class="block font-semibold text-zinc-300 uppercase mb-1">WhatsApp / Telefone *</label>
+                        <input type="tel" id="perfilTelefoneCliente" required placeholder="(11) 99999-9999" class="w-full min-h-[42px] px-3.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white focus:outline-none focus:border-dourado font-medium text-xs sm:text-sm">
+                        <p class="text-[10px] text-zinc-500 mt-1">Usado para o envio de confirmações e lembretes de agendamento.</p>
+                    </div>
 
-                <!-- Data de Nascimento (Presente de Aniversário 🎂) -->
-                <div>
-                    <label class="block font-semibold text-zinc-300 uppercase mb-1">Data de Nascimento 🎂</label>
-                    <input type="date" id="perfilDataNascimentoCliente" class="w-full min-h-[44px] px-3.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white focus:outline-none focus:border-dourado font-medium text-xs sm:text-sm cursor-pointer">
-                    <p class="text-[10px] text-zinc-500 mt-1">Cadastre sua data para desbloquear benefícios e presentes especiais no seu aniversário!</p>
-                </div>
+                    <!-- E-mail de Acesso -->
+                    <div>
+                        <label class="block font-semibold text-zinc-300 uppercase mb-1">E-mail Cadastrado</label>
+                        <input type="email" id="perfilEmailCliente" readonly class="w-full min-w-0 min-h-[42px] px-3.5 py-2.5 bg-zinc-950 rounded-xl border border-zinc-800 text-zinc-400 cursor-not-allowed font-mono text-[11px] select-all truncate">
+                    </div>
 
-                <!-- Card de Redefinição de Senha -->
-                <div class="bg-black/60 p-3.5 rounded-xl border border-zinc-800 space-y-2">
-                    <div class="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
-                        <span class="font-bold text-zinc-300 text-xs">🔒 Senha de Acesso</span>
-                        <button id="btnTrocarSenhaPerfil" type="button" class="text-xs bg-zinc-900 border border-zinc-700 hover:border-dourado text-dourado px-3 py-1.5 min-h-[36px] rounded-lg font-bold transition cursor-pointer inline-flex items-center shadow-sm flex-shrink-0">
-                            Alterar Senha
+                    <!-- Data de Nascimento (Presente de Aniversário 🎂) -->
+                    <div>
+                        <label class="block font-semibold text-zinc-300 uppercase mb-1">Data de Nascimento 🎂</label>
+                        <input type="date" id="perfilDataNascimentoCliente" class="w-full min-h-[44px] px-3.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white focus:outline-none focus:border-dourado font-medium text-xs sm:text-sm cursor-pointer">
+                        <p class="text-[10px] text-zinc-500 mt-1">Cadastre sua data para desbloquear benefícios e presentes especiais no seu aniversário!</p>
+                    </div>
+
+                    <!-- Card de Redefinição de Senha -->
+                    <div class="bg-black/60 p-3.5 rounded-xl border border-zinc-800 space-y-2">
+                        <div class="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+                            <span class="font-bold text-zinc-300 text-xs">🔒 Senha de Acesso</span>
+                            <button id="btnTrocarSenhaPerfil" type="button" class="text-xs bg-zinc-900 border border-zinc-700 hover:border-dourado text-dourado px-3 py-1.5 min-h-[36px] rounded-lg font-bold transition cursor-pointer inline-flex items-center shadow-sm flex-shrink-0">
+                                Alterar Senha
+                            </button>
+                        </div>
+                        <p id="msgTrocaSenhaPerfil" class="text-[11px] text-zinc-400 leading-tight"></p>
+                    </div>
+
+                    <!-- CARD GAMIFICADO DO PROGRAMA DE FIDELIDADE VIP -->
+                    <div id="cardFidelidadePerfilCliente" class="bg-gradient-to-br from-amber-950/40 via-black to-zinc-950 p-3.5 sm:p-4 rounded-2xl border border-dourado/40 space-y-3 shadow-xl">
+                        <div class="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="text-xl flex-shrink-0">👑</span>
+                                <div class="min-w-0">
+                                    <h3 class="text-xs font-bold text-dourado uppercase tracking-wide truncate">Cartão Fidelidade EMAÚS</h3>
+                                    <p class="text-[10px] text-zinc-400 truncate">Acumule selos e ganhe benefícios</p>
+                                </div>
+                            </div>
+                            <span id="badgeFidelidadeStatusPerfil" class="self-start sm:self-auto text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-dourado/20 text-dourado border border-dourado/40 flex-shrink-0 whitespace-nowrap">
+                                0 / 10 Selos
+                            </span>
+                        </div>
+
+                        <!-- Grid Interativo de Selos Dourados -->
+                        <div id="gridSelosFidelidadePerfil" class="grid grid-cols-5 gap-1.5 sm:gap-2 pt-1 pb-1">
+                            <!-- Gerado dinamicamente via JS -->
+                        </div>
+
+                        <!-- Barra de Progresso Animada -->
+                        <div class="space-y-1">
+                            <div class="w-full bg-zinc-900 h-2.5 rounded-full overflow-hidden border border-zinc-800">
+                                <div id="barraProgressoFidelidadePerfil" class="bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-300 h-full transition-all duration-500 rounded-full" style="width: 0%"></div>
+                            </div>
+                            <div class="flex justify-between items-center text-[10px] text-zinc-400">
+                                <span id="textoFaltamSelosPerfil">Faltam cortes para a recompensa</span>
+                                <span id="textoPercentualFidelidadePerfil" class="font-bold text-dourado font-mono">0%</span>
+                            </div>
+                        </div>
+
+                        <!-- Box de Recompensa Ativa -->
+                        <div class="bg-black/90 p-3 rounded-xl border border-zinc-800/90 flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="text-lg flex-shrink-0">🎁</span>
+                                <div class="truncate">
+                                    <span class="text-[10px] text-zinc-400 uppercase font-semibold block">Sua Próxima Recompensa:</span>
+                                    <span id="textoDescricaoRecompensaPerfil" class="text-xs font-bold text-white truncate block">Desconto no próximo corte</span>
+                                </div>
+                            </div>
+                            <span id="badgeRecompensaProntaPerfil" class="hidden text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-green-500 text-black uppercase animate-pulse flex-shrink-0">
+                                🎉 Liberada!
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- CARD DO PRESENTE DE ANIVERSÁRIO VIP (PERFIL) -->
+                    <div id="cardAniversarioPerfilCliente" class="bg-gradient-to-br from-purple-950/40 via-black to-zinc-950 p-3.5 sm:p-4 rounded-2xl border border-purple-500/40 space-y-2.5 shadow-xl">
+                        <div class="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="text-xl flex-shrink-0">🎂</span>
+                                <div class="min-w-0">
+                                    <h3 class="text-xs font-bold text-purple-300 uppercase tracking-wide truncate">Presente de Aniversário</h3>
+                                    <p id="subtextoDataAniversarioPerfil" class="text-[10px] text-zinc-400 truncate">Benefício exclusivo no seu mês</p>
+                                </div>
+                            </div>
+                            <span id="badgeStatusAniversarioPerfil" class="self-start sm:self-auto text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-700 flex-shrink-0 whitespace-nowrap">
+                                Aguardando Data
+                            </span>
+                        </div>
+                        <div id="boxDescricaoAniversarioPerfil" class="bg-black/90 p-3 rounded-xl border border-zinc-800 flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="text-base flex-shrink-0">🎁</span>
+                                <div class="truncate">
+                                    <span id="textoStatusAniversarioPerfil" class="text-xs font-bold text-white block">Cadastre sua data de nascimento</span>
+                                    <span id="textoValidadeAniversarioPerfil" class="text-[10px] text-zinc-400 block truncate"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p id="msgPerfilStatus" class="text-xs text-center font-medium min-h-[16px]"></p>
+
+                    <div class="grid grid-cols-2 gap-2.5 sm:gap-3 pt-2">
+                        <button id="btnCancelarPerfilCliente" type="button" class="min-h-[46px] w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-3 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer flex items-center justify-center">
+                            Cancelar
+                        </button>
+                        <button id="btnSalvarPerfilCliente" type="submit" class="min-h-[46px] w-full bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-1.5">
+                            <span>💾</span> Salvar
                         </button>
                     </div>
-                    <p id="msgTrocaSenhaPerfil" class="text-[11px] text-zinc-400 leading-tight"></p>
+                </form>
+            </div>
+
+            <!-- VIEW 2: HISTÓRICO DE AGENDAMENTOS CONCLUÍDOS -->
+            <div id="viewPerfilHistorico" class="space-y-3 pt-1 text-left text-xs hidden">
+                <!-- Resumo / Estatísticas Rápidas -->
+                <div class="bg-black/80 p-3.5 rounded-2xl border border-zinc-800 flex items-center justify-between gap-3 shadow-inner">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-xl bg-green-950/80 border border-green-700/60 flex items-center justify-center text-lg shadow-inner flex-shrink-0">
+                            ✂️
+                        </div>
+                        <div class="min-w-0">
+                            <span class="text-[10px] text-zinc-400 uppercase font-semibold block">Atendimentos Realizados:</span>
+                            <span id="labelTotalCortesConcluidos" class="text-sm font-extrabold text-white truncate block">0 cortes</span>
+                        </div>
+                    </div>
+                    <span class="bg-green-950 text-green-400 border border-green-700 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase shadow-sm flex-shrink-0">
+                        Histórico 100%
+                    </span>
                 </div>
 
-                <!-- CARD GAMIFICADO DO PROGRAMA DE FIDELIDADE VIP -->
-                <div id="cardFidelidadePerfilCliente" class="bg-gradient-to-br from-amber-950/40 via-black to-zinc-950 p-3.5 sm:p-4 rounded-2xl border border-dourado/40 space-y-3 shadow-xl">
-                    <div class="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
-                        <div class="flex items-center gap-2 min-w-0">
-                            <span class="text-xl flex-shrink-0">👑</span>
-                            <div class="min-w-0">
-                                <h3 class="text-xs font-bold text-dourado uppercase tracking-wide truncate">Cartão Fidelidade EMAÚS</h3>
-                                <p class="text-[10px] text-zinc-400 truncate">Acumule selos e ganhe benefícios</p>
-                            </div>
-                        </div>
-                        <span id="badgeFidelidadeStatusPerfil" class="self-start sm:self-auto text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-dourado/20 text-dourado border border-dourado/40 flex-shrink-0 whitespace-nowrap">
-                            0 / 10 Selos
-                        </span>
-                    </div>
-
-                    <!-- Grid Interativo de Selos Dourados -->
-                    <div id="gridSelosFidelidadePerfil" class="grid grid-cols-5 gap-1.5 sm:gap-2 pt-1 pb-1">
-                        <!-- Gerado dinamicamente via JS -->
-                    </div>
-
-                    <!-- Barra de Progresso Animada -->
-                    <div class="space-y-1">
-                        <div class="w-full bg-zinc-900 h-2.5 rounded-full overflow-hidden border border-zinc-800">
-                            <div id="barraProgressoFidelidadePerfil" class="bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-300 h-full transition-all duration-500 rounded-full" style="width: 0%"></div>
-                        </div>
-                        <div class="flex justify-between items-center text-[10px] text-zinc-400">
-                            <span id="textoFaltamSelosPerfil">Faltam cortes para a recompensa</span>
-                            <span id="textoPercentualFidelidadePerfil" class="font-bold text-dourado font-mono">0%</span>
-                        </div>
-                    </div>
-
-                    <!-- Box de Recompensa Ativa -->
-                    <div class="bg-black/90 p-3 rounded-xl border border-zinc-800/90 flex items-center justify-between gap-2">
-                        <div class="flex items-center gap-2 min-w-0">
-                            <span class="text-lg flex-shrink-0">🎁</span>
-                            <div class="truncate">
-                                <span class="text-[10px] text-zinc-400 uppercase font-semibold block">Sua Próxima Recompensa:</span>
-                                <span id="textoDescricaoRecompensaPerfil" class="text-xs font-bold text-white truncate block">Desconto no próximo corte</span>
-                            </div>
-                        </div>
-                        <span id="badgeRecompensaProntaPerfil" class="hidden text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-green-500 text-black uppercase animate-pulse flex-shrink-0">
-                            🎉 Liberada!
-                        </span>
-                    </div>
+                <!-- Lista de Cards Concluídos -->
+                <div id="listaHistoricoConcluidosPerfil" class="space-y-2.5 max-h-[50vh] overflow-y-auto pr-1">
+                    <p class="text-xs text-zinc-500 text-center py-4">Carregando histórico de atendimentos...</p>
                 </div>
 
-                <!-- CARD DO PRESENTE DE ANIVERSÁRIO VIP (PERFIL) -->
-                <div id="cardAniversarioPerfilCliente" class="bg-gradient-to-br from-purple-950/40 via-black to-zinc-950 p-3.5 sm:p-4 rounded-2xl border border-purple-500/40 space-y-2.5 shadow-xl">
-                    <div class="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
-                        <div class="flex items-center gap-2 min-w-0">
-                            <span class="text-xl flex-shrink-0">🎂</span>
-                            <div class="min-w-0">
-                                <h3 class="text-xs font-bold text-purple-300 uppercase tracking-wide truncate">Presente de Aniversário</h3>
-                                <p id="subtextoDataAniversarioPerfil" class="text-[10px] text-zinc-400 truncate">Benefício exclusivo no seu mês</p>
-                            </div>
-                        </div>
-                        <span id="badgeStatusAniversarioPerfil" class="self-start sm:self-auto text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-700 flex-shrink-0 whitespace-nowrap">
-                            Aguardando Data
-                        </span>
-                    </div>
-                    <div id="boxDescricaoAniversarioPerfil" class="bg-black/90 p-3 rounded-xl border border-zinc-800 flex items-center justify-between gap-2">
-                        <div class="flex items-center gap-2 min-w-0">
-                            <span class="text-base flex-shrink-0">🎁</span>
-                            <div class="truncate">
-                                <span id="textoStatusAniversarioPerfil" class="text-xs font-bold text-white block">Cadastre sua data de nascimento</span>
-                                <span id="textoValidadeAniversarioPerfil" class="text-[10px] text-zinc-400 block truncate"></span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <p id="msgPerfilStatus" class="text-xs text-center font-medium min-h-[16px]"></p>
-
-                <div class="grid grid-cols-2 gap-2.5 sm:gap-3 pt-2">
-                    <button id="btnCancelarPerfilCliente" type="button" class="min-h-[46px] w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-3 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer flex items-center justify-center">
-                        Cancelar
-                    </button>
-                    <button id="btnSalvarPerfilCliente" type="submit" class="min-h-[46px] w-full bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-1.5">
-                        <span>💾</span> Salvar
+                <div class="pt-2">
+                    <button type="button" onclick="window.fecharModalPerfilCliente ? window.fecharModalPerfilCliente() : document.getElementById('btnFecharModalPerfilCliente')?.click()" class="min-h-[44px] w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-2.5 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer flex items-center justify-center">
+                        Voltar
                     </button>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 
@@ -2080,8 +2126,121 @@
             if (window.vibrarDispositivo) window.vibrarDispositivo('clique');
         });
 
+        window.alternarAbaPerfil = function(aba = 'dados') {
+            const tabDados = document.getElementById('tabPerfilMeusDados');
+            const tabHist = document.getElementById('tabPerfilHistorico');
+            const viewDados = document.getElementById('viewPerfilDados');
+            const viewHist = document.getElementById('viewPerfilHistorico');
+            if (!tabDados || !tabHist || !viewDados || !viewHist) return;
+
+            if (aba === 'historico') {
+                tabHist.className = "flex-1 pb-2.5 min-h-[38px] font-bold text-xs text-dourado border-b-2 border-dourado uppercase transition cursor-pointer flex items-center justify-center gap-1.5";
+                tabDados.className = "flex-1 pb-2.5 min-h-[38px] font-bold text-xs text-zinc-500 uppercase transition cursor-pointer flex items-center justify-center gap-1.5 hover:text-zinc-300";
+                viewHist.classList.remove('hidden');
+                viewDados.classList.add('hidden');
+                renderizarHistoricoConcluidoPerfil();
+            } else {
+                tabDados.className = "flex-1 pb-2.5 min-h-[38px] font-bold text-xs text-dourado border-b-2 border-dourado uppercase transition cursor-pointer flex items-center justify-center gap-1.5";
+                tabHist.className = "flex-1 pb-2.5 min-h-[38px] font-bold text-xs text-zinc-500 uppercase transition cursor-pointer flex items-center justify-center gap-1.5 hover:text-zinc-300";
+                viewDados.classList.remove('hidden');
+                viewHist.classList.add('hidden');
+            }
+            if (window.vibrarDispositivo) window.vibrarDispositivo('clique');
+        };
+
+        function renderizarHistoricoConcluidoPerfil() {
+            const lista = document.getElementById('listaHistoricoConcluidosPerfil');
+            const labelTotal = document.getElementById('labelTotalCortesConcluidos');
+            const badgeQtd = document.getElementById('badgeQtdHistoricoPerfil');
+            if (!lista) return;
+
+            const concluidos = window.meusAgendamentosConcluidosCache || [];
+            const total = concluidos.length;
+
+            if (labelTotal) {
+                labelTotal.innerText = `${total} ${total === 1 ? 'corte realizado' : 'cortes realizados'}`;
+            }
+            if (badgeQtd) {
+                badgeQtd.innerText = String(total);
+                if (total > 0) {
+                    badgeQtd.classList.remove('hidden');
+                } else {
+                    badgeQtd.classList.add('hidden');
+                }
+            }
+
+            if (total === 0) {
+                lista.innerHTML = `
+                    <div class="bg-black/60 p-6 rounded-2xl border border-zinc-800/80 text-center space-y-2">
+                        <span class="text-3xl block">✂️</span>
+                        <p class="text-xs font-bold text-white uppercase tracking-wide">Nenhum Atendimento Concluído</p>
+                        <p class="text-[11px] text-zinc-400">Assim que você realizar seus agendamentos na EMAÚS e o atendimento for finalizado pelo barbeiro, seu histórico completo de cortes aparecerá aqui!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = "";
+            concluidos.forEach(ag => {
+                const dataHoraRaw = ag.dataHora || '';
+                let dataFormatada = dataHoraRaw.replace('T', ' às ');
+                
+                if (dataHoraRaw.includes('T')) {
+                    const partes = dataHoraRaw.split('T');
+                    const dataPartes = partes[0].split('-');
+                    if (dataPartes.length === 3) {
+                        dataFormatada = `${dataPartes[2]}/${dataPartes[1]}/${dataPartes[0]} às ${partes[1]}`;
+                    }
+                }
+
+                let valorFormatado = "";
+                if (ag.isPlano) {
+                    valorFormatado = `<span class="text-[11px] text-purple-300 font-bold bg-purple-950/80 px-2 py-0.5 rounded border border-purple-800 inline-block">👑 Incluso no Plano Mensal</span>`;
+                } else {
+                    const precoNum = Number(ag.preco || 0);
+                    valorFormatado = `<span class="text-[11px] text-zinc-300 font-medium">Valor: <strong class="text-dourado font-bold">R$ ${precoNum.toFixed(2)}</strong></span>`;
+                }
+
+                const barbeiroNome = ag.barbeiroNome || ag.barbeiro || 'Aldo Rodrigues';
+
+                html += `
+                    <div class="bg-gradient-to-r from-green-950/30 via-black to-zinc-900 p-3.5 rounded-2xl border border-green-800/50 space-y-2 shadow-md transition-all hover:border-green-700/80">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="space-y-1 min-w-0 flex-1">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="text-[10px] font-black uppercase text-green-300 bg-green-950 px-2 py-0.5 rounded-full border border-green-700/80 inline-flex items-center gap-1">
+                                        <span>✓</span> Realizado
+                                    </span>
+                                    ${ag.isPlano ? '<span class="text-[10px] font-extrabold uppercase text-purple-300 bg-purple-950 px-2 py-0.5 rounded-full border border-purple-700/80">👑 VIP</span>' : ''}
+                                </div>
+                                <h4 class="font-bold text-white text-xs sm:text-sm truncate pt-0.5">
+                                    ${ag.servico || 'Corte de Cabelo'}
+                                </h4>
+                            </div>
+                            <span class="text-[10px] font-mono text-zinc-300 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-lg flex-shrink-0">
+                                📅 ${dataFormatada}
+                            </span>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-2 text-[11px] border-t border-zinc-800/80 pt-2 flex-wrap">
+                            <span class="text-zinc-400 font-medium flex items-center gap-1">
+                                <span>💈</span> ${barbeiroNome}
+                            </span>
+                            <div>${valorFormatado}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            lista.innerHTML = html;
+        }
+        window.renderizarHistoricoConcluidoPerfil = renderizarHistoricoConcluidoPerfil;
+
         function abrirModalPerfilCliente() {
             if (!auth.currentUser) return;
+            if (window.alternarAbaPerfil) window.alternarAbaPerfil('dados');
+            renderizarHistoricoConcluidoPerfil();
+
             if (perfilNomeCliente) perfilNomeCliente.value = dadosUsuarioAtual?.nome || auth.currentUser.displayName || '';
             if (perfilTelefoneCliente) perfilTelefoneCliente.value = dadosUsuarioAtual?.telefone || '';
             if (perfilEmailCliente) perfilEmailCliente.value = auth.currentUser.email || '';
@@ -2111,6 +2270,7 @@
         function fecharModalPerfilCliente() {
             if (modalPerfilCliente) modalPerfilCliente.classList.add('hidden');
         }
+        window.fecharModalPerfilCliente = fecharModalPerfilCliente;
 
         btnAbrirPerfilCliente?.addEventListener('click', abrirModalPerfilCliente);
         btnFecharModalPerfilCliente?.addEventListener('click', fecharModalPerfilCliente);
@@ -4055,12 +4215,14 @@
 
                 let temMeusAgendamentosAtivos = false;
                 let agendamentosAtivosHtml = "";
-                let atendimentosConcluidosHtml = "";
+                let meusAgendamentosConcluidos = [];
                 let temHorariosOcupadosFuturos = false;
 
                 if (querySnapshot.empty) {
                     divOcupados.innerHTML = "<span class='text-zinc-500'>Nenhum horário ocupado no momento.</span>";
                     meusAgendamentosLista.innerHTML = "<p class='text-xs text-zinc-500'>Não possui agendamentos ativos no momento.</p>";
+                    window.meusAgendamentosConcluidosCache = [];
+                    if (window.renderizarHistoricoConcluidoPerfil) window.renderizarHistoricoConcluidoPerfil();
                     return;
                 }
 
@@ -4145,56 +4307,25 @@
                                 </div>
                             `;
                         }
-                        // 2. ATENDIMENTO CONCLUÍDO / CONFIRMADO PELO BARBEIRO
+                        // 2. ATENDIMENTO CONCLUÍDO / CONFIRMADO PELO BARBEIRO -> Registra para a aba Histórico no Perfil
                         else if (ehConcluido) {
-                            if (!atendimentosConcluidosHtml) {
-                                atendimentosConcluidosHtml += `
-                                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-gradient-to-r from-green-950/40 via-black to-green-950/30 p-3.5 rounded-2xl border border-green-800/60 gap-3 shadow-md">
-                                        <div class="space-y-1">
-                                            <div class="flex items-center gap-2 flex-wrap">
-                                                <span class="text-[10px] font-black uppercase text-green-300 bg-green-950 px-2.5 py-0.5 rounded-full border border-green-700 flex items-center gap-1">
-                                                    <span>✅</span> Atendimento Concluído
-                                                </span>
-                                                <p class="font-bold text-white text-sm">${ag.servico || 'Corte'} ${ag.isPlano ? '<span class="text-xs text-purple-400 font-bold">(Plano Mensal)</span>' : ''}</p>
-                                            </div>
-                                            <div class="flex items-center gap-2 text-xs text-zinc-300">
-                                                <span class="font-mono bg-black/60 px-2 py-0.5 rounded border border-zinc-800 text-zinc-300">📅 ${(ag.dataHora || '').replace('T', ' às ')}</span>
-                                            </div>
-                                            <p class="text-[11px] text-green-300/90 font-medium">✂️ Presença confirmada pelo barbeiro. Esperamos que tenha gostado do atendimento!</p>
-                                        </div>
-                                        <span class="text-[10px] font-extrabold text-green-400 bg-green-950/90 px-3 py-1.5 rounded-xl border border-green-700/80 self-end sm:self-center shadow uppercase tracking-wider">
-                                            Realizado
-                                        </span>
-                                    </div>
-                                `;
-                            }
+                            meusAgendamentosConcluidos.push({ id: agId, ...ag });
                         }
                     }
                 });
+
+                window.meusAgendamentosConcluidosCache = meusAgendamentosConcluidos;
+                if (window.renderizarHistoricoConcluidoPerfil) {
+                    window.renderizarHistoricoConcluidoPerfil();
+                }
 
                 if (!temHorariosOcupadosFuturos) {
                     divOcupados.innerHTML = "<span class='text-zinc-500'>Nenhum horário futuro ocupado no momento.</span>";
                 }
 
+                // MEUS AGENDAMENTOS ATIVOS exibe ESTRITAMENTE agendamentos ativos pendentes
                 if (temMeusAgendamentosAtivos) {
                     meusAgendamentosLista.innerHTML = agendamentosAtivosHtml;
-                    if (atendimentosConcluidosHtml) {
-                        meusAgendamentosLista.innerHTML += `
-                            <div class="mt-3 pt-3 border-t border-zinc-800/80 space-y-2">
-                                <p class="text-[10px] font-bold text-green-400 uppercase tracking-wider flex items-center gap-1">
-                                    <span>✂️</span> Último Atendimento Realizado:
-                                </p>
-                                ${atendimentosConcluidosHtml}
-                            </div>
-                        `;
-                    }
-                } else if (atendimentosConcluidosHtml) {
-                    meusAgendamentosLista.innerHTML = `
-                        <div class="space-y-2.5">
-                            <p class="text-xs text-zinc-400 font-medium">Nenhum corte pendente no momento.</p>
-                            ${atendimentosConcluidosHtml}
-                        </div>
-                    `;
                 } else {
                     meusAgendamentosLista.innerHTML = "<p class='text-xs text-zinc-500'>Não possui agendamentos ativos no momento.</p>";
                 }
