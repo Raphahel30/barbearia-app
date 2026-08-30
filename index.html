@@ -380,6 +380,11 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- AVISO DA REGRA ÚNICA: RG NA HORA DO ATENDIMENTO -->
+                        <div class="bg-purple-950/30 p-2.5 rounded-xl border border-purple-500/30 text-[10px] text-purple-200 flex items-center gap-2">
+                            <span class="text-sm flex-shrink-0">🪪</span>
+                            <span><strong>Regra Obrigatória:</strong> Comprovar a data de nascimento apresentando documento com foto (RG ou CNH) na hora do atendimento na barbearia.</span>
+                        </div>
                     </div>
 
                     <p id="msgPerfilStatus" class="text-xs text-center font-medium min-h-[16px]"></p>
@@ -698,10 +703,19 @@
                         </div>
                         <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-purple-500 text-white uppercase animate-pulse flex-shrink-0">1x no Ano 🎉</span>
                     </div>
+
+                    <!-- REGRA ÚNICA: COMPROVAÇÃO COM RG -->
+                    <div class="bg-black/70 p-2.5 rounded-xl border border-purple-500/40 text-[11px] text-zinc-300 flex items-start gap-2">
+                        <span class="text-base flex-shrink-0">🪪</span>
+                        <div class="leading-snug">
+                            <strong class="text-purple-300">Regra do Presente:</strong> É obrigatório comprovar a data de nascimento apresentando documento oficial com foto (<strong class="text-white">RG ou CNH</strong>) presencialmente na hora do atendimento na barbearia.
+                        </div>
+                    </div>
+
                     <label class="flex items-center gap-2.5 min-h-[44px] bg-black/60 p-2.5 rounded-xl border border-purple-500/40 cursor-pointer hover:border-purple-400 transition">
                         <input type="checkbox" id="checkAplicarPresenteAniversario" class="w-4 h-4 rounded text-purple-500 bg-zinc-900 border-zinc-700 focus:ring-0 cursor-pointer">
                         <span id="labelAplicarPresenteAniversario" class="text-xs font-extrabold text-white">
-                            ✓ Aplicar Presente de Aniversário
+                            ✓ Aplicar Presente de Aniversário (Comprovação com RG no local)
                         </span>
                     </label>
                 </div>
@@ -2951,13 +2965,13 @@
                     badgePerfil.className = "text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-purple-600 text-white animate-pulse border border-purple-400";
                 }
                 if (textoStatusPerfil) textoStatusPerfil.innerText = `Parabéns! ${descBeneficio} está liberado para você!`;
-                if (textoValidadePerfil) textoValidadePerfil.innerText = "Marque a opção de presente ao realizar seu agendamento.";
+                if (textoValidadePerfil) textoValidadePerfil.innerText = "Marque a opção de presente ao agendar. Comprove com RG na barbearia.";
 
                 if (badgeDash) {
                     badgeDash.innerText = "🎉 PRESENTE DISPONÍVEL!";
                     badgeDash.className = "text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-purple-600 text-white animate-bounce border border-purple-400";
                 }
-                if (textoDash) textoDash.innerHTML = `<span class="text-purple-300 font-bold">🎉 Seu presente de aniversário está disponível! Aproveite ao agendar: ${descBeneficio}</span>`;
+                if (textoDash) textoDash.innerHTML = `<span class="text-purple-300 font-bold">🎉 Seu presente de aniversário está disponível! Aproveite ao agendar: ${descBeneficio} (Comprovação com RG na barbearia).</span>`;
             } else {
                 if (badgePerfil) {
                     badgePerfil.innerText = `Faltam ${dadosAniversarioCliente.diasRestantes} dias`;

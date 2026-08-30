@@ -1249,6 +1249,15 @@
                                 <h4 class="text-xs font-bold text-white uppercase tracking-wider">Regras do Presente</h4>
                             </div>
 
+                            <!-- DESTAQUE DA REGRA ÚNICA: COMPROVAÇÃO COM RG -->
+                            <div class="bg-purple-950/40 p-3 rounded-xl border border-purple-500/40 text-xs text-purple-200 flex items-start gap-2.5 shadow-md">
+                                <span class="text-lg flex-shrink-0">🪪</span>
+                                <div class="text-[11px] leading-relaxed">
+                                    <strong class="text-white block uppercase tracking-wide mb-0.5">Regra Única do Presente de Aniversário:</strong>
+                                    O cliente deve comprovar a data de nascimento apresentando documento oficial com foto (<strong class="text-purple-300">RG ou CNH</strong>) presencialmente na hora do atendimento na barbearia.
+                                </div>
+                            </div>
+
                             <div>
                                 <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">
                                     Janela de Validade do Presente
@@ -6876,7 +6885,7 @@
             valorDesconto: 20.00,
             porcentagemDesconto: 50,
             descricaoRecompensa: '🎉 Presente de Aniversário: R$ 20,00 de desconto no corte!',
-            mensagemWhatsapp: `🎂 *EMAÚS Barbearia - Feliz Aniversário!* 🎉\n\nFala, *{cliente}*! Tudo bem?\n\nA equipe da *EMAÚS Barbearia* deseja a você um Feliz Aniversário, com muita saúde, sucesso e realizações! ✂️✨\n\n🎁 Para comemorar o seu dia com estilo, preparamos um presente especial para você:\n👉 *{presente}*\n\nAgende seu horário pelo nosso site para resgatar seu presente:\n🔗 {site}\n\n_EMAÚS Barbearia • Atendimento de Alta Performance_`
+            mensagemWhatsapp: `🎂 *EMAÚS Barbearia - Feliz Aniversário!* 🎉\n\nFala, *{cliente}*! Tudo bem?\n\nA equipe da *EMAÚS Barbearia* deseja a você um Feliz Aniversário, com muita saúde, sucesso e realizações! ✂️✨\n\n🎁 Para comemorar o seu dia com estilo, preparamos um presente especial para você:\n👉 *{presente}*\n\n🪪 *Regra do Presente:* Apresentar documento oficial com foto (RG ou CNH) na hora do atendimento na barbearia para comprovação da data de nascimento.\n\nAgende seu horário pelo nosso site para resgatar seu presente:\n🔗 {site}\n\n_EMAÚS Barbearia • Estilo • Tradição • Excelência_`
         };
 
         let listaAniversariantesMemoria = [];
@@ -7247,8 +7256,9 @@
                                     <span class="text-zinc-600">•</span>
                                     ${c.telefone ? `<span class="font-mono text-zinc-400">📱 ${c.telefone}</span>` : '<span class="text-zinc-600">Sem WhatsApp</span>'}
                                 </div>
-                                <div class="mt-1">
+                                <div class="mt-1 flex items-center gap-2 flex-wrap">
                                     ${badgeStatusPresente}
+                                    <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-zinc-900 text-purple-300 border border-purple-500/30" title="Exigir RG na barbearia para validar o presente">🪪 Conferir RG</span>
                                 </div>
                             </div>
                         </div>
@@ -7278,7 +7288,7 @@
             const site = window.location.origin;
 
             let msg = configAniversarioCache.mensagemWhatsapp || 
-                `🎂 *EMAÚS Barbearia - Feliz Aniversário!* 🎉\n\nFala, *{cliente}*! Tudo bem?\n\nA equipe da *EMAÚS Barbearia* deseja a você um Feliz Aniversário, com muita saúde, sucesso e realizações! ✂️✨\n\n🎁 Para comemorar o seu dia com estilo, preparamos um presente especial para você:\n👉 *{presente}*\n\nAgende seu horário pelo nosso site para resgatar seu presente:\n🔗 {site}\n\n_EMAÚS Barbearia • Atendimento de Alta Performance_`;
+                `🎂 *EMAÚS Barbearia - Feliz Aniversário!* 🎉\n\nFala, *{cliente}*! Tudo bem?\n\nA equipe da *EMAÚS Barbearia* deseja a você um Feliz Aniversário, com muita saúde, sucesso e realizações! ✂️✨\n\n🎁 Para comemorar o seu dia com estilo, preparamos um presente especial para você:\n👉 *{presente}*\n\n🪪 *Regra do Presente:* Apresentar documento oficial com foto (RG ou CNH) na hora do atendimento na barbearia para comprovação da data de nascimento.\n\nAgende seu horário pelo nosso site para resgatar seu presente:\n🔗 {site}\n\n_EMAÚS Barbearia • Estilo • Tradição • Excelência_`;
 
             msg = msg.replace(/\{cliente\}/g, nome || 'Amigo')
                      .replace(/\{presente\}/g, presente)
