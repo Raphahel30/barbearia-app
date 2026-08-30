@@ -8,10 +8,20 @@
       "firebase.json",
       ".firebaserc",
       "firestore.rules",
+      "firebase-service-account.json",
+      "firebase-adminsdk*.json",
+      ".env*",
+      "*.pem",
+      "*.key",
+      "package.json",
+      "package-lock.json",
+      "render.yaml",
       "**/.*",
       "**/node_modules/**",
       "server/**",
-      "api/**"
+      "api/**",
+      "docs/**",
+      "skills/**"
     ],
     "cleanUrls": true,
     "rewrites": [

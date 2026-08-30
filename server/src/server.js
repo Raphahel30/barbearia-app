@@ -237,12 +237,11 @@ async function verificarLembretes4hAgenda() {
     }
 }
 
-function requestResetOobCode(token, email) {
+function sendPasswordResetEmailGoogle(token, email) {
     return new Promise((resolve, reject) => {
         const postData = JSON.stringify({
             requestType: "PASSWORD_RESET",
-            email: email,
-            returnOobLink: true
+            email: email
         });
 
         const req = https.request({
@@ -368,13 +367,38 @@ app.use('/api/mercadopago/reembolsar-pagamento', limiterEstorno);
 app.use('/api/auth/recuperar-senha', limiterAuth);
 app.use('/api/whatsapp/', limiterWhatsApp);
 
-// Lista de e-mails autorizados como Administradores do sistema
+// Lista de e-mails autorizados como Administradores do sistema (Super Admins)
 const ADMIN_EMAILS = [
     'aldo540@outlook.com',
     'rafaelcassu@hotmail.com',
     'cassurafael30@gmail.com',
     'admin@emausbarbearia.com'
 ];
+
+// Função unificada para verificar se um e-mail possui privilégio de Administrador
+async function isEmailAdmin(email, uid = null) {
+    if (!email) return false;
+    const emailLower = email.toLowerCase().trim();
+    if (ADMIN_EMAILS.includes(emailLower)) return true;
+
+    // Consulta dinâmica na coleção 'administradores' do Firestore
+    if (firebaseAdminDb) {
+        try {
+            if (uid) {
+                const docSnap = await firebaseAdminDb.collection('administradores').doc(uid).get();
+                if (docSnap.exists) return true;
+            }
+            const querySnap = await firebaseAdminDb.collection('administradores')
+                .where('email', '==', emailLower)
+                .limit(1)
+                .get();
+            if (!querySnap.empty) return true;
+        } catch (e) {
+            console.warn('[AdminCheck] Aviso ao consultar administradores no Firestore:', e.message);
+        }
+    }
+    return false;
+}
 
 let publicCertsCache = null;
 let publicCertsExpiry = 0;
@@ -466,9 +490,9 @@ async function verificarAdminMiddleware(req, res, next) {
             });
         }
 
-        const emailLower = decoded.email.toLowerCase().trim();
-        if (!ADMIN_EMAILS.includes(emailLower)) {
-            console.warn(`[Segurança] Tentativa de acesso não autorizado por: ${emailLower}`);
+        const ehAdmin = await isEmailAdmin(decoded.email, decoded.uid || decoded.user_id);
+        if (!ehAdmin) {
+            console.warn(`[Segurança] Tentativa de acesso não autorizado por: ${decoded.email}`);
             return res.status(403).json({
                 success: false,
                 error: 'Acesso restrito. Este usuário não possui privilégios de Administrador.'
@@ -505,7 +529,7 @@ async function verificarAuthEstornoMiddleware(req, res, next) {
         }
 
         req.authUser = decoded;
-        req.ehAdmin = ADMIN_EMAILS.includes(decoded.email.toLowerCase().trim());
+        req.ehAdmin = await isEmailAdmin(decoded.email, decoded.uid || decoded.user_id);
         next();
     } catch (err) {
         console.error('Erro na validação de estorno:', err);
@@ -552,37 +576,37 @@ if (!process.env.VERCEL) {
     }, 10 * 60 * 1000);
 }
 
-// Endpoint de Recuperação de Senha com Link Direto na Tela de Luxo
+// Endpoint Seguro de Recuperação de Senha (Disparo por E-mail)
 app.post('/api/auth/recuperar-senha', async (req, res) => {
     try {
         const { email } = req.body;
         if (!email || !email.includes('@')) {
-            return res.status(400).json({ error: 'E-mail inválido.' });
+            return res.status(400).json({ success: false, error: 'E-mail inválido.' });
         }
 
-        const token = await getGoogleAccessToken();
-        if (!token) {
-            return res.status(503).json({ error: 'Não foi possível autenticar com o serviço Google.' });
+        const emailLimpo = email.trim().toLowerCase();
+
+        // 1. Tenta envio seguro via Google Identity Toolkit REST API
+        try {
+            const token = await getGoogleAccessToken();
+            if (token) {
+                await sendPasswordResetEmailGoogle(token, emailLimpo);
+            }
+        } catch (eGoogle) {
+            console.warn('[Auth] Aviso ao solicitar reset no Google API:', eGoogle.message);
         }
 
-        const result = await requestResetOobCode(token, email.trim().toLowerCase());
-        if (!result || !result.oobCode) {
-            const errMsg = result?.error?.message || 'E-mail não encontrado ou inválido.';
-            return res.status(400).json({ error: errMsg });
-        }
-
-        const oobCode = result.oobCode;
-        const directLink = `${APP_SITE_URL}/redefinir-senha.html?oobCode=${oobCode}`;
-
+        // Resposta genérica para evitar enumeração de contas e sem vazar oobCode
         return res.json({
             success: true,
-            link: directLink,
-            oobCode: oobCode,
-            message: 'Link de redefinição gerado com sucesso!'
+            message: 'Se o e-mail informado estiver cadastrado, você receberá um link seguro de redefinição de senha na sua caixa de entrada.'
         });
     } catch (err) {
-        console.error("Erro ao gerar link de recuperação:", err);
-        return res.status(400).json({ error: err.message || 'Erro ao gerar link de recuperação.' });
+        console.error("Erro ao solicitar recuperação de senha:", err);
+        return res.json({
+            success: true,
+            message: 'Se o e-mail informado estiver cadastrado, você receberá um link seguro de redefinição de senha na sua caixa de entrada.'
+        });
     }
 });
 
@@ -1141,13 +1165,69 @@ app.get('/api/pagamento/status/:id', async (req, res) => {
 // Endpoint to process automatic refund (Devolução Pix ou Estorno Cartão)
 app.post('/api/pagamento/estorno', verificarAuthEstornoMiddleware, async (req, res) => {
     try {
-        const { paymentId, amount, reason } = req.body;
+        const { paymentId, amount, valorReembolso, reason } = req.body;
+        const valorSolicitado = (amount !== undefined && amount !== null) ? amount : valorReembolso;
 
         if (!paymentId) {
             return res.status(400).json({ success: false, error: 'ID do pagamento obrigatório para estorno.' });
         }
 
         const cleanPaymentId = String(paymentId).trim();
+
+        // Se for cliente comum (não admin), valida obrigatoriamente se o pagamento pertence a ele
+        if (!req.ehAdmin) {
+            const userUid = req.authUser?.uid || req.authUser?.user_id;
+            const userEmail = req.authUser?.email?.toLowerCase().trim();
+            let ehDonoDoPagamento = false;
+
+            if (firebaseAdminDb) {
+                try {
+                    // 1. Checa na coleção agendamentos
+                    const agSnap = await firebaseAdminDb.collection('agendamentos')
+                        .where('idPagamento', '==', cleanPaymentId)
+                        .limit(1)
+                        .get();
+                    if (!agSnap.empty) {
+                        const agData = agSnap.docs[0].data();
+                        if (agData.userId === userUid || (agData.clienteEmail && agData.clienteEmail.toLowerCase().trim() === userEmail)) {
+                            ehDonoDoPagamento = true;
+                        }
+                    }
+
+                    // 2. Checa na coleção assinaturasClientes
+                    if (!ehDonoDoPagamento && userUid) {
+                        const subDoc = await firebaseAdminDb.collection('assinaturasClientes').doc(userUid).get();
+                        if (subDoc.exists && String(subDoc.data().idPagamento || '').trim() === cleanPaymentId) {
+                            ehDonoDoPagamento = true;
+                        }
+                    }
+
+                    // 3. Checa na coleção comprasProdutos
+                    if (!ehDonoDoPagamento) {
+                        const cpSnap = await firebaseAdminDb.collection('comprasProdutos')
+                            .where('idPagamento', '==', cleanPaymentId)
+                            .limit(1)
+                            .get();
+                        if (!cpSnap.empty) {
+                            const cpData = cpSnap.docs[0].data();
+                            if (cpData.userId === userUid || (cpData.email && cpData.email.toLowerCase().trim() === userEmail)) {
+                                ehDonoDoPagamento = true;
+                            }
+                        }
+                    }
+                } catch (eCheck) {
+                    console.warn('[Estorno] Erro ao validar titularidade do pagamento:', eCheck.message);
+                }
+            }
+
+            if (!ehDonoDoPagamento) {
+                console.warn(`[Segurança:Estorno] Tentativa de estorno não autorizada para o pagamento ${cleanPaymentId} pelo usuário ${userEmail} (${userUid})`);
+                return res.status(403).json({
+                    success: false,
+                    error: 'Acesso negado. Este pagamento não pertence à sua conta.'
+                });
+            }
+        }
 
         // Se for pagamento manual, pix manual ou plano vip que não passa pelo Mercado Pago
         if (cleanPaymentId === 'manual' || cleanPaymentId === 'pix_manual' || cleanPaymentId === 'plano_vip' || cleanPaymentId.startsWith('manual_')) {
@@ -1225,7 +1305,7 @@ app.post('/api/pagamento/estorno', verificarAuthEstornoMiddleware, async (req, r
         }
 
         const transactionAmount = paymentInfo?.transaction_amount ? Number(paymentInfo.transaction_amount) : 0;
-        const requestedAmount = amount ? Number(parseFloat(amount).toFixed(2)) : 0;
+        const requestedAmount = valorSolicitado ? Number(parseFloat(valorSolicitado).toFixed(2)) : 0;
         const ehEstornoTotal = (!requestedAmount || (transactionAmount > 0 && requestedAmount >= transactionAmount));
 
         let refundResult = null;
@@ -1593,8 +1673,8 @@ app.post('/api/whatsapp/notificar-agendamento', async (req, res) => {
         } = req.body;
 
         const dataFormatada = dataHora ? dataHora.replace('T', ' às ') : 'Data a confirmar';
-        const numBarbeiroEspecifico = resolverNumeroBarbeiro(barbeiroWhatsapp);
-        const numBarbeiroGeral = resolverNumeroBarbeiro(whatsappBarbeiro);
+        const numBarbeiroEspecifico = await resolverNumeroBarbeiro(barbeiroWhatsapp);
+        const numBarbeiroGeral = await resolverNumeroBarbeiro(whatsappBarbeiro);
         const numBarbeiroDestino = numBarbeiroEspecifico || numBarbeiroGeral;
 
         const precoTotal = Number(preco || 0);
@@ -1713,13 +1793,17 @@ app.post('/api/whatsapp/lembrete-expiracao-plano', verificarAdminMiddleware, asy
 // Disparo em lote de lembretes para múltiplos clientes com crédito expirando
 app.post('/api/whatsapp/disparar-lembretes-expiracao-lote', verificarAdminMiddleware, async (req, res) => {
     try {
-        const { listaClientes } = req.body;
-        if (!Array.isArray(listaClientes) || listaClientes.length === 0) {
+        const lista = Array.isArray(req.body.listaClientes)
+            ? req.body.listaClientes
+            : (Array.isArray(req.body.clientes) ? req.body.clientes : []);
+
+        if (lista.length === 0) {
             return res.status(400).json({ success: false, error: 'Lista de clientes vazia ou inválida.' });
         }
 
         const resultados = [];
-        for (const item of listaClientes) {
+        let enviadosCount = 0;
+        for (const item of lista) {
             if (!item.telefone) continue;
             const msgLembrete = `*EMAÚS Barbearia - Aviso de Crédito VIP*\n\n` +
                 `Olá, *${item.cliente || 'Cliente'}*! 👑\n\n` +
@@ -1730,13 +1814,15 @@ app.post('/api/whatsapp/disparar-lembretes-expiracao-lote', verificarAdminMiddle
 
             try {
                 const envio = await enviarMensagemWhatsApp(item.telefone, msgLembrete);
-                resultados.push({ cliente: item.cliente, telefone: item.telefone, enviado: envio.success });
+                const ok = Boolean(envio && envio.success);
+                if (ok) enviadosCount++;
+                resultados.push({ cliente: item.cliente, telefone: item.telefone, enviado: ok });
             } catch (errEnvio) {
                 resultados.push({ cliente: item.cliente, telefone: item.telefone, enviado: false, error: errEnvio.message });
             }
         }
 
-        return res.json({ success: true, total: listaClientes.length, resultados });
+        return res.json({ success: true, enviados: enviadosCount, total: lista.length, resultados });
     } catch (err) {
         console.error('Erro na rota disparar-lembretes-expiracao-lote:', err);
         return res.status(500).json({ success: false, error: err.message });
@@ -1760,7 +1846,7 @@ app.post('/api/whatsapp/notificar-cancelamento', async (req, res) => {
         } = req.body;
 
         const dataFormatada = dataHora ? dataHora.replace('T', ' às ') : 'Data não informada';
-        const numBarbeiro = resolverNumeroBarbeiro(whatsappBarbeiro);
+        const numBarbeiro = await resolverNumeroBarbeiro(whatsappBarbeiro);
 
         // 1. Mensagem para o Barbeiro
         let statusEstornoTexto = "Sem estorno (Cancelamento fora do prazo de 3h)";
@@ -1814,7 +1900,7 @@ app.post('/api/whatsapp/notificar-cancelamento', async (req, res) => {
 app.post('/api/whatsapp/notificar-compra-plano', async (req, res) => {
     try {
         const { cliente, telefone, nomePlano, preco, dataFim, whatsappBarbeiro } = req.body;
-        const numBarbeiro = resolverNumeroBarbeiro(whatsappBarbeiro);
+        const numBarbeiro = await resolverNumeroBarbeiro(whatsappBarbeiro);
 
         // 1. Mensagem para o Barbeiro
         const msgBarbeiro = `*EMAÚS Barbearia - Nova Assinatura VIP!* 👑\n\n` +
@@ -1864,7 +1950,7 @@ app.post('/api/whatsapp/notificar-compra-produto', async (req, res) => {
             whatsappBarbeiro
         } = req.body;
 
-        const numBarbeiro = resolverNumeroBarbeiro(whatsappBarbeiro);
+        const numBarbeiro = await resolverNumeroBarbeiro(whatsappBarbeiro);
         const totalNum = Number(valorTotal || 0);
 
         let itensTexto = '';

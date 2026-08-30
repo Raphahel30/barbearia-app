@@ -2078,7 +2078,12 @@
         const db = getFirestore(app);
 
         const MASTER_ADMIN_EMAILS = ["aldo540@outlook.com"];
-        const ADMIN_EMAILS = ["aldo540@outlook.com", "rafaelcassu@hotmail.com"];
+        const ADMIN_EMAILS = [
+            "aldo540@outlook.com",
+            "rafaelcassu@hotmail.com",
+            "cassurafael30@gmail.com",
+            "admin@emausbarbearia.com"
+        ];
         const BACKEND_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:')
             ? 'http://localhost:3000'
             : 'https://barbearia-app-1bf5.onrender.com';
@@ -3378,7 +3383,7 @@
                         await fetch(`${getBackendUrlAtivo()}/api/mercadopago/reembolsar-pagamento`, {
                             method: 'POST',
                             headers: await getAdminAuthHeaders(),
-                            body: JSON.stringify({ paymentId: idPagamento, valorReembolso: precoPlano })
+                            body: JSON.stringify({ paymentId: idPagamento, amount: precoPlano, valorReembolso: precoPlano })
                         });
                     } catch (errEst) {
                         console.warn("Aviso ao tentar estorno no MP:", errEst);
@@ -3500,6 +3505,7 @@
                     method: 'POST',
                     headers: await getAdminAuthHeaders(),
                     body: JSON.stringify({
+                        listaClientes: listaPayload,
                         clientes: listaPayload,
                         whatsappBarbeiro: whatsAppNumeroAtivo
                     })

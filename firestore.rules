@@ -17,12 +17,13 @@ service cloud.firestore {
     }
 
     match /usuarios/{userId} {
-      allow read: if isAuthenticated();
+      // Proteção de dados pessoais (LGPD): apenas o próprio usuário ou administradores podem ler e gravar
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
     }
 
     match /agendamentos/{agendamentoId} {
-      // Leitura pública necessária para checagem de horários ocupados na grade e painel do cliente
+      // Leitura permitida para checagem de horários na grade e painéis
       allow read: if true;
       allow create: if isAuthenticated();
       // Apenas o próprio cliente dono do agendamento ou administrador pode alterar/cancelar
@@ -54,21 +55,20 @@ service cloud.firestore {
     }
 
     match /assinaturasClientes/{userId} {
-      allow read: if isAuthenticated();
+      // Leitura restrita ao próprio usuário ou administradores
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
     }
 
     match /produtos/{produtoId} {
       allow read: if true;
-      allow create, delete: if isAdmin();
-      // M4: Update de produtos restrito — autenticado pode atualizar estoque; apenas admin pode alterar preço/nome
-      allow update: if isAuthenticated();
+      // Criação, exclusão e alteração de produtos (preço, nome, fotos, estoque) restritas a administradores
+      allow write: if isAdmin();
     }
 
     match /comprasProdutos/{compraId} {
       // Leitura apenas pelo próprio comprador ou admins
       allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
-      // Criação exige autenticação (não anônimo)
       allow create: if isAuthenticated();
       allow update, delete: if isAdmin();
     }
@@ -94,7 +94,7 @@ service cloud.firestore {
     }
 
     match /fidelidadeClientes/{userId} {
-      // Leitura apenas pelo próprio usuário ou admins
+      // Leitura e gravação restritas ao próprio usuário ou admins
       allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
     }

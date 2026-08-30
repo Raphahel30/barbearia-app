@@ -27,7 +27,15 @@ const server = http.createServer((req, res) => {
     if (reqPath === '/termos') reqPath = '/termos.html';
     if (reqPath === '/redefinir-senha') reqPath = '/redefinir-senha.html';
 
-    const filePath = path.join(rootDir, decodeURIComponent(reqPath));
+    const cleanPath = path.normalize(decodeURIComponent(reqPath)).replace(/^(\.\.[\/\\])+/, '');
+    const filePath = path.resolve(rootDir, '.' + cleanPath);
+
+    // Proteção contra Path Traversal
+    if (!filePath.startsWith(rootDir)) {
+        res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('403 Forbidden');
+        return;
+    }
 
     fs.stat(filePath, (err, stats) => {
         if (err || !stats.isFile()) {

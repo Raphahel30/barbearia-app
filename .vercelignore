@@ -1,0 +1,7 @@
+firebase-service-account.json
+firebase-adminsdk*.json
+.env*
+*.pem
+*.key
+docs/
+skills/

@@ -2,16 +2,231 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Redirecionando para o Login | EMAÚS Barbearia</title>
-    <script>
-        window.location.replace('index.html?senhaAlterada=true');
-    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0">
+    <title>Redefinir Senha | EMAÚS Barbearia</title>
+
+    <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png">
+    <link rel="icon" type="image/jpeg" href="/logo.jpg">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <meta name="theme-color" content="#000000">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Montserrat', sans-serif; background-color: #000000; color: #ffffff; }
+        h1, h2, h3 { font-family: 'Oswald', sans-serif; letter-spacing: 1px; }
+        .text-dourado { color: #D4AF37; }
+        .bg-dourado { background-color: #D4AF37; }
+        .bg-dourado:hover { background-color: #C5A028; }
+        .border-dourado { border-color: #D4AF37; }
+    </style>
 </head>
-<body style="background-color: #000000; color: #D4AF37; display: flex; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; text-align: center;">
-    <div style="padding: 20px;">
-        <p style="font-size: 14px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">EMAÚS Barbearia</p>
-        <p style="font-size: 12px; color: #a1a1aa; margin-top: 8px;">Redirecionando para a tela de login...</p>
+<body class="bg-black text-white min-h-screen p-4 flex flex-col items-center justify-center antialiased selection:bg-amber-500 selection:text-black">
+
+    <div class="max-w-md w-full bg-zinc-900/95 backdrop-blur p-8 rounded-3xl shadow-2xl border border-zinc-800 space-y-6">
+        
+        <!-- Header / Logo -->
+        <div class="text-center space-y-2">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-zinc-950 border border-zinc-800 shadow-inner mb-1">
+                <span class="text-2xl">🔒</span>
+            </div>
+            <h1 class="text-2xl font-bold uppercase tracking-wider text-dourado">EMAÚS Barbearia</h1>
+            <p class="text-xs text-zinc-400">Redefinição Segura de Senha</p>
+        </div>
+
+        <!-- Estado 1: Verificando Código (Loading) -->
+        <div id="stateLoading" class="text-center py-6 space-y-3">
+            <div class="w-8 h-8 border-2 border-dourado border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p class="text-xs text-zinc-400">Validando link de segurança...</p>
+        </div>
+
+        <!-- Estado 2: Código Inválido ou Expirado -->
+        <div id="stateInvalid" class="hidden text-center py-4 space-y-4">
+            <div class="p-4 bg-red-950/60 border border-red-800 rounded-2xl text-xs text-red-300 space-y-1">
+                <p class="font-bold text-sm text-red-200">⚠️ Link Expirado ou Inválido</p>
+                <p id="msgErroInvalido">O link de redefinição de senha é inválido ou já foi utilizado anteriormente.</p>
+            </div>
+            <a href="index.html" class="block w-full bg-zinc-800 hover:bg-zinc-700 text-white font-semibold py-3 px-4 rounded-xl text-xs uppercase tracking-wider transition">
+                Solicitar Novo Link de Recuperação
+            </a>
+        </div>
+
+        <!-- Estado 3: Formulário de Nova Senha -->
+        <form id="formRedefinir" class="hidden space-y-4">
+            <div class="p-3 bg-zinc-950 border border-zinc-800/80 rounded-xl text-xs text-zinc-300 flex items-center gap-2">
+                <span class="text-base">👤</span>
+                <div>
+                    <p class="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Conta identificada:</p>
+                    <p id="labelEmailConta" class="font-semibold text-white font-mono text-xs">cliente@email.com</p>
+                </div>
+            </div>
+
+            <div id="msgStatus" class="hidden text-xs text-center p-3 rounded-xl"></div>
+
+            <div class="space-y-1">
+                <label class="text-[11px] font-bold uppercase tracking-wider text-zinc-400 block">Nova Senha</label>
+                <div class="relative">
+                    <input type="password" id="inputNovaSenha" required minlength="6" placeholder="Mínimo 6 caracteres" class="w-full bg-zinc-950 border border-zinc-800 focus:border-dourado text-white px-4 py-3 rounded-xl text-sm focus:outline-none transition pr-11">
+                    <button type="button" id="btnToggleNovaSenha" class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white p-1 text-sm cursor-pointer">
+                        👁️
+                    </button>
+                </div>
+            </div>
+
+            <div class="space-y-1">
+                <label class="text-[11px] font-bold uppercase tracking-wider text-zinc-400 block">Confirmar Nova Senha</label>
+                <div class="relative">
+                    <input type="password" id="inputConfirmaSenha" required minlength="6" placeholder="Repita a nova senha" class="w-full bg-zinc-950 border border-zinc-800 focus:border-dourado text-white px-4 py-3 rounded-xl text-sm focus:outline-none transition pr-11">
+                    <button type="button" id="btnToggleConfirmaSenha" class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white p-1 text-sm cursor-pointer">
+                        👁️
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" id="btnSalvarSenha" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-bold py-3.5 px-4 rounded-xl text-xs uppercase tracking-wider transition shadow-lg shadow-amber-950/30 cursor-pointer flex items-center justify-center gap-2 mt-2">
+                <span>🔐</span>
+                <span id="labelBtnSalvar">Salvar Nova Senha</span>
+            </button>
+        </form>
+
+        <!-- Estado 4: Sucesso -->
+        <div id="stateSuccess" class="hidden text-center py-4 space-y-4">
+            <div class="p-5 bg-green-950/70 border border-green-700 rounded-2xl text-green-300 space-y-2">
+                <div class="text-3xl">🎉</div>
+                <p class="font-bold text-sm text-green-200">Senha Alterada com Sucesso!</p>
+                <p class="text-xs text-green-400/90">Sua nova credencial já está ativa. Você já pode fazer login na barbearia.</p>
+            </div>
+            <a href="index.html?senhaAlterada=true" class="block w-full bg-dourado hover:bg-[#C5A028] text-black font-bold py-3.5 px-4 rounded-xl text-xs uppercase tracking-wider transition shadow-lg cursor-pointer text-center">
+                Ir para a Tela de Login
+            </a>
+        </div>
+
+        <div class="pt-2 text-center">
+            <a href="index.html" class="text-xs text-zinc-500 hover:text-dourado transition">
+                ← Voltar para o Início
+            </a>
+        </div>
+
     </div>
+
+    <!-- Firebase SDK Modular -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, verifyPasswordResetCode, confirmPasswordReset } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDGjisHwvyBNHoZvS0DP-BTcXYufU6b5YY",
+            authDomain: "agendamento-barbearia-e8ffb.firebaseapp.com",
+            projectId: "agendamento-barbearia-e8ffb",
+            storageBucket: "agendamento-barbearia-e8ffb.firebasestorage.app",
+            messagingSenderId: "399463668114",
+            appId: "1:399463668114:web:c9f20b3dbc80745891894b"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const oobCode = urlParams.get('oobCode');
+
+        const stateLoading = document.getElementById('stateLoading');
+        const stateInvalid = document.getElementById('stateInvalid');
+        const stateSuccess = document.getElementById('stateSuccess');
+        const formRedefinir = document.getElementById('formRedefinir');
+        const labelEmailConta = document.getElementById('labelEmailConta');
+        const msgStatus = document.getElementById('msgStatus');
+        const msgErroInvalido = document.getElementById('msgErroInvalido');
+        const btnSalvarSenha = document.getElementById('btnSalvarSenha');
+        const labelBtnSalvar = document.getElementById('labelBtnSalvar');
+
+        // Toggle Visualizar Senhas
+        function setupToggleEye(btnId, inputId) {
+            const btn = document.getElementById(btnId);
+            const input = document.getElementById(inputId);
+            if (btn && input) {
+                btn.addEventListener('click', () => {
+                    input.type = input.type === 'password' ? 'text' : 'password';
+                });
+            }
+        }
+        setupToggleEye('btnToggleNovaSenha', 'inputNovaSenha');
+        setupToggleEye('btnToggleConfirmaSenha', 'inputConfirmaSenha');
+
+        // Validação inicial do oobCode
+        async function validarCodigo() {
+            if (!oobCode) {
+                stateLoading.classList.add('hidden');
+                msgErroInvalido.innerText = "Nenhum código de segurança fornecido na URL. Solicite um novo link de recuperação.";
+                stateInvalid.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const userEmail = await verifyPasswordResetCode(auth, oobCode);
+                stateLoading.classList.add('hidden');
+                labelEmailConta.innerText = userEmail;
+                formRedefinir.classList.remove('hidden');
+            } catch (err) {
+                console.error("Erro ao validar código de redefinição:", err);
+                stateLoading.classList.add('hidden');
+                let textoErro = "O link de redefinição expirou ou já foi utilizado. Solicite um novo link.";
+                if (err.code === 'auth/invalid-action-code') {
+                    textoErro = "Código de segurança inválido ou já utilizado.";
+                } else if (err.code === 'auth/expired-action-code') {
+                    textoErro = "Este link de segurança expirou. Por favor, solicite um novo.";
+                }
+                msgErroInvalido.innerText = textoErro;
+                stateInvalid.classList.remove('hidden');
+            }
+        }
+
+        // Submissão do Formulário
+        if (formRedefinir) {
+            formRedefinir.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const novaSenha = document.getElementById('inputNovaSenha')?.value || '';
+                const confirmaSenha = document.getElementById('inputConfirmaSenha')?.value || '';
+
+                msgStatus.classList.add('hidden');
+
+                if (novaSenha.length < 6) {
+                    msgStatus.className = "text-xs text-center p-3 rounded-xl bg-red-950/70 border border-red-800 text-red-300 block";
+                    msgStatus.innerText = "A senha deve conter no mínimo 6 caracteres.";
+                    return;
+                }
+
+                if (novaSenha !== confirmaSenha) {
+                    msgStatus.className = "text-xs text-center p-3 rounded-xl bg-red-950/70 border border-red-800 text-red-300 block";
+                    msgStatus.innerText = "As duas senhas digitadas não coincidem!";
+                    return;
+                }
+
+                btnSalvarSenha.disabled = true;
+                labelBtnSalvar.innerText = "Salvando nova senha...";
+
+                try {
+                    await confirmPasswordReset(auth, oobCode, novaSenha);
+                    formRedefinir.classList.add('hidden');
+                    stateSuccess.classList.remove('hidden');
+                } catch (err) {
+                    console.error("Erro ao confirmar nova senha:", err);
+                    btnSalvarSenha.disabled = false;
+                    labelBtnSalvar.innerText = "Salvar Nova Senha";
+                    
+                    let msg = "Não foi possível salvar a nova senha. Tente novamente.";
+                    if (err.code === 'auth/weak-password') {
+                        msg = "A senha escolhida é muito fraca. Utilize números, letras ou símbolos.";
+                    } else if (err.code === 'auth/invalid-action-code' || err.code === 'auth/expired-action-code') {
+                        msg = "O link de redefinição expirou. Solicite um novo link.";
+                    }
+
+                    msgStatus.className = "text-xs text-center p-3 rounded-xl bg-red-950/70 border border-red-800 text-red-300 block";
+                    msgStatus.innerText = msg;
+                }
+            });
+        }
+
+        validarCodigo();
+    </script>
 </body>
 </html>

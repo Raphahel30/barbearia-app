@@ -1454,9 +1454,14 @@
         const msgGoogleCadastroErro = document.getElementById('msgGoogleCadastroErro');
         const btnSalvarCadastroGoogle = document.getElementById('btnSalvarCadastroGoogle');
 
-        // Se o usuário estiver voltando após alterar a senha, exibe mensagem de sucesso no login
+        // Redireciona links de redefinição para a tela dedicada ou exibe sucesso no login
         const checkUrlParams = new URLSearchParams(window.location.search);
-        if (checkUrlParams.get('senhaAlterada') === 'true' || checkUrlParams.get('mode') === 'resetPassword' || checkUrlParams.get('oobCode')) {
+        const urlOobCode = checkUrlParams.get('oobCode');
+        const urlMode = checkUrlParams.get('mode');
+
+        if (urlOobCode || urlMode === 'resetPassword') {
+            window.location.replace(`redefinir-senha.html?oobCode=${encodeURIComponent(urlOobCode || '')}`);
+        } else if (checkUrlParams.get('senhaAlterada') === 'true') {
             loginSection.classList.remove('hidden');
             registerSection.classList.add('hidden');
             forgotSection.classList.add('hidden');
@@ -1690,7 +1695,7 @@
             }
             return (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:')
                 ? 'http://localhost:3000'
-                : '';
+                : 'https://barbearia-app-1bf5.onrender.com';
         }
 
         async function carregarConfiguracoesGerais() {
