@@ -9,7 +9,8 @@ import {
     obterStatusWhatsApp, 
     desconectarWhatsApp, 
     enviarMensagemWhatsApp,
-    gerarCodigoPareamentoWhatsApp
+    gerarCodigoPareamentoWhatsApp,
+    setFirestoreDatabase
 } from './whatsappService.js';
 
 import fs from 'fs';
@@ -28,9 +29,11 @@ process.on('unhandledRejection', (reason) => {
 import serviceAccount from './firebaseServiceAccount.js';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
 
 let firebaseAdminApp = null;
 let firebaseAdminAuth = null;
+let firebaseAdminFirestore = null;
 
 if (serviceAccount && serviceAccount.private_key) {
     try {
@@ -38,7 +41,9 @@ if (serviceAccount && serviceAccount.private_key) {
             credential: cert(serviceAccount)
         });
         firebaseAdminAuth = getAuth(firebaseAdminApp);
-        console.log('✅ [Firebase Admin SDK] Inicializado com sucesso!');
+        firebaseAdminFirestore = getFirestore(firebaseAdminApp);
+        setFirestoreDatabase(firebaseAdminFirestore);
+        console.log('✅ [Firebase Admin SDK & Firestore] Inicializado com sucesso!');
     } catch (e) {
         console.warn('Aviso na inicialização do Firebase Admin SDK:', e.message);
     }
@@ -509,11 +514,11 @@ async function verificarAuthEstornoMiddleware(req, res, next) {
 }
 
 // Rota raiz para verificação imediata de uptime no Render e UptimeRobot
-app.get('/', async (req, res) => {
-    const waStatus = await obterStatusWhatsApp();
+app.get('/', (req, res) => {
+    const waStatus = obterStatusWhatsApp();
     res.json({
         status: 'online',
-        service: 'EMAÚS Barbearia - WhatsApp Bot (Evolution API) 24/7',
+        service: 'EMAÚS Barbearia - WhatsApp Bot (Firestore 24/7)',
         uptime: `${Math.floor(process.uptime())}s`,
         timestamp: new Date().toISOString(),
         whatsapp: {

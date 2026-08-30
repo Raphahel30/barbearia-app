@@ -1,7 +1,7 @@
 {
   "name": "barbearia-backend",
   "version": "1.0.0",
-  "description": "Backend para pagamentos Mercado Pago & WhatsApp Evolution API - EMAUS Barbearia",
+  "description": "Backend para pagamentos Mercado Pago & WhatsApp Baileys Firestore - EMAUS Barbearia",
   "main": "src/server.js",
   "type": "module",
   "scripts": {
@@ -9,13 +9,16 @@
     "dev": "node --watch src/server.js"
   },
   "dependencies": {
+    "@whiskeysockets/baileys": "^7.0.0-rc14",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-rate-limit": "^8.6.2",
     "firebase-admin": "^13.0.0",
     "helmet": "^8.0.0",
-    "mercadopago": "^2.0.11"
+    "mercadopago": "^2.0.11",
+    "pino": "^9.6.0",
+    "qrcode": "^1.5.4"
   },
   "overrides": {
     "jose": "^4.15.5"
