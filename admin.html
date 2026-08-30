@@ -8027,19 +8027,59 @@
         });
 
         // ==========================================
+        // ==========================================
         // GALERIA DE CORTES DOS CLIENTES (BARBEIRO)
         // ==========================================
         let fotosGaleriaAdminCache = [];
         let fotoCorteBase64Temp = "";
         let clienteSelecionadoGaleriaAtual = null;
 
-        function comprimirImagemBase64(file, maxDimension = 960, quality = 0.82) {
+        function aplicarMarcaDaguaFotoCorte(canvas, ctx, width, height) {
+            return new Promise((resolve) => {
+                const logo = new Image();
+                logo.crossOrigin = "anonymous";
+                logo.onload = () => {
+                    try {
+                        const escala = Math.min(width, height);
+                        // Tamanho da marca d'água: cerca de 22% da dimensão da imagem
+                        const logoLargura = Math.round(escala * 0.22);
+                        const proporcao = logo.height / (logo.width || 1);
+                        const logoAltura = Math.round(logoLargura * proporcao);
+                        
+                        const padding = Math.max(16, Math.round(escala * 0.04));
+                        const x = width - logoLargura - padding;
+                        const y = height - logoAltura - padding;
+
+                        ctx.save();
+                        // Opacidade baixa e suave, visível mas sem cobrir o corte
+                        ctx.globalAlpha = 0.42;
+                        ctx.shadowColor = "rgba(0, 0, 0, 0.75)";
+                        ctx.shadowBlur = 8;
+                        ctx.shadowOffsetX = 2;
+                        ctx.shadowOffsetY = 2;
+                        
+                        ctx.drawImage(logo, x, y, logoLargura, logoAltura);
+                        ctx.restore();
+                    } catch (errWatermark) {
+                        console.warn("[EMAÚS:MARCA_DAGUA] Erro ao estampar logo:", errWatermark);
+                    }
+                    resolve();
+                };
+                logo.onerror = () => {
+                    console.warn("[EMAÚS:MARCA_DAGUA] Logo não encontrada para marca d'água.");
+                    resolve();
+                };
+                logo.src = 'logo.png';
+            });
+        }
+
+        function comprimirImagemBase64(file, maxDimension = 960, quality = 0.85) {
             return new Promise((resolve, reject) => {
                 if (!file) return reject(new Error("Nenhum arquivo fornecido."));
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const img = new Image();
-                    img.onload = () => {
+                    img.onload = async () => {
                         const canvas = document.createElement('canvas');
                         let width = img.width;
                         let height = img.height;
@@ -8058,6 +8098,10 @@
                         canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
+
+                        // Aplica a marca d'água da logo da barbearia no canto inferior direito
+                        await aplicarMarcaDaguaFotoCorte(canvas, ctx, width, height);
+
                         const dataUrl = canvas.toDataURL('image/jpeg', quality);
                         resolve(dataUrl);
                     };
@@ -8445,10 +8489,5 @@
         }
         window.carregarGaleriaAdmin = carregarGaleriaAdmin;
     </script>
-
-    <!-- MARCA D'ÁGUA COM A LOGO NO CANTO INFERIOR DIREITO DO PAINEL -->
-    <div class="fixed bottom-3 right-4 z-0 pointer-events-none select-none opacity-10 sm:opacity-15 transition-opacity flex items-center gap-2">
-        <img src="logo.png" alt="Barbearia EMAÚS Watermark" class="w-14 h-14 object-contain filter drop-shadow">
-    </div>
 </body>
 </html>
