@@ -178,6 +178,10 @@
                         <svg class="w-4 h-4 text-[#D4AF37] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 18h18M4 7l4 4 4-6 4 6 4-4v10H4V7z"></path></svg>
                         <span>Clientes Mensalistas VIP</span>
                     </button>
+                    <button id="tabNavClientGallery" class="sidebar-link w-full text-left inline-flex items-center gap-2.5">
+                        <svg class="w-4 h-4 text-[#D4AF37] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        <span>📸 Galeria de Cortes</span>
+                    </button>
                     <button id="tabNavTeam" class="sidebar-link w-full text-left inline-flex items-center gap-2.5">
                         <svg class="w-4 h-4 text-[#D4AF37] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                         <span>Equipe & Barbeiros</span>
@@ -1622,7 +1626,161 @@
                 </div>
             </section>
 
-            <!-- 7. ABA: GERENCIAR ADMINISTRADORES -->
+            <!-- 7. ABA: GALERIA DE CORTES DOS CLIENTES -->
+            <section id="viewClientGallery" class="space-y-6 hidden">
+                <div class="max-w-5xl mx-auto space-y-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-zinc-800/80 pb-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-white uppercase flex items-center gap-2">
+                                <span>📸</span> Galeria de Cortes dos Clientes
+                            </h2>
+                            <p class="text-xs text-zinc-400">Registre fotos dos cortes finalizados para o álbum pessoal e download de cada cliente.</p>
+                        </div>
+                        <button id="btnNovaFotoCorteRapida" type="button" onclick="document.getElementById('inputFotoCorteArquivo')?.click()" class="bg-dourado hover:bg-[#C5A028] text-black font-extrabold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition cursor-pointer shadow-lg flex items-center gap-2 whitespace-nowrap active:scale-95">
+                            <svg class="w-4 h-4 fill-none stroke-current stroke-2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            <span>Tirar Foto / Carregar</span>
+                        </button>
+                    </div>
+
+                    <!-- CARD DE BUSCA DE CLIENTES -->
+                    <div class="card-dark p-5 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
+                        <div class="flex flex-col sm:flex-row gap-3 items-center justify-between">
+                            <div class="w-full sm:flex-1 relative">
+                                <input type="text" id="inputBuscaClienteGaleria" placeholder="🔍 Pesquisar cliente por nome ou WhatsApp para ver o álbum..." class="w-full px-4 py-3 bg-black rounded-xl border border-zinc-700 text-white text-xs font-semibold focus:outline-none focus:border-dourado transition pl-10">
+                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-xs text-zinc-500">🔍</span>
+                            </div>
+                            <span id="badgeTotalFotosCadastradas" class="text-xs text-dourado font-bold bg-dourado/10 px-3 py-2 rounded-xl border border-dourado/20 whitespace-nowrap">
+                                0 fotos registradas
+                            </span>
+                        </div>
+
+                        <!-- Lista de Sugestões de Clientes / Clientes Recentes -->
+                        <div id="listaSugestoesClientesGaleria" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-48 overflow-y-auto pr-1">
+                            <!-- Preenchido dinamicamente via JS -->
+                        </div>
+                    </div>
+
+                    <!-- CARD DE REGISTRO / ENVIO DE FOTO DO CORTE -->
+                    <div id="boxUploadFotoCorteGaleria" class="card-dark p-5 sm:p-6 rounded-2xl border border-dourado/40 bg-gradient-to-b from-zinc-950 to-black space-y-5 shadow-2xl">
+                        <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xl">✂️</span>
+                                <div>
+                                    <h3 class="text-sm font-bold uppercase text-white tracking-wide">
+                                        Registrar Novo Corte no Álbum
+                                    </h3>
+                                    <p id="labelClienteSelecionadoGaleria" class="text-[11px] text-dourado font-medium">Selecione um cliente acima ou preencha os dados abaixo</p>
+                                </div>
+                            </div>
+                            <button id="btnLimparClienteSelecionadoGaleria" type="button" class="text-xs text-zinc-500 hover:text-white transition cursor-pointer">
+                                Limpar
+                            </button>
+                        </div>
+
+                        <form id="formRegistroFotoCorte" class="grid grid-cols-1 md:grid-cols-12 gap-4 text-xs">
+                            <input type="hidden" id="inputGaleriaClienteId" value="">
+                            
+                            <!-- Coluna da Foto / Upload -->
+                            <div class="md:col-span-5 flex flex-col items-center justify-center space-y-3 p-4 bg-black/80 rounded-2xl border border-dashed border-zinc-700 hover:border-dourado transition">
+                                <input type="file" id="inputFotoCorteArquivo" accept="image/*" capture="environment" class="hidden">
+                                
+                                <div id="previewFotoCorteContainer" class="relative w-full aspect-square max-w-[220px] rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex items-center justify-center cursor-pointer shadow-inner" onclick="document.getElementById('inputFotoCorteArquivo')?.click()">
+                                    <img id="imgPreviewFotoCorte" src="" alt="Preview do Corte" class="w-full h-full object-cover hidden">
+                                    <div id="placeholderFotoCorte" class="text-center p-4 space-y-2">
+                                        <div class="w-12 h-12 rounded-full bg-zinc-800 mx-auto flex items-center justify-center text-2xl text-dourado shadow">
+                                            📷
+                                        </div>
+                                        <p class="font-bold text-zinc-300 text-xs uppercase">Tirar ou Carregar Foto</p>
+                                        <p class="text-[10px] text-zinc-500">Toque aqui para abrir a câmera do celular</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex gap-2 w-full max-w-[220px]">
+                                    <button type="button" onclick="document.getElementById('inputFotoCorteArquivo')?.click()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2 rounded-xl text-[11px] uppercase transition cursor-pointer border border-zinc-700 flex items-center justify-center gap-1">
+                                        <span>📷</span> <span>Trocar</span>
+                                    </button>
+                                    <button type="button" id="btnRemoverFotoCorteTemp" class="bg-red-950/80 hover:bg-red-900 text-red-300 p-2 rounded-xl text-xs transition cursor-pointer border border-red-800 hidden" title="Remover Foto">
+                                        🗑️
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Coluna dos Dados do Corte -->
+                            <div class="md:col-span-7 space-y-3.5 flex flex-col justify-between">
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block font-bold text-zinc-300 uppercase mb-1">Nome do Cliente *</label>
+                                        <input type="text" id="inputGaleriaClienteNome" required placeholder="Nome do cliente atendido" class="w-full px-3.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white focus:outline-none focus:border-dourado font-medium text-xs">
+                                    </div>
+
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block font-bold text-zinc-300 uppercase mb-1">WhatsApp do Cliente</label>
+                                            <input type="tel" id="inputGaleriaClienteTelefone" placeholder="(11) 99999-9999" class="w-full px-3.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white focus:outline-none focus:border-dourado font-medium text-xs">
+                                        </div>
+                                        <div>
+                                            <label class="block font-bold text-zinc-300 uppercase mb-1">Barbeiro *</label>
+                                            <select id="selectGaleriaBarbeiro" class="w-full px-3.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white focus:outline-none focus:border-dourado font-medium text-xs cursor-pointer">
+                                                <option value="Aldo Rodrigues">Aldo Rodrigues</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label class="block font-bold text-zinc-300 uppercase mb-1">Estilo / Nome do Corte</label>
+                                        <input type="text" id="inputGaleriaEstiloCorte" placeholder="Ex: Degradê Navalhado, Fade Americano, Corte + Barba..." list="sugestoesEstilosCortes" class="w-full px-3.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white focus:outline-none focus:border-dourado font-medium text-xs">
+                                        <datalist id="sugestoesEstilosCortes">
+                                            <option value="Degradê Navalhado (Skin Fade)">
+                                            <option value="Fade Americano (Taper Fade)">
+                                            <option value="Low Fade Texturizado">
+                                            <option value="Mid Fade Clássico">
+                                            <option value="High Fade com Risco">
+                                            <option value="Social Clássico / Tesoura">
+                                            <option value="Corte + Barboterapia">
+                                            <option value="Platinado / Nevou">
+                                            <option value="Barba Alinhada">
+                                        </datalist>
+                                    </div>
+
+                                    <div>
+                                        <label class="block font-bold text-zinc-300 uppercase mb-1">Observações Técnicas (Opcional)</label>
+                                        <input type="text" id="inputGaleriaObservacoes" placeholder="Ex: Pente 1.5 no disfarce, finalizado com pomada matte" class="w-full px-3.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white focus:outline-none focus:border-dourado font-medium text-xs">
+                                    </div>
+                                </div>
+
+                                <div class="pt-2">
+                                    <button type="submit" id="btnSalvarFotoCorteGaleria" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3.5 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-2 active:scale-98">
+                                        <span>💾</span>
+                                        <span>Salvar Foto no Perfil do Cliente</span>
+                                    </button>
+                                    <p id="msgGaleriaUploadStatus" class="text-xs text-center font-medium min-h-[16px] mt-1.5"></p>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- GRADE DE FOTOS DO CLIENTE / TODAS AS FOTOS RECENTES -->
+                    <div class="card-dark p-5 sm:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-zinc-800 pb-3">
+                            <div>
+                                <h3 class="text-sm font-bold uppercase text-white tracking-wide flex items-center gap-2">
+                                    <span>🖼️</span> <span id="tituloGradeFotosGaleria">Todas as Fotos Recentes</span>
+                                </h3>
+                                <p id="subtituloGradeFotosGaleria" class="text-[11px] text-zinc-400">Fotos salvas nos álbuns dos clientes</p>
+                            </div>
+                            <button id="btnVerTodasFotosGaleria" type="button" class="text-xs text-dourado hover:underline font-bold cursor-pointer hidden">
+                                ← Ver todas as fotos
+                            </button>
+                        </div>
+
+                        <div id="gridFotosGaleriaAdmin" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            <p class="text-xs text-zinc-500 text-center py-8 col-span-full">Carregando fotos dos cortes...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 8. ABA: GERENCIAR ADMINISTRADORES -->
             <section id="viewAdmins" class="space-y-6 hidden">
                 <div class="max-w-3xl mx-auto space-y-6">
                     <div>
@@ -2385,6 +2543,7 @@
             billing: "💰 Faturamento & Extrato Mensal",
             schedule: "📅 Agenda de Atendimentos",
             vipClients: "👑 Clientes Mensalistas VIP",
+            clientGallery: "📸 Galeria de Cortes dos Clientes",
             services: "✂️ Serviços & Planos",
             products: "🛍️ Loja & Estoque de Produtos",
             fidelity: "🎁 Programa Fidelidade VIP",
@@ -2400,6 +2559,7 @@
             billing: { btn: document.getElementById('tabNavBilling'), view: document.getElementById('viewBilling') },
             schedule: { btn: document.getElementById('tabNavSchedule'), view: document.getElementById('viewSchedule') },
             vipClients: { btn: document.getElementById('tabNavVipClients'), view: document.getElementById('viewVipClients') },
+            clientGallery: { btn: document.getElementById('tabNavClientGallery'), view: document.getElementById('viewClientGallery') },
             services: { btn: document.getElementById('tabNavServices'), view: document.getElementById('viewServices') },
             products: { btn: document.getElementById('tabNavProducts'), view: document.getElementById('viewProducts') },
             fidelity: { btn: document.getElementById('tabNavFidelity'), view: document.getElementById('viewFidelity') },
@@ -2484,6 +2644,8 @@
                 carregarMetricasOverview();
             } else if (nomeAba === 'vipClients') {
                 carregarClientesMensalistasAdmin();
+            } else if (nomeAba === 'clientGallery') {
+                carregarGaleriaAdmin();
             } else if (nomeAba === 'services') {
                 carregarServicosAdmin();
                 carregarPlanosAdmin();
@@ -4513,7 +4675,10 @@
                             </div>
                         </td>
                         <td class="p-3.5 text-right whitespace-nowrap">
-                            <div id="botoesAcao_${id}" class="inline-flex items-center gap-1">
+                            <div id="botoesAcao_${id}" class="inline-flex items-center gap-1.5 flex-wrap justify-end">
+                                <button onclick="window.abrirCameraCorteParaAgendamento('${(nomeClienteFinal || '').replace(/'/g, "\\'")}', '${(telefoneClienteFinal || '').replace(/'/g, "\\'")}', '${(ag.servico || '').replace(/'/g, "\\'")}', '${(ag.barbeiroNome || 'Aldo Rodrigues').replace(/'/g, "\\'")}', '${ag.userId || ''}')" class="bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-black border border-amber-500/40 px-2.5 py-1 rounded text-xs font-bold transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95" title="Tirar foto do corte do cliente">
+                                    <span>📸</span> <span class="hidden sm:inline">Foto</span>
+                                </button>
                                 ${(!ehConcluido && !ehFalta && !ehCancelado) ? `
                                     <button onclick="confirmarPresencaAdmin('${id}')" id="btnPresenca_${id}" class="bg-green-600 hover:bg-green-700 text-white px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer" title="Confirmar comparecimento">✓ Compareceu</button>
                                     <button onclick="marcarFaltaAdmin('${id}')" id="btnFalta_${id}" class="bg-amber-700 hover:bg-amber-800 text-white px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer" title="Marcar que o cliente não compareceu">✕ Faltou</button>
@@ -4592,33 +4757,47 @@
                     } catch (errP) { console.warn("Erro ao atualizar assinatura:", errP); }
                 }
 
-                // Atribuição automática de +1 Selo no Cartão Fidelidade
-                if (ag && ag.userId && !ag.isPlano) {
+                // Atribuição automática de +1 Selo no Cartão Fidelidade para agendamentos avulsos
+                if (ag && !ag.isPlano && !ag.semanaPlano) {
                     try {
-                        const snapConfFid = await getDoc(doc(db, "configuracoes", "fidelidade"));
-                        const confFid = snapConfFid.exists() ? snapConfFid.data() : { ativo: true, metaSelos: 10 };
-                        if (confFid.ativo !== false) {
-                            const meta = Number(confFid.metaSelos || 10);
-                            const docFidRef = doc(db, "fidelidadeClientes", ag.userId);
-                            const snapFid = await getDoc(docFidRef);
-                            const dataFid = snapFid.exists() ? snapFid.data() : { selosAtuais: 0, totalHistorico: 0 };
-                            const novosSelos = Number(dataFid.selosAtuais || 0) + 1;
-                            const novoTotal = Number(dataFid.totalHistorico || 0) + 1;
-                            const disponivel = novosSelos >= meta;
+                        let targetUserId = ag.userId;
+                        if (!targetUserId && ag.telefone) {
+                            const telLimpo = ag.telefone.replace(/\D/g, '');
+                            if (mapaUsuariosAdmin && mapaUsuariosAdmin.size > 0) {
+                                mapaUsuariosAdmin.forEach((u, k) => {
+                                    if (u && u.telefone && u.telefone.replace(/\D/g, '') === telLimpo) {
+                                        targetUserId = u.uid || u.id || k;
+                                    }
+                                });
+                            }
+                        }
 
-                            await setDoc(docFidRef, {
-                                clienteNome: ag.cliente || 'Cliente',
-                                clienteTelefone: ag.telefone || '',
-                                selosAtuais: novosSelos,
-                                totalHistorico: novoTotal,
-                                recompensaDisponivel: disponivel,
-                                atualizadoEm: new Date().toISOString()
-                            }, { merge: true });
+                        if (targetUserId) {
+                            const snapConfFid = await getDoc(doc(db, "configuracoes", "fidelidade"));
+                            const confFid = snapConfFid.exists() ? snapConfFid.data() : { ativo: true, metaSelos: 10 };
+                            if (confFid.ativo !== false) {
+                                const meta = Number(confFid.metaSelos || 10);
+                                const docFidRef = doc(db, "fidelidadeClientes", targetUserId);
+                                const snapFid = await getDoc(docFidRef);
+                                const dataFid = snapFid.exists() ? snapFid.data() : { selosAtuais: 0, totalHistorico: 0 };
+                                const novosSelos = Number(dataFid.selosAtuais || 0) + 1;
+                                const novoTotal = Number(dataFid.totalHistorico || 0) + 1;
+                                const disponivel = novosSelos >= meta;
 
-                            if (disponivel) {
-                                exibirToastNotificacao("🎁 Recompensa Fidelidade Desbloqueada!", `${ag.cliente} completou ${meta} selos e ganhou recompensa!`, "vip");
-                            } else {
-                                exibirToastNotificacao("✂️ +1 Selo Concedido", `Fidelidade: ${ag.cliente} (${novosSelos}/${meta} selos).`, "info");
+                                await setDoc(docFidRef, {
+                                    clienteNome: ag.cliente || 'Cliente',
+                                    clienteTelefone: ag.telefone || '',
+                                    selosAtuais: novosSelos,
+                                    totalHistorico: novoTotal,
+                                    recompensaDisponivel: disponivel,
+                                    atualizadoEm: new Date().toISOString()
+                                }, { merge: true });
+
+                                if (disponivel) {
+                                    exibirToastNotificacao("🎁 Recompensa Fidelidade Desbloqueada!", `${ag.cliente} completou ${meta} selos e ganhou recompensa!`, "vip");
+                                } else {
+                                    exibirToastNotificacao("✂️ +1 Selo Concedido", `Fidelidade: ${ag.cliente} (${novosSelos}/${meta} selos).`, "info");
+                                }
                             }
                         }
                     } catch (errFid) {
@@ -7846,6 +8025,430 @@
         document.getElementById('btnEntendiIosAdmin')?.addEventListener('click', () => {
             if (modalInstalarIosAdmin) modalInstalarIosAdmin.classList.add('hidden');
         });
+
+        // ==========================================
+        // GALERIA DE CORTES DOS CLIENTES (BARBEIRO)
+        // ==========================================
+        let fotosGaleriaAdminCache = [];
+        let fotoCorteBase64Temp = "";
+        let clienteSelecionadoGaleriaAtual = null;
+
+        function comprimirImagemBase64(file, maxDimension = 960, quality = 0.82) {
+            return new Promise((resolve, reject) => {
+                if (!file) return reject(new Error("Nenhum arquivo fornecido."));
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        if (width > height) {
+                            if (width > maxDimension) {
+                                height = Math.round((height * maxDimension) / width);
+                                width = maxDimension;
+                            }
+                        } else {
+                            if (height > maxDimension) {
+                                width = Math.round((width * maxDimension) / height);
+                                height = maxDimension;
+                            }
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                        resolve(dataUrl);
+                    };
+                    img.onerror = () => reject(new Error("Falha ao carregar imagem para compressão."));
+                    img.src = e.target.result;
+                };
+                reader.onerror = () => reject(new Error("Falha ao ler arquivo."));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        const inputFotoCorteArquivo = document.getElementById('inputFotoCorteArquivo');
+        const imgPreviewFotoCorte = document.getElementById('imgPreviewFotoCorte');
+        const placeholderFotoCorte = document.getElementById('placeholderFotoCorte');
+        const btnRemoverFotoCorteTemp = document.getElementById('btnRemoverFotoCorteTemp');
+        const formRegistroFotoCorte = document.getElementById('formRegistroFotoCorte');
+
+        inputFotoCorteArquivo?.addEventListener('change', async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            try {
+                const base64 = await comprimirImagemBase64(file, 960, 0.85);
+                fotoCorteBase64Temp = base64;
+                if (imgPreviewFotoCorte) {
+                    imgPreviewFotoCorte.src = base64;
+                    imgPreviewFotoCorte.classList.remove('hidden');
+                }
+                if (placeholderFotoCorte) placeholderFotoCorte.classList.add('hidden');
+                if (btnRemoverFotoCorteTemp) btnRemoverFotoCorteTemp.classList.remove('hidden');
+                if (window.vibrarDispositivo) window.vibrarDispositivo('clique');
+            } catch (err) {
+                alert("Erro ao carregar a foto: " + err.message);
+            }
+        });
+
+        btnRemoverFotoCorteTemp?.addEventListener('click', () => {
+            fotoCorteBase64Temp = "";
+            if (imgPreviewFotoCorte) {
+                imgPreviewFotoCorte.src = "";
+                imgPreviewFotoCorte.classList.add('hidden');
+            }
+            if (placeholderFotoCorte) placeholderFotoCorte.classList.remove('hidden');
+            if (btnRemoverFotoCorteTemp) btnRemoverFotoCorteTemp.classList.add('hidden');
+            if (inputFotoCorteArquivo) inputFotoCorteArquivo.value = "";
+            if (window.vibrarDispositivo) window.vibrarDispositivo('clique');
+        });
+
+        const inputBuscaClienteGaleria = document.getElementById('inputBuscaClienteGaleria');
+        const listaSugestoesClientesGaleria = document.getElementById('listaSugestoesClientesGaleria');
+        const labelClienteSelecionadoGaleria = document.getElementById('labelClienteSelecionadoGaleria');
+        const btnLimparClienteSelecionadoGaleria = document.getElementById('btnLimparClienteSelecionadoGaleria');
+
+        function popularSugestoesClientesGaleria(termo = '') {
+            if (!listaSugestoesClientesGaleria) return;
+            const t = termo.toLowerCase().trim();
+            
+            const clientesMap = new Map();
+            
+            if (mapaUsuariosAdmin && mapaUsuariosAdmin.size > 0) {
+                mapaUsuariosAdmin.forEach((u, k) => {
+                    if (u && u.nome) {
+                        const tel = u.telefone || '';
+                        const id = u.uid || u.id || k;
+                        clientesMap.set(id, { id, nome: u.nome, telefone: tel, fotoUrl: u.fotoUrl || '' });
+                    }
+                });
+            }
+
+            (window.listaAgendamentosMemoria || []).forEach(ag => {
+                const nome = ag.cliente || '';
+                const tel = ag.telefone || '';
+                const id = ag.userId || (tel ? tel.replace(/\D/g, '') : nome);
+                if (nome && !clientesMap.has(id)) {
+                    clientesMap.set(id, { id: ag.userId || '', nome, telefone: tel, fotoUrl: '' });
+                }
+            });
+
+            const lista = Array.from(clientesMap.values());
+            const filtrados = t 
+                ? lista.filter(c => c.nome.toLowerCase().includes(t) || c.telefone.toLowerCase().includes(t))
+                : lista.slice(0, 9);
+
+            if (filtrados.length === 0) {
+                listaSugestoesClientesGaleria.innerHTML = `<p class="text-zinc-500 text-[11px] col-span-full py-2 text-center">Nenhum cliente encontrado para "${termo}". Você pode preencher os campos abaixo manualmente.</p>`;
+                return;
+            }
+
+            let html = "";
+            filtrados.forEach(c => {
+                const nomeEscaped = (c.nome || '').replace(/'/g, "\\'");
+                const telEscaped = (c.telefone || '').replace(/'/g, "\\'");
+                const idEscaped = (c.id || '').replace(/'/g, "\\'");
+                
+                html += `
+                    <div onclick="window.selecionarClienteGaleria('${idEscaped}', '${nomeEscaped}', '${telEscaped}')" class="bg-black/60 hover:bg-zinc-900 border border-zinc-800 hover:border-dourado/60 p-2.5 rounded-xl cursor-pointer transition flex items-center gap-2.5 text-left group">
+                        <div class="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xs flex-shrink-0 group-hover:border-dourado transition overflow-hidden">
+                            ${c.fotoUrl ? `<img src="${c.fotoUrl}" class="w-full h-full object-cover">` : '👤'}
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="font-bold text-white text-xs truncate group-hover:text-dourado transition">${c.nome}</p>
+                            <p class="text-[10px] text-zinc-400 font-mono truncate">${c.telefone || 'Sem WhatsApp'}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            listaSugestoesClientesGaleria.innerHTML = html;
+        }
+
+        inputBuscaClienteGaleria?.addEventListener('input', (e) => {
+            popularSugestoesClientesGaleria(e.target.value);
+            filtrarFotosGradeGaleria(e.target.value);
+        });
+
+        window.selecionarClienteGaleria = function(id, nome, telefone) {
+            clienteSelecionadoGaleriaAtual = { id, nome, telefone };
+            const inputId = document.getElementById('inputGaleriaClienteId');
+            const inputNome = document.getElementById('inputGaleriaClienteNome');
+            const inputTel = document.getElementById('inputGaleriaClienteTelefone');
+            
+            if (inputId) inputId.value = id || '';
+            if (inputNome) inputNome.value = nome || '';
+            if (inputTel) inputTel.value = telefone || '';
+            
+            if (labelClienteSelecionadoGaleria) {
+                labelClienteSelecionadoGaleria.innerHTML = `Cliente selecionado: <strong class="text-white">${nome}</strong> (${telefone || 'Sem WhatsApp'})`;
+            }
+
+            filtrarFotosPorClienteId(id, nome);
+            if (window.vibrarDispositivo) window.vibrarDispositivo('clique');
+        };
+
+        btnLimparClienteSelecionadoGaleria?.addEventListener('click', () => {
+            clienteSelecionadoGaleriaAtual = null;
+            const inputId = document.getElementById('inputGaleriaClienteId');
+            const inputNome = document.getElementById('inputGaleriaClienteNome');
+            const inputTel = document.getElementById('inputGaleriaClienteTelefone');
+            if (inputId) inputId.value = '';
+            if (inputNome) inputNome.value = '';
+            if (inputTel) inputTel.value = '';
+            if (labelClienteSelecionadoGaleria) {
+                labelClienteSelecionadoGaleria.innerText = 'Selecione um cliente acima ou preencha os dados abaixo';
+            }
+            carregarFotosGaleriaAdmin();
+            if (window.vibrarDispositivo) window.vibrarDispositivo('clique');
+        });
+
+        window.abrirCameraCorteParaAgendamento = function(clienteNome, clienteTelefone, servico, barbeiroNome, userId) {
+            window.mudarAba('clientGallery');
+            window.selecionarClienteGaleria(userId, clienteNome, clienteTelefone);
+            
+            const selectBarbeiro = document.getElementById('selectGaleriaBarbeiro');
+            const inputEstilo = document.getElementById('inputGaleriaEstiloCorte');
+            if (selectBarbeiro && barbeiroNome) selectBarbeiro.value = barbeiroNome;
+            if (inputEstilo && servico) inputEstilo.value = servico;
+
+            setTimeout(() => {
+                document.getElementById('inputFotoCorteArquivo')?.click();
+            }, 350);
+        };
+
+        formRegistroFotoCorte?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const clienteId = document.getElementById('inputGaleriaClienteId')?.value || '';
+            const clienteNome = document.getElementById('inputGaleriaClienteNome')?.value.trim();
+            const clienteTelefone = document.getElementById('inputGaleriaClienteTelefone')?.value.trim();
+            const selectBarbeiro = document.getElementById('selectGaleriaBarbeiro');
+            const barbeiroNome = selectBarbeiro?.value || 'Aldo Rodrigues';
+            const estiloCorte = document.getElementById('inputGaleriaEstiloCorte')?.value.trim() || 'Corte EMAÚS Barbearia';
+            const observacao = document.getElementById('inputGaleriaObservacoes')?.value.trim() || '';
+            const msgStatus = document.getElementById('msgGaleriaUploadStatus');
+            const btnSalvar = document.getElementById('btnSalvarFotoCorteGaleria');
+
+            if (!clienteNome) {
+                if (msgStatus) {
+                    msgStatus.className = "text-xs text-center font-bold text-red-400";
+                    msgStatus.innerText = "Por favor, informe o nome do cliente!";
+                }
+                return;
+            }
+
+            if (!fotoCorteBase64Temp) {
+                if (msgStatus) {
+                    msgStatus.className = "text-xs text-center font-bold text-amber-300";
+                    msgStatus.innerText = "📸 Toque no quadro acima para tirar ou carregar a foto do corte!";
+                }
+                return;
+            }
+
+            if (btnSalvar) {
+                btnSalvar.disabled = true;
+                btnSalvar.innerHTML = `<span>⏳</span> <span>Salvando no álbum do cliente...</span>`;
+            }
+
+            try {
+                const telLimpo = clienteTelefone ? clienteTelefone.replace(/\D/g, '') : '';
+                const agora = new Date();
+                const dataHoraFormatada = `${String(agora.getDate()).padStart(2, '0')}/${String(agora.getMonth() + 1).padStart(2, '0')}/${agora.getFullYear()} às ${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`;
+
+                await addDoc(collection(db, "galeria_cortes_clientes"), {
+                    clienteId: clienteId || '',
+                    clienteNome,
+                    clienteTelefone,
+                    clienteTelefoneLimpo: telLimpo,
+                    barbeiroNome,
+                    estiloCorte,
+                    observacao,
+                    fotoUrl: fotoCorteBase64Temp,
+                    dataCriacao: agora.toISOString(),
+                    dataHoraFormatada
+                });
+
+                if (msgStatus) {
+                    msgStatus.className = "text-xs text-center font-bold text-green-400";
+                    msgStatus.innerText = "✅ Foto adicionada com sucesso ao perfil do cliente!";
+                }
+                if (window.vibrarDispositivo) window.vibrarDispositivo('sucesso');
+                exibirToastNotificacao("📸 Foto do Corte Salva!", `A foto de ${clienteNome} foi adicionada ao álbum.`, "sucesso");
+
+                btnRemoverFotoCorteTemp?.click();
+                const inputEstilo = document.getElementById('inputGaleriaEstiloCorte');
+                const inputObs = document.getElementById('inputGaleriaObservacoes');
+                if (inputEstilo) inputEstilo.value = '';
+                if (inputObs) inputObs.value = '';
+
+                carregarFotosGaleriaAdmin();
+                setTimeout(() => { if (msgStatus) msgStatus.innerText = ""; }, 4000);
+            } catch (errUpload) {
+                console.error("Erro ao salvar foto na galeria:", errUpload);
+                if (msgStatus) {
+                    msgStatus.className = "text-xs text-center font-medium text-red-400";
+                    msgStatus.innerText = "Erro ao salvar foto: " + errUpload.message;
+                }
+            } finally {
+                if (btnSalvar) {
+                    btnSalvar.disabled = false;
+                    btnSalvar.innerHTML = `<span>💾</span> <span>Salvar Foto no Perfil do Cliente</span>`;
+                }
+            }
+        });
+
+        window.excluirFotoCorteGaleria = async function(fotoId, clienteNome) {
+            if (!confirm(`Deseja realmente apagar esta foto do corte de ${clienteNome || 'este cliente'}?`)) return;
+            try {
+                await deleteDoc(doc(db, "galeria_cortes_clientes", fotoId));
+                if (window.vibrarDispositivo) window.vibrarDispositivo('sucesso');
+                exibirToastNotificacao("🗑️ Foto Apagada", "A foto foi removida do álbum.", "info");
+                carregarFotosGaleriaAdmin();
+            } catch (e) {
+                alert("Erro ao excluir foto: " + e.message);
+            }
+        };
+
+        async function carregarFotosGaleriaAdmin() {
+            const grid = document.getElementById('gridFotosGaleriaAdmin');
+            const badgeTotal = document.getElementById('badgeTotalFotosCadastradas');
+            const tituloGrade = document.getElementById('tituloGradeFotosGaleria');
+            const subtituloGrade = document.getElementById('subtituloGradeFotosGaleria');
+            const btnVerTodas = document.getElementById('btnVerTodasFotosGaleria');
+            if (!grid) return;
+
+            if (tituloGrade) tituloGrade.innerText = "Todas as Fotos Recentes";
+            if (subtituloGrade) subtituloGrade.innerText = "Fotos salvas nos álbuns dos clientes";
+            if (btnVerTodas) btnVerTodas.classList.add('hidden');
+
+            try {
+                const snap = await getDocs(collection(db, "galeria_cortes_clientes"));
+                let fotos = [];
+                snap.forEach(d => fotos.push({ id: d.id, ...d.data() }));
+                
+                fotos.sort((a, b) => new Date(b.dataCriacao || 0) - new Date(a.dataCriacao || 0));
+                fotosGaleriaAdminCache = fotos;
+
+                if (badgeTotal) badgeTotal.innerText = `${fotos.length} fotos registradas`;
+
+                renderizarGradeFotosAdmin(fotos);
+            } catch (err) {
+                console.warn("Erro ao carregar fotos da galeria admin:", err);
+                grid.innerHTML = `<p class="text-xs text-red-400 col-span-full text-center py-4">Erro ao carregar galeria.</p>`;
+            }
+        }
+
+        function filtrarFotosPorClienteId(clienteId, clienteNome) {
+            const tituloGrade = document.getElementById('tituloGradeFotosGaleria');
+            const subtituloGrade = document.getElementById('subtituloGradeFotosGaleria');
+            const btnVerTodas = document.getElementById('btnVerTodasFotosGaleria');
+
+            if (tituloGrade) tituloGrade.innerText = `Álbum de ${clienteNome}`;
+            if (subtituloGrade) subtituloGrade.innerText = `Fotos exclusivas de ${clienteNome}`;
+            if (btnVerTodas) {
+                btnVerTodas.classList.remove('hidden');
+                btnVerTodas.onclick = () => {
+                    btnLimparClienteSelecionadoGaleria?.click();
+                };
+            }
+
+            const fotosFiltradas = fotosGaleriaAdminCache.filter(f => {
+                if (clienteId && f.clienteId === clienteId) return true;
+                if (clienteNome && f.clienteNome && f.clienteNome.toLowerCase() === clienteNome.toLowerCase()) return true;
+                return false;
+            });
+
+            renderizarGradeFotosAdmin(fotosFiltradas);
+        }
+
+        function filtrarFotosGradeGaleria(termo) {
+            if (!termo) {
+                renderizarGradeFotosAdmin(fotosGaleriaAdminCache);
+                return;
+            }
+            const t = termo.toLowerCase().trim();
+            const filtradas = fotosGaleriaAdminCache.filter(f => {
+                return (f.clienteNome || '').toLowerCase().includes(t) ||
+                       (f.clienteTelefone || '').toLowerCase().includes(t) ||
+                       (f.estiloCorte || '').toLowerCase().includes(t) ||
+                       (f.barbeiroNome || '').toLowerCase().includes(t);
+            });
+            renderizarGradeFotosAdmin(filtradas);
+        }
+
+        function renderizarGradeFotosAdmin(listaFotos) {
+            const grid = document.getElementById('gridFotosGaleriaAdmin');
+            if (!grid) return;
+
+            if (listaFotos.length === 0) {
+                grid.innerHTML = `
+                    <div class="bg-black/60 p-8 rounded-2xl border border-zinc-800 text-center space-y-2 col-span-full">
+                        <span class="text-3xl block">📸</span>
+                        <p class="text-xs font-bold text-white uppercase">Nenhuma Foto Encontrada</p>
+                        <p class="text-[11px] text-zinc-400">Tire uma foto no formulário acima para adicionar ao álbum do cliente!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = "";
+            listaFotos.forEach(f => {
+                const estilo = f.estiloCorte || 'Corte Barbearia';
+                const barbeiro = f.barbeiroNome || 'Aldo Rodrigues';
+                const data = f.dataHoraFormatada || (f.dataCriacao ? new Date(f.dataCriacao).toLocaleDateString('pt-BR') : '');
+                const nomeClienteEscaped = (f.clienteNome || 'Cliente').replace(/'/g, "\\'");
+
+                html += `
+                    <div class="bg-gradient-to-b from-zinc-900 to-black p-3 rounded-2xl border border-zinc-800 hover:border-dourado/60 transition space-y-2.5 shadow-lg group">
+                        <div class="relative w-full aspect-square rounded-xl overflow-hidden bg-black border border-zinc-800">
+                            <img src="${f.fotoUrl}" alt="${estilo}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                            <button onclick="window.excluirFotoCorteGaleria('${f.id}', '${nomeClienteEscaped}')" class="absolute top-2 right-2 bg-red-950/90 hover:bg-red-900 text-red-300 p-1.5 rounded-lg border border-red-800 text-xs shadow-md transition cursor-pointer" title="Excluir Foto">
+                                🗑️
+                            </button>
+                        </div>
+
+                        <div class="space-y-1 text-left">
+                            <div class="flex items-center justify-between gap-1 text-[10px] text-zinc-400">
+                                <span class="font-bold text-dourado truncate">👤 ${f.clienteNome || 'Cliente'}</span>
+                                <span class="font-mono flex-shrink-0">${data}</span>
+                            </div>
+                            <h4 class="font-bold text-white text-xs truncate" title="${estilo}">
+                                ${estilo}
+                            </h4>
+                            <p class="text-[10px] text-zinc-400 flex items-center gap-1 truncate">
+                                <span>💈</span> ${barbeiro}
+                            </p>
+                            ${f.observacao ? `<p class="text-[10px] text-zinc-500 italic truncate" title="${f.observacao}">"${f.observacao}"</p>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            grid.innerHTML = html;
+        }
+
+        function carregarGaleriaAdmin() {
+            const selectBarbeiro = document.getElementById('selectGaleriaBarbeiro');
+            if (selectBarbeiro) {
+                let optsHtml = `<option value="Aldo Rodrigues">Aldo Rodrigues</option>`;
+                (listaBarbeirosAdminCache || []).forEach(b => {
+                    if (b.nome && b.nome !== 'Aldo Rodrigues') {
+                        optsHtml += `<option value="${b.nome}">${b.nome}</option>`;
+                    }
+                });
+                selectBarbeiro.innerHTML = optsHtml;
+            }
+
+            popularSugestoesClientesGaleria();
+            carregarFotosGaleriaAdmin();
+        }
+        window.carregarGaleriaAdmin = carregarGaleriaAdmin;
     </script>
+
+    <!-- MARCA D'ÁGUA COM A LOGO NO CANTO INFERIOR DIREITO DO PAINEL -->
+    <div class="fixed bottom-3 right-4 z-0 pointer-events-none select-none opacity-10 sm:opacity-15 transition-opacity flex items-center gap-2">
+        <img src="logo.png" alt="Barbearia EMAÚS Watermark" class="w-14 h-14 object-contain filter drop-shadow">
+    </div>
 </body>
 </html>
