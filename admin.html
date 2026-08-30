@@ -5379,12 +5379,15 @@
             } catch (e) { if (msg) msg.innerText = "Erro ao salvar serviço."; }
         });
 
+        let listaServicosAdminCache = [];
+
         async function carregarServicosAdmin() {
             const listaDiv = document.getElementById('listaServicosAdmin');
             const containerServicosPlano = document.getElementById('containerServicosParaPlano');
             if (!listaDiv) return;
             try {
                 const querySnapshot = await getDocs(collection(db, "servicos"));
+                listaServicosAdminCache = [];
                 if (querySnapshot.empty) {
                     listaDiv.innerHTML = '<p class="text-xs text-zinc-500">Nenhum serviço cadastrado no momento.</p>';
                     if (containerServicosPlano) {
@@ -5398,6 +5401,7 @@
                 querySnapshot.forEach((docSnap) => {
                     const serv = docSnap.data();
                     const id = docSnap.id;
+                    listaServicosAdminCache.push({ id, ...serv });
                     listaDiv.innerHTML += `
                         <div class="flex justify-between items-center bg-black p-3 rounded-xl border border-zinc-800 text-xs">
                             <div>
@@ -5879,6 +5883,8 @@
             });
         }
 
+        let listaProdutosAdminCache = [];
+
         window.carregarProdutosAdmin = async function() {
             const grid = document.getElementById('gridProdutosAdmin');
             if (grid) grid.innerHTML = "<p class='text-xs text-zinc-500 text-center col-span-full py-8'>Carregando produtos...</p>";
@@ -5892,6 +5898,7 @@
 
                 lista.sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
                 listaProdutosMemoria = lista;
+                listaProdutosAdminCache = lista;
 
                 atualizarMetricasProdutos(lista);
                 renderizarProdutosAdmin();
