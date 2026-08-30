@@ -1565,17 +1565,62 @@
                             <p id="msgSalvarWhatsappBarbeiro" class="text-xs text-center font-medium min-h-[16px]"></p>
                         </div>
 
-                        <!-- BLOCO: CONEXÃO POR QR CODE -->
+                        <!-- OPÇÃO 1: CONEXÃO POR CÓDIGO DE 8 DÍGITOS (DIRETO NO CELULAR / SEM CÂMERA) -->
                         <div class="pt-5 border-t border-zinc-800/80 space-y-4">
                             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                                 <div>
                                     <h4 class="text-xs font-bold uppercase text-amber-400 flex items-center gap-1.5">
+                                        <svg class="w-4 h-4 text-[#D4AF37]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                        <span>Opção 1: Conectar por Código de 8 Dígitos (Sem Câmera)</span>
+                                    </h4>
+                                    <p class="text-[11px] text-zinc-400">Gere um código de 8 dígitos e digite no WhatsApp diretamente pelo seu aparelho.</p>
+                                </div>
+                                <button id="btnGerarCodigoPareamento" type="button" class="bg-amber-500 hover:bg-amber-600 text-black font-extrabold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition cursor-pointer shadow-lg flex items-center gap-1.5 whitespace-nowrap">
+                                    <svg class="w-4 h-4 fill-current flex-shrink-0" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                    <span>Gerar Código</span>
+                                </button>
+                            </div>
+
+                            <!-- Exibição do Código de Pareamento -->
+                            <div id="boxCodigoPareamentoExibicao" class="hidden p-5 rounded-2xl bg-black border border-amber-500/60 text-center space-y-3.5 animate-fade-in shadow-2xl">
+                                <span class="text-[10px] font-bold text-amber-400 uppercase tracking-widest bg-amber-950/80 px-3 py-1 rounded-full border border-amber-600/50">
+                                    Seu Código de Pareamento
+                                </span>
+
+                                <div class="flex items-center justify-center gap-3">
+                                    <span id="textoCodigoPareamento" class="font-mono text-2xl sm:text-3xl font-black text-dourado tracking-widest bg-zinc-900 px-6 py-3 rounded-2xl border border-zinc-700 select-all shadow-inner">
+                                        ---- ----
+                                    </span>
+                                    <button id="btnCopiarCodigoPareamento" type="button" class="bg-zinc-800 hover:bg-zinc-700 text-dourado p-3.5 rounded-2xl border border-zinc-700 transition cursor-pointer" title="Copiar Código">
+                                        <svg class="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                                    </button>
+                                </div>
+                                <p id="msgCopiadoCodigo" class="text-[11px] text-green-400 font-bold min-h-[14px]"></p>
+
+                                <div class="bg-zinc-900/90 p-4 rounded-xl border border-zinc-700 text-left space-y-2 text-xs text-zinc-300">
+                                    <p class="font-bold text-amber-400 text-[11px] uppercase">📖 Como digitar no seu WhatsApp:</p>
+                                    <ol class="list-decimal list-inside space-y-1.5 text-[11px] text-zinc-300">
+                                        <li>Abra o <strong>WhatsApp</strong> no seu celular.</li>
+                                        <li>Acesse <strong>Aparelhos Conectados</strong> > <strong>Conectar um aparelho</strong>.</li>
+                                        <li>Toque em <strong>Conectar com número de telefone</strong> na parte inferior da tela.</li>
+                                        <li>Digite o código de 8 dígitos acima. <strong>Pronto!</strong></li>
+                                    </ol>
+                                </div>
+                            </div>
+                            <p id="msgCodigoPareamentoStatus" class="text-xs text-center font-medium min-h-[16px]"></p>
+                        </div>
+
+                        <!-- OPÇÃO 2: CONEXÃO POR QR CODE (COM CÂMERA) -->
+                        <div class="pt-5 border-t border-zinc-800/80 space-y-4">
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                <div>
+                                    <h4 class="text-xs font-bold uppercase text-zinc-300 flex items-center gap-1.5">
                                         <svg class="w-4 h-4 text-[#D4AF37]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 3h3m0 0h3m-3 0v3m0-6v3"/></svg>
-                                        <span>Ativar Robô no WhatsApp (Ler QR Code)</span>
+                                        <span>Opção 2: Conectar por QR Code (Com Câmera)</span>
                                     </h4>
                                     <p class="text-[11px] text-zinc-400">Gere um QR Code e escaneie com a câmera do seu celular.</p>
                                 </div>
-                                <button id="btnGerarQrCode" type="button" class="bg-amber-500 hover:bg-amber-600 text-black font-extrabold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition cursor-pointer shadow-lg flex items-center gap-1.5 whitespace-nowrap">
+                                <button id="btnGerarQrCode" type="button" class="bg-zinc-800 hover:bg-zinc-700 text-white font-extrabold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition cursor-pointer border border-zinc-700 flex items-center gap-1.5 whitespace-nowrap">
                                     <svg class="w-4 h-4 fill-current flex-shrink-0" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                                     <span>Gerar QR Code</span>
                                 </button>
