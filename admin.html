@@ -1565,53 +1565,6 @@
                             <p id="msgSalvarWhatsappBarbeiro" class="text-xs text-center font-medium min-h-[16px]"></p>
                         </div>
 
-                        <!-- BLOCO: CONEXÃO POR CÓDIGO DE 8 DÍGITOS (SEM QR CODE) -->
-                        <div class="pt-5 border-t border-zinc-800/80 space-y-4">
-                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                                <div>
-                                    <h4 class="text-xs font-bold uppercase text-amber-400 flex items-center gap-1.5">
-                                        <svg class="w-4 h-4 text-[#D4AF37]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
-                                        <span>Conectar via Código de 8 Dígitos (Sem Câmera)</span>
-                                    </h4>
-                                    <p class="text-[11px] text-zinc-400">Gere um código de 8 dígitos para conectar direto no aplicativo do celular.</p>
-                                </div>
-                                <button id="btnGerarCodigoPareamento" type="button" class="bg-amber-500 hover:bg-amber-600 text-black font-black px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition cursor-pointer shadow-lg flex items-center gap-1.5 whitespace-nowrap active:scale-[0.98]">
-                                    <svg class="w-4 h-4 fill-current flex-shrink-0" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                                    <span>Gerar Código</span>
-                                </button>
-                            </div>
-
-                            <!-- Exibição do Código de 8 Dígitos -->
-                            <div id="boxCodigoPareamentoExibicao" class="hidden p-5 sm:p-6 rounded-2xl bg-black border border-amber-500/60 text-center space-y-4 animate-fade-in shadow-2xl">
-                                <span class="text-[10px] font-black text-amber-400 uppercase tracking-widest bg-amber-950/80 px-3.5 py-1 rounded-full border border-amber-600/50 inline-block">
-                                    Seu Código de Conexão WhatsApp
-                                </span>
-                                
-                                <div class="flex items-center justify-center gap-2.5">
-                                    <div id="textoCodigoPareamento" class="font-mono text-2xl sm:text-3xl font-black text-dourado tracking-[0.2em] bg-zinc-950 px-6 py-3.5 rounded-2xl border border-zinc-700 shadow-inner select-all">
-                                        ---- ----
-                                    </div>
-                                    <button id="btnCopiarCodigoPareamento" type="button" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-4 py-3.5 rounded-2xl transition cursor-pointer text-xs font-bold flex items-center gap-1.5 shadow-md" title="Copiar Código">
-                                        <span>📋</span> Copiar
-                                    </button>
-                                </div>
-                                <p id="msgCopiadoCodigo" class="text-[11px] text-green-400 font-semibold min-h-[14px]"></p>
-
-                                <div class="bg-zinc-900/90 p-4 sm:p-5 rounded-2xl border border-zinc-700 text-left space-y-2.5 text-xs text-zinc-300">
-                                    <p class="font-bold text-amber-400 text-xs uppercase flex items-center gap-1.5">
-                                        <span>📖</span> Como ativar no seu celular em 10 segundos:
-                                    </p>
-                                    <ol class="list-decimal list-inside space-y-2 text-[11px] text-zinc-300">
-                                        <li>Abra o <strong>WhatsApp</strong> no seu celular.</li>
-                                        <li>Acesse <strong>Aparelhos Conectados</strong> &gt; Toque em <strong>Conectar um aparelho</strong>.</li>
-                                        <li>No rodapé da tela, toque em <strong>"Conectar com número de telefone"</strong>.</li>
-                                        <li>Digite o código de 8 dígitos acima. <strong>Pronto! Conecta na hora sem câmera.</strong></li>
-                                    </ol>
-                                </div>
-                            </div>
-                            <p id="msgCodigoPareamentoStatus" class="text-xs text-center font-medium min-h-[16px]"></p>
-                        </div>
-
                         <!-- BLOCO: CONEXÃO POR QR CODE -->
                         <div class="pt-5 border-t border-zinc-800/80 space-y-4">
                             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
