@@ -2256,17 +2256,14 @@
 
             try {
                 const telLimpo = dadosUsuarioAtual?.telefone ? dadosUsuarioAtual.telefone.replace(/\D/g, '') : '';
-                
-                // Busca fotos vinculadas por clienteId
-                const qFotos = query(collection(db, "galeria_cortes_clientes"), where("clienteId", "==", userId));
-                const snap = await getDocs(qFotos);
                 let fotos = [];
 
+                const qFotos = query(collection(db, "galeria_cortes_clientes"), where("clienteId", "==", userId));
+                const snap = await getDocs(qFotos);
                 snap.forEach(docSnap => {
                     fotos.push({ id: docSnap.id, ...docSnap.data() });
                 });
 
-                // Se houver telefone, busca também fotos registradas pelo telefone
                 if (telLimpo && telLimpo.length >= 10) {
                     const qTel = query(collection(db, "galeria_cortes_clientes"), where("clienteTelefoneLimpo", "==", telLimpo));
                     const snapTel = await getDocs(qTel);

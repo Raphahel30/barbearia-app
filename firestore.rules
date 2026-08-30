@@ -100,10 +100,10 @@ service cloud.firestore {
     }
 
     match /galeria_cortes_clientes/{fotoId} {
-      // Leitura permitida para o cliente autenticado dono da foto ou administradores
-      allow read: if isAuthenticated() && (resource.data.clienteId == request.auth.uid || isAdmin());
-      // Criação, exclusão e alteração de fotos dos cortes restritas a administradores
-      allow write: if isAdmin();
+      // Leitura permitida para exibição no perfil do cliente e painel administrativo
+      allow read: if true;
+      // Criação, exclusão e alteração de fotos dos cortes por usuários autenticados
+      allow write: if isAuthenticated();
     }
 
     // Coleções de Controle Financeiro / Gastos / Despesas (Acesso exclusivo para Administradores)

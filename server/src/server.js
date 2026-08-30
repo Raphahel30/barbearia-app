@@ -316,7 +316,8 @@ app.use(cors({
     },
     credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // M1: Rate limiting — protege endpoints com limites dimensionados para produção e SPAs em tempo real
 const limiterGeral = rateLimit({ 
@@ -2031,6 +2032,90 @@ app.all('/api/whatsapp/disparar-lembretes-4h', verificarAdminMiddleware, async (
     } catch (err) {
         console.error('Erro ao disparar lembretes 4h:', err);
         return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// ==========================================
+// ROTAS DE GALERIA DE CORTES (FIREBASE ADMIN)
+// ==========================================
+app.post('/api/galeria/salvar', async (req, res) => {
+    try {
+        const { clienteId, clienteNome, clienteTelefone, barbeiroNome, estiloCorte, observacao, fotoUrl } = req.body;
+        if (!clienteNome || !fotoUrl) {
+            return res.status(400).json({ success: false, error: 'Nome do cliente e foto são obrigatórios.' });
+        }
+
+        const agora = new Date();
+        const dataHoraFormatada = `${String(agora.getDate()).padStart(2, '0')}/${String(agora.getMonth() + 1).padStart(2, '0')}/${agora.getFullYear()} às ${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`;
+        const telLimpo = clienteTelefone ? clienteTelefone.replace(/\D/g, '') : '';
+
+        const docData = {
+            clienteId: clienteId || '',
+            clienteNome,
+            clienteTelefone: clienteTelefone || '',
+            clienteTelefoneLimpo: telLimpo,
+            barbeiroNome: barbeiroNome || 'Aldo Rodrigues',
+            estiloCorte: estiloCorte || 'Corte EMAÚS Barbearia',
+            observacao: observacao || '',
+            fotoUrl,
+            dataCriacao: agora.toISOString(),
+            dataHoraFormatada
+        };
+
+        if (firebaseAdminFirestore) {
+            const ref = await firebaseAdminFirestore.collection('galeria_cortes_clientes').add(docData);
+            return res.json({ success: true, id: ref.id, ...docData });
+        } else {
+            return res.status(500).json({ success: false, error: 'Firestore Admin SDK não inicializado no servidor.' });
+        }
+    } catch (e) {
+        console.error('Erro em /api/galeria/salvar:', e);
+        return res.status(500).json({ success: false, error: e.message });
+    }
+});
+
+app.get('/api/galeria/listar', async (req, res) => {
+    try {
+        const { clienteId, telefone } = req.query;
+        if (!firebaseAdminFirestore) {
+            return res.json({ success: true, fotos: [] });
+        }
+
+        let query = firebaseAdminFirestore.collection('galeria_cortes_clientes');
+        
+        if (clienteId) {
+            query = query.where('clienteId', '==', String(clienteId));
+        } else if (telefone) {
+            const telLimpo = String(telefone).replace(/\D/g, '');
+            query = query.where('clienteTelefoneLimpo', '==', telLimpo);
+        }
+
+        const snap = await query.get();
+        const fotos = [];
+        snap.forEach(doc => {
+            fotos.push({ id: doc.id, ...doc.data() });
+        });
+
+        fotos.sort((a, b) => new Date(b.dataCriacao || 0) - new Date(a.dataCriacao || 0));
+        return res.json({ success: true, fotos });
+    } catch (e) {
+        console.error('Erro em /api/galeria/listar:', e);
+        return res.status(500).json({ success: false, error: e.message });
+    }
+});
+
+app.post('/api/galeria/excluir', async (req, res) => {
+    try {
+        const { id } = req.body;
+        if (!id) return res.status(400).json({ success: false, error: 'ID da foto é obrigatório.' });
+        if (firebaseAdminFirestore) {
+            await firebaseAdminFirestore.collection('galeria_cortes_clientes').doc(id).delete();
+            return res.json({ success: true });
+        }
+        return res.status(500).json({ success: false, error: 'Banco de dados não disponível.' });
+    } catch (e) {
+        console.error('Erro em /api/galeria/excluir:', e);
+        return res.status(500).json({ success: false, error: e.message });
     }
 });
 

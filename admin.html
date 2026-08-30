@@ -8073,7 +8073,7 @@
             });
         }
 
-        function comprimirImagemBase64(file, maxDimension = 960, quality = 0.85) {
+        function comprimirImagemBase64(file, maxDimension = 540, quality = 0.65) {
             return new Promise((resolve, reject) => {
                 if (!file) return reject(new Error("Nenhum arquivo fornecido."));
                 const reader = new FileReader();
@@ -8123,7 +8123,7 @@
             const file = e.target.files?.[0];
             if (!file) return;
             try {
-                const base64 = await comprimirImagemBase64(file, 960, 0.85);
+                const base64 = await comprimirImagemBase64(file, 540, 0.65);
                 fotoCorteBase64Temp = base64;
                 if (imgPreviewFotoCorte) {
                     imgPreviewFotoCorte.src = base64;
@@ -8300,7 +8300,7 @@
                 const agora = new Date();
                 const dataHoraFormatada = `${String(agora.getDate()).padStart(2, '0')}/${String(agora.getMonth() + 1).padStart(2, '0')}/${agora.getFullYear()} às ${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`;
 
-                await addDoc(collection(db, "galeria_cortes_clientes"), {
+                const payloadFoto = {
                     clienteId: clienteId || '',
                     clienteNome,
                     clienteTelefone,
@@ -8311,7 +8311,10 @@
                     fotoUrl: fotoCorteBase64Temp,
                     dataCriacao: agora.toISOString(),
                     dataHoraFormatada
-                });
+                };
+
+                // Salva diretamente na coleção galeria_cortes_clientes
+                await addDoc(collection(db, "galeria_cortes_clientes"), payloadFoto);
 
                 if (msgStatus) {
                     msgStatus.className = "text-xs text-center font-bold text-green-400";
@@ -8332,7 +8335,7 @@
                 console.error("Erro ao salvar foto na galeria:", errUpload);
                 if (msgStatus) {
                     msgStatus.className = "text-xs text-center font-medium text-red-400";
-                    msgStatus.innerText = "Erro ao salvar foto: " + errUpload.message;
+                    msgStatus.innerText = "Erro ao salvar foto: " + (errUpload.message || "Tente novamente com outra foto.");
                 }
             } finally {
                 if (btnSalvar) {
