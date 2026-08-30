@@ -210,6 +210,10 @@
                         <svg class="w-4 h-4 text-[#D4AF37] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"></path></svg>
                         <span>Fidelidade VIP</span>
                     </button>
+                    <button id="tabNavPromotions" class="sidebar-link w-full text-left inline-flex items-center gap-2.5">
+                        <svg class="w-4 h-4 text-[#D4AF37] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
+                        <span>🏷️ Promoções & Ofertas</span>
+                    </button>
                 </div>
 
                 <!-- BLOCO 3: SISTEMA & CONFIGURAÇÕES -->
@@ -759,6 +763,49 @@
                             <p class="text-xs text-zinc-500">Carregando serviços...</p>
                         </div>
                     </div>
+                </div>
+
+                <!-- CARD: CONFIGURAÇÃO DA TAXA DE RESERVA (SINAL ONLINE) -->
+                <div class="card-dark p-6 rounded-2xl border border-dourado/30 bg-gradient-to-r from-black via-zinc-950 to-black space-y-4 shadow-xl">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-dourado/15 border border-dourado/40 flex items-center justify-center text-xl shadow-inner text-dourado">
+                                💳
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="text-sm font-bold text-white uppercase">Taxa de Reserva (Sinal de Agendamento)</h3>
+                                    <span id="badgeStatusTaxaReservaAdmin" class="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-green-950 text-green-400 border border-green-800">Ativado no Site</span>
+                                </div>
+                                <p class="text-xs text-zinc-400">Configure o valor do sinal cobrado antecipadamente ou habilite/desabilite o botão da taxa de reserva no site dos clientes.</p>
+                            </div>
+                        </div>
+                        
+                        <label class="relative inline-flex items-center cursor-pointer flex-shrink-0" title="Habilitar ou Desabilitar o botão de Taxa de Reserva no site">
+                            <input type="checkbox" id="checkTaxaReservaAtiva" class="sr-only peer" checked>
+                            <div class="w-11 h-6 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-dourado"></div>
+                        </label>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+                        <div>
+                            <label class="block text-xs font-semibold text-zinc-300 uppercase mb-1">
+                                Valor da Taxa de Reserva (R$)
+                            </label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-2.5 text-zinc-400 text-xs font-bold">R$</span>
+                                <input type="number" id="inputValorTaxaReservaAdmin" value="10.00" step="0.50" min="1" class="w-full pl-9 pr-3 py-2.5 bg-black rounded-xl border border-zinc-700 text-white text-xs font-bold focus:outline-none focus:border-dourado">
+                            </div>
+                            <p class="text-[10px] text-zinc-500 mt-1">💡 O valor da taxa de reserva é fixo e não sofre desconto em promoções.</p>
+                        </div>
+
+                        <div>
+                            <button id="btnSalvarConfigTaxaReservaAdmin" type="button" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-2.5 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-1.5 h-[42px] active:scale-98">
+                                <span>💾</span> Salvar Taxa de Reserva
+                            </button>
+                        </div>
+                    </div>
+                    <p id="msgConfigTaxaReservaStatus" class="text-xs text-center font-medium min-h-[16px]"></p>
                 </div>
 
                 <!-- Controle de Visibilidade do Módulo de Planos Mensais no Site -->
@@ -1780,6 +1827,169 @@
                 </div>
             </section>
 
+            <!-- ABA: PROMOÇÕES & DESCONTOS POR DIA DA SEMANA OU DATA -->
+            <section id="viewPromotions" class="space-y-6 hidden">
+                <div class="max-w-4xl mx-auto space-y-6">
+                    <!-- Cabeçalho com estatísticas -->
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-white uppercase flex items-center gap-2">
+                                <span>🏷️</span> <span>Promoções & Descontos</span>
+                            </h2>
+                            <p class="text-xs text-zinc-400">Configure descontos automáticos por dia da semana ou data para serviços e produtos (aplicados aos agendamentos do site).</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span id="badgeTotalPromocoesAtivas" class="text-xs text-dourado font-bold bg-dourado/10 px-3 py-1.5 rounded-xl border border-dourado/20">
+                                0 ativas
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- CARD DE CRIAÇÃO / CADASTRO DE NOVA PROMOÇÃO -->
+                    <div class="card-dark p-6 rounded-2xl border border-dourado/40 bg-gradient-to-b from-zinc-950 to-black space-y-5 shadow-2xl">
+                        <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xl">🔥</span>
+                                <div>
+                                    <h3 class="text-sm font-bold uppercase text-white tracking-wide">
+                                        Criar Nova Regra Promocional
+                                    </h3>
+                                    <p class="text-[11px] text-zinc-400">Defina o dia da semana ou data, o serviço/produto e o desconto a ser aplicado.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <form id="formCriarPromocao" class="space-y-4 text-xs">
+                            <!-- Título da Promoção -->
+                            <div>
+                                <label class="block font-bold text-zinc-300 uppercase mb-1">Título / Nome da Promoção *</label>
+                                <input type="text" id="inputPromocaoTitulo" placeholder="Ex: Quarta Maluca, Quinta do Bigode, Promoção de Inauguração..." class="w-full px-4 py-2.5 bg-black rounded-xl border border-zinc-700 text-white focus:outline-none focus:border-dourado font-medium text-xs" required>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <!-- 1. Quando Aplicar -->
+                                <div class="p-4 bg-zinc-900/60 rounded-xl border border-zinc-800 space-y-3">
+                                    <label class="block font-bold text-dourado uppercase tracking-wider">1. Quando a Promoção é Válida?</label>
+                                    
+                                    <div class="flex gap-2">
+                                        <label class="flex-1 flex items-center justify-center gap-1.5 p-2 bg-black border border-zinc-700 rounded-lg cursor-pointer hover:border-dourado transition select-none text-[11px]">
+                                            <input type="radio" name="radioTipoAplicacaoPromocao" value="dia_semana" checked class="text-dourado focus:ring-0">
+                                            <span class="font-bold text-white">Dia da Semana</span>
+                                        </label>
+                                        <label class="flex-1 flex items-center justify-center gap-1.5 p-2 bg-black border border-zinc-700 rounded-lg cursor-pointer hover:border-dourado transition select-none text-[11px]">
+                                            <input type="radio" name="radioTipoAplicacaoPromocao" value="data_especifica" class="text-dourado focus:ring-0">
+                                            <span class="font-bold text-white">Data Específica</span>
+                                        </label>
+                                    </div>
+
+                                    <!-- Campo Dia da Semana -->
+                                    <div id="boxPromocaoDiaSemana">
+                                        <label class="block text-zinc-400 font-medium mb-1">Escolha o Dia da Semana Recorrente:</label>
+                                        <select id="selectPromocaoDiaSemana" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white font-semibold focus:outline-none focus:border-dourado">
+                                            <option value="3" selected>Quarta-feira (Toda Quarta)</option>
+                                            <option value="2">Terça-feira (Toda Terça)</option>
+                                            <option value="4">Quinta-feira (Toda Quinta)</option>
+                                            <option value="1">Segunda-feira (Toda Segunda)</option>
+                                            <option value="5">Sexta-feira (Toda Sexta)</option>
+                                            <option value="6">Sábado (Todo Sábado)</option>
+                                            <option value="0">Domingo (Todo Domingo)</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Campo Data Específica (Oculto por padrão) -->
+                                    <div id="boxPromocaoDataEspecifica" class="hidden">
+                                        <label class="block text-zinc-400 font-medium mb-1">Escolha a Data da Promoção:</label>
+                                        <input type="date" id="inputPromocaoDataEspecifica" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white font-semibold focus:outline-none focus:border-dourado">
+                                    </div>
+                                </div>
+
+                                <!-- 2. Em qual Item Aplicar -->
+                                <div class="p-4 bg-zinc-900/60 rounded-xl border border-zinc-800 space-y-3">
+                                    <label class="block font-bold text-dourado uppercase tracking-wider">2. Onde Aplicar o Desconto?</label>
+                                    
+                                    <div>
+                                        <label class="block text-zinc-400 font-medium mb-1">Tipo de Alvo:</label>
+                                        <select id="selectPromocaoAlvoTipo" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white font-semibold focus:outline-none focus:border-dourado">
+                                            <option value="todos_servicos" selected>✂️ Todos os Serviços</option>
+                                            <option value="servico_especifico">✂️ Serviço Específico</option>
+                                            <option value="todos_produtos">🛍️ Todos os Produtos</option>
+                                            <option value="produto_especifico">🛍️ Produto Específico</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Seletor do Item Específico -->
+                                    <div id="boxPromocaoItemEspecifico" class="hidden">
+                                        <label id="labelPromocaoItemEspecifico" class="block text-zinc-400 font-medium mb-1">Selecione o Serviço:</label>
+                                        <select id="selectPromocaoItemEspecifico" class="w-full px-3 py-2 bg-black rounded-lg border border-zinc-700 text-white font-semibold focus:outline-none focus:border-dourado">
+                                            <!-- Preenchido via JS -->
+                                        </select>
+                                    </div>
+
+                                    <p class="text-[10px] text-zinc-500 italic">👑 Planos Mensais VIP possuem valor fechado de assinatura e não recebem desconto promocional.</p>
+                                </div>
+                            </div>
+
+                            <!-- 3. Valor do Desconto -->
+                            <div class="p-4 bg-zinc-900/60 rounded-xl border border-zinc-800 space-y-3">
+                                <label class="block font-bold text-dourado uppercase tracking-wider">3. Valor e Formato do Desconto</label>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                                    <div>
+                                        <label class="block text-zinc-400 font-medium mb-1">Tipo de Desconto:</label>
+                                        <div class="flex gap-2">
+                                            <label class="flex-1 flex items-center justify-center gap-1.5 p-2 bg-black border border-zinc-700 rounded-lg cursor-pointer hover:border-dourado transition select-none text-[11px]">
+                                                <input type="radio" name="radioFormatoDescontoPromocao" value="fixo" checked class="text-dourado focus:ring-0">
+                                                <span class="font-bold text-white">Reais (R$)</span>
+                                            </label>
+                                            <label class="flex-1 flex items-center justify-center gap-1.5 p-2 bg-black border border-zinc-700 rounded-lg cursor-pointer hover:border-dourado transition select-none text-[11px]">
+                                                <input type="radio" name="radioFormatoDescontoPromocao" value="porcentagem" class="text-dourado focus:ring-0">
+                                                <span class="font-bold text-white">Porcentagem (%)</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label id="labelPromocaoValorDesconto" class="block text-zinc-400 font-medium mb-1">Valor do Desconto (R$):</label>
+                                        <div class="relative">
+                                            <span id="prefixoPromocaoDesconto" class="absolute inset-y-0 left-0 pl-3 flex items-center text-xs font-bold text-dourado">R$</span>
+                                            <input type="number" id="inputPromocaoValorDesconto" step="0.50" min="0.50" placeholder="15.00" value="15.00" class="w-full pl-10 pr-4 py-2 bg-black rounded-lg border border-zinc-700 text-white font-bold focus:outline-none focus:border-dourado text-sm" required>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="previewExemploPromocao" class="p-2.5 bg-black/80 rounded-lg border border-zinc-800 text-[11px] text-zinc-300 flex items-center justify-between">
+                                    <span>💡 Simulação: Um corte de <strong>R$ 45,00</strong> sairá por <strong class="text-green-400 text-xs">R$ 30,00</strong></span>
+                                    <span class="text-dourado font-bold font-mono">-R$ 15,00 OFF</span>
+                                </div>
+                            </div>
+
+                            <div class="pt-2">
+                                <button type="submit" id="btnSalvarPromocao" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3.5 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-2 active:scale-98">
+                                    <span>🔥</span>
+                                    <span>Publicar Promoção no Site</span>
+                                </button>
+                                <p id="msgPromocaoStatus" class="text-xs text-center font-medium min-h-[16px] mt-1.5"></p>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- LISTA DE PROMOÇÕES PROGRAMADAS / ATIVAS -->
+                    <div class="card-dark p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
+                        <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+                            <div>
+                                <h3 class="text-sm font-bold uppercase text-white tracking-wide flex items-center gap-2">
+                                    <span>📋</span> <span>Regras Promocionais Cadastradas</span>
+                                </h3>
+                                <p class="text-[11px] text-zinc-400">Ative, desative ou exclua as promoções a qualquer momento.</p>
+                            </div>
+                            <span id="badgeTotalPromocoesCadastradas" class="text-xs text-zinc-400 font-mono">0 regras</span>
+                        </div>
+
+                        <div id="gridPromocoesCadastradas" class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                            <p class="text-xs text-zinc-500 text-center py-6 col-span-full">Carregando promoções...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- 8. ABA: GERENCIAR ADMINISTRADORES -->
             <section id="viewAdmins" class="space-y-6 hidden">
                 <div class="max-w-3xl mx-auto space-y-6">
@@ -2547,6 +2757,7 @@
             services: "✂️ Serviços & Planos",
             products: "🛍️ Loja & Estoque de Produtos",
             fidelity: "🎁 Programa Fidelidade VIP",
+            promotions: "🏷️ Promoções & Ofertas Especiais",
             blockDays: "🗓️ Calendário & Horários de Expediente",
             payments: "💳 Mercado Pago",
             whatsapp: "🤖 WhatsApp Bot",
@@ -2563,6 +2774,7 @@
             services: { btn: document.getElementById('tabNavServices'), view: document.getElementById('viewServices') },
             products: { btn: document.getElementById('tabNavProducts'), view: document.getElementById('viewProducts') },
             fidelity: { btn: document.getElementById('tabNavFidelity'), view: document.getElementById('viewFidelity') },
+            promotions: { btn: document.getElementById('tabNavPromotions'), view: document.getElementById('viewPromotions') },
             blockDays: { btn: document.getElementById('tabNavBlockDays'), view: document.getElementById('viewBlockDays') },
             payments: { btn: document.getElementById('tabNavPayments'), view: document.getElementById('viewPayments') },
             whatsapp: { btn: document.getElementById('tabNavWhatsApp'), view: document.getElementById('viewWhatsApp') },
@@ -2649,6 +2861,7 @@
             } else if (nomeAba === 'services') {
                 carregarServicosAdmin();
                 carregarPlanosAdmin();
+                carregarConfigTaxaReservaAdmin();
                 carregarStatusModulosSite();
             } else if (nomeAba === 'products') {
                 carregarProdutosAdmin();
@@ -2659,6 +2872,8 @@
                 carregarConfiguracoesAniversarioAdmin();
                 carregarAniversariantesAdmin();
                 carregarStatusModulosSite();
+            } else if (nomeAba === 'promotions') {
+                carregarPromocoesAdmin();
             } else if (nomeAba === 'blockDays' || nomeAba === 'calendar' || nomeAba === 'closedDays') {
                 carregarDiasBloqueadosAdmin();
                 carregarExpedienteAdmin();
@@ -5342,6 +5557,120 @@
                 } catch (e) { alert("Erro ao apagar plano."); }
             }
         };
+
+        // ==========================================
+        // GESTÃO DA TAXA DE RESERVA (SINAL ONLINE)
+        // ==========================================
+        let configTaxaReservaCache = {
+            taxaReservaAtiva: true,
+            valorTaxaReserva: 10.00
+        };
+
+        async function carregarConfigTaxaReservaAdmin() {
+            const checkAtivo = document.getElementById('checkTaxaReservaAtiva');
+            const inputValor = document.getElementById('inputValorTaxaReservaAdmin');
+            const badgeStatus = document.getElementById('badgeStatusTaxaReservaAdmin');
+
+            try {
+                const snap = await getDoc(doc(db, "configuracoes", "taxaReserva"));
+                if (snap.exists()) {
+                    configTaxaReservaCache = { ...configTaxaReservaCache, ...snap.data() };
+                }
+
+                const ativo = configTaxaReservaCache.taxaReservaAtiva !== false;
+                const valor = Number(configTaxaReservaCache.valorTaxaReserva || 10.00);
+
+                if (checkAtivo) checkAtivo.checked = ativo;
+                if (inputValor) inputValor.value = valor.toFixed(2);
+
+                if (badgeStatus) {
+                    badgeStatus.className = ativo
+                        ? "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-green-950 text-green-400 border border-green-800"
+                        : "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-zinc-800 text-zinc-400 border border-zinc-700";
+                    badgeStatus.innerText = ativo ? "Ativado no Site" : "Desativado no Site";
+                }
+            } catch (err) {
+                console.warn("Erro ao carregar taxa de reserva admin:", err);
+            }
+        }
+        window.carregarConfigTaxaReservaAdmin = carregarConfigTaxaReservaAdmin;
+
+        document.getElementById('checkTaxaReservaAtiva')?.addEventListener('change', async (e) => {
+            const ativo = e.target.checked;
+            const badge = document.getElementById('badgeStatusTaxaReservaAdmin');
+            if (badge) {
+                badge.className = ativo
+                    ? "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-green-950 text-green-400 border border-green-800"
+                    : "text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-zinc-800 text-zinc-400 border border-zinc-700";
+                badge.innerText = ativo ? "Ativado no Site" : "Desativado no Site";
+            }
+            try {
+                await setDoc(doc(db, "configuracoes", "taxaReserva"), {
+                    taxaReservaAtiva: ativo,
+                    atualizadoEm: new Date().toISOString()
+                }, { merge: true });
+                configTaxaReservaCache.taxaReservaAtiva = ativo;
+                if (window.vibrarDispositivo) window.vibrarDispositivo('clique');
+                exibirToastNotificacao(
+                    "💳 Taxa de Reserva",
+                    ativo ? 'Botão de taxa de reserva habilitado no site dos clientes!' : 'Botão desabilitado: clientes pagarão o valor integral.',
+                    'config'
+                );
+            } catch (err) {
+                console.warn("Erro ao alterar status da taxa de reserva:", err);
+            }
+        });
+
+        document.getElementById('btnSalvarConfigTaxaReservaAdmin')?.addEventListener('click', async () => {
+            const btn = document.getElementById('btnSalvarConfigTaxaReservaAdmin');
+            const msg = document.getElementById('msgConfigTaxaReservaStatus');
+            const ativo = document.getElementById('checkTaxaReservaAtiva')?.checked ?? true;
+            const valorInput = parseFloat(document.getElementById('inputValorTaxaReservaAdmin')?.value || '10');
+
+            if (isNaN(valorInput) || valorInput <= 0) {
+                if (msg) {
+                    msg.className = "text-xs text-center font-bold text-red-400";
+                    msg.innerText = "Por favor, insira um valor válido para a taxa de reserva!";
+                }
+                return;
+            }
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = "<span>⏳ Salvando...</span>";
+            }
+            if (msg) msg.innerText = "";
+
+            try {
+                const configData = {
+                    taxaReservaAtiva: ativo,
+                    valorTaxaReserva: valorInput,
+                    atualizadoEm: new Date().toISOString()
+                };
+
+                await setDoc(doc(db, "configuracoes", "taxaReserva"), configData, { merge: true });
+                configTaxaReservaCache = configData;
+
+                if (msg) {
+                    msg.className = "text-xs text-center font-bold text-green-400";
+                    msg.innerText = `✅ Taxa de Reserva salva: R$ ${valorInput.toFixed(2)} (${ativo ? 'Habilitada' : 'Desabilitada'})!`;
+                    setTimeout(() => { if (msg) msg.innerText = ""; }, 3500);
+                }
+                if (window.vibrarDispositivo) window.vibrarDispositivo('sucesso');
+                exibirToastNotificacao("💳 Taxa Atualizada", `Taxa de reserva configurada para R$ ${valorInput.toFixed(2)}.`, "sucesso");
+            } catch (err) {
+                console.error("Erro ao salvar taxa de reserva:", err);
+                if (msg) {
+                    msg.className = "text-xs text-center font-medium text-red-400";
+                    msg.innerText = "Erro ao salvar: " + err.message;
+                }
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = "<span>💾</span> Salvar Taxa de Reserva";
+                }
+            }
+        });
 
         // ==========================================
         // GESTÃO DE PRODUTOS & LOJA (ESTOQUE)
@@ -8561,6 +8890,372 @@
             carregarFotosGaleriaAdmin();
         }
         window.carregarGaleriaAdmin = carregarGaleriaAdmin;
+
+        // ==========================================
+        // GESTÃO DE PROMOÇÕES & OFERTAS (BARBEIRO)
+        // ==========================================
+        let listaPromocoesAdminCache = [];
+
+        const diasSemanaNomes = [
+            'Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira',
+            'Quinta-feira', 'Sexta-feira', 'Sábado'
+        ];
+
+        // Alternância de Tipo de Aplicação (Dia da Semana vs Data Específica)
+        document.querySelectorAll('input[name="radioTipoAplicacaoPromocao"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const boxDia = document.getElementById('boxPromocaoDiaSemana');
+                const boxData = document.getElementById('boxPromocaoDataEspecifica');
+                if (e.target.value === 'dia_semana') {
+                    if (boxDia) boxDia.classList.remove('hidden');
+                    if (boxData) boxData.classList.add('hidden');
+                } else {
+                    if (boxDia) boxDia.classList.add('hidden');
+                    if (boxData) boxData.classList.remove('hidden');
+                }
+                atualizarPreviewSimulacaoPromocao();
+            });
+        });
+
+        // Alternância de Alvo (Todos os Serviços / Específico / Produtos)
+        const selectPromocaoAlvoTipo = document.getElementById('selectPromocaoAlvoTipo');
+        const boxPromocaoItemEspecifico = document.getElementById('boxPromocaoItemEspecifico');
+        const labelPromocaoItemEspecifico = document.getElementById('labelPromocaoItemEspecifico');
+        const selectPromocaoItemEspecifico = document.getElementById('selectPromocaoItemEspecifico');
+
+        function popularItensEspecificosPromocao(tipoAlvo) {
+            if (!selectPromocaoItemEspecifico) return;
+            selectPromocaoItemEspecifico.innerHTML = "";
+
+            if (tipoAlvo === 'servico_especifico') {
+                if (labelPromocaoItemEspecifico) labelPromocaoItemEspecifico.innerText = "Selecione o Serviço Alvo:";
+                if (boxPromocaoItemEspecifico) boxPromocaoItemEspecifico.classList.remove('hidden');
+                
+                let opts = `<option value="">-- Escolha um serviço --</option>`;
+                (listaServicosAdminCache || []).forEach(s => {
+                    opts += `<option value="${s.id || s.nome}" data-nome="${s.nome}" data-preco="${s.preco}">✂️ ${s.nome} (R$ ${Number(s.preco || 0).toFixed(2)})</option>`;
+                });
+                selectPromocaoItemEspecifico.innerHTML = opts;
+            } else if (tipoAlvo === 'produto_especifico') {
+                if (labelPromocaoItemEspecifico) labelPromocaoItemEspecifico.innerText = "Selecione o Produto Alvo:";
+                if (boxPromocaoItemEspecifico) boxPromocaoItemEspecifico.classList.remove('hidden');
+
+                let opts = `<option value="">-- Escolha um produto --</option>`;
+                (listaProdutosAdminCache || []).forEach(p => {
+                    opts += `<option value="${p.id || p.nome}" data-nome="${p.nome}" data-preco="${p.preco}">🛍️ ${p.nome} (R$ ${Number(p.preco || 0).toFixed(2)})</option>`;
+                });
+                selectPromocaoItemEspecifico.innerHTML = opts;
+            } else {
+                if (boxPromocaoItemEspecifico) boxPromocaoItemEspecifico.classList.add('hidden');
+            }
+            atualizarPreviewSimulacaoPromocao();
+        }
+
+        selectPromocaoAlvoTipo?.addEventListener('change', (e) => {
+            popularItensEspecificosPromocao(e.target.value);
+        });
+
+        // Alternância de Formato do Desconto (Fixo vs Porcentagem)
+        document.querySelectorAll('input[name="radioFormatoDescontoPromocao"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const prefixo = document.getElementById('prefixoPromocaoDesconto');
+                const label = document.getElementById('labelPromocaoValorDesconto');
+                const inputVal = document.getElementById('inputPromocaoValorDesconto');
+                if (e.target.value === 'fixo') {
+                    if (prefixo) prefixo.innerText = "R$";
+                    if (label) label.innerText = "Valor do Desconto (R$):";
+                    if (inputVal) { inputVal.placeholder = "15.00"; inputVal.step = "0.50"; inputVal.max = "999"; }
+                } else {
+                    if (prefixo) prefixo.innerText = "%";
+                    if (label) label.innerText = "Porcentagem de Desconto (%):";
+                    if (inputVal) { inputVal.placeholder = "20"; inputVal.step = "1"; inputVal.max = "100"; }
+                }
+                atualizarPreviewSimulacaoPromocao();
+            });
+        });
+
+        document.getElementById('inputPromocaoValorDesconto')?.addEventListener('input', atualizarPreviewSimulacaoPromocao);
+        selectPromocaoItemEspecifico?.addEventListener('change', atualizarPreviewSimulacaoPromocao);
+
+        function atualizarPreviewSimulacaoPromocao() {
+            const previewEl = document.getElementById('previewExemploPromocao');
+            if (!previewEl) return;
+
+            const radioFormato = document.querySelector('input[name="radioFormatoDescontoPromocao"]:checked')?.value || 'fixo';
+            const valDesconto = parseFloat(document.getElementById('inputPromocaoValorDesconto')?.value || 0);
+            
+            const precoExemplo = 45.00;
+            let precoComDesc = precoExemplo;
+            let tagDesc = "";
+
+            if (radioFormato === 'fixo') {
+                precoComDesc = Math.max(0, precoExemplo - valDesconto);
+                tagDesc = `-R$ ${valDesconto.toFixed(2)} OFF`;
+            } else {
+                const valorAbatido = (precoExemplo * valDesconto) / 100;
+                precoComDesc = Math.max(0, precoExemplo - valorAbatido);
+                tagDesc = `-${valDesconto}% OFF (-R$ ${valorAbatido.toFixed(2)})`;
+            }
+
+            previewEl.innerHTML = `
+                <span>💡 Simulação: Um corte de <strong>R$ ${precoExemplo.toFixed(2)}</strong> sairá por <strong class="text-green-400 font-bold text-xs">R$ ${precoComDesc.toFixed(2)}</strong></span>
+                <span class="text-dourado font-bold font-mono">${tagDesc}</span>
+            `;
+        }
+
+        // Submissão do Formulário de Promoção
+        const formCriarPromocao = document.getElementById('formCriarPromocao');
+        formCriarPromocao?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const titulo = document.getElementById('inputPromocaoTitulo')?.value.trim();
+            const tipoAplicacao = document.querySelector('input[name="radioTipoAplicacaoPromocao"]:checked')?.value || 'dia_semana';
+            const diaSemana = parseInt(document.getElementById('selectPromocaoDiaSemana')?.value || '3', 10);
+            const dataEspecifica = document.getElementById('inputPromocaoDataEspecifica')?.value || '';
+            const aplicarEm = document.getElementById('selectPromocaoAlvoTipo')?.value || 'todos_servicos';
+            const selectItemEsp = document.getElementById('selectPromocaoItemEspecifico');
+            const itemAlvoId = selectItemEsp?.value || '';
+            const itemAlvoNome = selectItemEsp?.selectedOptions?.[0]?.getAttribute('data-nome') || '';
+            const tipoDesconto = document.querySelector('input[name="radioFormatoDescontoPromocao"]:checked')?.value || 'fixo';
+            const valorDesconto = parseFloat(document.getElementById('inputPromocaoValorDesconto')?.value || 0);
+
+            const msgStatus = document.getElementById('msgPromocaoStatus');
+            const btnSalvar = document.getElementById('btnSalvarPromocao');
+
+            if (!titulo) {
+                if (msgStatus) {
+                    msgStatus.className = "text-xs text-center font-bold text-red-400";
+                    msgStatus.innerText = "Por favor, dê um título para a promoção!";
+                }
+                return;
+            }
+
+            if (tipoAplicacao === 'data_especifica' && !dataEspecifica) {
+                if (msgStatus) {
+                    msgStatus.className = "text-xs text-center font-bold text-red-400";
+                    msgStatus.innerText = "Por favor, selecione a data específica da promoção!";
+                }
+                return;
+            }
+
+            if ((aplicarEm === 'servico_especifico' || aplicarEm === 'produto_especifico') && !itemAlvoId) {
+                if (msgStatus) {
+                    msgStatus.className = "text-xs text-center font-bold text-red-400";
+                    msgStatus.innerText = "Por favor, selecione o item específico para a promoção!";
+                }
+                return;
+            }
+
+            if (isNaN(valorDesconto) || valorDesconto <= 0) {
+                if (msgStatus) {
+                    msgStatus.className = "text-xs text-center font-bold text-red-400";
+                    msgStatus.innerText = "Informe um valor de desconto válido maior que zero!";
+                }
+                return;
+            }
+
+            if (btnSalvar) {
+                btnSalvar.disabled = true;
+                btnSalvar.innerHTML = `<span>⏳</span> <span>Publicando promoção...</span>`;
+            }
+
+            try {
+                const docData = {
+                    titulo,
+                    tipoAplicacao,
+                    diaSemana: tipoAplicacao === 'dia_semana' ? diaSemana : null,
+                    dataEspecifica: tipoAplicacao === 'data_especifica' ? dataEspecifica : '',
+                    aplicarEm,
+                    itemAlvoId: itemAlvoId || '',
+                    itemAlvoNome: itemAlvoNome || '',
+                    tipoDesconto,
+                    valorDesconto,
+                    ativo: true,
+                    criadoEm: new Date().toISOString(),
+                    atualizadoEm: new Date().toISOString()
+                };
+
+                await addDoc(collection(db, "promocoes"), docData);
+
+                if (msgStatus) {
+                    msgStatus.className = "text-xs text-center font-bold text-green-400";
+                    msgStatus.innerText = "✅ Promoção cadastrada e ativada com sucesso no site!";
+                }
+                if (window.vibrarDispositivo) window.vibrarDispositivo('sucesso');
+                exibirToastNotificacao("🔥 Promoção Criada!", `A promoção "${titulo}" já está ativa para os agendamentos.`, "sucesso");
+
+                formCriarPromocao.reset();
+                document.getElementById('inputPromocaoValorDesconto').value = "15.00";
+                popularItensEspecificosPromocao('todos_servicos');
+                atualizarPreviewSimulacaoPromocao();
+                carregarPromocoesAdmin();
+
+                setTimeout(() => { if (msgStatus) msgStatus.innerText = ""; }, 4000);
+            } catch (err) {
+                console.error("Erro ao salvar promoção:", err);
+                if (msgStatus) {
+                    msgStatus.className = "text-xs text-center font-medium text-red-400";
+                    msgStatus.innerText = "Erro ao cadastrar promoção: " + err.message;
+                }
+            } finally {
+                if (btnSalvar) {
+                    btnSalvar.disabled = false;
+                    btnSalvar.innerHTML = `<span>🔥</span> <span>Publicar Promoção no Site</span>`;
+                }
+            }
+        });
+
+        // Alternar Status Ativo/Inativo de Promoção
+        window.alternarStatusPromocao = async function(id, statusAtual) {
+            try {
+                await updateDoc(doc(db, "promocoes", id), {
+                    ativo: !statusAtual,
+                    atualizadoEm: new Date().toISOString()
+                });
+                if (window.vibrarDispositivo) window.vibrarDispositivo('clique');
+                exibirToastNotificacao("Status Atualizado", !statusAtual ? "Promoção ativada." : "Promoção pausada.", "info");
+                carregarPromocoesAdmin();
+            } catch (e) {
+                alert("Erro ao alterar status da promoção: " + e.message);
+            }
+        };
+
+        // Excluir Promoção
+        window.excluirPromocaoAdmin = async function(id, titulo) {
+            if (!confirm(`Deseja realmente apagar a promoção "${titulo}"?`)) return;
+            try {
+                await deleteDoc(doc(db, "promocoes", id));
+                if (window.vibrarDispositivo) window.vibrarDispositivo('sucesso');
+                exibirToastNotificacao("🗑️ Promoção Excluída", `A regra foi removida do sistema.`, "info");
+                carregarPromocoesAdmin();
+            } catch (e) {
+                alert("Erro ao excluir promoção: " + e.message);
+            }
+        };
+
+        // Carregar e Renderizar Promoções no Painel
+        async function carregarPromocoesAdmin() {
+            const grid = document.getElementById('gridPromocoesCadastradas');
+            const badgeAtivas = document.getElementById('badgeTotalPromocoesAtivas');
+            const badgeTotal = document.getElementById('badgeTotalPromocoesCadastradas');
+            if (!grid) return;
+
+            try {
+                // Garante que a lista de serviços e produtos esteja disponível para os selects
+                if (!listaServicosAdminCache || listaServicosAdminCache.length === 0) {
+                    try {
+                        const snapS = await getDocs(collection(db, "servicos"));
+                        listaServicosAdminCache = [];
+                        snapS.forEach(d => listaServicosAdminCache.push({ id: d.id, ...d.data() }));
+                    } catch (e) {}
+                }
+                if (!listaProdutosAdminCache || listaProdutosAdminCache.length === 0) {
+                    try {
+                        const snapP = await getDocs(collection(db, "produtos"));
+                        listaProdutosAdminCache = [];
+                        snapP.forEach(d => listaProdutosAdminCache.push({ id: d.id, ...d.data() }));
+                    } catch (e) {}
+                }
+
+                popularItensEspecificosPromocao(selectPromocaoAlvoTipo?.value || 'todos_servicos');
+
+                const snap = await getDocs(collection(db, "promocoes"));
+                const promocoes = [];
+                snap.forEach(d => promocoes.push({ id: d.id, ...d.data() }));
+
+                promocoes.sort((a, b) => new Date(b.criadoEm || 0) - new Date(a.criadoEm || 0));
+                listaPromocoesAdminCache = promocoes;
+
+                const qtdAtivas = promocoes.filter(p => p.ativo !== false).length;
+                if (badgeAtivas) badgeAtivas.innerText = `${qtdAtivas} ${qtdAtivas === 1 ? 'ativa' : 'ativas'}`;
+                if (badgeTotal) badgeTotal.innerText = `${promocoes.length} ${promocoes.length === 1 ? 'regra' : 'regras'}`;
+
+                renderizarGradePromocoesAdmin(promocoes);
+            } catch (err) {
+                console.error("Erro ao carregar promoções:", err);
+                grid.innerHTML = `<p class="text-xs text-red-400 col-span-full text-center py-4">Erro ao carregar promoções: ${err.message}</p>`;
+            }
+        }
+        window.carregarPromocoesAdmin = carregarPromocoesAdmin;
+
+        function renderizarGradePromocoesAdmin(promocoes) {
+            const grid = document.getElementById('gridPromocoesCadastradas');
+            if (!grid) return;
+
+            if (!promocoes || promocoes.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-10 space-y-2">
+                        <span class="text-3xl">🏷️</span>
+                        <p class="text-xs text-zinc-400 font-bold uppercase">Nenhuma promoção cadastrada</p>
+                        <p class="text-[11px] text-zinc-500 max-w-sm mx-auto">Cadastre sua primeira promoção no formulário acima para atrair mais clientes em dias de menor movimento!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = "";
+            promocoes.forEach(p => {
+                const ehAtivo = p.ativo !== false;
+                const valorFormatado = p.tipoDesconto === 'fixo' 
+                    ? `R$ ${Number(p.valorDesconto || 0).toFixed(2)} OFF`
+                    : `${p.valorDesconto}% OFF`;
+
+                let tagQuando = "";
+                if (p.tipoAplicacao === 'dia_semana') {
+                    const diaNome = diasSemanaNomes[p.diaSemana] || 'Dia da Semana';
+                    tagQuando = `<span class="bg-blue-950/80 text-blue-300 border border-blue-800/60 px-2 py-0.5 rounded text-[10px] font-bold">📅 Toda ${diaNome}</span>`;
+                } else {
+                    const [ano, mes, dia] = (p.dataEspecifica || '').split('-');
+                    const dataTxt = dia && mes && ano ? `${dia}/${mes}/${ano}` : (p.dataEspecifica || 'Data');
+                    tagQuando = `<span class="bg-purple-950/80 text-purple-300 border border-purple-800/60 px-2 py-0.5 rounded text-[10px] font-bold">📆 Data: ${dataTxt}</span>`;
+                }
+
+                let tagAlvo = "";
+                if (p.aplicarEm === 'todos_servicos') {
+                    tagAlvo = '<span class="text-zinc-300 font-medium">✂️ Todos os Serviços</span>';
+                } else if (p.aplicarEm === 'servico_especifico') {
+                    tagAlvo = `<span class="text-zinc-300 font-medium">✂️ Serviço: <strong class="text-white">${p.itemAlvoNome || 'Específico'}</strong></span>`;
+                } else if (p.aplicarEm === 'todos_produtos') {
+                    tagAlvo = '<span class="text-zinc-300 font-medium">🛍️ Todos os Produtos</span>';
+                } else if (p.aplicarEm === 'produto_especifico') {
+                    tagAlvo = `<span class="text-zinc-300 font-medium">🛍️ Produto: <strong class="text-white">${p.itemAlvoNome || 'Específico'}</strong></span>`;
+                }
+
+                const tituloEscaped = (p.titulo || '').replace(/'/g, "\\'");
+
+                html += `
+                    <div class="bg-black/80 hover:bg-zinc-950 p-4 rounded-2xl border ${ehAtivo ? 'border-dourado/40 shadow-lg shadow-dourado/5' : 'border-zinc-800 opacity-60'} transition space-y-3 flex flex-col justify-between group">
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between gap-2">
+                                ${tagQuando}
+                                <span class="text-xs font-mono font-extrabold bg-gradient-to-r from-amber-400 to-dourado text-black px-2.5 py-0.5 rounded-full shadow-sm">
+                                    ${valorFormatado}
+                                </span>
+                            </div>
+                            <div>
+                                <h4 class="font-extrabold text-white text-sm tracking-wide flex items-center gap-1.5">
+                                    <span>🔥</span> <span>${p.titulo}</span>
+                                </h4>
+                                <div class="text-[11px] mt-1">
+                                    ${tagAlvo}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-3 border-t border-zinc-900 gap-2">
+                            <button onclick="window.alternarStatusPromocao('${p.id}', ${ehAtivo})" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${ehAtivo ? 'bg-green-950/80 text-green-400 border border-green-800 hover:bg-green-900' : 'bg-zinc-900 text-zinc-400 border border-zinc-700 hover:bg-zinc-800'}">
+                                <span>${ehAtivo ? '🟢 Ativa' : '⚪ Pausada'}</span>
+                            </button>
+
+                            <button onclick="window.excluirPromocaoAdmin('${p.id}', '${tituloEscaped}')" class="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-950/40 rounded-lg transition cursor-pointer text-xs" title="Excluir Promoção">
+                                🗑️ Excluir
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            grid.innerHTML = html;
+        }
     </script>
 </body>
 </html>

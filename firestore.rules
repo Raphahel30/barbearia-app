@@ -106,6 +106,13 @@ service cloud.firestore {
       allow write: if isAuthenticated();
     }
 
+    match /promocoes/{promocaoId} {
+      // Leitura pública para aplicação de descontos nos agendamentos e produtos
+      allow read: if true;
+      // Criação, alteração e exclusão permitidas para administradores / usuários autenticados
+      allow write: if isAuthenticated();
+    }
+
     // Coleções de Controle Financeiro / Gastos / Despesas (Acesso exclusivo para Administradores)
     match /gastos/{gastoId} {
       allow read, write: if isAdmin();

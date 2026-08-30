@@ -95,6 +95,17 @@
             </div>
         </div>
 
+        <!-- BANNER FINO DE PROMOÇÃO ATIVA NA TELA DE LOGIN -->
+        <div id="bannerPromocaoAtivaAuth" class="hidden bg-gradient-to-r from-amber-950/90 via-black to-amber-950/90 border border-amber-500/50 p-2.5 rounded-xl shadow-lg text-xs animate-fade-in">
+            <div class="flex items-center gap-2">
+                <span class="text-sm flex-shrink-0 animate-bounce">🔥</span>
+                <div class="min-w-0 flex-1">
+                    <span class="bg-amber-500 text-black font-black text-[9px] uppercase px-1.5 py-0.5 rounded-full mr-1">Promoção</span>
+                    <span id="labelTextoBannerPromocaoAuth" class="text-zinc-200 font-bold text-[11px]"></span>
+                </div>
+            </div>
+        </div>
+
         <div id="tabMenu" class="flex border-b border-zinc-800">
             <button id="tabLogin" class="flex-1 py-2.5 font-bold text-xs sm:text-sm text-dourado border-b-2 border-dourado cursor-pointer transition text-center min-h-[44px] flex items-center justify-center">Entrar</button>
             <button id="tabRegister" class="flex-1 py-2.5 font-bold text-xs sm:text-sm text-zinc-500 cursor-pointer transition text-center min-h-[44px] flex items-center justify-center hover:text-zinc-300">Criar Conta</button>
@@ -478,6 +489,34 @@
             </div>
         </div>
 
+        <!-- BANNER FINO & ELEGANTE DE PROMOÇÃO ATIVA (DASHBOARD) -->
+        <div id="bannerPromocaoAtivaCliente" class="hidden relative overflow-hidden bg-gradient-to-r from-amber-950/90 via-black to-amber-950/90 border border-amber-500/50 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl shadow-lg transition-all duration-300 animate-fade-in">
+            <div class="flex items-center justify-between gap-2 text-xs">
+                <div class="flex items-center gap-2 min-w-0 flex-1 cursor-pointer" onclick="window.rolarParaAgendamentoPromocao ? window.rolarParaAgendamentoPromocao() : document.getElementById('agendamentoForm')?.scrollIntoView({behavior:'smooth'})">
+                    <span class="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 text-xs animate-bounce">
+                        🔥
+                    </span>
+                    <div class="min-w-0 flex-1 flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                        <span class="bg-amber-500 text-black font-black text-[9px] uppercase px-2 py-0.5 rounded-full tracking-wider shadow flex-shrink-0">
+                            Promoção
+                        </span>
+                        <div id="labelTextoBannerPromocao" class="text-zinc-200 font-bold text-[11px] sm:text-xs truncate transition-opacity duration-300">
+                            <!-- Inserido dinamicamente via JS -->
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1.5 flex-shrink-0">
+                    <button type="button" onclick="window.rolarParaAgendamentoPromocao ? window.rolarParaAgendamentoPromocao() : document.getElementById('agendamentoForm')?.scrollIntoView({behavior:'smooth'})" class="bg-amber-500 hover:bg-amber-400 text-black font-black px-2.5 py-1 rounded-lg text-[10px] uppercase tracking-wider transition cursor-pointer flex items-center gap-1 shadow whitespace-nowrap active:scale-95">
+                        <span>Aproveitar</span>
+                        <span class="text-xs leading-none">➔</span>
+                    </button>
+                    <button type="button" id="btnFecharBannerPromocao" class="text-zinc-400 hover:text-white p-1 rounded transition hover:bg-zinc-800 cursor-pointer" title="Dispensar aviso">
+                        ✕
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- BANNER DE INSTALAÇÃO DO APP CLIENTE -->
         <div id="bannerInstalarAppCliente" class="bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 p-3.5 sm:p-4 rounded-2xl border border-amber-500/40 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-xl">
             <div class="flex items-center gap-3">
@@ -675,6 +714,23 @@
                             <option value="">Selecione a data primeiro</option>
                         </select>
                     </div>
+                </div>
+
+                <!-- BOX CONDICIONAL: PROMOÇÃO / DESCONTO DO DIA APLICADO -->
+                <div id="boxPromocaoAtivaAgendamento" class="hidden p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-amber-950/80 via-black to-zinc-950 border border-dourado/70 text-zinc-200 text-xs shadow-xl space-y-2 animate-fade-in">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl animate-pulse">🔥</span>
+                            <div>
+                                <h3 id="tituloPromocaoBanner" class="text-xs font-bold text-dourado uppercase tracking-wide">Promoção Especial Aplicada!</h3>
+                                <p id="subtituloPromocaoBanner" class="text-[11px] text-zinc-300">Desconto do dia da semana identificado e aplicado automaticamente.</p>
+                            </div>
+                        </div>
+                        <span id="badgePromocaoDescontoValor" class="bg-gradient-to-r from-amber-400 to-dourado text-black px-2.5 py-1 rounded-full font-mono font-extrabold text-[11px] shadow whitespace-nowrap">
+                            -R$ 15,00 OFF
+                        </span>
+                    </div>
+                    <p id="textoPromocaoDescricao" class="text-[11px] text-amber-200/90 leading-relaxed border-t border-zinc-800/80 pt-2"></p>
                 </div>
 
                 <div id="containerBotoesAgendamento" class="space-y-2.5 pt-1">
@@ -1918,6 +1974,8 @@
             await carregarPainelCliente(user.uid);
             await carregarPainelPlanosCliente(user.uid);
             carregarServicosCliente();
+            carregarPromocoesAtivasCliente();
+            carregarConfigTaxaReservaCliente();
             carregarProdutosCliente();
             carregarBarbeirosCliente();
             carregarFidelidadeCliente(user.uid);
@@ -1948,6 +2006,19 @@
                 }, (err) => console.warn("Aviso realtime assinatura:", err));
             } catch (eSnapAss) {
                 console.warn("Erro ao configurar snapshot assinatura:", eSnapAss);
+            }
+
+            try {
+                // Escuta alterações em tempo real nas promoções e na taxa de reserva
+                onSnapshot(collection(db, "promocoes"), () => {
+                    carregarPromocoesAtivasCliente();
+                }, (err) => console.warn("Aviso realtime promoções:", err));
+
+                onSnapshot(doc(db, "configuracoes", "taxaReserva"), () => {
+                    carregarConfigTaxaReservaCliente();
+                }, (err) => console.warn("Aviso realtime taxa reserva:", err));
+            } catch (eSnapPromo) {
+                console.warn("Erro ao configurar snapshot de promoções/taxa:", eSnapPromo);
             }
         }
 
@@ -4131,6 +4202,295 @@
             return { produtos, subtotal };
         }
 
+        // ==========================================
+        // GESTÃO DE PROMOÇÕES & TAXA DE RESERVA (CLIENTE)
+        // ==========================================
+        window.listaPromocoesAtivasCache = [];
+        window.configTaxaReserva = {
+            taxaReservaAtiva: true,
+            valorTaxaReserva: 10.00
+        };
+
+        const diasSemanaNomesCliente = [
+            'Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira',
+            'Quinta-feira', 'Sexta-feira', 'Sábado'
+        ];
+
+        let timerRotacaoBannerPromocao = null;
+        let indicePromocaoBannerAtual = 0;
+        let bannerPromocaoFechadoSessao = false;
+
+        function formatarInfoPromocaoBanner(promo) {
+            if (!promo) return null;
+            
+            // 1. Desconto
+            const descTxt = promo.tipoDesconto === 'fixo'
+                ? `R$ ${Number(promo.valorDesconto || 0).toFixed(2)} OFF`
+                : `${promo.valorDesconto}% OFF`;
+
+            // 2. Alvo
+            let alvoTxt = "em Todos os Serviços";
+            if (promo.aplicarEm === 'servico_especifico') alvoTxt = `em ${promo.itemAlvoNome || 'Serviço'}`;
+            else if (promo.aplicarEm === 'todos_produtos') alvoTxt = "em Todos os Produtos";
+            else if (promo.aplicarEm === 'produto_especifico') alvoTxt = `em ${promo.itemAlvoNome || 'Produto'}`;
+
+            // 3. Regra de Data
+            let dataTxt = "";
+            if (promo.tipoAplicacao === 'dia_semana') {
+                const diaNome = diasSemanaNomesCliente[Number(promo.diaSemana)] || 'Dia da Semana';
+                dataTxt = `Toda ${diaNome}`;
+            } else if (promo.tipoAplicacao === 'data_especifica' && promo.dataEspecifica) {
+                const [ano, mes, dia] = promo.dataEspecifica.split('-');
+                dataTxt = `${dia}/${mes}/${ano}`;
+            } else {
+                dataTxt = "Data Especial";
+            }
+
+            return {
+                titulo: promo.titulo || 'Promoção Especial',
+                descTxt,
+                alvoTxt,
+                dataTxt,
+                htmlTexto: `<strong class="text-white">${promo.titulo}</strong>: <span class="text-green-400 font-mono font-bold">${descTxt}</span> <span class="text-zinc-300 font-medium">${alvoTxt}</span> • <span class="text-amber-300 font-bold bg-amber-950/80 px-2 py-0.5 rounded border border-amber-500/30 whitespace-nowrap">📅 ${dataTxt}</span>`
+            };
+        }
+
+        function renderizarBannerPromocoesAtivas(listaPromocoes) {
+            const bannerCliente = document.getElementById('bannerPromocaoAtivaCliente');
+            const labelCliente = document.getElementById('labelTextoBannerPromocao');
+            const bannerAuth = document.getElementById('bannerPromocaoAtivaAuth');
+            const labelAuth = document.getElementById('labelTextoBannerPromocaoAuth');
+
+            if (timerRotacaoBannerPromocao) {
+                clearInterval(timerRotacaoBannerPromocao);
+                timerRotacaoBannerPromocao = null;
+            }
+
+            if (!listaPromocoes || listaPromocoes.length === 0) {
+                if (bannerCliente) bannerCliente.classList.add('hidden');
+                if (bannerAuth) bannerAuth.classList.add('hidden');
+                return;
+            }
+
+            const promosAtivas = listaPromocoes.filter(p => p.ativo !== false);
+            if (promosAtivas.length === 0) {
+                if (bannerCliente) bannerCliente.classList.add('hidden');
+                if (bannerAuth) bannerAuth.classList.add('hidden');
+                return;
+            }
+
+            if (!bannerPromocaoFechadoSessao && bannerCliente) {
+                bannerCliente.classList.remove('hidden');
+            }
+            if (bannerAuth) {
+                bannerAuth.classList.remove('hidden');
+            }
+
+            function exibirPromocaoNoIndice(idx) {
+                const promo = promosAtivas[idx % promosAtivas.length];
+                const info = formatarInfoPromocaoBanner(promo);
+                if (!info) return;
+
+                if (labelCliente) {
+                    labelCliente.style.opacity = '0';
+                    setTimeout(() => {
+                        labelCliente.innerHTML = info.htmlTexto;
+                        labelCliente.style.opacity = '1';
+                    }, 150);
+                }
+                if (labelAuth) {
+                    labelAuth.innerHTML = `<strong class="text-amber-300">${info.titulo}</strong>: <span class="text-green-400 font-bold">${info.descTxt}</span> ${info.alvoTxt} • <span class="text-amber-200 font-bold">📅 ${info.dataTxt}</span>`;
+                }
+            }
+
+            indicePromocaoBannerAtual = 0;
+            exibirPromocaoNoIndice(0);
+
+            // Se houver mais de 1 promoção, alterna com rotação a cada 4.5 segundos
+            if (promosAtivas.length > 1) {
+                timerRotacaoBannerPromocao = setInterval(() => {
+                    indicePromocaoBannerAtual = (indicePromocaoBannerAtual + 1) % promosAtivas.length;
+                    exibirPromocaoNoIndice(indicePromocaoBannerAtual);
+                }, 4500);
+            }
+        }
+        window.renderizarBannerPromocoesAtivas = renderizarBannerPromocoesAtivas;
+
+        window.rolarParaAgendamentoPromocao = function() {
+            const abaAgendamento = document.getElementById('btnTabClienteAgendamentos');
+            if (abaAgendamento) abaAgendamento.click();
+            const form = document.getElementById('agendamentoForm');
+            if (form) {
+                form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                form.classList.add('ring-2', 'ring-amber-500');
+                setTimeout(() => form.classList.remove('ring-2', 'ring-amber-500'), 1500);
+            }
+        };
+
+        // Listener do botão de fechar o banner
+        document.getElementById('btnFecharBannerPromocao')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            bannerPromocaoFechadoSessao = true;
+            const bannerCliente = document.getElementById('bannerPromocaoAtivaCliente');
+            if (bannerCliente) bannerCliente.classList.add('hidden');
+        });
+
+        async function carregarPromocoesAtivasCliente() {
+            try {
+                const snap = await getDocs(collection(db, "promocoes"));
+                const promos = [];
+                snap.forEach(d => {
+                    const data = d.data();
+                    if (data.ativo !== false) {
+                        promos.push({ id: d.id, ...data });
+                    }
+                });
+                window.listaPromocoesAtivasCache = promos;
+                renderizarBannerPromocoesAtivas(promos);
+                if (typeof atualizarLabelPrecoTotal === 'function') {
+                    atualizarLabelPrecoTotal();
+                }
+                if (typeof carregarProdutosCliente === 'function') {
+                    carregarProdutosCliente();
+                }
+            } catch (e) {
+                console.warn("Aviso ao carregar promoções no cliente:", e);
+            }
+        }
+        window.carregarPromocoesAtivasCliente = carregarPromocoesAtivasCliente;
+
+        async function carregarConfigTaxaReservaCliente() {
+            try {
+                const snap = await getDoc(doc(db, "configuracoes", "taxaReserva"));
+                if (snap.exists()) {
+                    const data = snap.data();
+                    window.configTaxaReserva = {
+                        taxaReservaAtiva: data.taxaReservaAtiva !== false,
+                        valorTaxaReserva: Number(data.valorTaxaReserva || 10.00)
+                    };
+                }
+                atualizarBotoesTaxaReservaCliente();
+            } catch (e) {
+                console.warn("Aviso ao carregar taxa de reserva no cliente:", e);
+            }
+        }
+        window.carregarConfigTaxaReservaCliente = carregarConfigTaxaReservaCliente;
+
+        function atualizarBotoesTaxaReservaCliente() {
+            const btnTaxa = document.getElementById('btnPagarTaxaReserva');
+            const btnTotal = document.getElementById('btnPagarValorTotal');
+            const gridNormal = document.getElementById('botoesPagamentoNormal');
+            if (!btnTaxa || !btnTotal || !gridNormal) return;
+
+            const ativo = window.configTaxaReserva.taxaReservaAtiva !== false;
+            const valorTaxa = window.configTaxaReserva.valorTaxaReserva || 10.00;
+
+            if (ativo) {
+                btnTaxa.classList.remove('hidden');
+                gridNormal.className = "grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3";
+                btnTotal.className = "w-full min-h-[50px] bg-zinc-800 hover:bg-zinc-700 text-dourado border border-dourado/60 font-bold py-2.5 px-3 rounded-xl transition uppercase tracking-wide cursor-pointer text-xs flex flex-col items-center justify-center shadow-lg gap-0.5 active:scale-[0.99]";
+                const spanValorTaxa = btnTaxa.querySelector('span:nth-child(2)');
+                if (spanValorTaxa) {
+                    spanValorTaxa.innerText = `(R$ ${valorTaxa.toFixed(2)})`;
+                }
+            } else {
+                btnTaxa.classList.add('hidden');
+                gridNormal.className = "grid grid-cols-1 gap-2.5 sm:gap-3";
+                btnTotal.className = "w-full min-h-[52px] bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 px-4 rounded-xl transition uppercase tracking-wider cursor-pointer text-xs sm:text-sm flex flex-col items-center justify-center shadow-xl gap-0.5 active:scale-[0.99]";
+            }
+        }
+
+        function obterPromocaoParaServicoEData(servicoNome, precoBaseOriginal, dataIsoStr) {
+            if (!dataIsoStr || !servicoNome || precoBaseOriginal <= 0) return null;
+            if (!window.listaPromocoesAtivasCache || window.listaPromocoesAtivasCache.length === 0) return null;
+
+            const partes = dataIsoStr.split('-').map(Number);
+            if (partes.length < 3) return null;
+            const dataObj = new Date(partes[0], partes[1] - 1, partes[2]);
+            const diaSemana = dataObj.getDay();
+
+            const promoEncontrada = window.listaPromocoesAtivasCache.find(p => {
+                if (p.ativo === false) return false;
+
+                let bateuData = false;
+                if (p.tipoAplicacao === 'dia_semana') {
+                    bateuData = Number(p.diaSemana) === diaSemana;
+                } else if (p.tipoAplicacao === 'data_especifica') {
+                    bateuData = p.dataEspecifica === dataIsoStr;
+                }
+                if (!bateuData) return false;
+
+                if (p.aplicarEm === 'todos_servicos') return true;
+                if (p.aplicarEm === 'servico_especifico') {
+                    return p.itemAlvoNome === servicoNome || p.itemAlvoId === servicoNome;
+                }
+                return false;
+            });
+
+            if (!promoEncontrada) return null;
+
+            let valorDesc = 0;
+            if (promoEncontrada.tipoDesconto === 'fixo') {
+                valorDesc = Number(promoEncontrada.valorDesconto || 0);
+            } else if (promoEncontrada.tipoDesconto === 'porcentagem') {
+                valorDesc = (precoBaseOriginal * Number(promoEncontrada.valorDesconto || 0)) / 100;
+            }
+            valorDesc = Math.min(precoBaseOriginal, Math.max(0, valorDesc));
+
+            return {
+                promocao: promoEncontrada,
+                valorDesconto: valorDesc,
+                precoOriginal: precoBaseOriginal,
+                precoComDesconto: Math.max(0, precoBaseOriginal - valorDesc),
+                diaSemanaNome: diasSemanaNomesCliente[diaSemana] || 'Dia da Semana'
+            };
+        }
+
+        function obterPromocaoParaProduto(produtoId, produtoNome, precoOriginal) {
+            if (!window.listaPromocoesAtivasCache || window.listaPromocoesAtivasCache.length === 0) return null;
+
+            const hoje = new Date();
+            const ano = hoje.getFullYear();
+            const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+            const dia = String(hoje.getDate()).padStart(2, '0');
+            const hojeIso = `${ano}-${mes}-${dia}`;
+            const diaSemana = hoje.getDay();
+
+            const promo = window.listaPromocoesAtivasCache.find(p => {
+                if (p.ativo === false) return false;
+                let bateuData = false;
+                if (p.tipoAplicacao === 'dia_semana') {
+                    bateuData = Number(p.diaSemana) === diaSemana;
+                } else if (p.tipoAplicacao === 'data_especifica') {
+                    bateuData = p.dataEspecifica === hojeIso;
+                }
+                if (!bateuData) return false;
+
+                if (p.aplicarEm === 'todos_produtos') return true;
+                if (p.aplicarEm === 'produto_especifico') {
+                    return (p.itemAlvoId && p.itemAlvoId === produtoId) || (p.itemAlvoNome && p.itemAlvoNome === produtoNome);
+                }
+                return false;
+            });
+
+            if (!promo) return null;
+
+            let valorDesc = 0;
+            if (promo.tipoDesconto === 'fixo') {
+                valorDesc = Number(promo.valorDesconto || 0);
+            } else if (promo.tipoDesconto === 'porcentagem') {
+                valorDesc = (precoOriginal * Number(promo.valorDesconto || 0)) / 100;
+            }
+            valorDesc = Math.min(precoOriginal, Math.max(0, valorDesc));
+
+            return {
+                promocao: promo,
+                valorDesconto: valorDesc,
+                precoFinal: Math.max(0, precoOriginal - valorDesc),
+                precoOriginal
+            };
+        }
+
         function atualizarLabelPrecoTotal() {
             const selectServico = document.getElementById('servico');
             const labelTotal = document.getElementById('labelValorTotalBotao');
@@ -4141,6 +4501,12 @@
             const badgeStatusProd = document.getElementById('badgeStatusProdutosResumo');
             const badgeContadorProd = document.getElementById('badgeContadorProdutos');
             
+            // Box de Promoções
+            const boxPromo = document.getElementById('boxPromocaoAtivaAgendamento');
+            const tituloPromo = document.getElementById('tituloPromocaoBanner');
+            const badgePromo = document.getElementById('badgePromocaoDescontoValor');
+            const descPromo = document.getElementById('textoPromocaoDescricao');
+
             // Fidelidade de Selos
             const boxFidelidade = document.getElementById('boxRecompensaFidelidadeAgendamento');
             const checkFidelidade = document.getElementById('checkAplicarRecompensaFidelidade');
@@ -4162,7 +4528,32 @@
             const precoBase = opt && opt.value !== "" ? parseFloat(opt.getAttribute('data-preco') || 0) : 0;
             const { extras, subtotal: subtotalExtras } = obterExtrasSelecionados();
             const { produtos: produtosCross, subtotal: subtotalProdutos } = obterProdutosCrossSellSelecionados();
-            let precoTotal = precoBase + subtotalExtras + subtotalProdutos;
+
+            // 0. Checa Promoção Ativa para a data e serviço selecionados
+            const dataInputVal = document.getElementById('dataAtendimento')?.value || '';
+            const promoInfo = obterPromocaoParaServicoEData(opt?.value, precoBase, dataInputVal);
+            let precoServicoComDesconto = precoBase;
+            let valorDescontoPromocao = 0;
+
+            if (promoInfo && promoInfo.valorDesconto > 0 && opt && opt.value !== "") {
+                valorDescontoPromocao = promoInfo.valorDesconto;
+                precoServicoComDesconto = promoInfo.precoComDesconto;
+
+                if (boxPromo) boxPromo.classList.remove('hidden');
+                if (tituloPromo) tituloPromo.innerText = `🔥 ${promoInfo.promocao.titulo || 'Promoção Aplicada'}`;
+                if (badgePromo) {
+                    badgePromo.innerText = promoInfo.promocao.tipoDesconto === 'fixo'
+                        ? `-R$ ${promoInfo.valorDesconto.toFixed(2)} OFF`
+                        : `-${promoInfo.promocao.valorDesconto}% OFF`;
+                }
+                if (descPromo) {
+                    descPromo.innerHTML = `Desconto promocional para este agendamento de <strong>${promoInfo.diaSemanaNome}</strong>! De <span class="line-through text-zinc-500 font-mono">R$ ${precoBase.toFixed(2)}</span> por <strong class="text-green-400 font-mono">R$ ${precoServicoComDesconto.toFixed(2)}</strong>.`;
+                }
+            } else {
+                if (boxPromo) boxPromo.classList.add('hidden');
+            }
+
+            let precoTotal = precoServicoComDesconto + subtotalExtras + subtotalProdutos;
 
             // 1. Checa Fidelidade de Selos
             const meta = Math.max(1, Number(configFidelidadeCliente.metaSelos || 10));
@@ -4188,7 +4579,7 @@
             if (fidelidadeAtiva) {
                 let textoBeneficio = "";
                 if (configFidelidadeCliente.tipoRecompensa === 'servico_gratis') {
-                    textoBeneficio = `Corte ou Serviço 100% Grátis (- R$ ${precoBase.toFixed(2)})`;
+                    textoBeneficio = `Corte ou Serviço 100% Grátis (- R$ ${precoServicoComDesconto.toFixed(2)})`;
                 } else if (configFidelidadeCliente.tipoRecompensa === 'desconto_valor') {
                     textoBeneficio = `- R$ ${Number(configFidelidadeCliente.valorDesconto || 15).toFixed(2)} de abatimento`;
                 } else if (configFidelidadeCliente.tipoRecompensa === 'desconto_porcentagem') {
@@ -4209,7 +4600,7 @@
             if (aniversarioAtivo) {
                 let textoBeneficioAniv = "";
                 if (configAniversarioCliente.tipoRecompensa === 'servico_gratis') {
-                    textoBeneficioAniv = `Corte ou Serviço 100% Grátis (- R$ ${precoBase.toFixed(2)})`;
+                    textoBeneficioAniv = `Corte ou Serviço 100% Grátis (- R$ ${precoServicoComDesconto.toFixed(2)})`;
                 } else if (configAniversarioCliente.tipoRecompensa === 'desconto_valor') {
                     textoBeneficioAniv = `- R$ ${Number(configAniversarioCliente.valorDesconto || 20).toFixed(2)} de abatimento`;
                 } else if (configAniversarioCliente.tipoRecompensa === 'desconto_porcentagem') {
@@ -4226,13 +4617,13 @@
                 }
             }
 
-            // Aplicação dos descontos
+            // Aplicação dos descontos de fidelidade / aniversário
             const aplicarFidelidade = fidelidadeAtiva && checkFidelidade && checkFidelidade.checked;
             const aplicarAniversario = aniversarioAtivo && checkAniversario && checkAniversario.checked;
 
             if (aplicarFidelidade) {
                 if (configFidelidadeCliente.tipoRecompensa === 'servico_gratis') {
-                    valorDescontoFidelidade = Math.min(precoTotal, precoBase);
+                    valorDescontoFidelidade = Math.min(precoTotal, precoServicoComDesconto);
                 } else if (configFidelidadeCliente.tipoRecompensa === 'desconto_valor') {
                     const desc = Number(configFidelidadeCliente.valorDesconto || 15);
                     valorDescontoFidelidade = Math.min(precoTotal, desc);
@@ -4245,7 +4636,7 @@
 
             if (aplicarAniversario && precoTotal > 0) {
                 if (configAniversarioCliente.tipoRecompensa === 'servico_gratis') {
-                    valorDescontoAniversario = Math.min(precoTotal, precoBase);
+                    valorDescontoAniversario = Math.min(precoTotal, precoServicoComDesconto);
                 } else if (configAniversarioCliente.tipoRecompensa === 'desconto_valor') {
                     const descAniv = Number(configAniversarioCliente.valorDesconto || 20);
                     valorDescontoAniversario = Math.min(precoTotal, descAniv);
@@ -4256,19 +4647,22 @@
                 precoTotal = Math.max(0, precoTotal - valorDescontoAniversario);
             }
 
-            const totalDescontos = valorDescontoFidelidade + valorDescontoAniversario;
+            const totalDescontosFidelidadeAniv = valorDescontoFidelidade + valorDescontoAniversario;
             const ehGratisTotal = precoTotal === 0 && (aplicarFidelidade || aplicarAniversario);
 
             if (labelSubtotal) labelSubtotal.innerText = `R$ ${subtotalExtras.toFixed(2)}`;
             if (labelSubtotalProd) labelSubtotalProd.innerText = `R$ ${subtotalProdutos.toFixed(2)}`;
             
             if (labelTotal) {
-                if (totalDescontos > 0) {
-                    labelTotal.innerText = `(R$ ${precoTotal.toFixed(2)} - Desconto R$ ${totalDescontos.toFixed(2)})`;
+                if (totalDescontosFidelidadeAniv > 0) {
+                    labelTotal.innerText = `(R$ ${precoTotal.toFixed(2)} - Desconto R$ ${totalDescontosFidelidadeAniv.toFixed(2)})`;
                 } else {
                     labelTotal.innerText = `(R$ ${precoTotal.toFixed(2)})`;
                 }
             }
+
+            // Atualiza botões da taxa de reserva de acordo com a configuração
+            atualizarBotoesTaxaReservaCliente();
 
             // Alterna botões se for 100% grátis
             if (ehGratisTotal) {
@@ -5080,17 +5474,18 @@
             const elDesc = document.getElementById('modalPixDesc');
 
             if (tipo === 'agendamento') {
-                valorPagar = dados.valorCobrado !== undefined ? dados.valorCobrado : (dados.modalidade === 'total' ? dados.preco : 10.00);
+                const taxaDefinida = Number(window.configTaxaReserva?.valorTaxaReserva || 10.00);
+                valorPagar = dados.valorCobrado !== undefined ? dados.valorCobrado : (dados.modalidade === 'total' ? dados.precoFinal : taxaDefinida);
                 descricao = dados.modalidade === 'total'
                     ? `Pagamento Total (${dados.servico}) - EMAÚS Barbearia`
                     : `Taxa Reserva (${dados.servico}) - EMAÚS Barbearia`;
 
                 if (elTitulo) elTitulo.innerText = dados.modalidade === 'total' 
                     ? `Pagamento Total - R$ ${valorPagar.toFixed(2)}` 
-                    : "Taxa de Reserva - R$ 10,00";
+                    : `Taxa de Reserva - R$ ${valorPagar.toFixed(2)}`;
                 if (elDesc) elDesc.innerText = dados.modalidade === 'total'
                     ? `Pague R$ ${valorPagar.toFixed(2)} pelo valor integral do serviço para garantir seu horário.`
-                    : "Pague a taxa de reserva de R$ 10,00 para garantir seu horário instantaneamente.";
+                    : `Pague a taxa de reserva de R$ ${valorPagar.toFixed(2)} para garantir seu horário instantaneamente.`;
             } else {
                 valorPagar = dados.plano?.preco || 10.00;
                 descricao = `Assinatura ${dados.plano?.nome} - EMAÚS Barbearia`;
@@ -5819,7 +6214,17 @@
             const precoBase = optSelected ? parseFloat(optSelected.getAttribute('data-preco') || 40) : 40;
             const { extras, subtotal: subtotalExtras } = obterExtrasSelecionados();
             const { produtos: produtosCross, subtotal: subtotalProdutos } = obterProdutosCrossSellSelecionados();
-            const precoTotal = precoBase + subtotalExtras + subtotalProdutos;
+
+            // 0. Desconto de Promoção Ativa para a data
+            const promoInfo = obterPromocaoParaServicoEData(servicoBase, precoBase, data);
+            let precoServicoComDesconto = precoBase;
+            let valorDescontoPromocao = 0;
+            if (promoInfo && promoInfo.valorDesconto > 0) {
+                valorDescontoPromocao = promoInfo.valorDesconto;
+                precoServicoComDesconto = promoInfo.precoComDesconto;
+            }
+
+            const precoTotal = precoServicoComDesconto + subtotalExtras + subtotalProdutos;
             
             let nomeServicoCompleto = servicoBase;
             if (extras.length > 0) {
@@ -5846,7 +6251,7 @@
 
             if (aplicarFidelidade) {
                 if (configFidelidadeCliente.tipoRecompensa === 'servico_gratis') {
-                    valorDescontoFidelidade = Math.min(precoFinalCalculado, precoBase);
+                    valorDescontoFidelidade = Math.min(precoFinalCalculado, precoServicoComDesconto);
                 } else if (configFidelidadeCliente.tipoRecompensa === 'desconto_valor') {
                     const desc = Number(configFidelidadeCliente.valorDesconto || 15);
                     valorDescontoFidelidade = Math.min(precoFinalCalculado, desc);
@@ -5859,7 +6264,7 @@
 
             if (aplicarAniversario && precoFinalCalculado > 0) {
                 if (configAniversarioCliente.tipoRecompensa === 'servico_gratis') {
-                    valorDescontoAniversario = Math.min(precoFinalCalculado, precoBase);
+                    valorDescontoAniversario = Math.min(precoFinalCalculado, precoServicoComDesconto);
                 } else if (configAniversarioCliente.tipoRecompensa === 'desconto_valor') {
                     const descAniv = Number(configAniversarioCliente.valorDesconto || 20);
                     valorDescontoAniversario = Math.min(precoFinalCalculado, descAniv);
@@ -5877,8 +6282,11 @@
                 subtotalExtras: subtotalExtras,
                 produtos: produtosCross,
                 subtotalProdutos: subtotalProdutos,
+                precoOriginal: precoBase + subtotalExtras + subtotalProdutos,
                 preco: precoTotal, 
                 precoFinal: precoFinalCalculado,
+                promocao: promoInfo ? promoInfo.promocao.titulo : '',
+                descontoPromocao: valorDescontoPromocao,
                 descontoFidelidade: valorDescontoFidelidade,
                 isFidelidade: aplicarFidelidade && valorDescontoFidelidade > 0,
                 descricaoFidelidade: configFidelidadeCliente.descricaoRecompensa || '',
@@ -5890,14 +6298,15 @@
             };
         }
 
-        // Acionador do botão "Pagar Taxa de Reserva" (com abatimento proporcional se fidelidade ativa)
+        // Acionador do botão "Pagar Taxa de Reserva"
         const btnPagarTaxaReserva = document.getElementById('btnPagarTaxaReserva');
         if (btnPagarTaxaReserva) {
             btnPagarTaxaReserva.addEventListener('click', async () => {
                 const dadosForm = await validarFormAgendamento();
                 if (!dadosForm) return;
 
-                const taxaCobrar = Math.min(10.00, dadosForm.precoFinal);
+                const taxaConfig = Number(window.configTaxaReserva?.valorTaxaReserva || 10.00);
+                const taxaCobrar = Math.min(taxaConfig, dadosForm.precoFinal);
 
                 processarAberturaPagamento('agendamento', {
                     ...dadosForm,
@@ -6444,25 +6853,41 @@
                         lista.forEach(p => {
                             const estoqueNum = Number(p.estoque || 0);
                             const ehEsgotado = estoqueNum <= 0;
-                            const precoFormatado = Number(p.preco || 0).toFixed(2);
+                            const precoOriginalNum = Number(p.preco || 0);
+                            const precoFormatado = precoOriginalNum.toFixed(2);
                             const volumeBadge = p.volumeUnidade ? `<span class="bg-zinc-800 text-zinc-300 text-[10px] font-bold px-2 py-0.5 rounded border border-zinc-700">${p.volumeUnidade}</span>` : '';
 
+                            // Checa se há promoção ativa para o produto hoje
+                            const promoProd = obterPromocaoParaProduto(p.id, p.nome, precoOriginalNum);
+                            const temPromo = promoProd && promoProd.valorDesconto > 0;
+                            const precoExibir = temPromo ? promoProd.precoFinal : precoOriginalNum;
+
                             html += `
-                                <div class="bg-zinc-950 border ${ehEsgotado ? 'border-red-950/60 opacity-80' : 'border-zinc-800'} rounded-2xl p-4 flex flex-col justify-between space-y-3.5 hover:border-zinc-700 transition shadow-lg relative overflow-hidden">
+                                <div class="bg-zinc-950 border ${ehEsgotado ? 'border-red-950/60 opacity-80' : (temPromo ? 'border-amber-500/50 shadow-amber-950/20' : 'border-zinc-800')} rounded-2xl p-4 flex flex-col justify-between space-y-3.5 hover:border-zinc-700 transition shadow-lg relative overflow-hidden">
                                     
+                                    ${temPromo ? `<div class="absolute top-3 left-3 bg-amber-500 text-black font-black text-[9px] uppercase px-2.5 py-0.5 rounded-full tracking-wider shadow animate-pulse">🔥 -${promoProd.promocao.tipoDesconto === 'fixo' ? `R$ ${promoProd.valorDesconto.toFixed(2)}` : `${promoProd.promocao.valorDesconto}%`} OFF</div>` : ''}
+
                                     ${ehEsgotado ? '<div class="absolute top-3 right-3 bg-red-950 text-red-400 border border-red-800 font-extrabold text-[9px] uppercase px-2.5 py-0.5 rounded-full tracking-wider shadow">Esgotado</div>' : `<div class="absolute top-3 right-3 bg-green-950/80 text-green-400 border border-green-800 font-bold text-[9px] uppercase px-2 py-0.5 rounded-full tracking-wider">Disponível</div>`}
 
-                                    <div class="flex items-start gap-3">
+                                    <div class="flex items-start gap-3 ${temPromo ? 'pt-4 sm:pt-3' : ''}">
                                         <div class="w-16 h-16 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center overflow-hidden flex-shrink-0 text-2xl shadow">
                                             ${p.fotoUrl ? `<img src="${p.fotoUrl}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='🧴'" alt="${p.nome}">` : '🧴'}
                                         </div>
-                                        <div class="flex-1 min-w-0 pr-10">
+                                        <div class="flex-1 min-w-0 pr-8">
                                             <div class="flex items-center gap-1.5 flex-wrap">
                                                 <h4 class="font-bold text-white text-sm truncate">${p.nome}</h4>
                                                 ${volumeBadge}
                                             </div>
                                             <p class="text-[11px] text-zinc-400 line-clamp-2 mt-1 leading-snug">${p.descricao || 'Produto oficial EMAÚS Barbearia.'}</p>
-                                            <p class="text-sm font-extrabold text-dourado mt-1.5">R$ ${precoFormatado}</p>
+                                            
+                                            ${temPromo ? `
+                                                <div class="flex items-baseline gap-1.5 mt-1.5">
+                                                    <span class="line-through text-xs text-zinc-500 font-mono">R$ ${precoFormatado}</span>
+                                                    <p class="text-sm font-extrabold text-green-400 font-mono">R$ ${precoExibir.toFixed(2)}</p>
+                                                </div>
+                                            ` : `
+                                                <p class="text-sm font-extrabold text-dourado mt-1.5">R$ ${precoFormatado}</p>
+                                            `}
                                         </div>
                                     </div>
 
@@ -6472,7 +6897,7 @@
                                         </button>
                                     ` : `
                                         <button type="button" onclick="iniciarCompraProduto('${p.id}')" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-2.5 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-1.5">
-                                            <span>🛍️</span> Comprar
+                                            <span>🛍️</span> Comprar ${temPromo ? `<span class="text-[10px] bg-black/30 px-1.5 py-0.5 rounded font-bold ml-1">R$ ${precoExibir.toFixed(2)}</span>` : ''}
                                         </button>
                                     `}
                                 </div>
@@ -6496,15 +6921,23 @@
                             const precoNum = Number(p.preco || 0);
                             const fotoUrl = p.fotoUrl || '';
 
+                            // Aplica promoção no cross-sell
+                            const promoCross = obterPromocaoParaProduto(p.id, p.nome, precoNum);
+                            const temPromoCross = promoCross && promoCross.valorDesconto > 0;
+                            const precoFinalCross = temPromoCross ? promoCross.precoFinal : precoNum;
+
                             htmlCross += `
-                                <div class="item-produto-cross bg-zinc-900/90 border border-zinc-800 rounded-xl p-3 flex flex-col justify-between gap-2.5 transition hover:border-zinc-700 shadow-sm" data-id="${p.id}" data-nome="${p.nome}" data-preco="${precoNum}" data-volume="${p.volumeUnidade || ''}" data-estoque="${estoque}">
+                                <div class="item-produto-cross bg-zinc-900/90 border ${temPromoCross ? 'border-amber-500/40' : 'border-zinc-800'} rounded-xl p-3 flex flex-col justify-between gap-2.5 transition hover:border-zinc-700 shadow-sm relative" data-id="${p.id}" data-nome="${p.nome}" data-preco="${precoFinalCross}" data-volume="${p.volumeUnidade || ''}" data-estoque="${estoque}">
                                     <div class="flex items-start justify-between gap-2">
                                         <div class="flex items-center gap-2.5 min-w-0">
                                             <div class="w-9 h-9 rounded-lg bg-black border border-zinc-800 flex items-center justify-center overflow-hidden flex-shrink-0 text-base shadow-inner">
                                                 ${fotoUrl ? `<img src="${fotoUrl}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='🧴'" alt="${p.nome}">` : '🧴'}
                                             </div>
                                             <div class="min-w-0">
-                                                <h5 class="font-bold text-white text-xs truncate">${p.nome}</h5>
+                                                <div class="flex items-center gap-1">
+                                                    <h5 class="font-bold text-white text-xs truncate">${p.nome}</h5>
+                                                    ${temPromoCross ? '<span class="bg-amber-500 text-black text-[9px] font-black px-1 rounded">PROMO</span>' : ''}
+                                                </div>
                                                 <div class="flex items-center gap-1.5 text-[10px] text-zinc-400">
                                                     <span>${p.volumeUnidade || 'Item'}</span>
                                                     <span>•</span>
@@ -6513,7 +6946,12 @@
                                             </div>
                                         </div>
                                         <div class="text-right flex-shrink-0">
-                                            <span class="font-bold text-dourado font-mono text-xs block">R$ ${precoNum.toFixed(2)}</span>
+                                            ${temPromoCross ? `
+                                                <span class="line-through text-[10px] text-zinc-500 font-mono block">R$ ${precoNum.toFixed(2)}</span>
+                                                <span class="font-bold text-green-400 font-mono text-xs block">R$ ${precoFinalCross.toFixed(2)}</span>
+                                            ` : `
+                                                <span class="font-bold text-dourado font-mono text-xs block">R$ ${precoNum.toFixed(2)}</span>
+                                            `}
                                             <span class="text-[9px] text-zinc-500">por un.</span>
                                         </div>
                                     </div>
@@ -6601,14 +7039,12 @@
         const viewProdDebito = document.getElementById('viewProdDebito');
 
         function alternarAbaProduto(aba) {
-            if (window.vibrarDispositivo) window.vibrarDispositivo('clique');
-            if (!viewProdPix || !viewProdCredito || !viewProdDebito) return;
-            viewProdPix.classList.add('hidden');
-            viewProdCredito.classList.add('hidden');
-            viewProdDebito.classList.add('hidden');
+            const classAtiva = "flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition cursor-pointer border border-dourado bg-dourado text-black shadow-md";
+            const classInativa = "flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition cursor-pointer border border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:text-white";
 
-            const classAtiva = "flex-1 pb-2 font-bold text-[11px] sm:text-xs text-dourado border-b-2 border-dourado uppercase transition cursor-pointer flex items-center justify-center gap-1";
-            const classInativa = "flex-1 pb-2 font-bold text-[11px] sm:text-xs text-zinc-500 uppercase transition cursor-pointer flex items-center justify-center gap-1 hover:text-zinc-300";
+            if (viewProdPix) viewProdPix.classList.add('hidden');
+            if (viewProdCredito) viewProdCredito.classList.add('hidden');
+            if (viewProdDebito) viewProdDebito.classList.add('hidden');
 
             if (tabProdPix) tabProdPix.className = classInativa;
             if (tabProdCredito) tabProdCredito.className = classInativa;
@@ -6642,6 +7078,13 @@
 
         if (btnFecharModalProdutoPix) btnFecharModalProdutoPix.addEventListener('click', fecharModalCompraProduto);
 
+        function obterPrecoUnitarioProduto(prod) {
+            if (!prod) return 0;
+            const original = Number(prod.preco || 0);
+            const promo = obterPromocaoParaProduto(prod.id, prod.nome, original);
+            return promo ? promo.precoFinal : original;
+        }
+
         window.iniciarCompraProduto = async function(id) {
             const prod = listaProdutosClienteGlobal.find(p => p.id === id);
             if (!prod) return;
@@ -6666,7 +7109,16 @@
             }
             if (nomeEl) nomeEl.innerText = prod.nome;
             if (volumeEl) volumeEl.innerText = prod.volumeUnidade || '';
-            if (precoUnitEl) precoUnitEl.innerText = `R$ ${Number(prod.preco || 0).toFixed(2)}`;
+
+            const precoUnitFinal = obterPrecoUnitarioProduto(prod);
+            const promoProd = obterPromocaoParaProduto(prod.id, prod.nome, Number(prod.preco || 0));
+            if (precoUnitEl) {
+                if (promoProd && promoProd.valorDesconto > 0) {
+                    precoUnitEl.innerHTML = `<span class="line-through text-zinc-500 text-xs font-mono">R$ ${Number(prod.preco || 0).toFixed(2)}</span> <strong class="text-green-400 font-mono">R$ ${precoUnitFinal.toFixed(2)}</strong> <span class="bg-amber-500 text-black text-[9px] font-bold px-1.5 py-0.5 rounded ml-1">🔥 Promoção</span>`;
+                } else {
+                    precoUnitEl.innerText = `R$ ${precoUnitFinal.toFixed(2)}`;
+                }
+            }
             if (msgEl) msgEl.innerText = '';
 
             // Preenche dados do usuário logado se disponíveis
@@ -6706,7 +7158,8 @@
             if (quantidadeCompraProduto < 1) quantidadeCompraProduto = 1;
 
             if (labelQtdCompraProduto) labelQtdCompraProduto.innerText = quantidadeCompraProduto;
-            const totalBase = Number(produtoSelecionadoCompra.preco || 0) * quantidadeCompraProduto;
+            const precoUnitFinal = obterPrecoUnitarioProduto(produtoSelecionadoCompra);
+            const totalBase = precoUnitFinal * quantidadeCompraProduto;
             if (labelTotalCompraProduto) labelTotalCompraProduto.innerText = `R$ ${totalBase.toFixed(2)}`;
 
             const totalCredito = configTaxaCartaoCredito > 0
@@ -7122,6 +7575,8 @@
         // Inicialização global de configurações e visibilidade de módulos
         try { 
             carregarConfiguracoesGerais(); 
+            carregarPromocoesAtivasCliente();
+            carregarConfigTaxaReservaCliente();
         } catch (e) { 
             console.warn("[EMAÚS:INIT] Erro ao carregar configurações gerais:", e); 
         }
