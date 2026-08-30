@@ -1565,62 +1565,17 @@
                             <p id="msgSalvarWhatsappBarbeiro" class="text-xs text-center font-medium min-h-[16px]"></p>
                         </div>
 
-                        <!-- OPÇÃO 1: CONEXÃO POR CÓDIGO DE 8 DÍGITOS (DIRETO NO CELULAR / SEM CÂMERA) -->
+                        <!-- BLOCO: CONEXÃO POR QR CODE -->
                         <div class="pt-5 border-t border-zinc-800/80 space-y-4">
                             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                                 <div>
                                     <h4 class="text-xs font-bold uppercase text-amber-400 flex items-center gap-1.5">
-                                        <svg class="w-4 h-4 text-[#D4AF37]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                                        <span>Opção 1: Conectar por Código de 8 Dígitos (Sem Câmera)</span>
-                                    </h4>
-                                    <p class="text-[11px] text-zinc-400">Gere um código de 8 dígitos e digite no WhatsApp diretamente pelo seu aparelho.</p>
-                                </div>
-                                <button id="btnGerarCodigoPareamento" type="button" class="bg-amber-500 hover:bg-amber-600 text-black font-extrabold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition cursor-pointer shadow-lg flex items-center gap-1.5 whitespace-nowrap">
-                                    <svg class="w-4 h-4 fill-current flex-shrink-0" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                                    <span>Gerar Código</span>
-                                </button>
-                            </div>
-
-                            <!-- Exibição do Código de Pareamento -->
-                            <div id="boxCodigoPareamentoExibicao" class="hidden p-5 rounded-2xl bg-black border border-amber-500/60 text-center space-y-3.5 animate-fade-in shadow-2xl">
-                                <span class="text-[10px] font-bold text-amber-400 uppercase tracking-widest bg-amber-950/80 px-3 py-1 rounded-full border border-amber-600/50">
-                                    Seu Código de Pareamento
-                                </span>
-
-                                <div class="flex items-center justify-center gap-3">
-                                    <span id="textoCodigoPareamento" class="font-mono text-2xl sm:text-3xl font-black text-dourado tracking-widest bg-zinc-900 px-6 py-3 rounded-2xl border border-zinc-700 select-all shadow-inner">
-                                        ---- ----
-                                    </span>
-                                    <button id="btnCopiarCodigoPareamento" type="button" class="bg-zinc-800 hover:bg-zinc-700 text-dourado p-3.5 rounded-2xl border border-zinc-700 transition cursor-pointer" title="Copiar Código">
-                                        <svg class="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
-                                    </button>
-                                </div>
-                                <p id="msgCopiadoCodigo" class="text-[11px] text-green-400 font-bold min-h-[14px]"></p>
-
-                                <div class="bg-zinc-900/90 p-4 rounded-xl border border-zinc-700 text-left space-y-2 text-xs text-zinc-300">
-                                    <p class="font-bold text-amber-400 text-[11px] uppercase">📖 Como digitar no seu WhatsApp:</p>
-                                    <ol class="list-decimal list-inside space-y-1.5 text-[11px] text-zinc-300">
-                                        <li>Abra o <strong>WhatsApp</strong> no seu celular.</li>
-                                        <li>Acesse <strong>Aparelhos Conectados</strong> > <strong>Conectar um aparelho</strong>.</li>
-                                        <li>Toque em <strong>Conectar com número de telefone</strong> na parte inferior da tela.</li>
-                                        <li>Digite o código de 8 dígitos acima. <strong>Pronto!</strong></li>
-                                    </ol>
-                                </div>
-                            </div>
-                            <p id="msgCodigoPareamentoStatus" class="text-xs text-center font-medium min-h-[16px]"></p>
-                        </div>
-
-                        <!-- OPÇÃO 2: CONEXÃO POR QR CODE (COM CÂMERA) -->
-                        <div class="pt-5 border-t border-zinc-800/80 space-y-4">
-                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                                <div>
-                                    <h4 class="text-xs font-bold uppercase text-zinc-300 flex items-center gap-1.5">
                                         <svg class="w-4 h-4 text-[#D4AF37]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 3h3m0 0h3m-3 0v3m0-6v3"/></svg>
-                                        <span>Opção 2: Conectar por QR Code (Com Câmera)</span>
+                                        <span>Ativar Robô no WhatsApp (Ler QR Code)</span>
                                     </h4>
-                                    <p class="text-[11px] text-zinc-400">Gere um QR Code e escaneie com a câmera do seu celular.</p>
+                                    <p class="text-[11px] text-zinc-400">Gere o QR Code e escaneie com a câmera do seu celular no WhatsApp.</p>
                                 </div>
-                                <button id="btnGerarQrCode" type="button" class="bg-zinc-800 hover:bg-zinc-700 text-white font-extrabold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition cursor-pointer border border-zinc-700 flex items-center gap-1.5 whitespace-nowrap">
+                                <button id="btnGerarQrCode" type="button" class="bg-amber-500 hover:bg-amber-600 text-black font-extrabold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition cursor-pointer shadow-lg flex items-center gap-1.5 whitespace-nowrap">
                                     <svg class="w-4 h-4 fill-current flex-shrink-0" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                                     <span>Gerar QR Code</span>
                                 </button>
@@ -7276,15 +7231,15 @@
                     }
                 } else if (data.status === 'qr_ready' || data.status === 'connecting') {
                     if (icon) icon.className = "w-3 h-3 rounded-full bg-amber-400 animate-pulse";
-                    if (subtexto) subtexto.innerText = "Robô aguardando ativação por código no WhatsApp";
+                    if (subtexto) subtexto.innerText = "Robô aguardando leitura do QR Code no WhatsApp";
                     if (badge) {
                         badge.className = "text-[10px] font-bold uppercase px-2.5 py-1 rounded bg-amber-950 text-amber-300 border border-amber-700";
-                        badge.innerText = "⚠️ Ativação Pendente";
+                        badge.innerText = "⚠️ Leitura de QR Pendente";
                     }
                     if (btnDesconectar) btnDesconectar.classList.add('hidden');
                 } else {
                     if (icon) icon.className = "w-3 h-3 rounded-full bg-zinc-600";
-                    if (subtexto) subtexto.innerText = "Robô desconectado. Clique em 'Gerar Código' acima.";
+                    if (subtexto) subtexto.innerText = "Robô desconectado. Clique em 'Gerar QR Code' acima.";
                     if (badge) {
                         badge.className = "text-[10px] font-bold uppercase px-2.5 py-1 rounded bg-zinc-800 text-zinc-400 border border-zinc-700";
                         badge.innerText = "Desconectado";
@@ -7307,91 +7262,14 @@
                     });
                     if (pollingRoboCentralInterval) clearInterval(pollingRoboCentralInterval);
                     await carregarStatusWhatsAppBot();
-                    alert("WhatsApp desconectado com sucesso! Agora você pode digitar o novo número e clicar em 'Gerar Código'.");
+                    alert("WhatsApp desconectado com sucesso! Agora você pode clicar em 'Gerar QR Code' para conectar um novo aparelho.");
                 } catch (err) {
                     alert("Erro ao desconectar: " + err.message);
                 }
             }
         });
 
-        // 1. Gerar Código de Pareamento de 8 dígitos (sem câmera)
-        document.getElementById('btnGerarCodigoPareamento')?.addEventListener('click', async () => {
-            const btn = document.getElementById('btnGerarCodigoPareamento');
-            const input = document.getElementById('inputWhatsappBarbeiroPainel');
-            const boxCodigo = document.getElementById('boxCodigoPareamentoExibicao');
-            const textoCodigo = document.getElementById('textoCodigoPareamento');
-            const msgStatus = document.getElementById('msgCodigoPareamentoStatus');
-
-            const raw = input ? input.value.replace(/\D/g, '') : (whatsAppNumeroAtivo || '');
-
-            if (!raw || raw.length < 10) {
-                if (msgStatus) {
-                    msgStatus.className = "text-xs text-center font-medium text-red-400";
-                    msgStatus.innerText = "Digite seu número com DDD no campo acima para gerar o código.";
-                }
-                return;
-            }
-
-            let numeroFinal = raw;
-            if (!numeroFinal.startsWith('55') && (numeroFinal.length === 10 || numeroFinal.length === 11)) {
-                numeroFinal = '55' + numeroFinal;
-            }
-
-            if (btn) {
-                btn.disabled = true;
-                btn.innerHTML = `<span>⏳ Gerando Código...</span>`;
-            }
-            if (msgStatus) {
-                msgStatus.className = "text-xs text-center font-medium text-amber-300";
-                msgStatus.innerText = "Solicitando código de 8 dígitos aos servidores do WhatsApp...";
-            }
-
-            try {
-                const backendUrl = getBackendUrlAtivo();
-                const res = await fetch(`${backendUrl}/api/whatsapp/codigo-pareamento`, {
-                    method: 'POST',
-                    headers: await getAdminAuthHeaders(),
-                    body: JSON.stringify({ telefone: numeroFinal })
-                });
-                const data = await res.json();
-
-                if (data.success && data.pairingCode) {
-                    if (textoCodigo) textoCodigo.innerText = data.pairingCode;
-                    if (boxCodigo) boxCodigo.classList.remove('hidden');
-                    if (msgStatus) {
-                        msgStatus.className = "text-xs text-center font-bold text-green-400";
-                        msgStatus.innerText = `✅ Código gerado! Digite no seu WhatsApp em Aparelhos Conectados > Conectar com número.`;
-                    }
-                    if (window.vibrarDispositivo) window.vibrarDispositivo('sucesso');
-
-                    if (pollingRoboCentralInterval) clearInterval(pollingRoboCentralInterval);
-                    pollingRoboCentralInterval = setInterval(carregarStatusWhatsAppBot, 3000);
-                } else if (data.status === 'connected') {
-                    if (msgStatus) {
-                        msgStatus.className = "text-xs text-center font-bold text-green-400";
-                        msgStatus.innerText = "✅ WhatsApp já está conectado e pronto para uso!";
-                    }
-                    await carregarStatusWhatsAppBot();
-                } else {
-                    if (msgStatus) {
-                        msgStatus.className = "text-xs text-center font-medium text-red-400";
-                        msgStatus.innerText = "Erro ao gerar código: " + (data.error || 'Tente novamente em instantes.');
-                    }
-                }
-            } catch (err) {
-                if (msgStatus) {
-                    msgStatus.className = "text-xs text-center font-medium text-red-400";
-                    msgStatus.innerText = "Erro de conexão: " + err.message;
-                }
-            } finally {
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = `<span>⚡ Gerar Código</span>`;
-                }
-            }
-        });
-
-        // 1b. Gerar QR Code para conectar via câmera
+        // Gerar QR Code para conectar via câmera
         document.getElementById('btnGerarQrCode')?.addEventListener('click', async () => {
             const btn = document.getElementById('btnGerarQrCode');
             const boxQr = document.getElementById('boxQrCodeExibicao');
@@ -7461,36 +7339,6 @@
                 if (btn) {
                     btn.disabled = false;
                     btn.innerHTML = `<span>⚡ Gerar QR Code</span>`;
-                }
-            }
-        });
-
-        // 2. Copiar Código de Pareamento
-        document.getElementById('btnCopiarCodigoPareamento')?.addEventListener('click', async () => {
-            const textoCodigo = document.getElementById('textoCodigoPareamento');
-            const msgCopiado = document.getElementById('msgCopiadoCodigo');
-            const code = textoCodigo ? textoCodigo.innerText.trim() : '';
-
-            if (code && code !== '---- ----') {
-                try {
-                    await navigator.clipboard.writeText(code);
-                    if (msgCopiado) {
-                        msgCopiado.innerText = "✅ Código copiado para a área de transferência!";
-                        setTimeout(() => { if (msgCopiado) msgCopiado.innerText = ""; }, 3000);
-                    }
-                    if (window.vibrarDispositivo) window.vibrarDispositivo('copiar');
-                } catch (e) {
-                    // Fallback
-                    const ta = document.createElement('textarea');
-                    ta.value = code;
-                    document.body.appendChild(ta);
-                    ta.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(ta);
-                    if (msgCopiado) {
-                        msgCopiado.innerText = "✅ Código copiado!";
-                        setTimeout(() => { if (msgCopiado) msgCopiado.innerText = ""; }, 3000);
-                    }
                 }
             }
         });
