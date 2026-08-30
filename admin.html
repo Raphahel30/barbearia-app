@@ -1646,7 +1646,7 @@
                     <div class="card-dark p-5 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
                         <div class="flex flex-col sm:flex-row gap-3 items-center justify-between">
                             <div class="w-full sm:flex-1 relative">
-                                <input type="text" id="inputBuscaClienteGaleria" placeholder="🔍 Pesquisar cliente por nome ou WhatsApp para ver o álbum..." class="w-full px-4 py-3 bg-black rounded-xl border border-zinc-700 text-white text-xs font-semibold focus:outline-none focus:border-dourado transition pl-10">
+                                <input type="text" id="inputBuscaClienteGaleria" placeholder="Pesquisar cliente por nome ou WhatsApp para ver o álbum..." class="w-full px-4 py-3 bg-black rounded-xl border border-zinc-700 text-white text-xs font-semibold focus:outline-none focus:border-dourado transition pl-10">
                                 <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-xs text-zinc-500">🔍</span>
                             </div>
                             <span id="badgeTotalFotosCadastradas" class="text-xs text-dourado font-bold bg-dourado/10 px-3 py-2 rounded-xl border border-dourado/20 whitespace-nowrap">
@@ -8154,34 +8154,104 @@
         const labelClienteSelecionadoGaleria = document.getElementById('labelClienteSelecionadoGaleria');
         const btnLimparClienteSelecionadoGaleria = document.getElementById('btnLimparClienteSelecionadoGaleria');
 
+        function normalizarTextoBuscaCliente(str = '') {
+            return String(str || '')
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .trim();
+        }
+
+        function extrairChaveUnicaCliente(nome = '', telefone = '', userId = '') {
+            const telLimpo = String(telefone || '').replace(/\D/g, '');
+            // Se possui WhatsApp válido (com DDD), usa os últimos 9 dígitos como chave mestra
+            if (telLimpo.length >= 8) {
+                return 'tel_' + telLimpo.slice(-9);
+            }
+            // Se possui userId autenticado
+            if (userId && String(userId).length > 5) {
+                return 'uid_' + String(userId).trim();
+            }
+            // Fallback: normaliza o nome removendo acentos e espaços extras
+            return 'nome_' + normalizarTextoBuscaCliente(nome);
+        }
+
         function popularSugestoesClientesGaleria(termo = '') {
             if (!listaSugestoesClientesGaleria) return;
-            const t = termo.toLowerCase().trim();
+            const t = normalizarTextoBuscaCliente(termo);
             
             const clientesMap = new Map();
             
+            // 1. Clientes cadastrados na coleção usuarios
             if (mapaUsuariosAdmin && mapaUsuariosAdmin.size > 0) {
                 mapaUsuariosAdmin.forEach((u, k) => {
                     if (u && u.nome) {
                         const tel = u.telefone || '';
-                        const id = u.uid || u.id || k;
-                        clientesMap.set(id, { id, nome: u.nome, telefone: tel, fotoUrl: u.fotoUrl || '' });
+                        const id = u.uid || u.id || k || '';
+                        const chave = extrairChaveUnicaCliente(u.nome, tel, id);
+                        
+                        clientesMap.set(chave, {
+                            id: id,
+                            nome: u.nome.trim(),
+                            telefone: tel,
+                            fotoUrl: u.fotoUrl || ''
+                        });
                     }
                 });
             }
 
+            // 2. Clientes com histórico na agenda de agendamentos
             (window.listaAgendamentosMemoria || []).forEach(ag => {
                 const nome = ag.cliente || '';
                 const tel = ag.telefone || '';
-                const id = ag.userId || (tel ? tel.replace(/\D/g, '') : nome);
-                if (nome && !clientesMap.has(id)) {
-                    clientesMap.set(id, { id: ag.userId || '', nome, telefone: tel, fotoUrl: '' });
+                const id = ag.userId || '';
+                if (nome) {
+                    const chave = extrairChaveUnicaCliente(nome, tel, id);
+                    if (!clientesMap.has(chave)) {
+                        clientesMap.set(chave, {
+                            id: id,
+                            nome: nome.trim(),
+                            telefone: tel,
+                            fotoUrl: ''
+                        });
+                    } else {
+                        // Complementa dados se o existente estiver sem telefone ou sem id
+                        const existente = clientesMap.get(chave);
+                        if (!existente.telefone && tel) existente.telefone = tel;
+                        if (!existente.id && id) existente.id = id;
+                        if (nome.length > existente.nome.length) existente.nome = nome.trim();
+                    }
+                }
+            });
+
+            // 3. Clientes com fotos já registradas no histórico da galeria
+            (fotosGaleriaAdminCache || []).forEach(f => {
+                const nome = f.clienteNome || '';
+                const tel = f.clienteTelefone || '';
+                const id = f.clienteId || '';
+                if (nome) {
+                    const chave = extrairChaveUnicaCliente(nome, tel, id);
+                    if (!clientesMap.has(chave)) {
+                        clientesMap.set(chave, {
+                            id: id,
+                            nome: nome.trim(),
+                            telefone: tel,
+                            fotoUrl: ''
+                        });
+                    }
                 }
             });
 
             const lista = Array.from(clientesMap.values());
+            // Ordena alfabeticamente
+            lista.sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+
             const filtrados = t 
-                ? lista.filter(c => c.nome.toLowerCase().includes(t) || c.telefone.toLowerCase().includes(t))
+                ? lista.filter(c => {
+                    const n = normalizarTextoBuscaCliente(c.nome);
+                    const tel = String(c.telefone || '').replace(/\D/g, '');
+                    return n.includes(t) || tel.includes(t);
+                })
                 : lista.slice(0, 9);
 
             if (filtrados.length === 0) {
