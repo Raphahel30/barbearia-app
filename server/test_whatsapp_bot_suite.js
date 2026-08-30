@@ -87,7 +87,7 @@ async function runTests() {
     assert(statusApi.status === 200, 'GET /api/whatsapp/status responde 200 OK');
     assert(statusApi.data && typeof statusApi.data.status === 'string', 'GET /api/whatsapp/status retorna dados estruturados');
 
-    // 2.2 Rotas que exigem Autenticação Admin (verificar bloqueio sem token)
+    // 2.2 Rotas que exigem Autenticação Admin ou Chave Interna (verificar bloqueio sem token/chave)
     const rotasProtegidas = [
         { path: '/api/whatsapp/conectar', method: 'POST', body: {} },
         { path: '/api/whatsapp/codigo-pareamento', method: 'POST', body: { telefone: '11999999999' } },
@@ -97,7 +97,11 @@ async function runTests() {
         { path: '/api/whatsapp/lembrete-expiracao-plano', method: 'POST', body: { telefone: '11999999999' } },
         { path: '/api/whatsapp/disparar-lembretes-expiracao-lote', method: 'POST', body: { clientes: [] } },
         { path: '/api/whatsapp/notificar-aniversario', method: 'POST', body: { telefone: '11999999999' } },
-        { path: '/api/whatsapp/disparar-lembretes-4h', method: 'GET' }
+        { path: '/api/whatsapp/disparar-lembretes-4h', method: 'GET' },
+        { path: '/api/whatsapp/notificar-agendamento', method: 'POST', body: { cliente: 'Teste' } },
+        { path: '/api/whatsapp/notificar-cancelamento', method: 'POST', body: { cliente: 'Teste' } },
+        { path: '/api/whatsapp/notificar-compra-plano', method: 'POST', body: { cliente: 'Teste' } },
+        { path: '/api/whatsapp/notificar-compra-produto', method: 'POST', body: { cliente: 'Teste' } }
     ];
 
     for (const rota of rotasProtegidas) {
@@ -105,8 +109,13 @@ async function runTests() {
         assert(resProt.status === 401 || resProt.status === 403, `Segurança: ${rota.method} ${rota.path} bloqueia acesso não-autorizado (HTTP ${resProt.status})`);
     }
 
-    // 2.3 Testando Rotas de Notificação de Agendamento (Completas)
-    console.log('\n📲 3. Testando Rotas de Notificações de Negócio:');
+    // Headers autenticados via Chave Interna de Serviço
+    const internalHeaders = {
+        'x-internal-key': process.env.INTERNAL_SERVICE_KEY || '81c4e36048d120da4a23d25fb91065bc0549da7b776516b36760a5ff7768d157'
+    };
+
+    // 2.3 Testando Rotas de Notificação de Agendamento (Completas com x-internal-key)
+    console.log('\n📲 3. Testando Rotas de Notificações de Negócio (com x-internal-key):');
 
     // 3.1 Notificar Novo Agendamento Padrão
     const resAgendamento = await apiRequest('/api/whatsapp/notificar-agendamento', 'POST', {
@@ -119,7 +128,7 @@ async function runTests() {
         modalidade: 'reserva',
         whatsappBarbeiro: '11999998888',
         barbeiroNome: 'Aldo Rodrigues'
-    });
+    }, internalHeaders);
     assert(resAgendamento.status === 200, 'POST /api/whatsapp/notificar-agendamento responde 200 OK');
     assert(resAgendamento.data.success === true, 'POST /api/whatsapp/notificar-agendamento processa barbeiro e cliente com sucesso');
 
@@ -138,7 +147,7 @@ async function runTests() {
         ],
         whatsappBarbeiro: '11999998888',
         barbeiroNome: 'Aldo Rodrigues'
-    });
+    }, internalHeaders);
     assert(resAgendamentoProdutos.status === 200 && resAgendamentoProdutos.data.success === true, 'POST /api/whatsapp/notificar-agendamento com produtos no balcão processa com sucesso');
 
     // 3.3 Notificar Agendamento de Assinante Plano Mensal VIP
@@ -152,7 +161,7 @@ async function runTests() {
         isPlano: true,
         semanaPlano: 2,
         whatsappBarbeiro: '11999998888'
-    });
+    }, internalHeaders);
     assert(resAgendamentoVip.status === 200 && resAgendamentoVip.data.success === true, 'POST /api/whatsapp/notificar-agendamento para Assinante VIP processa com sucesso');
 
     // 3.4 Notificar Cancelamento de Agendamento
@@ -166,7 +175,7 @@ async function runTests() {
         estornoRealizado: true,
         valorEstornado: 10,
         whatsappBarbeiro: '11999998888'
-    });
+    }, internalHeaders);
     assert(resCancelamento.status === 200 && resCancelamento.data.success === true, 'POST /api/whatsapp/notificar-cancelamento processa com sucesso');
 
     // 3.5 Notificar Compra de Plano Mensal VIP
@@ -177,7 +186,7 @@ async function runTests() {
         preco: 129.90,
         dataFim: '2026-09-30',
         whatsappBarbeiro: '11999998888'
-    });
+    }, internalHeaders);
     assert(resCompraPlano.status === 200 && resCompraPlano.data.success === true, 'POST /api/whatsapp/notificar-compra-plano processa com sucesso');
 
     // 3.6 Notificar Compra de Produtos da Barbearia (Loja Física / Pix Online)
@@ -190,7 +199,7 @@ async function runTests() {
         valorTotal: 60,
         metodoPagamento: 'Pix',
         whatsappBarbeiro: '11999998888'
-    });
+    }, internalHeaders);
     assert(resCompraProduto.status === 200 && resCompraProduto.data.success === true, 'POST /api/whatsapp/notificar-compra-produto processa com sucesso');
 
     server.close(() => {

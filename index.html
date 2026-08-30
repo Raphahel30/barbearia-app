@@ -70,10 +70,30 @@
 
         /* Modais com altura dinâmica perfeita (100dvh) e scroll suave nativo */
         .modal-responsive-card {
-            max-height: 90dvh;
-            max-height: 90vh;
+            max-height: 90vh; /* fallback para browsers sem suporte a dvh */
+            max-height: 90dvh; /* valor moderno: desconsidera barra de endereço móvel */
             overscroll-behavior: contain;
             -webkit-overflow-scrolling: touch;
+        }
+
+        /* Bottom Navigation Bar (mobile) */
+        .bottom-nav-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 40;
+            background: rgba(9, 9, 11, 0.92);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(63, 63, 70, 0.8);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        /* Espaço extra no painel cliente para não sobrepor a bottom nav */
+        #painelCliente { padding-bottom: 72px; }
+        @media (min-width: 640px) {
+            #painelCliente { padding-bottom: 0; }
+            .bottom-nav-bar { display: none !important; }
         }
 
         /* Touch targets mínimos acessíveis */
@@ -558,6 +578,30 @@
             </button>
         </div>
 
+        <!-- BOTTOM NAV BAR (mobile only) -->
+        <nav id="mobileBottomNav" class="bottom-nav-bar sm:hidden" aria-label="Navegação principal">
+            <div class="flex">
+                <button id="mobileTabAgendamentos" type="button"
+                    class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 min-h-[56px] text-dourado transition cursor-pointer"
+                    aria-label="Agendamentos">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <span class="text-[10px] font-bold uppercase tracking-tight leading-none">Agendar</span>
+                </button>
+                <button id="mobileTabProdutos" type="button"
+                    class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 min-h-[56px] text-zinc-500 transition cursor-pointer"
+                    aria-label="Loja">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                    <span class="text-[10px] font-bold uppercase tracking-tight leading-none">Loja</span>
+                </button>
+                <button id="mobileTabPlanos" type="button"
+                    class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 min-h-[56px] text-zinc-500 transition cursor-pointer"
+                    aria-label="Planos VIP">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 18h18M4 7l4 4 4-6 4 6 4-4v10H4V7z"></path></svg>
+                    <span class="text-[10px] font-bold uppercase tracking-tight leading-none">Planos</span>
+                </button>
+            </div>
+        </nav>
+
         <div id="viewClienteAgendamentos" class="space-y-5 sm:space-y-6">
             <!-- CARD DO PLANO MENSAL ATIVO DO CLIENTE -->
             <div id="cardStatusVipAgendamento" class="hidden p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-amber-950/70 via-black to-zinc-950 border border-dourado/50 text-zinc-200 text-xs shadow-xl space-y-2.5 transition-all">
@@ -583,8 +627,8 @@
                 <p id="labelDescricaoSemanaVip" class="text-amber-200/90 text-[11px] leading-relaxed border-t border-zinc-800/80 pt-2"></p>
             </div>
 
-            <!-- CARD DE DESTAQUE: PRESENTE DE ANIVERSÁRIO (DASHBOARD) -->
-            <div id="cardDestaqueAniversarioDashboard" class="hidden p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-purple-950/80 via-black to-zinc-950 border border-purple-500/60 text-zinc-200 text-xs shadow-xl space-y-2 transition-all">
+            <!-- CARD DE DESTAQUE: PRESENTE DE ANIVERSÁRIO (OCULTO NA TELA DE AGENDAMENTOS - DISPONÍVEL APENAS EM MEU PERFIL) -->
+            <div id="cardDestaqueAniversarioDashboard" class="hidden" style="display: none !important;">
                 <div class="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
                     <div class="flex items-center gap-2.5 min-w-0">
                         <span class="text-xl animate-bounce flex-shrink-0">🎂</span>
@@ -2938,7 +2982,7 @@
                 return;
             } else {
                 if (cardPerfil) cardPerfil.classList.remove('hidden');
-                if (cardDash) cardDash.classList.remove('hidden');
+                if (cardDash) cardDash.classList.add('hidden'); // Oculto na tela de agendamentos — exibido apenas em Meu Perfil
             }
 
             const subtextoPerfil = document.getElementById('subtextoDataAniversarioPerfil');
@@ -5271,9 +5315,14 @@
                         const uDoc = await getDoc(doc(db, "usuarios", auth.currentUser.uid));
                         if (uDoc.exists()) telCliente = uDoc.data().telefone || "";
                     }
+                    const authHdrs = { 'Content-Type': 'application/json' };
+                    try {
+                        const tkn = auth?.currentUser ? await auth.currentUser.getIdToken() : null;
+                        if (tkn) authHdrs['Authorization'] = `Bearer ${tkn}`;
+                    } catch (_) {}
                     await fetch(`${getBackendUrlAtivo()}/api/whatsapp/notificar-cancelamento`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: authHdrs,
                         body: JSON.stringify({
                             cliente: cliente,
                             telefone: telCliente,
@@ -5467,9 +5516,14 @@
         // Função de envio de notificação 100% automática via WhatsApp Bot
         async function dispararNotificacaoAutomaticaWhatsApp(dados) {
             try {
+                const authHeaders = { 'Content-Type': 'application/json' };
+                try {
+                    const tkn = auth?.currentUser ? await auth.currentUser.getIdToken() : null;
+                    if (tkn) authHeaders['Authorization'] = `Bearer ${tkn}`;
+                } catch (_) {}
                 await fetch(`${getBackendUrlAtivo()}/api/whatsapp/notificar-agendamento`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: authHeaders,
                     body: JSON.stringify({
                         ...dados,
                         whatsappBarbeiro: MEU_WHATSAPP
@@ -6016,9 +6070,14 @@
 
                     // Dispara notificação automática de compra de plano no WhatsApp (Barbeiro + Cliente)
                     try {
+                        const authHdrsPlano = { 'Content-Type': 'application/json' };
+                        try {
+                            const tkn = auth?.currentUser ? await auth.currentUser.getIdToken() : null;
+                            if (tkn) authHdrsPlano['Authorization'] = `Bearer ${tkn}`;
+                        } catch (_) {}
                         fetch(`${getBackendUrlAtivo()}/api/whatsapp/notificar-compra-plano`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: authHdrsPlano,
                             body: JSON.stringify({
                                 cliente: nomeCliente,
                                 telefone: telefoneCliente,
@@ -7382,9 +7441,14 @@
 
                                     // 3. Notifica Barbeiro e Cliente no WhatsApp
                                     try {
+                                        const authHdrsP1 = { 'Content-Type': 'application/json' };
+                                        try {
+                                            const tkn = auth?.currentUser ? await auth.currentUser.getIdToken() : null;
+                                            if (tkn) authHdrsP1['Authorization'] = `Bearer ${tkn}`;
+                                        } catch (_) {}
                                         fetch(`${getBackendUrlAtivo()}/api/whatsapp/notificar-compra-produto`, {
                                             method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
+                                            headers: authHdrsP1,
                                             body: JSON.stringify({
                                                 cliente: nome,
                                                 telefone: telefone,
@@ -7549,9 +7613,14 @@
 
                     // 3. Notifica WhatsApp
                     try {
+                        const authHdrsP2 = { 'Content-Type': 'application/json' };
+                        try {
+                            const tkn = auth?.currentUser ? await auth.currentUser.getIdToken() : null;
+                            if (tkn) authHdrsP2['Authorization'] = `Bearer ${tkn}`;
+                        } catch (_) {}
                         fetch(`${getBackendUrlAtivo()}/api/whatsapp/notificar-compra-produto`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: authHdrsP2,
                             body: JSON.stringify({
                                 cliente: nome,
                                 telefone: telefone,
@@ -7637,6 +7706,55 @@
         } catch (e) { 
             console.warn("[EMAÚS:INIT] Erro ao carregar configurações gerais:", e); 
         }
+
+        // =============================================
+        // BOTTOM NAV BAR (mobile) — sincronização com abas desktop
+        // =============================================
+        (function setupMobileBottomNav() {
+            const mobileNav = document.getElementById('mobileBottomNav');
+            if (!mobileNav) return;
+
+            const mobileTabMap = [
+                { mobileId: 'mobileTabAgendamentos', desktopId: 'btnTabClienteAgendamentos' },
+                { mobileId: 'mobileTabProdutos',     desktopId: 'btnTabClienteProdutos' },
+                { mobileId: 'mobileTabPlanos',       desktopId: 'btnTabClientePlanos' }
+            ];
+
+            const ACTIVE_CLASSES   = ['text-dourado'];
+            const INACTIVE_CLASSES = ['text-zinc-500'];
+
+            function setMobileActive(activeMobileId) {
+                mobileTabMap.forEach(({ mobileId }) => {
+                    const btn = document.getElementById(mobileId);
+                    if (!btn) return;
+                    if (mobileId === activeMobileId) {
+                        btn.classList.remove(...INACTIVE_CLASSES);
+                        btn.classList.add(...ACTIVE_CLASSES);
+                    } else {
+                        btn.classList.remove(...ACTIVE_CLASSES);
+                        btn.classList.add(...INACTIVE_CLASSES);
+                    }
+                });
+            }
+
+            mobileTabMap.forEach(({ mobileId, desktopId }) => {
+                const mobileBtn  = document.getElementById(mobileId);
+                const desktopBtn = document.getElementById(desktopId);
+                if (!mobileBtn || !desktopBtn) return;
+
+                // Clique mobile → dispara aba desktop e atualiza estado visual
+                mobileBtn.addEventListener('click', () => {
+                    desktopBtn.click();
+                    setMobileActive(mobileId);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+
+                // Observa cliques nas abas desktop para sincronizar bottom nav
+                desktopBtn.addEventListener('click', () => {
+                    setMobileActive(mobileId);
+                });
+            });
+        })();
     </script>
 </body>
 </html>

@@ -1,6 +1,8 @@
+import dotenv from 'dotenv';
+dotenv.config(); // DEVE ser chamado ANTES de qualquer uso de process.env (inclusive Firebase Admin SDK)
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { MercadoPagoConfig, Payment, PaymentRefund } from 'mercadopago';
@@ -49,7 +51,7 @@ if (serviceAccount && serviceAccount.private_key) {
     }
 }
 
-dotenv.config();
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -158,7 +160,7 @@ async function verificarLembretes4hAgenda() {
         const docs = await new Promise((resolve, reject) => {
             const req = https.request({
                 hostname: 'firestore.googleapis.com',
-                path: `/v1/projects/${serviceAccount.project_id}/databases/(default)/documents/agendamentos?pageSize=100`,
+                path: `/v1/projects/${serviceAccount.project_id}/databases/(default)/documents/agendamentos?pageSize=300`,
                 method: 'GET',
                 headers: { 'Authorization': `Bearer ${token}` }
             }, (res) => {
@@ -383,13 +385,13 @@ async function isEmailAdmin(email, uid = null) {
     if (ADMIN_EMAILS.includes(emailLower)) return true;
 
     // Consulta dinâmica na coleção 'administradores' do Firestore
-    if (firebaseAdminDb) {
+    if (firebaseAdminFirestore) {
         try {
             if (uid) {
-                const docSnap = await firebaseAdminDb.collection('administradores').doc(uid).get();
+                const docSnap = await firebaseAdminFirestore.collection('administradores').doc(uid).get();
                 if (docSnap.exists) return true;
             }
-            const querySnap = await firebaseAdminDb.collection('administradores')
+            const querySnap = await firebaseAdminFirestore.collection('administradores')
                 .where('email', '==', emailLower)
                 .limit(1)
                 .get();
@@ -506,6 +508,39 @@ async function verificarAdminMiddleware(req, res, next) {
         console.error('Erro no middleware de autenticação admin:', err);
         return res.status(500).json({ success: false, error: 'Erro interno ao validar credenciais.' });
     }
+}
+
+// Middleware de Chave Interna de Serviço para rotas de notificação automática
+// Aceita chamadas com header X-Internal-Key que batem com a variável de ambiente INTERNAL_SERVICE_KEY
+// Garante que apenas o próprio sistema (frontend) pode disparar notificações, bloqueando abusos externos
+async function verificarInternalKeyMiddleware(req, res, next) {
+    const INTERNAL_KEY = process.env.INTERNAL_SERVICE_KEY || '';
+
+    // Se não há chave configurada, exige que seja um admin autenticado
+    if (!INTERNAL_KEY) {
+        return verificarAdminMiddleware(req, res, next);
+    }
+
+    const providedKey = req.headers['x-internal-key'] || '';
+    if (providedKey && providedKey === INTERNAL_KEY) {
+        return next();
+    }
+
+    // Fallback: aceita token Firebase válido (admin ou usuário comum)
+    const authHeader = req.headers['authorization'] || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
+    if (token) {
+        const decoded = await validarTokenFirebaseAdmin(token);
+        if (decoded && decoded.email) {
+            req.authUser = decoded;
+            return next();
+        }
+    }
+
+    return res.status(401).json({
+        success: false,
+        error: 'Acesso negado. Chave de serviço ou token de autenticação inválido.'
+    });
 }
 
 // Middleware para Estorno: Permite Admin OU Cliente Autenticado no Firebase
@@ -1536,7 +1571,8 @@ app.post('/api/webhook', async (req, res) => {
 
                 if (expectedHmac !== v1) {
                     console.warn(`[Webhook] Assinatura inválida — possível requisição não autorizada. x-request-id: ${xRequestId}`);
-                    return res.status(200).json({ received: false, reason: 'invalid_signature' });
+                    // Retorna 401 para o Mercado Pago reenviar o webhook na próxima tentativa
+                    return res.status(401).json({ received: false, reason: 'invalid_signature' });
                 }
             }
         }
@@ -1655,7 +1691,7 @@ async function resolverNumeroBarbeiro(customNumber) {
 }
 
 // Notificação automática de novo agendamento (Barbeiro + Cliente)
-app.post('/api/whatsapp/notificar-agendamento', async (req, res) => {
+app.post('/api/whatsapp/notificar-agendamento', verificarInternalKeyMiddleware, async (req, res) => {
     try {
         const { 
             cliente, 
@@ -1831,7 +1867,7 @@ app.post('/api/whatsapp/disparar-lembretes-expiracao-lote', verificarAdminMiddle
 });
 
 // Notificação Instantânea de Cancelamento de Agendamento (Barbeiro + Cliente)
-app.post('/api/whatsapp/notificar-cancelamento', async (req, res) => {
+app.post('/api/whatsapp/notificar-cancelamento', verificarInternalKeyMiddleware, async (req, res) => {
     try {
         const {
             cliente,
@@ -1898,7 +1934,7 @@ app.post('/api/whatsapp/notificar-cancelamento', async (req, res) => {
 });
 
 // Notificação Instantânea de Compra de Pacote Mensal VIP (Barbeiro + Cliente)
-app.post('/api/whatsapp/notificar-compra-plano', async (req, res) => {
+app.post('/api/whatsapp/notificar-compra-plano', verificarInternalKeyMiddleware, async (req, res) => {
     try {
         const { cliente, telefone, nomePlano, preco, dataFim, whatsappBarbeiro } = req.body;
         const numBarbeiro = await resolverNumeroBarbeiro(whatsappBarbeiro);
@@ -1940,7 +1976,7 @@ app.post('/api/whatsapp/notificar-compra-plano', async (req, res) => {
 });
 
 // Notificação Instantânea de Compra de Produtos da Barbearia (Barbeiro + Cliente)
-app.post('/api/whatsapp/notificar-compra-produto', async (req, res) => {
+app.post('/api/whatsapp/notificar-compra-produto', verificarInternalKeyMiddleware, async (req, res) => {
     try {
         const {
             cliente,
@@ -2038,7 +2074,8 @@ app.all('/api/whatsapp/disparar-lembretes-4h', verificarAdminMiddleware, async (
 // ==========================================
 // ROTAS DE GALERIA DE CORTES (FIREBASE ADMIN)
 // ==========================================
-app.post('/api/galeria/salvar', async (req, res) => {
+// Salvar foto requer token de usuário autenticado (barbeiro logado no painel)
+app.post('/api/galeria/salvar', verificarAuthEstornoMiddleware, async (req, res) => {
     try {
         const { clienteId, clienteNome, clienteTelefone, barbeiroNome, estiloCorte, observacao, fotoUrl } = req.body;
         if (!clienteNome || !fotoUrl) {
@@ -2104,7 +2141,7 @@ app.get('/api/galeria/listar', async (req, res) => {
     }
 });
 
-app.post('/api/galeria/excluir', async (req, res) => {
+app.post('/api/galeria/excluir', verificarAdminMiddleware, async (req, res) => {
     try {
         const { id } = req.body;
         if (!id) return res.status(400).json({ success: false, error: 'ID da foto é obrigatório.' });

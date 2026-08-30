@@ -23,8 +23,8 @@ service cloud.firestore {
     }
 
     match /agendamentos/{agendamentoId} {
-      // Leitura permitida para checagem de horários na grade e painéis
-      allow read: if true;
+      // Leitura restrita a usuários autenticados (LGPD: protege nome, telefone e e-mail dos clientes)
+      allow read: if isAuthenticated();
       allow create: if isAuthenticated();
       // Apenas o próprio cliente dono do agendamento ou administrador pode alterar/cancelar
       allow update, delete: if isAuthenticated() && (
@@ -109,17 +109,17 @@ service cloud.firestore {
     match /promocoes/{promocaoId} {
       // Leitura pública para aplicação de descontos nos agendamentos e produtos
       allow read: if true;
-      // Criação, alteração e exclusão permitidas para administradores / usuários autenticados
-      allow write: if isAuthenticated();
+      // Criação, alteração e exclusão restritas a administradores (evita promoções falsas)
+      allow write: if isAdmin();
     }
 
     // Coleções de Controle Financeiro / Gastos / Despesas (Acesso exclusivo para Administradores)
     match /gastos/{gastoId} {
-      allow read, write: if isAuthenticated();
+      allow read, write: if isAdmin();
     }
 
     match /despesas/{despesaId} {
-      allow read, write: if isAuthenticated();
+      allow read, write: if isAdmin();
     }
   }
 }

@@ -25,3 +25,5 @@ services:
         value: https://barbearia-app-1bf5.onrender.com
       - key: APP_SITE_URL
         value: https://agendamento-barbearia-e8ffb.web.app
+      - key: INTERNAL_SERVICE_KEY
+        sync: false
