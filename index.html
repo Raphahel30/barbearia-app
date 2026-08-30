@@ -583,6 +583,37 @@
                 <p id="labelDescricaoSemanaVip" class="text-amber-200/90 text-[11px] leading-relaxed border-t border-zinc-800/80 pt-2"></p>
             </div>
 
+            <!-- CARD DE DESTAQUE: PRESENTE DE ANIVERSÁRIO (DASHBOARD) -->
+            <div id="cardDestaqueAniversarioDashboard" class="hidden p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-purple-950/80 via-black to-zinc-950 border border-purple-500/60 text-zinc-200 text-xs shadow-xl space-y-2 transition-all">
+                <div class="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="text-xl animate-bounce flex-shrink-0">🎂</span>
+                        <div class="min-w-0">
+                            <h4 class="text-xs font-bold text-purple-300 uppercase tracking-wide truncate">Presente de Aniversário</h4>
+                            <p id="textoResumoAniversarioDashboard" class="text-[11px] text-zinc-300 leading-snug"></p>
+                        </div>
+                    </div>
+                    <span id="badgeDestaqueAniversarioDashboard" class="text-[9px] font-extrabold px-2.5 py-1 rounded-full bg-purple-600 text-white uppercase flex-shrink-0 whitespace-nowrap shadow"></span>
+                </div>
+            </div>
+
+            <!-- CARD DE DESTAQUE: CARTÃO FIDELIDADE (DASHBOARD) -->
+            <div id="cardDestaqueFidelidadeDashboard" class="hidden p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-zinc-950 via-zinc-900 to-black border border-amber-500/30 text-zinc-200 text-xs shadow-xl space-y-2.5 transition-all">
+                <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="text-lg flex-shrink-0">✂️</span>
+                        <div class="min-w-0">
+                            <h4 class="text-xs font-bold text-dourado uppercase tracking-wide truncate">Programa de Fidelidade</h4>
+                            <p id="textoResumoFidelidadeDashboard" class="text-[11px] text-zinc-400 truncate"></p>
+                        </div>
+                    </div>
+                    <span id="badgeFidelidadeDashboard" class="text-[9px] font-extrabold px-2.5 py-1 rounded-full bg-amber-950 text-dourado border border-amber-500/40 flex-shrink-0 whitespace-nowrap"></span>
+                </div>
+                <div class="w-full bg-zinc-900 rounded-full h-1.5 overflow-hidden border border-zinc-800">
+                    <div id="barraProgressoFidelidadeDashboard" class="bg-gradient-to-r from-amber-500 to-yellow-400 h-full rounded-full transition-all duration-500" style="width: 0%;"></div>
+                </div>
+            </div>
+
             <div class="bg-black p-4 rounded-xl sm:rounded-2xl border border-zinc-800 space-y-3">
                 <h2 class="text-sm sm:text-md font-semibold text-dourado uppercase tracking-wide">Meus Agendamentos Ativos</h2>
                 <div id="meusAgendamentosLista" class="space-y-2 text-sm text-zinc-300">

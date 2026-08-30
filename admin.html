@@ -8184,7 +8184,6 @@
             const icon = document.getElementById('iconStatusRoboCentral');
             const subtexto = document.getElementById('subtextoStatusRoboCentral');
             const badge = document.getElementById('badgeStatusRoboCentral');
-            const boxCodigo = document.getElementById('boxCodigoPareamentoExibicao');
             const btnDesconectar = document.getElementById('btnDesconectarRoboWa');
 
             try {
@@ -8200,9 +8199,6 @@
                         badge.innerText = "🟢 Online 24h";
                     }
                     if (btnDesconectar) btnDesconectar.classList.remove('hidden');
-                    if (boxCodigo && !boxCodigo.classList.contains('hidden')) {
-                        boxCodigo.classList.add('hidden');
-                    }
                     if (pollingRoboCentralInterval) {
                         clearInterval(pollingRoboCentralInterval);
                         pollingRoboCentralInterval = null;
