@@ -115,11 +115,11 @@ service cloud.firestore {
 
     // Coleções de Controle Financeiro / Gastos / Despesas (Acesso exclusivo para Administradores)
     match /gastos/{gastoId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isAuthenticated();
     }
 
     match /despesas/{despesaId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isAuthenticated();
     }
   }
 }

@@ -367,16 +367,16 @@
             <!-- 1.5 ABA: FATURAMENTO MENSAL & HISTÓRICO FINANCEIRO -->
             <section id="viewBilling" class="space-y-6 hidden">
                 <!-- Cabeçalho e Filtro de Mês/Ano -->
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-zinc-950/90 p-4 rounded-2xl border border-zinc-800">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-zinc-950/90 p-4 rounded-2xl border border-zinc-800 shadow-xl">
                     <div>
                         <h2 class="text-xl font-bold text-white uppercase flex items-center gap-2">
-                            <span>💰</span> Faturamento & Caixa Mensal
+                            <span>💰</span> Faturamento & Fluxo de Caixa
                         </h2>
-                        <p class="text-xs text-zinc-400">Histórico financeiro consolidado de agendamentos, serviços adicionais, planos e estornos.</p>
+                        <p class="text-xs text-zinc-400">Controle financeiro consolidado: Faturamento Bruto, Gastos Operacionais e Lucro Líquido Real.</p>
                     </div>
 
                     <!-- Controles de Mês -->
-                    <div class="flex items-center gap-2 bg-black p-1.5 rounded-xl border border-zinc-800">
+                    <div class="flex items-center gap-2 bg-black p-1.5 rounded-xl border border-zinc-800 flex-wrap">
                         <button id="btnMesAnteriorFaturamento" class="px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-lg text-xs font-bold transition cursor-pointer" title="Mês Anterior">
                             ◀
                         </button>
@@ -408,53 +408,160 @@
                     </div>
                 </div>
 
-                <!-- 4 Cards de Métricas do Mês -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="card-dark p-5 rounded-2xl border border-green-900/60 bg-gradient-to-br from-green-950/20 to-black space-y-1 shadow-lg">
-                        <span class="text-[11px] font-bold uppercase text-green-400 tracking-wider">Faturamento (Mês)</span>
-                        <h3 id="statMesFaturamentoLiquido" class="text-3xl font-extrabold text-green-400 font-mono">R$ 0,00</h3>
-                        <p class="text-[10px] text-zinc-500">Entradas aprovadas menos estornos</p>
+                <!-- 6 Cards de Métricas Financeiras Consolidadas -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
+                    <!-- 1. Faturamento Bruto -->
+                    <div class="card-dark p-4 rounded-2xl border border-blue-900/50 bg-gradient-to-br from-blue-950/20 to-black space-y-1 shadow-lg">
+                        <span class="text-[10px] font-bold uppercase text-blue-400 tracking-wider">Faturamento Bruto</span>
+                        <h3 id="statMesFaturamentoBruto" class="text-2xl font-extrabold text-blue-300 font-mono">R$ 0,00</h3>
+                        <p class="text-[10px] text-zinc-500">Total de entradas brutas</p>
                     </div>
 
-                    <div class="card-dark p-5 rounded-2xl border border-purple-900/60 bg-gradient-to-br from-purple-950/20 to-black space-y-1 shadow-lg">
+                    <!-- 2. Planos VIP -->
+                    <div class="card-dark p-4 rounded-2xl border border-purple-900/50 bg-gradient-to-br from-purple-950/20 to-black space-y-1 shadow-lg">
                         <div class="flex justify-between items-center">
-                            <span class="text-[11px] font-bold uppercase text-purple-300 tracking-wider">Planos Mensais Pagos</span>
-                            <span id="badgeMesQtdPlanos" class="text-[10px] bg-purple-900/80 text-purple-200 px-2 py-0.5 rounded font-bold">0 planos</span>
+                            <span class="text-[10px] font-bold uppercase text-purple-300 tracking-wider">Planos VIP</span>
+                            <span id="badgeMesQtdPlanos" class="text-[9px] bg-purple-900/80 text-purple-200 px-1.5 py-0.5 rounded font-bold">0 planos</span>
                         </div>
-                        <h3 id="statMesTotalPlanos" class="text-3xl font-extrabold text-purple-300 font-mono">R$ 0,00</h3>
-                        <p class="text-[10px] text-zinc-500">Receita de assinaturas VIP no mês</p>
+                        <h3 id="statMesTotalPlanos" class="text-2xl font-extrabold text-purple-300 font-mono">R$ 0,00</h3>
+                        <p class="text-[10px] text-zinc-500">Assinaturas do mês</p>
                     </div>
 
-                    <div class="card-dark p-5 rounded-2xl border border-amber-900/60 bg-gradient-to-br from-amber-950/20 to-black space-y-1 shadow-lg">
+                    <!-- 3. Agendamentos & Loja -->
+                    <div class="card-dark p-4 rounded-2xl border border-amber-900/50 bg-gradient-to-br from-amber-950/20 to-black space-y-1 shadow-lg">
                         <div class="flex justify-between items-center">
-                            <span class="text-[11px] font-bold uppercase text-amber-400 tracking-wider">Agendamentos & Extras</span>
-                            <span id="badgeMesQtdAgendamentos" class="text-[10px] bg-amber-900/80 text-amber-200 px-2 py-0.5 rounded font-bold">0 reservas</span>
+                            <span class="text-[10px] font-bold uppercase text-amber-400 tracking-wider">Serviços & Loja</span>
+                            <span id="badgeMesQtdAgendamentos" class="text-[9px] bg-amber-900/80 text-amber-200 px-1.5 py-0.5 rounded font-bold">0 reservas</span>
                         </div>
-                        <h3 id="statMesTotalAgendamentos" class="text-3xl font-extrabold text-amber-300 font-mono">R$ 0,00</h3>
-                        <p class="text-[10px] text-zinc-500">Taxas, serviços e extras recebidos</p>
+                        <h3 id="statMesTotalAgendamentos" class="text-2xl font-extrabold text-amber-300 font-mono">R$ 0,00</h3>
+                        <p class="text-[10px] text-zinc-500">Cortes, extras e produtos</p>
                     </div>
 
-                    <div class="card-dark p-5 rounded-2xl border border-red-900/60 bg-gradient-to-br from-red-950/20 to-black space-y-1 shadow-lg">
+                    <!-- 4. Estornos -->
+                    <div class="card-dark p-4 rounded-2xl border border-orange-900/50 bg-gradient-to-br from-orange-950/20 to-black space-y-1 shadow-lg">
                         <div class="flex justify-between items-center">
-                            <span class="text-[11px] font-bold uppercase text-red-400 tracking-wider">Estornos & Devoluções</span>
-                            <span id="badgeMesQtdEstornos" class="text-[10px] bg-red-900/80 text-red-200 px-2 py-0.5 rounded font-bold">0 estornos</span>
+                            <span class="text-[10px] font-bold uppercase text-orange-400 tracking-wider">Estornos</span>
+                            <span id="badgeMesQtdEstornos" class="text-[9px] bg-orange-900/80 text-orange-200 px-1.5 py-0.5 rounded font-bold">0 estornos</span>
                         </div>
-                        <h3 id="statMesTotalEstornos" class="text-3xl font-extrabold text-red-400 font-mono">R$ 0,00</h3>
-                        <p class="text-[10px] text-zinc-500">Devolvido no Mercado Pago ou cancelado</p>
+                        <h3 id="statMesTotalEstornos" class="text-2xl font-extrabold text-orange-400 font-mono">R$ 0,00</h3>
+                        <p class="text-[10px] text-zinc-500">Reembolsos processados</p>
+                    </div>
+
+                    <!-- 5. Gastos & Custos Operacionais -->
+                    <div class="card-dark p-4 rounded-2xl border border-red-900/60 bg-gradient-to-br from-red-950/20 to-black space-y-1 shadow-lg">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] font-bold uppercase text-red-400 tracking-wider">Gastos / Custos</span>
+                            <span id="badgeMesQtdGastos" class="text-[9px] bg-red-900/80 text-red-200 px-1.5 py-0.5 rounded font-bold">0 despesas</span>
+                        </div>
+                        <h3 id="statMesTotalGastos" class="text-2xl font-extrabold text-red-400 font-mono">R$ 0,00</h3>
+                        <p class="text-[10px] text-zinc-500">Despesas operacionais</p>
+                    </div>
+
+                    <!-- 6. Lucro Líquido Real (Destaque Principal) -->
+                    <div class="card-dark p-4 rounded-2xl border-2 border-green-500/80 bg-gradient-to-br from-green-950/40 via-black to-amber-950/20 space-y-1 shadow-xl relative overflow-hidden">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] font-black uppercase text-green-400 tracking-wider">Lucro Líquido Real</span>
+                            <span class="text-[9px] bg-green-500/20 text-green-300 border border-green-500/40 px-1.5 py-0.5 rounded-full font-bold">Real</span>
+                        </div>
+                        <h3 id="statMesLucroLiquidoReal" class="text-2xl font-extrabold text-green-400 font-mono">R$ 0,00</h3>
+                        <p class="text-[10px] text-zinc-400">Bruto - Estornos - Gastos</p>
+                    </div>
+                </div>
+
+                <!-- SEÇÃO DE GESTÃO DE GASTOS & DESPESAS OPERACIONAIS -->
+                <div class="card-dark p-5 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
+                    <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                        <div>
+                            <h3 class="text-base font-bold text-white uppercase flex items-center gap-2">
+                                <span>📉</span> Custos & Despesas Operacionais
+                            </h3>
+                            <p class="text-xs text-zinc-400">Cadastre gastos com produtos, insumos, aluguel, energia e manutenção para abater do lucro líquido.</p>
+                        </div>
+                        <button id="btnToggleFormNovoGasto" type="button" class="bg-red-600/90 hover:bg-red-600 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow active:scale-95 whitespace-nowrap self-start sm:self-auto">
+                            <span>➕</span>
+                            <span>Novo Gasto</span>
+                        </button>
+                    </div>
+
+                    <!-- Formulário Retrátil para Cadastrar Gasto -->
+                    <div id="boxFormNovoGastoAdmin" class="hidden bg-black/80 p-4 rounded-xl border border-red-900/40 space-y-3 animate-fade-in">
+                        <div class="flex justify-between items-center border-b border-zinc-800 pb-2">
+                            <h4 class="text-xs font-bold text-red-300 uppercase flex items-center gap-1.5">
+                                <span>📝</span> Registrar Nova Despesa
+                            </h4>
+                            <button type="button" id="btnFecharFormNovoGasto" class="text-zinc-500 hover:text-white text-xs cursor-pointer">✕ Fechar</button>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                            <div class="space-y-1">
+                                <label class="text-[11px] font-medium text-zinc-400">Descrição do Gasto *</label>
+                                <input type="text" id="inputNovoGastoDescricao" placeholder="Ex: Lâminas, Conta de Luz..." class="w-full bg-zinc-900 text-white text-xs px-3 py-2 rounded-lg border border-zinc-700 focus:outline-none focus:border-red-500">
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-[11px] font-medium text-zinc-400">Categoria *</label>
+                                <select id="selectNovoGastoCategoria" class="w-full bg-zinc-900 text-white text-xs px-3 py-2 rounded-lg border border-zinc-700 focus:outline-none focus:border-red-500 cursor-pointer">
+                                    <option value="produtos_estoque">🛍️ Produtos & Estoque</option>
+                                    <option value="aluguel_contas">🏢 Aluguel & Contas Fixas</option>
+                                    <option value="equipamentos_manutencao">✂️ Ferramentas & Máquinas</option>
+                                    <option value="marketing">📣 Marketing & Anúncios</option>
+                                    <option value="equipe_comissoes">👥 Comissões & Equipe</option>
+                                    <option value="outros">📦 Outros Gastos</option>
+                                </select>
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-[11px] font-medium text-zinc-400">Valor (R$) *</label>
+                                <input type="number" id="inputNovoGastoValor" step="0.01" min="0" placeholder="0.00" class="w-full bg-zinc-900 text-white text-xs px-3 py-2 rounded-lg border border-zinc-700 focus:outline-none focus:border-red-500 font-mono font-bold">
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-[11px] font-medium text-zinc-400">Data da Despesa *</label>
+                                <input type="date" id="inputNovoGastoData" class="w-full bg-zinc-900 text-white text-xs px-3 py-2 rounded-lg border border-zinc-700 focus:outline-none focus:border-red-500 cursor-pointer">
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 pt-2">
+                            <div id="msgStatusNovoGasto" class="text-xs font-medium text-center sm:text-left min-h-[16px]"></div>
+                            <button id="btnSalvarNovoGasto" type="button" class="bg-red-600 hover:bg-red-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition cursor-pointer shadow-lg flex items-center justify-center gap-1.5 active:scale-95">
+                                <span>💾</span>
+                                <span>Salvar Despesa</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tabela de Gastos do Mês -->
+                    <div class="overflow-x-auto rounded-xl border border-zinc-800">
+                        <table class="w-full text-left text-xs text-zinc-300">
+                            <thead class="bg-zinc-900/90 text-zinc-400 uppercase text-[10px] font-bold border-b border-zinc-800">
+                                <tr>
+                                    <th class="p-3">Data</th>
+                                    <th class="p-3">Descrição</th>
+                                    <th class="p-3">Categoria</th>
+                                    <th class="p-3 text-right">Valor (R$)</th>
+                                    <th class="p-3 text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaGastosMesBody" class="divide-y divide-zinc-800/60 font-sans">
+                                <tr>
+                                    <td colspan="5" class="p-6 text-center text-zinc-500">Nenhum gasto cadastrado para este mês.</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
                 <!-- Histórico Completo de Transações -->
-                <div class="card-dark p-6 rounded-2xl border border-zinc-800 space-y-4">
+                <div class="card-dark p-5 sm:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
                     <div class="flex flex-col md:flex-row justify-between md:items-center gap-3">
                         <div>
-                            <h3 class="text-lg font-bold text-white uppercase">Histórico de Pagamentos & Transações</h3>
+                            <h3 class="text-base sm:text-lg font-bold text-white uppercase">Histórico de Pagamentos & Transações</h3>
                             <p class="text-xs text-zinc-400">Extrato detalhado de todas as transações registradas no mês selecionado.</p>
                         </div>
 
                         <!-- Filtros Rápidos -->
                         <div class="flex flex-wrap items-center gap-2">
-                            <div class="relative flex-1 min-w-[200px]">
+                            <div class="relative flex-1 min-w-[180px]">
                                 <input type="text" id="inputBuscaFaturamento" autocomplete="off" name="search_faturamento_query" placeholder="Buscar cliente, tel ou ID..." class="w-full pl-8 pr-3 py-1.5 bg-zinc-900 text-white text-xs rounded-xl border border-zinc-800 focus:outline-none focus:border-dourado">
                                 <span class="absolute left-2.5 top-2 text-zinc-500 text-xs">🔍</span>
                             </div>
@@ -4086,11 +4193,21 @@
         };
 
         // ==========================================
-        // GESTÃO DE FATURAMENTO MENSAL & EXTRATO FINANCEIRO
+        // GESTÃO DE FATURAMENTO MENSAL, GASTOS & EXTRATO FINANCEIRO
         // ==========================================
         let mesFaturamentoAtual = new Date().getMonth();
         let anoFaturamentoAtual = new Date().getFullYear();
         let listaTransacoesMesCache = [];
+        let listaGastosMesCache = [];
+
+        const categoriasGastosLabels = {
+            'produtos_estoque': { label: '🛍️ Produtos & Estoque', badgeClass: 'bg-purple-950/80 text-purple-300 border-purple-800' },
+            'aluguel_contas': { label: '🏢 Aluguel & Contas', badgeClass: 'bg-blue-950/80 text-blue-300 border-blue-800' },
+            'equipamentos_manutencao': { label: '✂️ Equipamentos & Manutenção', badgeClass: 'bg-amber-950/80 text-amber-300 border-amber-800' },
+            'marketing': { label: '📣 Marketing & Anúncios', badgeClass: 'bg-pink-950/80 text-pink-300 border-pink-800' },
+            'equipe_comissoes': { label: '👥 Comissões & Equipe', badgeClass: 'bg-emerald-950/80 text-emerald-300 border-emerald-800' },
+            'outros': { label: '📦 Outros Gastos', badgeClass: 'bg-zinc-800 text-zinc-300 border-zinc-700' }
+        };
 
         window.carregarFaturamentoMensalAdmin = async function(forcarRecarregar = false) {
             const selectMes = document.getElementById('selectMesFaturamento');
@@ -4115,7 +4232,7 @@
             }
 
             if (tbody) {
-                tbody.innerHTML = `<tr><td colspan='6' class='p-6 text-center text-zinc-400'>🔄 Consolidando receitas e estornos do mês...</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan='6' class='p-6 text-center text-zinc-400'>🔄 Consolidando receitas, gastos e estornos do mês...</td></tr>`;
             }
 
             try {
@@ -4140,6 +4257,8 @@
                 let qtdAgendamentos = 0;
                 let totalEstornos = 0;
                 let qtdEstornos = 0;
+                let totalGastos = 0;
+                let qtdGastos = 0;
 
                 const pad = n => String(n).padStart(2, '0');
                 const prefixoMesAno = `${anoFaturamentoAtual}-${pad(mesFaturamentoAtual + 1)}`;
@@ -4202,7 +4321,6 @@
                         const ehEstornado = ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'reembolsado' || ag.status === 'estornado' || Boolean(ag.estornoRealizado) || Boolean(ag.estornadoEm);
 
                         if (ag.isPlano) {
-                            // Mensalista VIP: exibe apenas se contratou extras/produtos
                             const taxaExtras = Number(ag.taxaReservaPaga || 0);
                             if (taxaExtras > 0) {
                                 if (ehEstornado) {
@@ -4240,7 +4358,6 @@
                                 }
                             }
                         } else {
-                            // Cliente Comum
                             const precoTotal = Number(ag.preco || 40);
                             const taxaPaga = Number(ag.taxaReservaPaga !== undefined ? ag.taxaReservaPaga : (ag.modalidadePagamento === 'total' ? precoTotal : 10));
                             const valorEntrada = (ag.status === 'concluido' || ag.modalidadePagamento === 'total') ? precoTotal : taxaPaga;
@@ -4287,7 +4404,7 @@
                     const queryProdSnap = await getDocs(collection(db, "comprasProdutos"));
                     queryProdSnap.forEach(docSnap => {
                         const cp = docSnap.data();
-                        let rawDate = cp.criadoEm || cp.data || cp.atualizadoEm || '';
+                        let rawDate = cp.criadoEm || cp.data || cp.dataCompra || cp.atualizadoEm || '';
                         if (rawDate && typeof rawDate === 'object' && rawDate.toDate) rawDate = rawDate.toDate().toISOString();
                         const dataTransacao = String(rawDate || '');
                         if (dataTransacao && dataTransacao.substring(0, 7) === prefixoMesAno) {
@@ -4301,8 +4418,8 @@
                                     tipo: 'produto',
                                     tipoLabel: '🛍️ Produto',
                                     descricao: cp.produtoNome || 'Produto da Loja',
-                                    cliente: cp.cliente || 'Cliente',
-                                    telefone: cp.telefone || '',
+                                    cliente: cp.cliente || cp.clienteNome || 'Cliente',
+                                    telefone: cp.telefone || cp.clienteTelefone || '',
                                     metodo: cp.metodoPagamento || 'Pix Mercado Pago',
                                     transacaoId: cp.idPagamento || 'Venda',
                                     valor: valor,
@@ -4317,8 +4434,8 @@
                                     tipo: 'produto',
                                     tipoLabel: '🛍️ Produto',
                                     descricao: cp.produtoNome || 'Produto da Loja',
-                                    cliente: cp.cliente || 'Cliente',
-                                    telefone: cp.telefone || '',
+                                    cliente: cp.cliente || cp.clienteNome || 'Cliente',
+                                    telefone: cp.telefone || cp.clienteTelefone || '',
                                     metodo: cp.metodoPagamento || 'Pix Mercado Pago',
                                     transacaoId: cp.idPagamento || 'Venda Concluída',
                                     valor: valor,
@@ -4330,42 +4447,244 @@
                     });
                 } catch (eProd) { console.warn("Aviso ao carregar compras de produtos:", eProd); }
 
+                // 4. Processa Gastos & Despesas Operacionais do Firestore (Coleção "gastos")
+                const listaGastos = [];
+                try {
+                    const queryGastosSnap = await getDocs(collection(db, "gastos"));
+                    queryGastosSnap.forEach(docSnap => {
+                        const g = docSnap.data();
+                        const id = docSnap.id;
+                        let rawDate = g.data || g.criadoEm || '';
+                        if (rawDate && typeof rawDate === 'object' && rawDate.toDate) rawDate = rawDate.toDate().toISOString();
+                        const dataGasto = String(rawDate || '');
+
+                        if (dataGasto && dataGasto.substring(0, 7) === prefixoMesAno) {
+                            const val = Number(g.valor || 0);
+                            totalGastos += val;
+                            qtdGastos++;
+                            listaGastos.push({
+                                id,
+                                ...g,
+                                data: dataGasto,
+                                valor: val
+                            });
+                        }
+                    });
+                } catch (eGastos) {
+                    console.warn("Aviso ao buscar gastos no Firestore:", eGastos);
+                }
+
+                listaGastos.sort((a, b) => (b.data || '').localeCompare(a.data || ''));
+                listaGastosMesCache = listaGastos;
+
                 transacoes.sort((a, b) => (b.dataHora || '').localeCompare(a.dataHora || ''));
                 listaTransacoesMesCache = transacoes;
 
-                const faturamentoLiquido = (totalPlanos + totalAgendamentos) - totalEstornos;
+                const faturamentoBruto = (totalPlanos + totalAgendamentos);
+                const lucroLiquidoReal = faturamentoBruto - totalEstornos - totalGastos;
 
-                const statLiq = document.getElementById('statMesFaturamentoLiquido');
+                const statBruto = document.getElementById('statMesFaturamentoBruto');
                 const statPlan = document.getElementById('statMesTotalPlanos');
                 const badgePlan = document.getElementById('badgeMesQtdPlanos');
                 const statAg = document.getElementById('statMesTotalAgendamentos');
                 const badgeAg = document.getElementById('badgeMesQtdAgendamentos');
                 const statEst = document.getElementById('statMesTotalEstornos');
                 const badgeEst = document.getElementById('badgeMesQtdEstornos');
+                const statGastos = document.getElementById('statMesTotalGastos');
+                const badgeGastos = document.getElementById('badgeMesQtdGastos');
+                const statLucroReal = document.getElementById('statMesLucroLiquidoReal');
 
-                if (statLiq) statLiq.innerText = `R$ ${Math.max(0, faturamentoLiquido).toFixed(2)}`;
+                if (statBruto) statBruto.innerText = `R$ ${faturamentoBruto.toFixed(2)}`;
                 if (statPlan) statPlan.innerText = `R$ ${totalPlanos.toFixed(2)}`;
                 if (badgePlan) badgePlan.innerText = `${qtdPlanos} plano(s)`;
                 if (statAg) statAg.innerText = `R$ ${totalAgendamentos.toFixed(2)}`;
-                if (badgeAg) badgeAg.innerText = `${qtdAgendamentos} reserva(s)`;
+                if (badgeAg) badgeAg.innerText = `${qtdAgendamentos} entrada(s)`;
                 if (statEst) statEst.innerText = `R$ ${totalEstornos.toFixed(2)}`;
                 if (badgeEst) badgeEst.innerText = `${qtdEstornos} estorno(s)`;
+                if (statGastos) statGastos.innerText = `R$ ${totalGastos.toFixed(2)}`;
+                if (badgeGastos) badgeGastos.innerText = `${qtdGastos} despesa(s)`;
+                
+                if (statLucroReal) {
+                    statLucroReal.innerText = `R$ ${lucroLiquidoReal.toFixed(2)}`;
+                    if (lucroLiquidoReal < 0) {
+                        statLucroReal.className = "text-2xl font-extrabold text-red-400 font-mono";
+                    } else {
+                        statLucroReal.className = "text-2xl font-extrabold text-green-400 font-mono";
+                    }
+                }
 
-                console.log(`[EMAÚS:FATURAMENTO] 💰 Faturamento consolidado (${prefixoMesAno}):`, {
-                    liquido: faturamentoLiquido,
+                console.log(`[EMAÚS:FINANCEIRO] 💰 Fluxo consolidado (${prefixoMesAno}):`, {
+                    bruto: faturamentoBruto,
                     planos: totalPlanos,
                     agendamentos: totalAgendamentos,
                     estornos: totalEstornos,
-                    transacoes: transacoes.length
+                    gastos: totalGastos,
+                    lucroReal: lucroLiquidoReal
                 });
 
+                renderizarTabelaGastosAdmin();
                 renderizarTabelaHistoricoFaturamento();
 
             } catch (err) {
-                console.error("[EMAÚS:ERRO:FATURAMENTO] Erro ao processar faturamento mensal:", err);
+                console.error("[EMAÚS:ERRO:FATURAMENTO] Erro ao processar fluxo financeiro:", err);
                 if (tbody) tbody.innerHTML = `<tr><td colspan='6' class='p-6 text-center text-red-400'>Erro ao carregar faturamento: ${err.message}</td></tr>`;
             }
         };
+
+        function renderizarTabelaGastosAdmin() {
+            const tbody = document.getElementById('tabelaGastosMesBody');
+            if (!tbody) return;
+
+            if (!listaGastosMesCache || listaGastosMesCache.length === 0) {
+                tbody.innerHTML = `<tr><td colspan='5' class='p-6 text-center text-zinc-500'>Nenhuma despesa ou custo operacional registrado neste mês.</td></tr>`;
+                return;
+            }
+
+            let html = "";
+            listaGastosMesCache.forEach(g => {
+                const dataFmt = g.data ? g.data.split('T')[0].split('-').reverse().join('/') : '--/--/----';
+                const catInfo = categoriasGastosLabels[g.categoria] || { label: g.categoria || 'Outros', badgeClass: 'bg-zinc-800 text-zinc-300 border-zinc-700' };
+
+                html += `
+                    <tr class="hover:bg-zinc-900/50 transition">
+                        <td class="p-3 whitespace-nowrap font-mono text-zinc-400 text-xs">
+                            ${dataFmt}
+                        </td>
+                        <td class="p-3">
+                            <span class="font-bold text-white text-xs block">${g.descricao || 'Despesa'}</span>
+                            ${g.observacao ? `<span class="text-[10px] text-zinc-400 block">${g.observacao}</span>` : ''}
+                        </td>
+                        <td class="p-3 whitespace-nowrap">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold border uppercase ${catInfo.badgeClass}">
+                                ${catInfo.label}
+                            </span>
+                        </td>
+                        <td class="p-3 text-right whitespace-nowrap">
+                            <span class="font-bold text-xs font-mono text-red-400">
+                                - R$ ${Number(g.valor || 0).toFixed(2)}
+                            </span>
+                        </td>
+                        <td class="p-3 text-center whitespace-nowrap">
+                            <button onclick="excluirGastoAdmin('${g.id}')" class="bg-red-600/80 hover:bg-red-600 text-white px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer" title="Excluir despesa">
+                                🗑️ Apagar
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        window.excluirGastoAdmin = async function(id) {
+            if (!confirm("Tem certeza que deseja apagar o registro desta despesa?")) return;
+            try {
+                await deleteDoc(doc(db, "gastos", id));
+                exibirToastNotificacao("🗑️ Despesa Removida", "O gasto foi excluído e o lucro recalculado.", "info");
+                carregarFaturamentoMensalAdmin(true);
+            } catch (err) {
+                alert("Erro ao excluir gasto: " + err.message);
+            }
+        };
+
+        // Handlers do Formulário de Gastos
+        const btnToggleFormNovoGasto = document.getElementById('btnToggleFormNovoGasto');
+        const boxFormNovoGastoAdmin = document.getElementById('boxFormNovoGastoAdmin');
+        const btnFecharFormNovoGasto = document.getElementById('btnFecharFormNovoGasto');
+        const btnSalvarNovoGasto = document.getElementById('btnSalvarNovoGasto');
+        const inputNovoGastoData = document.getElementById('inputNovoGastoData');
+
+        if (inputNovoGastoData) {
+            inputNovoGastoData.value = new Date().toISOString().split('T')[0];
+        }
+
+        btnToggleFormNovoGasto?.addEventListener('click', () => {
+            if (boxFormNovoGastoAdmin) {
+                boxFormNovoGastoAdmin.classList.toggle('hidden');
+                if (!boxFormNovoGastoAdmin.classList.contains('hidden') && inputNovoGastoData) {
+                    inputNovoGastoData.value = new Date().toISOString().split('T')[0];
+                }
+            }
+        });
+
+        btnFecharFormNovoGasto?.addEventListener('click', () => {
+            if (boxFormNovoGastoAdmin) boxFormNovoGastoAdmin.classList.add('hidden');
+        });
+
+        btnSalvarNovoGasto?.addEventListener('click', async () => {
+            const inputDesc = document.getElementById('inputNovoGastoDescricao');
+            const selectCat = document.getElementById('selectNovoGastoCategoria');
+            const inputVal = document.getElementById('inputNovoGastoValor');
+            const inputDat = document.getElementById('inputNovoGastoData');
+            const msgStatus = document.getElementById('msgStatusNovoGasto');
+
+            const descricao = (inputDesc?.value || '').trim();
+            const categoria = selectCat?.value || 'outros';
+            const valor = parseFloat(inputVal?.value || '0');
+            const data = inputDat?.value || new Date().toISOString().split('T')[0];
+
+            if (!descricao) {
+                if (msgStatus) {
+                    msgStatus.className = "text-xs font-medium text-red-400";
+                    msgStatus.innerText = "Informe a descrição do gasto!";
+                }
+                return;
+            }
+
+            if (isNaN(valor) || valor <= 0) {
+                if (msgStatus) {
+                    msgStatus.className = "text-xs font-medium text-red-400";
+                    msgStatus.innerText = "Informe um valor válido maior que zero!";
+                }
+                return;
+            }
+
+            if (btnSalvarNovoGasto) {
+                btnSalvarNovoGasto.disabled = true;
+                btnSalvarNovoGasto.innerHTML = `<span>⏳ Salvando...</span>`;
+            }
+
+            try {
+                await addDoc(collection(db, "gastos"), {
+                    descricao,
+                    categoria,
+                    valor,
+                    data,
+                    registradoPor: auth.currentUser?.email || 'Administrador',
+                    criadoEm: new Date().toISOString()
+                });
+
+                if (msgStatus) {
+                    msgStatus.className = "text-xs font-bold text-green-400";
+                    msgStatus.innerText = "✅ Despesa cadastrada com sucesso!";
+                }
+
+                if (inputDesc) inputDesc.value = "";
+                if (inputVal) inputVal.value = "";
+
+                setTimeout(() => {
+                    if (boxFormNovoGastoAdmin) boxFormNovoGastoAdmin.classList.add('hidden');
+                    if (msgStatus) msgStatus.innerText = "";
+                    if (btnSalvarNovoGasto) {
+                        btnSalvarNovoGasto.disabled = false;
+                        btnSalvarNovoGasto.innerHTML = `<span>💾</span><span>Salvar Despesa</span>`;
+                    }
+                }, 1200);
+
+                exibirToastNotificacao("📉 Despesa Registrada", `R$ ${valor.toFixed(2)} registrado em ${descricao}.`, "info");
+                carregarFaturamentoMensalAdmin(true);
+            } catch (err) {
+                console.error("Erro ao salvar gasto:", err);
+                if (msgStatus) {
+                    msgStatus.className = "text-xs font-medium text-red-400";
+                    msgStatus.innerText = "Erro ao salvar: " + err.message;
+                }
+                if (btnSalvarNovoGasto) {
+                    btnSalvarNovoGasto.disabled = false;
+                    btnSalvarNovoGasto.innerHTML = `<span>💾</span><span>Salvar Despesa</span>`;
+                }
+            }
+        });
 
         function renderizarTabelaHistoricoFaturamento() {
             const tbody = document.getElementById('tabelaHistoricoFaturamentoBody');
