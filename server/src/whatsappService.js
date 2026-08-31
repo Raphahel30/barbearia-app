@@ -2,7 +2,7 @@ import { makeWASocket, DisconnectReason, makeCacheableSignalKeyStore, useMultiFi
 import { Boom } from '@hapi/boom';
 import pino from 'pino';
 import QRCode from 'qrcode';
-import { useFirestoreAuthState } from './firestoreAuthState.js';
+import { useFirestoreAuthState, isFirestoreAccessible } from './firestoreAuthState.js';
 
 // ============================================================================
 // ESTADO GLOBAL DO SERVIÇO DE WHATSAPP
@@ -17,10 +17,10 @@ let currentPairingCode = null;
 let connectionStatus = 'disconnected'; // 'disconnected' | 'connecting' | 'qr_ready' | 'connected'
 let connectedNumber = null;
 let reconnectAttempts = 0;
-const MAX_RECONNECT_ATTEMPTS = 8;
+const MAX_RECONNECT_ATTEMPTS = 5;
 let reconnectTimer = null;
 
-const logger = pino({ level: 'silent' }); // Silencia logs de debug do Baileys para performance
+const logger = pino({ level: 'silent' }); // Silencia logs de debug para máxima velocidade e performance
 
 // ============================================================================
 // CONFIGURAÇÃO DO BANCO DE DADOS (FIRESTORE)
@@ -28,7 +28,7 @@ const logger = pino({ level: 'silent' }); // Silencia logs de debug do Baileys p
 export function setFirestoreDatabase(db) {
     if (db) {
         firestoreDbInstance = db;
-        console.log('✅ [WhatsApp Bot] Firestore Database vinculado com sucesso para Sessão Persistente 24/7!');
+        console.log('✅ [WhatsApp Bot] Firestore Database configurado.');
     }
 }
 
@@ -48,16 +48,18 @@ export function obterStatusWhatsApp() {
 // ============================================================================
 // CONEXÃO POR QR CODE
 // ============================================================================
-export async function iniciarWhatsApp({ force = false } = {}) {
+export async function iniciarWhatsApp({ force = false, onlyIfRegistered = false } = {}) {
     if (sock && connectionStatus === 'connected' && !force) {
         return { success: true, status: 'connected', userNumber: connectedNumber };
     }
 
     _limparReconexao();
 
-    // Se já havia um socket antigo ou se foi solicitado force, fecha limpo
+    // Fecha socket anterior de forma segura e remove ouvintes
     if (sock && (connectionStatus !== 'connected' || force)) {
         try {
+            sock.ev.removeAllListeners('connection.update');
+            sock.ev.removeAllListeners('creds.update');
             sock.end(new Error('Reset para nova conexão'));
         } catch (_) {}
         sock = null;
@@ -68,7 +70,7 @@ export async function iniciarWhatsApp({ force = false } = {}) {
     currentPairingCode = null;
     reconnectAttempts = 0;
 
-    return _conectar({ gerarQr: true, forceNewCredsIfUnregistered: true });
+    return _conectar({ gerarQr: true, forceNewCredsIfUnregistered: true, onlyIfRegistered });
 }
 
 // ============================================================================
@@ -94,6 +96,8 @@ export async function gerarCodigoPareamentoWhatsApp(numeroTelefone) {
     _limparReconexao();
     if (sock) {
         try {
+            sock.ev.removeAllListeners('connection.update');
+            sock.ev.removeAllListeners('creds.update');
             sock.end(new Error('Reset para geração de código de pareamento'));
         } catch (_) {}
         sock = null;
@@ -119,6 +123,8 @@ export async function desconectarWhatsApp() {
         _limparReconexao();
         if (sock) {
             try {
+                sock.ev.removeAllListeners('connection.update');
+                sock.ev.removeAllListeners('creds.update');
                 await sock.logout();
             } catch (_) {}
             try {
@@ -175,11 +181,11 @@ export async function enviarMensagemWhatsApp(numeroDestino, texto) {
 }
 
 // ============================================================================
-// LÓGICA INTERNA DE CONEXÃO E RECONEXÃO COM FIRESTORE
+// LÓGICA INTERNA DE CONEXÃO E RECONEXÃO COM FIRESTORE / MULTIFILE
 // ============================================================================
-async function _conectar({ gerarQr = true, numeroPairing = null, forceNewCredsIfUnregistered = false } = {}) {
+async function _conectar({ gerarQr = true, numeroPairing = null, forceNewCredsIfUnregistered = false, onlyIfRegistered = false } = {}) {
     if (isConnecting && !numeroPairing && !forceNewCredsIfUnregistered) {
-        return { success: true, status: 'connecting', message: 'Aguardando autenticação...', qrCode: currentQrCode };
+        return { success: true, status: connectionStatus, qrCode: currentQrCode, message: 'Aguardando autenticação...' };
     }
 
     isConnecting = true;
@@ -191,7 +197,10 @@ async function _conectar({ gerarQr = true, numeroPairing = null, forceNewCredsIf
         let authState;
         let saveCreds;
 
-        if (firestoreDbInstance) {
+        // Testa se o Firestore está realmente autenticado e disponível
+        const firestoreDisponivel = firestoreDbInstance ? await isFirestoreAccessible(firestoreDbInstance) : false;
+
+        if (firestoreDisponivel) {
             const firestoreAuth = await useFirestoreAuthState(firestoreDbInstance, '_whatsapp_session', forceNewCredsIfUnregistered);
             authState = firestoreAuth.state;
             saveCreds = firestoreAuth.saveCreds;
@@ -202,11 +211,18 @@ async function _conectar({ gerarQr = true, numeroPairing = null, forceNewCredsIf
             saveCreds = localAuth.saveCreds;
         }
 
-        const isNewSession = !authState.creds?.registered;
+        const isRegistered = !!authState.creds?.registered;
 
-        const browserConfig = (Browsers && Browsers.macOS) 
-            ? Browsers.macOS('Desktop') 
-            : ['EMAUS Barbearia', 'Chrome', '120.0.0'];
+        // Se foi solicitado iniciar APENAS se já existir sessão salva (ex: boot do servidor)
+        if (onlyIfRegistered && !isRegistered) {
+            isConnecting = false;
+            connectionStatus = 'disconnected';
+            return { success: true, status: 'disconnected', message: 'Nenhuma sessão registrada. Aguardando comando.' };
+        }
+
+        const browserConfig = (Browsers && Browsers.ubuntu) 
+            ? Browsers.ubuntu('Chrome') 
+            : ['Ubuntu', 'Chrome', '22.04.4'];
 
         sock = makeWASocket({
             auth: {
@@ -236,10 +252,10 @@ async function _conectar({ gerarQr = true, numeroPairing = null, forceNewCredsIf
                         success: true,
                         status: connectionStatus,
                         qrCode: currentQrCode,
-                        message: currentQrCode ? 'QR Code gerado!' : 'Aguardando resposta do WhatsApp...'
+                        message: currentQrCode ? 'QR Code pronto!' : 'Aguardando resposta do WhatsApp...'
                     });
                 }
-            }, 6000); // 6 segundos de janela para resposta imediata
+            }, 6000); // 6 segundos de janela para resposta imediata ao frontend
 
             const settleWithResult = (data) => {
                 if (!settled) {
@@ -262,7 +278,7 @@ async function _conectar({ gerarQr = true, numeroPairing = null, forceNewCredsIf
                         currentQrCode = `data:image/png;base64,${Buffer.from(qr).toString('base64')}`;
                     }
                     connectionStatus = 'qr_ready';
-                    console.log('[WhatsApp Bot] 📱 QR Code gerado e disponível para o Barbeiro.');
+                    console.log('[WhatsApp Bot] 📱 QR Code gerado e pronto para leitura.');
                     settleWithResult({ success: true, status: 'qr_ready', qrCode: currentQrCode });
                 }
 
@@ -281,10 +297,11 @@ async function _conectar({ gerarQr = true, numeroPairing = null, forceNewCredsIf
                 if (connection === 'close') {
                     isConnecting = false;
                     const statusCode = lastDisconnect?.error instanceof Boom ? lastDisconnect.error.output.statusCode : 0;
-                    const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+                    const registered = !!authState?.creds?.registered;
                     const wasLoggedOut = statusCode === DisconnectReason.loggedOut;
+                    const shouldReconnect = registered && !wasLoggedOut;
 
-                    console.log(`[WhatsApp Bot] Conexão finalizada. Código: ${statusCode} | Reconectar: ${shouldReconnect}`);
+                    console.log(`[WhatsApp Bot] Conexão finalizada. Código: ${statusCode} | Registrado: ${registered} | Reconectar: ${shouldReconnect}`);
 
                     if (wasLoggedOut) {
                         connectionStatus = 'disconnected';
@@ -295,20 +312,23 @@ async function _conectar({ gerarQr = true, numeroPairing = null, forceNewCredsIf
                     } else if (shouldReconnect && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
                         connectionStatus = 'connecting';
                         reconnectAttempts++;
-                        const delay = Math.min(3000 * reconnectAttempts, 20000);
+                        const delay = Math.min(3000 * reconnectAttempts, 15000);
                         console.log(`[WhatsApp Bot] Reconectando em ${delay / 1000}s (Tentativa ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
                         _limparReconexao();
                         reconnectTimer = setTimeout(() => _conectar({ gerarQr: false }), delay);
                     } else {
                         connectionStatus = 'disconnected';
+                        currentQrCode = null;
+                        currentPairingCode = null;
                         sock = null;
-                        console.log('[WhatsApp Bot] Reconexão em standby. Aguardando comando.');
+                        _limparReconexao();
+                        console.log('[WhatsApp Bot] Sessão em repouso. Aguardando comando.');
                     }
                 }
             });
 
             // Modo Pareamento por Código de 8 Dígitos
-            if (isNewSession && numeroPairing && !gerarQr) {
+            if (!isRegistered && numeroPairing && !gerarQr) {
                 await new Promise(r => setTimeout(r, 1200));
                 try {
                     const code = await sock.requestPairingCode(numeroPairing);

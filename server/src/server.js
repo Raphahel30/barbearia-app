@@ -601,7 +601,7 @@ app.get('/health', async (req, res) => {
 // Inicializa WhatsApp em background somente no servidor dedicado / localhost
 if (!process.env.VERCEL) {
     try {
-        iniciarWhatsApp().catch(err => console.log('WhatsApp Bot aguardando conexão local/nuvem...'));
+        iniciarWhatsApp({ onlyIfRegistered: true }).catch(err => console.log('WhatsApp Bot aguardando conexão local/nuvem...'));
     } catch (e) {
         console.warn("Aviso WhatsApp:", e.message);
     }

@@ -1,9 +1,24 @@
 import { initAuthCreds, BufferJSON, proto } from '@whiskeysockets/baileys';
 
 /**
+ * Verifica se a instância do Firestore está acessível e autenticada
+ */
+export async function isFirestoreAccessible(firestoreDb) {
+    if (!firestoreDb) return false;
+    try {
+        const testRef = firestoreDb.collection('_whatsapp_session').doc('health_check');
+        await testRef.set({ test: true, updatedAt: new Date().toISOString() }, { merge: true });
+        return true;
+    } catch (e) {
+        console.warn('[Firestore AuthState] Firestore indisponível para sessão Baileys:', e.message);
+        return false;
+    }
+}
+
+/**
  * Adaptador de Autenticação Persistente do Baileys utilizando o Cloud Firestore do Firebase.
  * 
- * Por que esta abordagem é superior:
+ * Benefícios:
  * 1. O Render possui sistema de arquivos efêmero (apaga pastas locais a cada deploy).
  * 2. Ao persistir as credenciais criptografadas no Firestore, o robô carrega a sessão em < 1s após qualquer deploy/restart.
  * 3. O WhatsApp NUNCA desconecta sozinho.
