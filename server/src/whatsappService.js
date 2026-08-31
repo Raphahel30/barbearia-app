@@ -2,15 +2,15 @@ import { makeWASocket, DisconnectReason, makeCacheableSignalKeyStore, useMultiFi
 import { Boom } from '@hapi/boom';
 import pino from 'pino';
 import QRCode from 'qrcode';
-import { useFirestoreAuthState, isFirestoreAccessible } from './firestoreAuthState.js';
+import fs from 'fs';
+import path from 'path';
 
 // ============================================================================
-// ESTADO GLOBAL DO SERVIÇO DE WHATSAPP
+// ESTADO GLOBAL DO SERVIÇO DE WHATSAPP (EXCLUSIVO RENDER)
 // ============================================================================
+const WA_SESSION_DIR = path.resolve(process.cwd(), '.wa_session');
+
 let sock = null;
-let firestoreDbInstance = null;
-let clearFirestoreSessionFn = null;
-
 let isConnecting = false;
 let currentQrCode = null;
 let currentPairingCode = null;
@@ -20,17 +20,7 @@ let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 5;
 let reconnectTimer = null;
 
-const logger = pino({ level: 'silent' }); // Silencia logs de debug para máxima velocidade e performance
-
-// ============================================================================
-// CONFIGURAÇÃO DO BANCO DE DADOS (FIRESTORE)
-// ============================================================================
-export function setFirestoreDatabase(db) {
-    if (db) {
-        firestoreDbInstance = db;
-        console.log('✅ [WhatsApp Bot] Firestore Database configurado.');
-    }
-}
+const logger = pino({ level: 'silent' }); // Silencia logs de debug do Baileys para máxima velocidade
 
 // ============================================================================
 // CONSULTA DE STATUS EM TEMPO REAL
@@ -133,8 +123,14 @@ export async function desconectarWhatsApp() {
             sock = null;
         }
 
-        if (clearFirestoreSessionFn) {
-            await clearFirestoreSessionFn();
+        // Apaga pasta local de sessão no servidor Render
+        if (fs.existsSync(WA_SESSION_DIR)) {
+            try {
+                fs.rmSync(WA_SESSION_DIR, { recursive: true, force: true });
+                console.log('[WhatsApp Bot] Sessão local apagada com sucesso no Render.');
+            } catch (errRm) {
+                console.warn('[WhatsApp Bot] Aviso ao apagar pasta de sessão:', errRm.message);
+            }
         }
 
         connectionStatus = 'disconnected';
@@ -181,7 +177,7 @@ export async function enviarMensagemWhatsApp(numeroDestino, texto) {
 }
 
 // ============================================================================
-// LÓGICA INTERNA DE CONEXÃO E RECONEXÃO COM FIRESTORE / MULTIFILE
+// LÓGICA INTERNA DE CONEXÃO E RECONEXÃO 100% NATIVA NO RENDER
 // ============================================================================
 async function _conectar({ gerarQr = true, numeroPairing = null, forceNewCredsIfUnregistered = false, onlyIfRegistered = false } = {}) {
     if (isConnecting && !numeroPairing && !forceNewCredsIfUnregistered) {
@@ -194,23 +190,8 @@ async function _conectar({ gerarQr = true, numeroPairing = null, forceNewCredsIf
     currentPairingCode = null;
 
     try {
-        let authState;
-        let saveCreds;
-
-        // Testa se o Firestore está realmente autenticado e disponível
-        const firestoreDisponivel = firestoreDbInstance ? await isFirestoreAccessible(firestoreDbInstance) : false;
-
-        if (firestoreDisponivel) {
-            const firestoreAuth = await useFirestoreAuthState(firestoreDbInstance, '_whatsapp_session', forceNewCredsIfUnregistered);
-            authState = firestoreAuth.state;
-            saveCreds = firestoreAuth.saveCreds;
-            clearFirestoreSessionFn = firestoreAuth.clearSession;
-        } else {
-            const localAuth = await useMultiFileAuthState('./.wa_session');
-            authState = localAuth.state;
-            saveCreds = localAuth.saveCreds;
-        }
-
+        // Carrega estado de autenticação exclusivamente do disco do Render
+        const { state: authState, saveCreds } = await useMultiFileAuthState(WA_SESSION_DIR);
         const isRegistered = !!authState.creds?.registered;
 
         // Se foi solicitado iniciar APENAS se já existir sessão salva (ex: boot do servidor)
@@ -290,7 +271,7 @@ async function _conectar({ gerarQr = true, numeroPairing = null, forceNewCredsIf
                     reconnectAttempts = 0;
                     _limparReconexao();
                     connectedNumber = sock.user?.id?.split(':')[0] || sock.user?.id?.split('@')[0] || null;
-                    console.log(`[WhatsApp Bot] ✅ Conectado com sucesso! Barbeiro: +${connectedNumber}`);
+                    console.log(`[WhatsApp Bot] ✅ Conectado com sucesso no Render! Barbeiro: +${connectedNumber}`);
                     settleWithResult({ success: true, status: 'connected', userNumber: connectedNumber });
                 }
 
@@ -306,8 +287,10 @@ async function _conectar({ gerarQr = true, numeroPairing = null, forceNewCredsIf
                         connectionStatus = 'disconnected';
                         connectedNumber = null;
                         sock = null;
-                        if (clearFirestoreSessionFn) await clearFirestoreSessionFn();
-                        console.log('[WhatsApp Bot] Logout do usuário detectado. Sessão apagada.');
+                        if (fs.existsSync(WA_SESSION_DIR)) {
+                            try { fs.rmSync(WA_SESSION_DIR, { recursive: true, force: true }); } catch (_) {}
+                        }
+                        console.log('[WhatsApp Bot] Logout do usuário detectado. Sessão apagada do Render.');
                     } else if (shouldReconnect && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
                         connectionStatus = 'connecting';
                         reconnectAttempts++;

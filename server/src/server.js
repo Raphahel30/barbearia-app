@@ -11,8 +11,7 @@ import {
     obterStatusWhatsApp, 
     desconectarWhatsApp, 
     enviarMensagemWhatsApp,
-    gerarCodigoPareamentoWhatsApp,
-    setFirestoreDatabase
+    gerarCodigoPareamentoWhatsApp
 } from './whatsappService.js';
 
 import fs from 'fs';
@@ -44,7 +43,6 @@ if (serviceAccount && serviceAccount.private_key) {
         });
         firebaseAdminAuth = getAuth(firebaseAdminApp);
         firebaseAdminFirestore = getFirestore(firebaseAdminApp);
-        setFirestoreDatabase(firebaseAdminFirestore);
         console.log('✅ [Firebase Admin SDK & Firestore] Inicializado com sucesso!');
     } catch (e) {
         console.warn('Aviso na inicialização do Firebase Admin SDK:', e.message);
