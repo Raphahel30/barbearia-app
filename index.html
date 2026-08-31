@@ -1615,22 +1615,22 @@
     </div>
 
     <!-- BANNER FLUTUANTE DE PIX PENDENTE EM SEGUNDO PLANO -->
-    <div id="bannerPixPendenteGlobal" class="hidden fixed bottom-5 right-4 left-4 sm:left-auto sm:right-6 sm:max-w-md z-40 bg-zinc-950/95 border-2 border-dourado/80 rounded-2xl p-4 shadow-2xl backdrop-blur-md transition-all">
+    <div id="bannerPixPendenteGlobal" class="hidden fixed bottom-20 sm:bottom-6 right-3 left-3 sm:left-auto sm:right-6 sm:max-w-md z-50 bg-zinc-950/95 border-2 border-dourado/80 rounded-2xl p-3.5 sm:p-4 shadow-[0_12px_40px_rgba(0,0,0,0.9)] backdrop-blur-md transition-all">
         <div class="flex items-start gap-3">
             <div class="w-9 h-9 rounded-full bg-amber-500/20 border border-amber-500/50 flex items-center justify-center flex-shrink-0 text-amber-400 font-bold text-base">
                 ⏳
             </div>
             <div class="flex-1 min-w-0">
-                <div class="flex items-center justify-between">
-                    <h4 class="text-xs font-bold text-dourado uppercase tracking-wider">Pagamento Pix em Andamento</h4>
-                    <span id="bannerPixTempoRestante" class="text-[10px] text-zinc-400 font-mono"></span>
+                <div class="flex items-center justify-between gap-2">
+                    <h4 class="text-xs font-bold text-dourado uppercase tracking-wider truncate">Pagamento Pix em Andamento</h4>
+                    <span id="bannerPixTempoRestante" class="text-[10px] text-zinc-400 font-mono flex-shrink-0"></span>
                 </div>
                 <p id="bannerPixPendenteDesc" class="text-xs text-zinc-200 mt-0.5 truncate font-medium">Aguardando confirmação do seu banco...</p>
                 <div class="flex items-center gap-2 mt-2.5">
-                    <button id="btnReabrirModalPixPendente" type="button" class="bg-dourado hover:bg-[#C5A028] text-black font-bold text-xs px-3 py-1.5 rounded-lg transition shadow flex items-center gap-1 cursor-pointer">
+                    <button id="btnReabrirModalPixPendente" type="button" class="bg-dourado hover:bg-[#C5A028] text-black font-bold text-xs px-3 py-1.5 rounded-lg transition shadow flex items-center gap-1 cursor-pointer active:scale-95">
                         📱 Ver QR Code
                     </button>
-                    <button id="btnCancelarPixPendente" type="button" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs px-2.5 py-1.5 rounded-lg transition cursor-pointer">
+                    <button id="btnCancelarPixPendente" type="button" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs px-2.5 py-1.5 rounded-lg transition cursor-pointer active:scale-95">
                         Cancelar
                     </button>
                 </div>
@@ -6058,15 +6058,28 @@
                 if (modalPix) modalPix.classList.remove('hidden');
 
                 const user = auth.currentUser;
-                let nomeCliente = user.email;
+                let nomeCliente = user?.email || 'Cliente';
                 let telefoneCliente = "";
                 try {
-                    const uDoc = await getDoc(doc(db, "usuarios", user.uid));
-                    if (uDoc.exists()) {
-                        nomeCliente = uDoc.data().nome || user.email;
-                        telefoneCliente = uDoc.data().telefone || "";
+                    if (user?.uid) {
+                        const uDoc = await getDoc(doc(db, "usuarios", user.uid));
+                        if (uDoc.exists()) {
+                            nomeCliente = uDoc.data().nome || user.email;
+                            telefoneCliente = uDoc.data().telefone || "";
+                        }
                     }
                 } catch (e) { console.error(e); }
+
+                const dadosCompletosComUser = {
+                    ...dados,
+                    userId: user?.uid,
+                    userEmail: user?.email,
+                    clienteNome: nomeCliente,
+                    clienteTelefone: telefoneCliente,
+                    barbeiroId: barbeiroSelecionadoCliente?.id || 'qualquer',
+                    barbeiroNome: barbeiroSelecionadoCliente?.nome || 'Barbearia EMAÚS',
+                    barbeiroWhatsapp: barbeiroSelecionadoCliente?.whatsapp || ''
+                };
 
                 try {
                     const dataHoraPayload = (tipo === 'agendamento' && dados.data && dados.horario) ? `${dados.data}T${dados.horario}` : undefined;
@@ -6076,10 +6089,10 @@
                         body: JSON.stringify({
                             transaction_amount: valorPagar,
                             description: descricao,
-                            email: user.email,
+                            email: user?.email || `${telefoneCliente.replace(/\D/g, '')}@cliente.emaus`,
                             nome: nomeCliente,
                             dataHora: dataHoraPayload,
-                            external_reference: `${user.uid}_${Date.now()}`
+                            external_reference: `${user?.uid || 'cliente'}_${Date.now()}`
                         })
                     });
 
@@ -6099,7 +6112,7 @@
                         if (elCode) elCode.value = data.qr_code || '';
                         if (elLoading) elLoading.classList.add('hidden');
                         if (elActive) elActive.classList.remove('hidden');
-                        if (elFallback) elFallback.classList.add('hidden');
+                        if (elFallback) elFallback.classList.remove('hidden');
 
                         const paymentId = data.id;
 
@@ -6107,7 +6120,7 @@
                         salvarPixPendenteLocalStorage({
                             tipo: tipo,
                             paymentId: paymentId,
-                            dados: dados,
+                            dados: dadosCompletosComUser,
                             qrCode: data.qr_code,
                             qrCodeBase64: data.qr_code_base64,
                             valor: valorPagar,
@@ -6139,7 +6152,7 @@
 
                                     limparPixPendenteLocalStorage();
                                     fecharModalPagamento();
-                                    await concluirPagamentoComSucesso(paymentId, 'pix_mercadopago', dados, tipo);
+                                    await concluirPagamentoComSucesso(paymentId, 'pix_mercadopago', dadosCompletosComUser, tipo);
                                 }
                             } catch (err) {
                                 console.warn("Monitoramento de pagamento:", err);
@@ -6149,11 +6162,13 @@
                     } else {
                         console.warn("Mercado Pago retornou sem QR Code:", data.error);
                         if (elLoading) elLoading.classList.add('hidden');
+                        if (elActive) elActive.classList.add('hidden');
                         if (elFallback) elFallback.classList.remove('hidden');
                     }
                 } catch (err) {
-                    console.warn("Servidor offline ou sem credenciais, exibindo chave manual:", err);
+                    console.error("Erro na requisição do Pix:", err);
                     if (elLoading) elLoading.classList.add('hidden');
+                    if (elActive) elActive.classList.add('hidden');
                     if (elFallback) elFallback.classList.remove('hidden');
                 }
         }
@@ -6194,7 +6209,7 @@
             }
         }
 
-        const btnFecharSucesso = document.getElementById('btnFecharSucesso');
+        const btnFecharSucesso = document.getElementById('btnFecharSucessoAgendamento');
         if (btnFecharSucesso) {
             btnFecharSucesso.addEventListener('click', () => {
                 const modalSucesso = document.getElementById('modalConfirmacaoSucesso');
@@ -6222,21 +6237,35 @@
             const tipoEfetivo = tipoOverride || tipoPagamentoAtual;
             const dadosEfetivos = dadosOverride || dadosPagamentoPendente;
 
-            const user = auth.currentUser;
+            let user = auth.currentUser;
             if (!user) {
+                user = await new Promise((resolve) => {
+                    const unsub = onAuthStateChanged(auth, (u) => {
+                        unsub();
+                        resolve(u);
+                    });
+                    setTimeout(() => resolve(auth.currentUser), 2500);
+                });
+            }
+
+            const uidFinal = user?.uid || dadosEfetivos?.userId;
+            if (!uidFinal) {
+                console.error("❌ Usuário não autenticado e sem UID em dadosEfetivos.");
                 isSalvandoAgendamento = false;
                 return;
             }
 
-            let nomeCliente = user.email;
-            let telefoneCliente = "Não informado";
-            try {
-                const userDoc = await getDoc(doc(db, "usuarios", user.uid));
-                if (userDoc.exists()) {
-                    nomeCliente = userDoc.data().nome || user.email;
-                    telefoneCliente = userDoc.data().telefone || "Não informado";
-                }
-            } catch (e) { console.error(e); }
+            let nomeCliente = (user && (user.displayName || user.email)) || dadosEfetivos?.clienteNome || "Cliente";
+            let telefoneCliente = dadosEfetivos?.clienteTelefone || "Não informado";
+            if (user?.uid) {
+                try {
+                    const userDoc = await getDoc(doc(db, "usuarios", user.uid));
+                    if (userDoc.exists()) {
+                        nomeCliente = userDoc.data().nome || nomeCliente;
+                        telefoneCliente = userDoc.data().telefone || telefoneCliente;
+                    }
+                } catch (e) { console.error(e); }
+            }
 
             try {
                 if (tipoEfetivo === 'agendamento' && dadosEfetivos) {
@@ -6260,7 +6289,7 @@
                                 fecharModalPagamento();
                                 const dExist = queryPayment.docs[0].data();
                                 exibirModalSucessoAgendamento(dExist.servico || servico, dExist.dataHora || dataHoraCompleta, dExist.cliente || nomeCliente, dExist.preco || precoTotalNum, dExist.taxaReservaPaga || valorEfetivoPago, !!dExist.isPlano);
-                                carregarPainelCliente(user.uid);
+                                carregarPainelCliente(uidFinal);
                                 isSalvandoAgendamento = false;
                                 return;
                             }
@@ -6270,7 +6299,7 @@
                     // Idempotência por Usuário e Data/Hora
                     const queryExistente = await getDocs(query(
                         collection(db, "agendamentos"),
-                        where("userId", "==", user.uid),
+                        where("userId", "==", uidFinal),
                         where("dataHora", "==", dataHoraCompleta)
                     ));
                     let jaExiste = false;
@@ -6284,7 +6313,7 @@
                         limparPixPendenteLocalStorage();
                         fecharModalPagamento();
                         exibirModalSucessoAgendamento(servico, dataHoraCompleta, nomeCliente, precoTotalNum, valorEfetivoPago, false);
-                        carregarPainelCliente(user.uid);
+                        carregarPainelCliente(uidFinal);
                         isSalvandoAgendamento = false;
                         return;
                     }
@@ -6302,49 +6331,53 @@
                                             estoque: novoEstoque,
                                             atualizadoEm: new Date().toISOString()
                                         });
+
+                                        await addDoc(collection(db, "comprasProdutos"), {
+                                            produtoId: p.id,
+                                            produtoNome: p.nome,
+                                            quantidade: p.quantidade,
+                                            precoUnitario: p.preco,
+                                            valorTotal: p.preco * p.quantidade,
+                                            clienteNome: nomeCliente,
+                                            clienteTelefone: telefoneCliente,
+                                            clienteEmail: (user && user.email) || `${telefoneCliente.replace(/\D/g, '')}@cliente.emaus`,
+                                            origemVenda: 'carrinho_agendamento',
+                                            agendamentoDataHora: dataHoraCompleta,
+                                            paymentId: String(paymentId),
+                                            status: 'pago',
+                                            metodoPagamento: metodo,
+                                            criadoEm: new Date().toISOString()
+                                        });
                                     }
-                                    await addDoc(collection(db, "comprasProdutos"), {
-                                        produtoId: p.id,
-                                        produtoNome: p.nome,
-                                        volumeUnidade: p.volumeUnidade || '',
-                                        quantidade: p.quantidade,
-                                        valorUnitario: p.preco,
-                                        valorTotal: p.subtotal || (p.preco * p.quantidade),
-                                        clienteId: user.uid,
-                                        clienteNome: nomeCliente,
-                                        clienteTelefone: telefoneCliente,
-                                        idPagamento: String(paymentId),
-                                        metodoPagamento: metodo,
-                                        origem: 'agendamento_upsell',
-                                        status: 'aprovado',
-                                        dataCompra: new Date().toISOString()
-                                    });
-                                } catch (errProdEst) {
-                                    console.warn("Aviso ao debitar estoque no agendamento:", errProdEst);
+                                } catch (errEst) {
+                                    console.warn("Aviso ao debitar estoque no agendamento:", errEst);
                                 }
                             }
                         }
-                        // Sincroniza a loja e o upsell imediatamente
-                        carregarProdutosCliente().catch(e => console.warn(e));
                     }
 
-                    // Se for agendamento de mensalista com extras contratados
-                    if (dadosEfetivos.isPlanoMensalistaComExtras) {
-                        const semanaPlanoNum = dadosEfetivos.semanaPlano;
-                        const docRef = await addDoc(collection(db, "agendamentos"), {
-                            userId: user.uid,
+                    // 2. Se for agendamento feito por Assinante de Plano, consome o corte da semana
+                    if (dadosEfetivos.isPlano) {
+                        const corteConsumido = await consumirCorteSemanalAssinatura(uidFinal);
+                        if (!corteConsumido) {
+                            alert("Não foi possível validar o corte do seu plano para esta semana. O agendamento foi cancelado.");
+                            isSalvandoAgendamento = false;
+                            return;
+                        }
+
+                        await addDoc(collection(db, "agendamentos"), {
+                            userId: uidFinal,
                             cliente: nomeCliente,
                             telefone: telefoneCliente,
                             servico: servico,
                             preco: preco,
-                            taxaReservaPaga: valorEfetivoPago,
-                            modalidadePagamento: 'plano_vip_com_extras',
-                            idPagamento: String(paymentId),
-                            metodoPagamento: metodo,
+                            taxaReservaPaga: 0,
+                            modalidadePagamento: 'plano_vip',
+                            idPagamento: 'plano_vip',
+                            metodoPagamento: 'Plano Mensal VIP',
+                            isPlano: true,
                             extras: extras || [],
                             produtos: listaProdutosAg,
-                            isPlano: true,
-                            semanaPlano: semanaPlanoNum,
                             barbeiroId: barbeiroSelecionadoCliente?.id || 'qualquer',
                             barbeiroNome: barbeiroSelecionadoCliente?.nome || 'Barbearia EMAÚS',
                             barbeiroWhatsapp: barbeiroSelecionadoCliente?.whatsapp || '',
@@ -6353,26 +6386,26 @@
                             criadoEm: new Date()
                         });
 
-                        const updateObj = {};
-                        updateObj[`semanas.${semanaPlanoNum}`] = {
-                            status: 'agendado',
-                            agendamentoId: docRef.id,
-                            agendamentoData: dataHoraCompleta,
-                            servico: dadosEfetivos.servicoPrincipalPlano || servico,
-                            atualizadoEm: new Date().toISOString()
-                        };
-                        await updateDoc(doc(db, "assinaturasClientes", user.uid), updateObj);
+                        fecharModalPagamento();
+                        limparPixPendenteLocalStorage();
 
                         if (msgStatus) {
                             msgStatus.className = "text-center text-sm text-green-400 font-bold";
-                            msgStatus.innerText = "Agendamento do plano com extras confirmado com sucesso!";
+                            msgStatus.innerText = "Agendamento VIP confirmado com sucesso!";
                         }
 
-                        limparPixPendenteLocalStorage();
-                        await carregarPainelCliente(user.uid);
-                        await carregarPainelPlanosCliente(user.uid);
+                        const elData = document.getElementById('dataAtendimento');
+                        const elGrade = document.getElementById('horarioGrade');
+                        const elServ = document.getElementById('servico');
+                        if (elData) elData.value = "";
+                        if (elGrade) elGrade.innerHTML = "<option value=''>Selecione a data primeiro</option>";
+                        if (elServ) elServ.value = "";
+                        renderizarOpcoesExtras();
 
-                        exibirModalSucessoAgendamento(servico, dataHoraCompleta, nomeCliente, precoTotalNum, valorEfetivoPago, true);
+                        carregarPainelCliente(uidFinal);
+                        carregarPainelPlanosCliente(uidFinal);
+
+                        exibirModalSucessoAgendamento(servico, dataHoraCompleta, nomeCliente, precoTotalNum, 0, true);
 
                         dispararNotificacaoAutomaticaWhatsApp({
                             cliente: nomeCliente,
@@ -6380,10 +6413,10 @@
                             servico: servico,
                             dataHora: dataHoraCompleta,
                             preco: preco,
-                            taxaReservaPaga: valorEfetivoPago,
+                            taxaReservaPaga: 0,
+                            modalidade: 'plano_vip',
                             produtos: listaProdutosAg,
                             isPlano: true,
-                            semanaPlano: semanaPlanoNum,
                             barbeiroNome: barbeiroSelecionadoCliente?.nome || '',
                             barbeiroWhatsapp: barbeiroSelecionadoCliente?.whatsapp || ''
                         });
@@ -6392,7 +6425,7 @@
                     }
 
                     await addDoc(collection(db, "agendamentos"), {
-                        userId: user.uid,
+                        userId: uidFinal,
                         cliente: nomeCliente,
                         telefone: telefoneCliente,
                         servico: servico,
@@ -6426,8 +6459,8 @@
                             const novasRecompensasUsadas = Number(dadosFidelidadeCliente.recompensasUtilizadas || 0) + 1;
                             const novaDisponibilidade = novosSelos >= meta;
 
-                            await setDoc(doc(db, "fidelidadeClientes", user.uid), {
-                                userId: user.uid,
+                            await setDoc(doc(db, "fidelidadeClientes", uidFinal), {
+                                userId: uidFinal,
                                 clienteNome: nomeCliente,
                                 clienteTelefone: telefoneCliente,
                                 selosAtuais: novosSelos,
@@ -6440,7 +6473,7 @@
                             dadosFidelidadeCliente.selosAtuais = novosSelos;
                             dadosFidelidadeCliente.recompensasUtilizadas = novasRecompensasUsadas;
                             dadosFidelidadeCliente.recompensaDisponivel = novaDisponibilidade;
-                            carregarFidelidadeCliente(user.uid).catch(e => console.warn(e));
+                            carregarFidelidadeCliente(uidFinal).catch(e => console.warn(e));
                         } catch (eFid) { console.warn("Aviso ao debitar selos da fidelidade:", eFid); }
                     }
 
@@ -6448,7 +6481,7 @@
                     if (dadosEfetivos?.isAniversario) {
                         try {
                             const anoAtual = new Date().getFullYear();
-                            await setDoc(doc(db, "usuarios", user.uid), {
+                            await setDoc(doc(db, "usuarios", uidFinal), {
                                 anoUltimoResgateAniversario: anoAtual,
                                 atualizadoEm: new Date().toISOString()
                             }, { merge: true });
@@ -6456,7 +6489,7 @@
                             dadosAniversarioCliente.anoUltimoResgate = anoAtual;
                             dadosAniversarioCliente.jaResgatouEsteAno = true;
                             dadosAniversarioCliente.beneficioAtivo = false;
-                            carregarFidelidadeCliente(user.uid).catch(e => console.warn(e));
+                            carregarFidelidadeCliente(uidFinal).catch(e => console.warn(e));
                         } catch (eAniv) { console.warn("Aviso ao registrar resgate de aniversario:", eAniv); }
                     }
 
@@ -6473,8 +6506,8 @@
                     if (elServ) elServ.value = "";
                     renderizarOpcoesExtras();
                     limparPixPendenteLocalStorage();
-                    carregarPainelCliente(user.uid);
-                    carregarFidelidadeCliente(user.uid).catch(e => console.warn(e));
+                    carregarPainelCliente(uidFinal);
+                    carregarFidelidadeCliente(uidFinal).catch(e => console.warn(e));
 
                     // Abre a tela de agradecimento e confirmação com valores
                     exibirModalSucessoAgendamento(servico, dataHoraCompleta, nomeCliente, precoTotalNum, valorEfetivoPago, false);
@@ -6500,8 +6533,8 @@
                     const dataFim = new Date();
                     dataFim.setDate(dataPagamento.getDate() + 30);
 
-                    await setDoc(doc(db, "assinaturasClientes", user.uid), {
-                        userId: user.uid,
+                    await setDoc(doc(db, "assinaturasClientes", uidFinal), {
+                        userId: uidFinal,
                         cliente: nomeCliente,
                         telefone: telefoneCliente,
                         nomePlano: plano.nome,
@@ -6528,9 +6561,11 @@
                             body: JSON.stringify({
                                 cliente: nomeCliente,
                                 telefone: telefoneCliente,
-                                nomePlano: plano.nome,
-                                preco: plano.preco,
-                                dataFim: dataFim.toISOString(),
+                                plano: {
+                                    nome: plano.nome,
+                                    preco: plano.preco
+                                },
+                                metodoPagamento: metodo,
                                 whatsappBarbeiro: MEU_WHATSAPP
                             })
                         }).catch(e => console.warn("Aviso WhatsApp compra plano:", e));

@@ -1243,13 +1243,46 @@ app.get('/api/pagamento/status/:id', async (req, res) => {
         const { id } = req.params;
         if (!id) return res.status(400).json({ error: 'ID do pagamento obrigatorio.' });
 
-        const response = await paymentClient.get({ id });
-        return res.json({
-            id: response.id,
-            status: response.status,
-            status_detail: response.status_detail,
-            date_approved: response.date_approved
-        });
+        if (!activeAccessToken || activeAccessToken === 'SEU_ACCESS_TOKEN_AQUI') {
+            await carregarConfiguracoesMercadoPagoFirestore();
+        }
+
+        // 1. Tenta consulta via SDK oficial do Mercado Pago
+        try {
+            const response = await paymentClient.get({ id: String(id) });
+            if (response && response.status) {
+                return res.json({
+                    id: response.id,
+                    status: response.status,
+                    status_detail: response.status_detail,
+                    date_approved: response.date_approved
+                });
+            }
+        } catch (sdkErr) {
+            console.warn(`[Status Pix] Tentando consulta direta via REST API para ${id}:`, sdkErr.message);
+        }
+
+        // 2. Fallback direto via REST API do Mercado Pago
+        if (activeAccessToken && activeAccessToken !== 'SEU_ACCESS_TOKEN_AQUI') {
+            try {
+                const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${id}`, {
+                    headers: { 'Authorization': `Bearer ${activeAccessToken}` }
+                });
+                const mpData = await mpRes.json();
+                if (mpRes.ok && mpData && mpData.status) {
+                    return res.json({
+                        id: mpData.id,
+                        status: mpData.status,
+                        status_detail: mpData.status_detail,
+                        date_approved: mpData.date_approved
+                    });
+                }
+            } catch (fetchErr) {
+                console.error(`[Status Pix] Erro no fallback REST para ${id}:`, fetchErr.message);
+            }
+        }
+
+        return res.status(404).json({ error: 'Pagamento não encontrado no Mercado Pago.' });
     } catch (error) {
         console.error(`Erro ao consultar pagamento ${req.params.id}:`, error);
         return res.status(500).json({ error: error.message || 'Erro ao consultar status.' });
