@@ -1614,6 +1614,30 @@
         </div>
     </div>
 
+    <!-- BANNER FLUTUANTE DE PIX PENDENTE EM SEGUNDO PLANO -->
+    <div id="bannerPixPendenteGlobal" class="hidden fixed bottom-5 right-4 left-4 sm:left-auto sm:right-6 sm:max-w-md z-40 bg-zinc-950/95 border-2 border-dourado/80 rounded-2xl p-4 shadow-2xl backdrop-blur-md transition-all">
+        <div class="flex items-start gap-3">
+            <div class="w-9 h-9 rounded-full bg-amber-500/20 border border-amber-500/50 flex items-center justify-center flex-shrink-0 text-amber-400 font-bold text-base">
+                ⏳
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between">
+                    <h4 class="text-xs font-bold text-dourado uppercase tracking-wider">Pagamento Pix em Andamento</h4>
+                    <span id="bannerPixTempoRestante" class="text-[10px] text-zinc-400 font-mono"></span>
+                </div>
+                <p id="bannerPixPendenteDesc" class="text-xs text-zinc-200 mt-0.5 truncate font-medium">Aguardando confirmação do seu banco...</p>
+                <div class="flex items-center gap-2 mt-2.5">
+                    <button id="btnReabrirModalPixPendente" type="button" class="bg-dourado hover:bg-[#C5A028] text-black font-bold text-xs px-3 py-1.5 rounded-lg transition shadow flex items-center gap-1 cursor-pointer">
+                        📱 Ver QR Code
+                    </button>
+                    <button id="btnCancelarPixPendente" type="button" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs px-2.5 py-1.5 rounded-lg transition cursor-pointer">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL DE VISUALIZAÇÃO AMPLIADA E DOWNLOAD DA FOTO DO CORTE (CLIENTE) -->
     <div id="modalVisualizarFotoCorteCliente" class="hidden fixed inset-0 bg-black/95 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto animate-fade-in">
         <div class="modal-responsive-card bg-zinc-900 border border-amber-500/50 rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-6 text-center space-y-4 shadow-2xl relative my-auto">
@@ -5529,12 +5553,299 @@
         tabPagamentoCredito?.addEventListener('click', () => alternarAbaPagamentoGeral('credito'));
         tabPagamentoDebito?.addEventListener('click', () => alternarAbaPagamentoGeral('debito'));
 
+        // =========================================================================
+        // PERSISTÊNCIA DE PAGAMENTOS PIX NO LOCALSTORAGE & BACKGROUND POLLING
+        // =========================================================================
+        function salvarPixPendenteLocalStorage(infoPix) {
+            try {
+                const payload = {
+                    ...infoPix,
+                    expiraEm: Date.now() + 15 * 60 * 1000, // 15 minutos de validade
+                    criadoEm: Date.now()
+                };
+                localStorage.setItem('emaus_pix_pendente', JSON.stringify(payload));
+                atualizarBannerPixPendente();
+            } catch (e) {
+                console.warn('Erro ao salvar Pix pendente no localStorage:', e);
+            }
+        }
+
+        function obterPixPendenteLocalStorage() {
+            try {
+                const raw = localStorage.getItem('emaus_pix_pendente');
+                if (!raw) return null;
+                const data = JSON.parse(raw);
+                if (Date.now() > (data.expiraEm || 0)) {
+                    localStorage.removeItem('emaus_pix_pendente');
+                    atualizarBannerPixPendente();
+                    return null;
+                }
+                return data;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function limparPixPendenteLocalStorage() {
+            try {
+                localStorage.removeItem('emaus_pix_pendente');
+                atualizarBannerPixPendente();
+            } catch (e) {}
+        }
+
+        function atualizarBannerPixPendente() {
+            const banner = document.getElementById('bannerPixPendenteGlobal');
+            if (!banner) return;
+            const pendente = obterPixPendenteLocalStorage();
+
+            // Se o modal correspondente estiver atualmente aberto, esconde o banner flutuante
+            const modalPixEl = document.getElementById('modalPix');
+            const modalProdEl = document.getElementById('modalComprarProdutoPix');
+            const modalPixAberto = modalPixEl && !modalPixEl.classList.contains('hidden');
+            const modalProdAberto = modalProdEl && !modalProdEl.classList.contains('hidden');
+
+            if (!pendente || modalPixAberto || modalProdAberto) {
+                banner.classList.add('hidden');
+                return;
+            }
+
+            const descEl = document.getElementById('bannerPixPendenteDesc');
+            const tempoEl = document.getElementById('bannerPixTempoRestante');
+
+            if (descEl) {
+                const valorFormatado = Number(pendente.valor || 0).toFixed(2);
+                if (pendente.tipo === 'produto') {
+                    descEl.innerText = `Compra: ${pendente.descricao || 'Produto'} (R$ ${valorFormatado})`;
+                } else if (pendente.tipo === 'plano') {
+                    descEl.innerText = `Assinatura: ${pendente.descricao || 'Plano VIP'} (R$ ${valorFormatado})`;
+                } else {
+                    descEl.innerText = `Agendamento: ${pendente.descricao || 'Serviço'} (R$ ${valorFormatado})`;
+                }
+            }
+
+            if (tempoEl) {
+                const minutosRestantes = Math.max(1, Math.ceil(((pendente.expiraEm || 0) - Date.now()) / 60000));
+                tempoEl.innerText = `Expira em ${minutosRestantes} min`;
+            }
+
+            banner.classList.remove('hidden');
+        }
+
+        function reabrirModalPixPendente() {
+            const pendente = obterPixPendenteLocalStorage();
+            if (!pendente) return;
+
+            if (pendente.tipo === 'produto') {
+                const modalProd = document.getElementById('modalComprarProdutoPix');
+                if (modalProd) {
+                    modalProd.classList.remove('hidden');
+                    const imgQr = document.getElementById('imgPixQrProduto');
+                    if (imgQr) {
+                        imgQr.src = pendente.qrCodeBase64
+                            ? `data:image/png;base64,${pendente.qrCodeBase64}`
+                            : `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(pendente.qrCode)}`;
+                    }
+                    const codeInput = document.getElementById('inputPixCodeProduto');
+                    if (codeInput) codeInput.value = pendente.qrCode || '';
+
+                    if (pendente.dados && pendente.dados.produto) {
+                        produtoSelecionadoCompra = pendente.dados.produto;
+                        quantidadeCompraProduto = pendente.dados.quantidade || 1;
+                        const labelQtd = document.getElementById('labelQtdCompraProduto');
+                        const labelTotal = document.getElementById('labelTotalCompraProduto');
+                        if (labelQtd) labelQtd.innerText = quantidadeCompraProduto;
+                        if (labelTotal) labelTotal.innerText = `R$ ${Number(pendente.dados.totalPagar || 0).toFixed(2)}`;
+                    }
+
+                    document.getElementById('containerBtnGerarPixProduto')?.classList.add('hidden');
+                    document.getElementById('containerPixAtivoProduto')?.classList.remove('hidden');
+                }
+            } else {
+                const modalPixEl = document.getElementById('modalPix');
+                if (modalPixEl) {
+                    const elTitulo = document.getElementById('modalPixTitulo');
+                    const elDesc = document.getElementById('modalPixDesc');
+                    const elValor = document.getElementById('pixValorDisplay');
+                    const imgQr = document.getElementById('pixQrImage');
+                    const elCode = document.getElementById('pixCodeInput');
+
+                    if (elTitulo) elTitulo.innerText = pendente.titulo || 'Pagamento Seguro';
+                    if (elDesc) elDesc.innerText = pendente.subtitulo || 'Escolha a melhor forma para concluir o seu pagamento:';
+                    if (elValor) elValor.innerText = `R$ ${Number(pendente.valor || 10).toFixed(2)}`;
+                    if (imgQr) {
+                        imgQr.src = pendente.qrCodeBase64
+                            ? `data:image/png;base64,${pendente.qrCodeBase64}`
+                            : `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(pendente.qrCode)}`;
+                    }
+                    if (elCode) elCode.value = pendente.qrCode || '';
+
+                    alternarAbaPagamentoGeral('pix');
+                    document.getElementById('pixLoadingState')?.classList.add('hidden');
+                    document.getElementById('pixActiveState')?.classList.remove('hidden');
+                    document.getElementById('pixManualFallback')?.classList.add('hidden');
+
+                    modalPixEl.classList.remove('hidden');
+                }
+            }
+            atualizarBannerPixPendente();
+        }
+
+        // Conclusão de Compra de Produtos (Unificada para Modal e Background)
+        async function concluirCompraProdutoPix(paymentId, dadosCompra) {
+            if (!dadosCompra || !dadosCompra.produto) return;
+            const { produto, quantidade, totalPagar, nome, telefone, emailComprador } = dadosCompra;
+
+            // Idempotência: Checa se já existe registro com esse paymentId no Firestore
+            try {
+                const jaExisteSnap = await getDocs(query(
+                    collection(db, "comprasProdutos"),
+                    where("paymentId", "==", String(paymentId))
+                ));
+                if (!jaExisteSnap.empty) {
+                    console.log("⚠️ Compra de produto já processada anteriormente para o paymentId:", paymentId);
+                    limparPixPendenteLocalStorage();
+                    return;
+                }
+            } catch (eCheck) { console.warn(eCheck); }
+
+            // 1. Atualiza estoque no Firestore
+            const novoEstoque = Math.max(0, Number(produto.estoque || 0) - Number(quantidade || 1));
+            try {
+                await updateDoc(doc(db, "produtos", produto.id), {
+                    estoque: novoEstoque,
+                    atualizadoEm: new Date().toISOString()
+                });
+            } catch (errEst) { console.warn("Aviso ao baixar estoque:", errEst); }
+
+            // 2. Registra compra no Firestore
+            try {
+                await addDoc(collection(db, "comprasProdutos"), {
+                    produtoId: produto.id,
+                    produtoNome: produto.nome,
+                    volumeUnidade: produto.volumeUnidade || '',
+                    quantidade: Number(quantidade || 1),
+                    precoUnitario: produto.preco,
+                    valorTotal: totalPagar,
+                    clienteNome: nome,
+                    clienteTelefone: telefone,
+                    clienteEmail: emailComprador,
+                    paymentId: String(paymentId),
+                    status: 'pago',
+                    metodoPagamento: 'Pix Mercado Pago',
+                    criadoEm: new Date().toISOString()
+                });
+            } catch (errComp) { console.warn("Aviso ao registrar compra:", errComp); }
+
+            // 3. Notifica Barbeiro e Cliente no WhatsApp
+            try {
+                const authHdrsP1 = { 'Content-Type': 'application/json' };
+                try {
+                    const tkn = auth?.currentUser ? await auth.currentUser.getIdToken() : null;
+                    if (tkn) authHdrsP1['Authorization'] = `Bearer ${tkn}`;
+                } catch (_) {}
+                fetch(`${getBackendUrlAtivo()}/api/whatsapp/notificar-compra-produto`, {
+                    method: 'POST',
+                    headers: authHdrsP1,
+                    body: JSON.stringify({
+                        cliente: nome,
+                        telefone: telefone,
+                        produtos: [{
+                            nome: produto.nome,
+                            volumeUnidade: produto.volumeUnidade,
+                            quantidade: Number(quantidade || 1),
+                            preco: produto.preco,
+                            subtotal: totalPagar
+                        }],
+                        valorTotal: totalPagar,
+                        metodoPagamento: 'Pix Mercado Pago',
+                        whatsappBarbeiro: MEU_WHATSAPP
+                    })
+                }).catch(e => console.warn("Aviso WhatsApp compra produto:", e));
+            } catch (eZap) { console.warn(eZap); }
+
+            limparPixPendenteLocalStorage();
+            fecharModalCompraProduto();
+
+            const modalSucesso = document.getElementById('modalSucessoCompraProduto');
+            const nomeQtdEl = document.getElementById('sucessoProdutoNomeQtd');
+            const totalPagoEl = document.getElementById('sucessoProdutoTotalPago');
+            const clienteEl = document.getElementById('sucessoProdutoCliente');
+
+            if (nomeQtdEl) nomeQtdEl.innerText = `${quantidade}x ${produto.nome} (${produto.volumeUnidade || ''})`;
+            if (totalPagoEl) totalPagoEl.innerText = `R$ ${Number(totalPagar || 0).toFixed(2)}`;
+            if (clienteEl) clienteEl.innerText = `${nome} (${telefone})`;
+
+            if (modalSucesso) modalSucesso.classList.remove('hidden');
+            if (window.vibrarDispositivo) window.vibrarDispositivo('sucesso');
+
+            carregarProdutosCliente().catch(e => console.warn(e));
+        }
+
+        // Loop Global de Background Polling (Independente do Modal Estar Aberto ou Fechado)
+        let loopGlobalPixEmExecucao = false;
+        async function checarPixPendenteGlobal() {
+            if (loopGlobalPixEmExecucao) return;
+            const pendente = obterPixPendenteLocalStorage();
+            if (!pendente || !pendente.paymentId) {
+                atualizarBannerPixPendente();
+                return;
+            }
+
+            loopGlobalPixEmExecucao = true;
+            try {
+                const res = await fetch(`${getBackendUrlAtivo()}/api/pagamento/status/${pendente.paymentId}`);
+                const data = await res.json();
+
+                if (data && data.status === 'approved') {
+                    console.log("🎉 [Pix Background] Pagamento aprovado detectado pelo monitor global!", pendente.paymentId);
+                    const paymentIdAprovado = pendente.paymentId;
+                    const tipoAprovado = pendente.tipo;
+                    const dadosAprovados = pendente.dados;
+
+                    limparPixPendenteLocalStorage();
+                    fecharModalPagamento();
+                    fecharModalCompraProduto();
+
+                    if (tipoAprovado === 'produto') {
+                        await concluirCompraProdutoPix(paymentIdAprovado, dadosAprovados);
+                    } else {
+                        await concluirPagamentoComSucesso(paymentIdAprovado, 'pix_mercadopago', dadosAprovados, tipoAprovado);
+                    }
+                } else if (data && (data.status === 'cancelled' || data.status === 'rejected')) {
+                    console.warn("⚠️ [Pix Background] Pagamento cancelado/rejeitado no gateway:", pendente.paymentId);
+                    limparPixPendenteLocalStorage();
+                }
+            } catch (errPixGlobal) {
+                // Silencioso em caso de oscilação momentânea de conexão
+            } finally {
+                loopGlobalPixEmExecucao = false;
+                atualizarBannerPixPendente();
+            }
+        }
+
+        // Eventos de ativação do Background Polling
+        setInterval(checarPixPendenteGlobal, 3500);
+        window.addEventListener('focus', checarPixPendenteGlobal);
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') checarPixPendenteGlobal();
+        });
+
+        document.getElementById('btnReabrirModalPixPendente')?.addEventListener('click', reabrirModalPixPendente);
+        document.getElementById('btnCancelarPixPendente')?.addEventListener('click', () => {
+            if (confirm("Deseja realmente cancelar este pagamento Pix pendente?")) {
+                limparPixPendenteLocalStorage();
+                fecharModalPagamento();
+                fecharModalCompraProduto();
+            }
+        });
+
         function fecharModalPagamento() {
             if (pollingIntervalPix) {
                 clearInterval(pollingIntervalPix);
                 pollingIntervalPix = null;
             }
             modalPix.classList.add('hidden');
+            atualizarBannerPixPendente();
         }
 
         const btnFecharModal = document.getElementById('btnFecharModal');
@@ -5790,8 +6101,22 @@
                         if (elActive) elActive.classList.remove('hidden');
                         if (elFallback) elFallback.classList.add('hidden');
 
-                        // Monitoramento em tempo real da aprovação do pagamento com trava anti-duplicação
                         const paymentId = data.id;
+
+                        // Salva no localStorage para que nunca se perca caso o cliente saia da tela
+                        salvarPixPendenteLocalStorage({
+                            tipo: tipo,
+                            paymentId: paymentId,
+                            dados: dados,
+                            qrCode: data.qr_code,
+                            qrCodeBase64: data.qr_code_base64,
+                            valor: valorPagar,
+                            descricao: descricao,
+                            titulo: elTitulo ? elTitulo.innerText : 'Pagamento Seguro',
+                            subtitulo: elDesc ? elDesc.innerText : ''
+                        });
+
+                        // Monitoramento em tempo real da aprovação do pagamento com trava anti-duplicação
                         let pagamentoPixConcluido = false;
                         pollingIntervalPix = setInterval(async () => {
                             try {
@@ -5812,8 +6137,9 @@
                                         badge.innerHTML = "<span>✅ Pagamento Aprovado com Sucesso!</span>";
                                     }
 
+                                    limparPixPendenteLocalStorage();
                                     fecharModalPagamento();
-                                    await concluirPagamentoComSucesso(paymentId, 'pix_mercadopago');
+                                    await concluirPagamentoComSucesso(paymentId, 'pix_mercadopago', dados, tipo);
                                 }
                             } catch (err) {
                                 console.warn("Monitoramento de pagamento:", err);
@@ -5885,13 +6211,16 @@
         // ==========================================
         let isSalvandoAgendamento = false;
 
-        // Conclusão com Sucesso no Firestore e Notificação WhatsApp
-        async function concluirPagamentoComSucesso(paymentId = 'manual', metodo = 'pix_manual') {
+        // Conclusão com Sucesso no Firestore e Notificação WhatsApp (Unificado com Background Poller)
+        async function concluirPagamentoComSucesso(paymentId = 'manual', metodo = 'pix_manual', dadosOverride = null, tipoOverride = null) {
             if (isSalvandoAgendamento) {
                 console.warn("⚠️ Processamento já em andamento. Ignorando chamada concorrente.");
                 return;
             }
             isSalvandoAgendamento = true;
+
+            const tipoEfetivo = tipoOverride || tipoPagamentoAtual;
+            const dadosEfetivos = dadosOverride || dadosPagamentoPendente;
 
             const user = auth.currentUser;
             if (!user) {
@@ -5910,15 +6239,35 @@
             } catch (e) { console.error(e); }
 
             try {
-                if (tipoPagamentoAtual === 'agendamento' && dadosPagamentoPendente) {
-                    const { servico, preco, data, horario, modalidade, valorCobrado, extras, produtos } = dadosPagamentoPendente;
+                if (tipoEfetivo === 'agendamento' && dadosEfetivos) {
+                    const { servico, preco, data, horario, modalidade, valorCobrado, extras, produtos } = dadosEfetivos;
                     const msgStatus = document.getElementById('msgStatus');
                     const dataHoraCompleta = `${data}T${horario}`;
                     const valorEfetivoPago = valorCobrado !== undefined ? valorCobrado : (modalidade === 'total' ? preco : 10.00);
                     const precoTotalNum = Number(preco || 0);
                     const listaProdutosAg = Array.isArray(produtos) ? produtos : [];
 
-                    // Idempotência: Checa se já existe agendamento deste usuário na mesma data/hora
+                    // Idempotência por PaymentId
+                    if (paymentId && paymentId !== 'manual') {
+                        try {
+                            const queryPayment = await getDocs(query(
+                                collection(db, "agendamentos"),
+                                where("idPagamento", "==", String(paymentId))
+                            ));
+                            if (!queryPayment.empty) {
+                                console.log("⚠️ Agendamento já registrado com este idPagamento. Evitando duplicação.");
+                                limparPixPendenteLocalStorage();
+                                fecharModalPagamento();
+                                const dExist = queryPayment.docs[0].data();
+                                exibirModalSucessoAgendamento(dExist.servico || servico, dExist.dataHora || dataHoraCompleta, dExist.cliente || nomeCliente, dExist.preco || precoTotalNum, dExist.taxaReservaPaga || valorEfetivoPago, !!dExist.isPlano);
+                                carregarPainelCliente(user.uid);
+                                isSalvandoAgendamento = false;
+                                return;
+                            }
+                        } catch (eIdem) { console.warn(eIdem); }
+                    }
+
+                    // Idempotência por Usuário e Data/Hora
                     const queryExistente = await getDocs(query(
                         collection(db, "agendamentos"),
                         where("userId", "==", user.uid),
@@ -5932,9 +6281,11 @@
 
                     if (jaExiste) {
                         console.warn("⚠️ Agendamento já registrado no Firestore. Evitando duplicação.");
+                        limparPixPendenteLocalStorage();
                         fecharModalPagamento();
                         exibirModalSucessoAgendamento(servico, dataHoraCompleta, nomeCliente, precoTotalNum, valorEfetivoPago, false);
                         carregarPainelCliente(user.uid);
+                        isSalvandoAgendamento = false;
                         return;
                     }
 
@@ -5962,7 +6313,7 @@
                                         clienteId: user.uid,
                                         clienteNome: nomeCliente,
                                         clienteTelefone: telefoneCliente,
-                                        idPagamento: paymentId,
+                                        idPagamento: String(paymentId),
                                         metodoPagamento: metodo,
                                         origem: 'agendamento_upsell',
                                         status: 'aprovado',
@@ -5978,8 +6329,8 @@
                     }
 
                     // Se for agendamento de mensalista com extras contratados
-                    if (dadosPagamentoPendente.isPlanoMensalistaComExtras) {
-                        const semanaPlanoNum = dadosPagamentoPendente.semanaPlano;
+                    if (dadosEfetivos.isPlanoMensalistaComExtras) {
+                        const semanaPlanoNum = dadosEfetivos.semanaPlano;
                         const docRef = await addDoc(collection(db, "agendamentos"), {
                             userId: user.uid,
                             cliente: nomeCliente,
@@ -5988,7 +6339,7 @@
                             preco: preco,
                             taxaReservaPaga: valorEfetivoPago,
                             modalidadePagamento: 'plano_vip_com_extras',
-                            idPagamento: paymentId,
+                            idPagamento: String(paymentId),
                             metodoPagamento: metodo,
                             extras: extras || [],
                             produtos: listaProdutosAg,
@@ -6007,7 +6358,7 @@
                             status: 'agendado',
                             agendamentoId: docRef.id,
                             agendamentoData: dataHoraCompleta,
-                            servico: dadosPagamentoPendente.servicoPrincipalPlano || servico,
+                            servico: dadosEfetivos.servicoPrincipalPlano || servico,
                             atualizadoEm: new Date().toISOString()
                         };
                         await updateDoc(doc(db, "assinaturasClientes", user.uid), updateObj);
@@ -6017,6 +6368,7 @@
                             msgStatus.innerText = "Agendamento do plano com extras confirmado com sucesso!";
                         }
 
+                        limparPixPendenteLocalStorage();
                         await carregarPainelCliente(user.uid);
                         await carregarPainelPlanosCliente(user.uid);
 
@@ -6047,14 +6399,14 @@
                         preco: preco,
                         taxaReservaPaga: valorEfetivoPago,
                         modalidadePagamento: modalidade || 'taxa',
-                        idPagamento: paymentId,
+                        idPagamento: String(paymentId),
                         metodoPagamento: metodo,
-                        isFidelidade: !!dadosPagamentoPendente?.isFidelidade,
-                        recompensaFidelidade: dadosPagamentoPendente?.descricaoFidelidade || '',
-                        descontoFidelidade: dadosPagamentoPendente?.descontoFidelidade || 0,
-                        isAniversario: !!dadosPagamentoPendente?.isAniversario,
-                        recompensaAniversario: dadosPagamentoPendente?.descricaoAniversario || '',
-                        descontoAniversario: dadosPagamentoPendente?.descontoAniversario || 0,
+                        isFidelidade: !!dadosEfetivos?.isFidelidade,
+                        recompensaFidelidade: dadosEfetivos?.descricaoFidelidade || '',
+                        descontoFidelidade: dadosEfetivos?.descontoFidelidade || 0,
+                        isAniversario: !!dadosEfetivos?.isAniversario,
+                        recompensaAniversario: dadosEfetivos?.descricaoAniversario || '',
+                        descontoAniversario: dadosEfetivos?.descontoAniversario || 0,
                         extras: extras || [],
                         produtos: listaProdutosAg,
                         barbeiroId: barbeiroSelecionadoCliente?.id || 'qualquer',
@@ -6066,7 +6418,7 @@
                     });
 
                     // Se aplicou recompensa de fidelidade com abatimento de valor no checkout
-                    if (dadosPagamentoPendente?.isFidelidade) {
+                    if (dadosEfetivos?.isFidelidade) {
                         try {
                             const meta = Math.max(1, Number(configFidelidadeCliente.metaSelos || 10));
                             const selosAtuais = Number(dadosFidelidadeCliente.selosAtuais || 0);
@@ -6093,7 +6445,7 @@
                     }
 
                     // Se aplicou presente de aniversário com abatimento de valor no checkout
-                    if (dadosPagamentoPendente?.isAniversario) {
+                    if (dadosEfetivos?.isAniversario) {
                         try {
                             const anoAtual = new Date().getFullYear();
                             await setDoc(doc(db, "usuarios", user.uid), {
@@ -6120,6 +6472,7 @@
                     if (elGrade) elGrade.innerHTML = "<option value=''>Selecione a data primeiro</option>";
                     if (elServ) elServ.value = "";
                     renderizarOpcoesExtras();
+                    limparPixPendenteLocalStorage();
                     carregarPainelCliente(user.uid);
                     carregarFidelidadeCliente(user.uid).catch(e => console.warn(e));
 
@@ -6141,8 +6494,8 @@
                         barbeiroWhatsapp: barbeiroSelecionadoCliente?.whatsapp || ''
                     });
 
-                } else if (tipoPagamentoAtual === 'plano' && dadosPagamentoPendente?.plano) {
-                    const plano = dadosPagamentoPendente.plano;
+                } else if (tipoEfetivo === 'plano' && dadosEfetivos?.plano) {
+                    const plano = dadosEfetivos.plano;
                     const dataPagamento = new Date();
                     const dataFim = new Date();
                     dataFim.setDate(dataPagamento.getDate() + 30);
@@ -6156,7 +6509,7 @@
                         servicosInclusos: plano.servicosInclusos || [],
                         dataPagamento: dataPagamento.toISOString(),
                         dataFim: dataFim.toISOString(),
-                        idPagamento: paymentId,
+                        idPagamento: String(paymentId),
                         metodoPagamento: metodo,
                         status: 'ativo',
                         atualizadoEm: new Date().toISOString()
@@ -6183,6 +6536,7 @@
                         }).catch(e => console.warn("Aviso WhatsApp compra plano:", e));
                     } catch (eZap) { console.warn(eZap); }
 
+                    limparPixPendenteLocalStorage();
                     fecharModalPagamento();
                     alert(`🎉 Parabéns, ${nomeCliente}! Sua assinatura do ${plano.nome} foi ativada com sucesso! Você tem 1 corte semanal 100% gratuito pelos próximos 30 dias.`);
                     
@@ -7294,7 +7648,7 @@
         const modalSucessoCompraProduto = document.getElementById('modalSucessoCompraProduto');
 
         // Alternância de Abas no Modal de Produtos
-        const tabProdPix = document.getElementById('tabProdPix');
+const tabProdPix = document.getElementById('tabProdPix');
         const tabProdCredito = document.getElementById('tabProdCredito');
         const tabProdDebito = document.getElementById('tabProdDebito');
         const viewProdPix = document.getElementById('viewProdPix');
@@ -7335,6 +7689,7 @@
                 clearInterval(pollingIntervalPixProduto);
                 pollingIntervalPixProduto = null;
             }
+            atualizarBannerPixPendente();
             produtoSelecionadoCompra = null;
             quantidadeCompraProduto = 1;
         }
@@ -7394,9 +7749,7 @@
                             inputNome.value = uDoc.data().nome || "";
                             if (inputTel && !inputTel.value) inputTel.value = uDoc.data().telefone || "";
                         }
-                    } catch (e) {
-                        console.warn("[EMAÚS:LOJA] Aviso ao carregar dados do comprador:", e);
-                    }
+                    } catch (_) {}
                 }
             }
 
@@ -7408,7 +7761,10 @@
             document.getElementById('containerPixAtivoProduto')?.classList.add('hidden');
             if (btnGerarPixProduto) {
                 btnGerarPixProduto.disabled = false;
-                btnGerarPixProduto.innerHTML = `<span>⚡</span> Pagar via Pix Imediato`;
+                btnGerarPixProduto.innerHTML = `
+                    <svg class="w-4 h-4 fill-current flex-shrink-0" viewBox="0 0 512 512"><path d="M112.57 391.77L154.2 350.14c12.49-12.49 12.49-32.74 0-45.24L79.79 230.49l74.41-74.41c12.49-12.49 12.49-32.74 0-45.24L112.57 69.21c-12.49-12.49-32.74-12.49-45.24 0L6.71 130.83c-8.94 8.94-8.94 23.44 0 32.38l67.28 67.28 67.28 67.28-67.28 67.28-67.28 67.28c-8.94 8.94-8.94 23.44 0 32.38l60.62 60.62c12.5 12.5 32.75 12.5 45.24 0zm286.86-322.56L357.8 110.84c-12.49 12.49-12.49 32.74 0 45.24l74.41 74.41-74.41 74.41c-12.49 12.49-12.49 32.74 0 45.24l41.63 41.63c12.49 12.49 32.74 12.49 45.24 0l60.62-60.62c8.94-8.94 8.94-23.44 0-32.38l-67.28-67.28-67.28-67.28 67.28-67.28 67.28-67.28c8.94-8.94 8.94-23.44 0-32.38l-60.62-60.62c-12.5-12.49-32.75-12.49-45.24 0zM256 160.83l-47.53 47.53c-12.49 12.49-12.49 32.74 0 45.24L256 301.13l47.53-47.53c12.49-12.49 12.49-32.74 0-45.24L256 160.83z"/></svg>
+                    <span>Pagar via Pix Imediato</span>
+                `;
             }
 
             if (modalComprarProdutoPix) modalComprarProdutoPix.classList.remove('hidden');
@@ -7541,8 +7897,31 @@
                         document.getElementById('containerPixAtivoProduto')?.classList.remove('hidden');
                         if (msg) msg.innerText = '';
 
-                        // Polling de aprovação em tempo real com trava anti-duplicidade
                         const paymentId = data.id;
+
+                        // Salva dados no localStorage para recuperação se fechar a tela
+                        const dadosCompraProduto = {
+                            produto: produtoSelecionadoCompra,
+                            quantidade: quantidadeCompraProduto,
+                            totalPagar: totalPagar,
+                            nome: nome,
+                            telefone: telefone,
+                            emailComprador: emailComprador
+                        };
+
+                        salvarPixPendenteLocalStorage({
+                            tipo: 'produto',
+                            paymentId: paymentId,
+                            dados: dadosCompraProduto,
+                            qrCode: data.qr_code,
+                            qrCodeBase64: data.qr_code_base64,
+                            valor: totalPagar,
+                            descricao: `${quantidadeCompraProduto}x ${produtoSelecionadoCompra.nome}`,
+                            titulo: 'Comprar Produto',
+                            subtitulo: 'Loja da Barbearia • Pagamento Seguro'
+                        });
+
+                        // Polling de aprovação em tempo real com trava anti-duplicidade
                         let compraPixConcluida = false;
                         if (pollingIntervalPixProduto) clearInterval(pollingIntervalPixProduto);
                         pollingIntervalPixProduto = setInterval(async () => {
@@ -7558,76 +7937,7 @@
                                         pollingIntervalPixProduto = null;
                                     }
 
-                                    // 1. Atualiza estoque no Firestore
-                                    const novoEstoque = Math.max(0, Number(produtoSelecionadoCompra.estoque || 0) - quantidadeCompraProduto);
-                                    try {
-                                        await updateDoc(doc(db, "produtos", produtoSelecionadoCompra.id), {
-                                            estoque: novoEstoque,
-                                            atualizadoEm: new Date().toISOString()
-                                        });
-                                    } catch (errEst) { console.warn("Aviso ao baixar estoque:", errEst); }
-
-                                    // 2. Registra compra no Firestore
-                                    try {
-                                        await addDoc(collection(db, "comprasProdutos"), {
-                                            produtoId: produtoSelecionadoCompra.id,
-                                            produtoNome: produtoSelecionadoCompra.nome,
-                                            volumeUnidade: produtoSelecionadoCompra.volumeUnidade || '',
-                                            quantidade: quantidadeCompraProduto,
-                                            precoUnitario: produtoSelecionadoCompra.preco,
-                                            valorTotal: totalPagar,
-                                            clienteNome: nome,
-                                            clienteTelefone: telefone,
-                                            clienteEmail: emailComprador,
-                                            paymentId: paymentId,
-                                            status: 'pago',
-                                            metodoPagamento: 'Pix Mercado Pago',
-                                            criadoEm: new Date().toISOString()
-                                        });
-                                    } catch (errComp) { console.warn("Aviso ao registrar compra:", errComp); }
-
-                                    // 3. Notifica Barbeiro e Cliente no WhatsApp
-                                    try {
-                                        const authHdrsP1 = { 'Content-Type': 'application/json' };
-                                        try {
-                                            const tkn = auth?.currentUser ? await auth.currentUser.getIdToken() : null;
-                                            if (tkn) authHdrsP1['Authorization'] = `Bearer ${tkn}`;
-                                        } catch (_) {}
-                                        fetch(`${getBackendUrlAtivo()}/api/whatsapp/notificar-compra-produto`, {
-                                            method: 'POST',
-                                            headers: authHdrsP1,
-                                            body: JSON.stringify({
-                                                cliente: nome,
-                                                telefone: telefone,
-                                                produtos: [{
-                                                    nome: produtoSelecionadoCompra.nome,
-                                                    volumeUnidade: produtoSelecionadoCompra.volumeUnidade,
-                                                    quantidade: quantidadeCompraProduto,
-                                                    preco: produtoSelecionadoCompra.preco,
-                                                    subtotal: totalPagar
-                                                }],
-                                                valorTotal: totalPagar,
-                                                metodoPagamento: 'Pix Mercado Pago',
-                                                whatsappBarbeiro: MEU_WHATSAPP
-                                            })
-                                        }).catch(e => console.warn("Aviso WhatsApp compra produto:", e));
-                                    } catch (eZap) { console.warn(eZap); }
-
-                                    // 4. Abre Modal de Sucesso
-                                    fecharModalCompraProduto();
-                                    const nomeQtdEl = document.getElementById('sucessoProdutoNomeQtd');
-                                    const totalPagoEl = document.getElementById('sucessoProdutoTotalPago');
-                                    const clienteEl = document.getElementById('sucessoProdutoCliente');
-
-                                    if (nomeQtdEl) nomeQtdEl.innerText = `${quantidadeCompraProduto}x ${produtoSelecionadoCompra.nome} (${produtoSelecionadoCompra.volumeUnidade || ''})`;
-                                    if (totalPagoEl) totalPagoEl.innerText = `R$ ${totalPagar.toFixed(2)}`;
-                                    if (clienteEl) clienteEl.innerText = `${nome} (${telefone})`;
-
-                                    if (modalSucessoCompraProduto) modalSucessoCompraProduto.classList.remove('hidden');
-                                    if (window.vibrarDispositivo) window.vibrarDispositivo('sucesso');
-
-                                    // Recarrega lista de produtos
-                                    carregarProdutosCliente();
+                                    await concluirCompraProdutoPix(paymentId, dadosCompraProduto);
                                 }
                             } catch (errPoll) {
                                 console.warn("Polling compra produto:", errPoll);
@@ -7850,6 +8160,8 @@
             carregarConfiguracoesGerais(); 
             carregarPromocoesAtivasCliente();
             carregarConfigTaxaReservaCliente();
+            atualizarBannerPixPendente();
+            checarPixPendenteGlobal();
         } catch (e) { 
             console.warn("[EMAÚS:INIT] Erro ao carregar configurações gerais:", e); 
         }
