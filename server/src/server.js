@@ -1199,6 +1199,7 @@ app.post('/api/pagamento/pix', async (req, res) => {
 
         const nameParts = (nome || 'Cliente Barbearia').trim().split(' ');
         const firstName = nameParts[0] || 'Cliente';
+        const lastName = nameParts.slice(1).join(' ') || 'Barbearia';
         const tipoFinal = tipo || (description && description.toLowerCase().includes('produto') ? 'produto' : (description && description.toLowerCase().includes('assinatura') ? 'plano' : 'agendamento'));
         const dadosPayload = dadosCompletos || dadosAgendamento || {
             nome: nome || 'Cliente',
