@@ -1,3 +1,5 @@
+process.env.INTERNAL_SERVICE_KEY = process.env.INTERNAL_SERVICE_KEY || '81c4e36048d120da4a23d25fb91065bc0549da7b776516b36760a5ff7768d157';
+
 import { 
     iniciarWhatsApp, 
     obterStatusWhatsApp, 

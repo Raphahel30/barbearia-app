@@ -4055,6 +4055,41 @@
                 return;
             }
 
+            // Validação em tempo real de bloqueio de 20 minutos para mensalista
+            const agoraCheckMens = new Date();
+            const hojeAnoMens = agoraCheckMens.getFullYear();
+            const hojeMesMens = String(agoraCheckMens.getMonth() + 1).padStart(2, '0');
+            const hojeDiaMens = String(agoraCheckMens.getDate()).padStart(2, '0');
+            const hojeIsoMens = `${hojeAnoMens}-${hojeMesMens}-${hojeDiaMens}`;
+
+            if (data === hojeIsoMens && horario) {
+                const [hh, mm] = horario.split(':').map(Number);
+                const minutosAg = hh * 60 + mm;
+                const minutosNow = agoraCheckMens.getHours() * 60 + agoraCheckMens.getMinutes();
+
+                if (minutosAg <= minutosNow) {
+                    alert("⚠️ Horário Expirado:\n\nEste horário já passou. Por favor, escolha outro horário disponível.");
+                    const selectHora = document.getElementById('selectHorarioAgendamentoMensalista');
+                    if (selectHora) carregarGradeHorariosPadrao(data, selectHora);
+                    return;
+                }
+
+                try {
+                    const cfgExpSnap = await getDoc(doc(db, "configuracoes", "expediente"));
+                    const cfgExp = cfgExpSnap.exists() ? cfgExpSnap.data() : {};
+                    const bloqueioAtivo = cfgExp.bloqueioAntecedenciaAtivo !== false;
+                    if (bloqueioAtivo && minutosAg <= (minutosNow + 20)) {
+                        const minRest = Math.max(0, minutosAg - minutosNow);
+                        alert(`⚡ Horário Bloqueado (Mínimo 20 min):\n\nFaltam apenas ${minRest} minutos para as ${horario}.\n\nPara garantir a preparação do atendimento, agendamentos no mesmo dia exigem no mínimo 20 minutos de antecedência.\n\nPor favor, escolha outro horário.`);
+                        const selectHora = document.getElementById('selectHorarioAgendamentoMensalista');
+                        if (selectHora) carregarGradeHorariosPadrao(data, selectHora);
+                        return;
+                    }
+                } catch (eExp) {
+                    console.warn(eExp);
+                }
+            }
+
             if (!dadosAssinaturaAtiva || !dadosAssinaturaAtiva.ehAtivo) {
                 alert("Plano mensal não encontrado ou expirado.");
                 return;
@@ -4968,6 +5003,25 @@
             });
         }
 
+        // Auto-atualização periódica da grade de horários a cada 30s para aplicar a trava de 20 min dinamicamente
+        setInterval(() => {
+            const inputDataAtual = document.getElementById('dataAtendimento');
+            const selectHoraAtual = document.getElementById('horarioGrade');
+            const avisoBloqueioAtual = document.getElementById('avisoDataBloqueada');
+            if (inputDataAtual && inputDataAtual.value && selectHoraAtual) {
+                const dAgora = new Date();
+                const hojeIso = `${dAgora.getFullYear()}-${String(dAgora.getMonth() + 1).padStart(2, '0')}-${String(dAgora.getDate()).padStart(2, '0')}`;
+                if (inputDataAtual.value === hojeIso) {
+                    const horarioSelecionadoAntes = selectHoraAtual.value;
+                    carregarGradeHorariosPadrao(hojeIso, selectHoraAtual, avisoBloqueioAtual).then(() => {
+                        if (horarioSelecionadoAntes && selectHoraAtual.querySelector(`option[value='${horarioSelecionadoAntes}']:not(:disabled)`)) {
+                            selectHoraAtual.value = horarioSelecionadoAntes;
+                        }
+                    }).catch(() => {});
+                }
+            }
+        }, 30000);
+
         async function carregarPainelCliente(userId) {
             const divOcupados = document.getElementById('horariosOcupadosLista');
             const meusAgendamentosLista = document.getElementById('meusAgendamentosLista');
@@ -5545,11 +5599,49 @@
                 pollingIntervalPix = null;
             }
 
-            // Validação pró-ativa de concorrência antes de abrir pagamento
+            // Validação pró-ativa de concorrência e antecedência mínima de 20 minutos antes de abrir pagamento
             if (tipo === 'agendamento' && dados.data && dados.horario) {
                 const dataHoraAlvo = `${dados.data}T${dados.horario}`;
                 const user = auth.currentUser;
                 const barbeiroAlvoId = (modoMultiBarbeiroCliente && barbeiroSelecionadoCliente) ? barbeiroSelecionadoCliente.id : 'qualquer';
+
+                // Checagem estrita da regra de 20 minutos em tempo real
+                const agoraCheck = new Date();
+                const hojeAno = agoraCheck.getFullYear();
+                const hojeMes = String(agoraCheck.getMonth() + 1).padStart(2, '0');
+                const hojeDia = String(agoraCheck.getDate()).padStart(2, '0');
+                const hojeIso = `${hojeAno}-${hojeMes}-${hojeDia}`;
+
+                if (dados.data === hojeIso) {
+                    const [hh, mm] = dados.horario.split(':').map(Number);
+                    const minutosAgendamento = hh * 60 + mm;
+                    const minutosAgora = agoraCheck.getHours() * 60 + agoraCheck.getMinutes();
+
+                    if (minutosAgendamento <= minutosAgora) {
+                        alert("⚠️ Horário Expirado:\n\nEste horário já passou. Por favor, escolha outro horário disponível na grade.");
+                        const selectHora = document.getElementById('horarioGrade');
+                        const avisoBloqueio = document.getElementById('avisoDataBloqueada');
+                        if (selectHora && dados.data) await carregarGradeHorariosPadrao(dados.data, selectHora, avisoBloqueio);
+                        return;
+                    }
+
+                    try {
+                        const cfgExpSnap = await getDoc(doc(db, "configuracoes", "expediente"));
+                        const cfgExp = cfgExpSnap.exists() ? cfgExpSnap.data() : {};
+                        const bloqueioAtivo = cfgExp.bloqueioAntecedenciaAtivo !== false;
+                        if (bloqueioAtivo && minutosAgendamento <= (minutosAgora + 20)) {
+                            const minRest = Math.max(0, minutosAgendamento - minutosAgora);
+                            alert(`⚡ Horário Bloqueado (Mínimo 20 min):\n\nFaltam apenas ${minRest} minutos para as ${dados.horario}.\n\nPara garantir a preparação do atendimento, agendamentos no mesmo dia exigem no mínimo 20 minutos de antecedência.\n\nNenhuma cobrança foi gerada. Por favor, escolha outro horário.`);
+                            const selectHora = document.getElementById('horarioGrade');
+                            const avisoBloqueio = document.getElementById('avisoDataBloqueada');
+                            if (selectHora && dados.data) await carregarGradeHorariosPadrao(dados.data, selectHora, avisoBloqueio);
+                            return;
+                        }
+                    } catch (eExp) {
+                        console.warn("Aviso ao validar expediente em processarAberturaPagamento:", eExp);
+                    }
+                }
+
                 try {
                     const snapCheck = await getDocs(query(collection(db, "agendamentos"), where("dataHora", "==", dataHoraAlvo)));
                     let ocupadoOutro = false;
@@ -5666,6 +5758,7 @@
                 } catch (e) { console.error(e); }
 
                 try {
+                    const dataHoraPayload = (tipo === 'agendamento' && dados.data && dados.horario) ? `${dados.data}T${dados.horario}` : undefined;
                     const response = await fetch(`${getBackendUrlAtivo()}/api/pagamento/pix`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -5674,6 +5767,7 @@
                             description: descricao,
                             email: user.email,
                             nome: nomeCliente,
+                            dataHora: dataHoraPayload,
                             external_reference: `${user.uid}_${Date.now()}`
                         })
                     });
@@ -6324,6 +6418,54 @@
                 }
             } catch (e) { console.error(e); }
 
+            // 0. Validação em Tempo Real do Bloqueio Dinâmico de 20 Minutos e Horário Passado
+            const agoraCheck = new Date();
+            const hojeAno = agoraCheck.getFullYear();
+            const hojeMes = String(agoraCheck.getMonth() + 1).padStart(2, '0');
+            const hojeDia = String(agoraCheck.getDate()).padStart(2, '0');
+            const hojeIso = `${hojeAno}-${hojeMes}-${hojeDia}`;
+
+            if (data === hojeIso && horario) {
+                const [hh, mm] = horario.split(':').map(Number);
+                const minutosAgendamento = hh * 60 + mm;
+                const minutosAgora = agoraCheck.getHours() * 60 + agoraCheck.getMinutes();
+
+                if (minutosAgendamento <= minutosAgora) {
+                    if (msgStatus) {
+                        msgStatus.className = "text-center text-sm text-red-400 font-bold p-2.5 rounded-xl bg-red-950/80 border border-red-800";
+                        msgStatus.innerText = "⚠️ Este horário já passou! Por favor, escolha outro horário disponível na grade.";
+                    }
+                    alert("⚠️ Horário Expirado:\n\nEste horário já passou. Por favor, escolha outro horário disponível na grade.");
+                    const selectHora = document.getElementById('horarioGrade');
+                    const avisoBloq = document.getElementById('avisoDataBloqueada');
+                    if (selectHora) carregarGradeHorariosPadrao(data, selectHora, avisoBloq);
+                    return null;
+                }
+
+                // Verifica se a regra de bloqueio de 20 minutos está ativa
+                try {
+                    const cfgExpSnap = await getDoc(doc(db, "configuracoes", "expediente"));
+                    const cfgExp = cfgExpSnap.exists() ? cfgExpSnap.data() : {};
+                    const bloqueioAtivo = cfgExp.bloqueioAntecedenciaAtivo !== false;
+                    const margemMin = 20;
+
+                    if (bloqueioAtivo && minutosAgendamento <= (minutosAgora + margemMin)) {
+                        const minutosRestantes = Math.max(0, minutosAgendamento - minutosAgora);
+                        if (msgStatus) {
+                            msgStatus.className = "text-center text-sm text-amber-300 font-bold p-3 rounded-xl bg-amber-950/80 border border-amber-700";
+                            msgStatus.innerText = `⚡ Horário indisponível: Faltam apenas ${minutosRestantes} min para as ${horario}. É necessário no mínimo 20 minutos de antecedência para agendamento no mesmo dia.`;
+                        }
+                        alert(`⚡ Horário Bloqueado (Mínimo 20 min):\n\nFaltam apenas ${minutosRestantes} minutos para o horário das ${horario}.\n\nPara garantir a qualidade e preparação do atendimento, agendamentos no mesmo dia exigem no mínimo 20 minutos de antecedência.\n\nPor favor, selecione um horário posterior.`);
+                        const selectHora = document.getElementById('horarioGrade');
+                        const avisoBloq = document.getElementById('avisoDataBloqueada');
+                        if (selectHora) carregarGradeHorariosPadrao(data, selectHora, avisoBloq);
+                        return null;
+                    }
+                } catch (eExp) {
+                    console.warn("Aviso ao validar expediente em tempo real:", eExp);
+                }
+            }
+
             if (msgStatus) msgStatus.innerText = "";
             const servicoBase = servicoSelect.value;
             const optSelected = servicoSelect.options[servicoSelect.selectedIndex];
@@ -6741,23 +6883,28 @@
             }
 
             try {
-                const response = await fetch(`${getBackendUrlAtivo()}/api/pagamento/cartao`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        cardNumber: cartaoNumero,
-                        cardholderName: cartaoNome,
-                        cardExpirationMonth: expMonth,
-                        cardExpirationYear: expYear,
-                        securityCode: cartaoCvv,
-                        cpf: cartaoCpf,
-                        transaction_amount: valorFinalCobrado,
-                        installments: parcelas,
-                        tipoCartao: isDebito ? 'debito' : 'credito',
-                        email: user?.email || 'cliente@barbearia.com',
-                        description: descricao
-                    })
-                });
+                    const dataHoraCartao = (tipoPagamentoAtual === 'agendamento' && dadosPagamentoPendente?.data && dadosPagamentoPendente?.horario)
+                        ? `${dadosPagamentoPendente.data}T${dadosPagamentoPendente.horario}`
+                        : undefined;
+
+                    const response = await fetch(`${getBackendUrlAtivo()}/api/pagamento/cartao`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            cardNumber: cartaoNumero,
+                            cardholderName: cartaoNome,
+                            cardExpirationMonth: expMonth,
+                            cardExpirationYear: expYear,
+                            securityCode: cartaoCvv,
+                            cpf: cartaoCpf,
+                            transaction_amount: valorFinalCobrado,
+                            installments: parcelas,
+                            tipoCartao: isDebito ? 'debito' : 'credito',
+                            email: user?.email || 'cliente@barbearia.com',
+                            description: descricao,
+                            dataHora: dataHoraCartao
+                        })
+                    });
 
                 const data = await response.json();
 

@@ -1001,13 +1001,67 @@ app.post(['/api/pagamento/testar-token', '/api/configuracoes/mercadopago/testar'
     }
 });
 
+// Helper para validar antecedência mínima de 20 minutos e impedir cobranças de horários inválidos
+function validarAntecedenciaMinimaAgendamento(dataHora) {
+    if (!dataHora || typeof dataHora !== 'string') return { valido: true };
+    try {
+        const [data, horario] = dataHora.split('T');
+        if (!data || !horario) return { valido: true };
+
+        // Obtém data/hora atual no fuso horário oficial de Brasília (America/Sao_Paulo)
+        const agoraBrStr = new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' });
+        const agoraBr = new Date(agoraBrStr);
+
+        const hojeAno = agoraBr.getFullYear();
+        const hojeMes = String(agoraBr.getMonth() + 1).padStart(2, '0');
+        const hojeDia = String(agoraBr.getDate()).padStart(2, '0');
+        const hojeIso = `${hojeAno}-${hojeMes}-${hojeDia}`;
+
+        // Se a data do agendamento for hoje
+        if (data === hojeIso) {
+            const [hh, mm] = horario.split(':').map(Number);
+            if (isNaN(hh) || isNaN(mm)) return { valido: true };
+
+            const minutosAgendamento = hh * 60 + mm;
+            const minutosAgora = agoraBr.getHours() * 60 + agoraBr.getMinutes();
+
+            // 1. Checa se o horário já passou
+            if (minutosAgendamento <= minutosAgora) {
+                return {
+                    valido: false,
+                    error: '⚠️ Este horário já passou! Por favor, escolha outro horário disponível.'
+                };
+            }
+
+            // 2. Trava estrita de antecedência de 20 minutos
+            if (minutosAgendamento <= (minutosAgora + 20)) {
+                const minRestantes = Math.max(0, minutosAgendamento - minutosAgora);
+                return {
+                    valido: false,
+                    error: `⚡ Horário indisponível: faltam apenas ${minRestantes} minutos para as ${horario}. É necessário no mínimo 20 minutos de antecedência para agendamentos no mesmo dia.`
+                };
+            }
+        }
+        return { valido: true };
+    } catch (e) {
+        console.warn('Aviso ao validar antecedência no backend:', e.message);
+        return { valido: true };
+    }
+}
+
 // Endpoint to create Pix payment
 app.post('/api/pagamento/pix', async (req, res) => {
     try {
-        const { transaction_amount, description, email, nome, cpf, external_reference } = req.body;
+        const { transaction_amount, description, email, nome, cpf, external_reference, dataHora } = req.body;
 
         if (!transaction_amount || transaction_amount <= 0) {
             return res.status(400).json({ error: 'Valor da transacao invalido.' });
+        }
+
+        // Validação estrita de segurança: impede cobrança se faltar 20 min ou menos
+        const validacaoTempo = validarAntecedenciaMinimaAgendamento(dataHora);
+        if (!validacaoTempo.valido) {
+            return res.status(400).json({ error: validacaoTempo.error });
         }
 
         if (!activeAccessToken || activeAccessToken === 'SEU_ACCESS_TOKEN_AQUI') {
@@ -1066,10 +1120,16 @@ app.post('/api/pagamento/pix', async (req, res) => {
 // Endpoint to process Card (Credit or Debit) payment
 app.post('/api/pagamento/cartao', async (req, res) => {
     try {
-        let { token, cardNumber, cardholderName, cardExpirationMonth, cardExpirationYear, securityCode, issuer_id, payment_method_id, transaction_amount, installments, description, email, cpf, tipoCartao } = req.body;
+        let { token, cardNumber, cardholderName, cardExpirationMonth, cardExpirationYear, securityCode, issuer_id, payment_method_id, transaction_amount, installments, description, email, cpf, tipoCartao, dataHora } = req.body;
 
         if (!transaction_amount || transaction_amount <= 0) {
             return res.status(400).json({ error: 'Valor da transação inválido.' });
+        }
+
+        // Validação estrita de segurança: impede cobrança no cartão se faltar 20 min ou menos
+        const validacaoTempo = validarAntecedenciaMinimaAgendamento(dataHora);
+        if (!validacaoTempo.valido) {
+            return res.status(400).json({ error: validacaoTempo.error });
         }
 
         if (!activeAccessToken || activeAccessToken === 'SEU_ACCESS_TOKEN_AQUI') {
