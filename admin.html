@@ -4139,7 +4139,9 @@
             // 1. Agendamentos
             lista.forEach(ag => {
                 total++;
-                const ehCanceladoOuEstornado = ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'reembolsado';
+                const ehEstornado = ag.status === 'reembolsado' || ag.status === 'estornado' || ag.estornoRealizado === true || Boolean(ag.estornadoEm);
+                const ehCanceladoSemEstorno = (ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'falta') && !ehEstornado;
+                const ehCanceladoGeral = ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ehEstornado;
                 const ehConcluido = ag.status === 'concluido';
                 const ehFalta = ag.status === 'falta';
                 const ehFuturo = ag.dataHora >= agora;
@@ -4148,9 +4150,9 @@
                     pendentes2Horas++;
                 }
 
-                if (!ehCanceladoOuEstornado) {
+                if (!ehEstornado) {
                     if (ag.isPlano) {
-                        // Mensalista: serviço coberto é R$ 0,00. Contabiliza apenas se pagou taxa de adicionais/produtos
+                        // Mensalista: serviço coberto é R$ 0,00. Contabiliza se pagou taxa de adicionais/produtos
                         const taxaExtras = Number(ag.taxaReservaPaga || 0);
                         if (taxaExtras > 0) {
                             faturamentoRecebido += taxaExtras;
@@ -4160,7 +4162,12 @@
                         const precoTotal = Number(ag.preco || 40);
                         const taxaPaga = Number(ag.taxaReservaPaga !== undefined ? ag.taxaReservaPaga : (ag.modalidadePagamento === 'total' ? precoTotal : 10));
 
-                        if (ehConcluido || (!ehFuturo && !ehFalta)) {
+                        if (ehCanceladoSemEstorno) {
+                            // Taxa retida pela barbearia por cancelamento < 3h ou falta permanece no faturamento
+                            if (taxaPaga > 0) {
+                                faturamentoRecebido += taxaPaga;
+                            }
+                        } else if (ehConcluido || (!ehFuturo && !ehFalta)) {
                             faturamentoRecebido += precoTotal;
                         } else if (ehFuturo && !ehFalta) {
                             if (ag.modalidadePagamento === 'total') {
@@ -4173,7 +4180,7 @@
                     }
                 }
 
-                if ((ag.dataHora || '').startsWith(hojeStr) && !ehCanceladoOuEstornado) {
+                if ((ag.dataHora || '').startsWith(hojeStr) && !ehCanceladoGeral) {
                     atendimentosHojeList.push(ag);
                 }
             });
@@ -4393,7 +4400,8 @@
                     const dataTransacao = String(rawDate || '');
 
                     if (dataTransacao && dataTransacao.substring(0, 7) === prefixoMesAno) {
-                        const ehEstornado = ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'reembolsado' || ag.status === 'estornado' || Boolean(ag.estornoRealizado) || Boolean(ag.estornadoEm);
+                        const ehEstornado = ag.status === 'reembolsado' || ag.status === 'estornado' || ag.estornoRealizado === true || Boolean(ag.estornadoEm);
+                        const ehCanceladoSemEstorno = (ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'falta') && !ehEstornado;
 
                         if (ag.isPlano) {
                             const taxaExtras = Number(ag.taxaReservaPaga || 0);
@@ -4413,6 +4421,22 @@
                                         valor: taxaExtras,
                                         status: 'estornado',
                                         motivo: ag.motivoCancelamento || 'Agendamento Estornado'
+                                    });
+                                } else if (ehCanceladoSemEstorno) {
+                                    totalAgendamentos += taxaExtras;
+                                    qtdAgendamentos++;
+                                    transacoes.push({
+                                        dataHora: dataTransacao,
+                                        tipo: 'extras',
+                                        tipoLabel: '➕ Extras Mensalista',
+                                        descricao: `${ag.servico || 'Corte'} + Adicionais`,
+                                        cliente: ag.cliente || 'Cliente VIP',
+                                        telefone: ag.telefone || '',
+                                        metodo: ag.metodoPagamento || 'Pix Mercado Pago',
+                                        transacaoId: ag.idPagamento || 'Extras VIP',
+                                        valor: taxaExtras,
+                                        status: 'cancelado_retido',
+                                        motivo: ag.motivoCancelamento || 'Cancelado < 3h (Taxa Retida)'
                                     });
                                 } else {
                                     totalAgendamentos += taxaExtras;
@@ -4453,6 +4477,24 @@
                                     status: 'estornado',
                                     motivo: ag.motivoCancelamento || 'Cancelado / Reembolsado'
                                 });
+                            } else if (ehCanceladoSemEstorno) {
+                                if (taxaPaga > 0) {
+                                    totalAgendamentos += taxaPaga;
+                                    qtdAgendamentos++;
+                                    transacoes.push({
+                                        dataHora: dataTransacao,
+                                        tipo: 'agendamento',
+                                        tipoLabel: '✂️ Agendamento Geral',
+                                        descricao: ag.servico || 'Corte & Barba',
+                                        cliente: ag.cliente || 'Cliente',
+                                        telefone: ag.telefone || '',
+                                        metodo: ag.metodoPagamento || 'Pix Mercado Pago',
+                                        transacaoId: ag.idPagamento || 'Reserva Retida',
+                                        valor: taxaPaga,
+                                        status: 'cancelado_retido',
+                                        motivo: ag.motivoCancelamento || 'Cancelado < 3h (Taxa Retida)'
+                                    });
+                                }
                             } else {
                                 totalAgendamentos += valorEntrada;
                                 qtdAgendamentos++;
@@ -4779,7 +4821,7 @@
 
                 if (!matchTexto) return false;
 
-                if (filtroTipo === 'aprovados') return item.status === 'aprovado';
+                if (filtroTipo === 'aprovados') return item.status === 'aprovado' || item.status === 'cancelado_retido';
                 if (filtroTipo === 'estornados') return item.status === 'estornado';
                 if (filtroTipo === 'planos') return item.tipo === 'plano';
                 if (filtroTipo === 'agendamentos') return item.tipo === 'agendamento' || item.tipo === 'extras' || item.tipo === 'produto';
@@ -4796,6 +4838,7 @@
             filtradas.forEach(tx => {
                 const dataFormatada = tx.dataHora ? tx.dataHora.replace('T', ' ').slice(0, 16) : '--';
                 const ehAprovado = tx.status === 'aprovado';
+                const ehCanceladoRetido = tx.status === 'cancelado_retido';
 
                 let badgeTipo = "";
                 if (tx.tipo === 'plano') {
@@ -4809,12 +4852,18 @@
                 let badgeStatus = "";
                 if (ehAprovado) {
                     badgeStatus = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-950/80 text-green-400 border border-green-800">✅ Confirmado</span>`;
+                } else if (ehCanceladoRetido) {
+                    badgeStatus = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-950/80 text-amber-300 border border-amber-800" title="${tx.motivo || 'Cancelado com <3h (Taxa Retida)'}">🚫 Retido (&lt;3h)</span>`;
                 } else {
                     badgeStatus = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-950/80 text-red-400 border border-red-800" title="${tx.motivo || 'Estornado'}">↩️ Estornado</span>`;
                 }
 
                 const telLimpo = (tx.telefone || '').replace(/\D/g, '');
                 const zapLink = telLimpo ? `<a href="https://wa.me/55${telLimpo}" target="_blank" class="text-dourado hover:underline text-[11px] block">📲 ${tx.telefone}</a>` : '<span class="text-zinc-500 text-[11px] block">Sem tel</span>';
+
+                const corValor = ehCanceladoRetido
+                    ? 'text-amber-300'
+                    : (ehAprovado ? 'text-green-400' : 'text-red-400 line-through');
 
                 html += `
                     <tr class="hover:bg-zinc-900/50 transition">
@@ -4836,7 +4885,7 @@
                             <p class="text-[10px] text-zinc-500 font-mono">ID: ${tx.transacaoId}</p>
                         </td>
                         <td class="p-3.5 text-right whitespace-nowrap">
-                            <span class="font-bold text-sm font-mono ${ehAprovado ? 'text-green-400' : 'text-red-400 line-through'}">
+                            <span class="font-bold text-sm font-mono ${corValor}">
                                 R$ ${tx.valor.toFixed(2)}
                             </span>
                         </td>
@@ -5247,7 +5296,9 @@
                 if (ehReembolsado) {
                     statusBadge = '<span class="bg-red-950/90 text-red-300 border border-red-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">💸 Reembolsado</span>';
                 } else if (ehCancelado) {
-                    statusBadge = '<span class="bg-red-950 text-red-400 border border-red-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">❌ Cancelado</span>';
+                    statusBadge = valorPagoNum > 0
+                        ? '<span class="bg-amber-950/90 text-amber-300 border border-amber-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase" title="Cancelado com menos de 3h (Taxa retida)">🚫 Cancelado (Taxa Retida)</span>'
+                        : '<span class="bg-red-950 text-red-400 border border-red-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">❌ Cancelado</span>';
                 } else if (ehConcluido) {
                     statusBadge = '<span class="bg-green-950 text-green-400 border border-green-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">✅ Compareceu</span>';
                 } else if (ehFalta) {

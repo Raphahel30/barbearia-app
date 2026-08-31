@@ -1274,10 +1274,10 @@ app.post('/api/pagamento/estorno', verificarAuthEstornoMiddleware, async (req, r
             const userEmail = req.authUser?.email?.toLowerCase().trim();
             let ehDonoDoPagamento = false;
 
-            if (firebaseAdminDb) {
+            if (firebaseAdminFirestore) {
                 try {
                     // 1. Checa na coleção agendamentos
-                    const agSnap = await firebaseAdminDb.collection('agendamentos')
+                    const agSnap = await firebaseAdminFirestore.collection('agendamentos')
                         .where('idPagamento', '==', cleanPaymentId)
                         .limit(1)
                         .get();
@@ -1290,7 +1290,7 @@ app.post('/api/pagamento/estorno', verificarAuthEstornoMiddleware, async (req, r
 
                     // 2. Checa na coleção assinaturasClientes
                     if (!ehDonoDoPagamento && userUid) {
-                        const subDoc = await firebaseAdminDb.collection('assinaturasClientes').doc(userUid).get();
+                        const subDoc = await firebaseAdminFirestore.collection('assinaturasClientes').doc(userUid).get();
                         if (subDoc.exists && String(subDoc.data().idPagamento || '').trim() === cleanPaymentId) {
                             ehDonoDoPagamento = true;
                         }
@@ -1298,7 +1298,7 @@ app.post('/api/pagamento/estorno', verificarAuthEstornoMiddleware, async (req, r
 
                     // 3. Checa na coleção comprasProdutos
                     if (!ehDonoDoPagamento) {
-                        const cpSnap = await firebaseAdminDb.collection('comprasProdutos')
+                        const cpSnap = await firebaseAdminFirestore.collection('comprasProdutos')
                             .where('idPagamento', '==', cleanPaymentId)
                             .limit(1)
                             .get();
