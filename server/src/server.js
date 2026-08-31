@@ -1617,9 +1617,11 @@ app.get('/api/whatsapp/status', async (req, res) => {
 // Inicia ou reinicia conexão para gerar QR Code
 app.post('/api/whatsapp/conectar', verificarAdminMiddleware, async (req, res) => {
     try {
-        const result = await iniciarWhatsApp();
+        const force = req.body?.force === true;
+        const result = await iniciarWhatsApp({ force });
         return res.json({ success: true, ...result });
     } catch (err) {
+        console.error('Erro na rota /api/whatsapp/conectar:', err);
         return res.status(500).json({ success: false, error: err.message });
     }
 });

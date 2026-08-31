@@ -12,4 +12,5 @@ firebase-service-account*.json
 *.log
 .DS_Store
 Thumbs.db
-
+.wa_session/
+server/.wa_session/

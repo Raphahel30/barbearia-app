@@ -8,7 +8,7 @@ import { initAuthCreds, BufferJSON, proto } from '@whiskeysockets/baileys';
  * 2. Ao persistir as credenciais criptografadas no Firestore, o robô carrega a sessão em < 1s após qualquer deploy/restart.
  * 3. O WhatsApp NUNCA desconecta sozinho.
  */
-export async function useFirestoreAuthState(firestoreDb, collectionName = '_whatsapp_session') {
+export async function useFirestoreAuthState(firestoreDb, collectionName = '_whatsapp_session', forceNewCredsIfUnregistered = false) {
     const colRef = firestoreDb.collection(collectionName);
 
     // Helper para sanitizar IDs para documentos do Firestore
@@ -29,7 +29,8 @@ export async function useFirestoreAuthState(firestoreDb, collectionName = '_what
         console.warn('[Firestore AuthState] Aviso ao ler creds do Firestore:', e.message);
     }
 
-    if (!creds) {
+    // Se forçando novas credenciais ou se credenciais existem mas NÃO foram registradas/autenticadas
+    if (!creds || (forceNewCredsIfUnregistered && !creds.registered)) {
         creds = initAuthCreds();
     }
 
