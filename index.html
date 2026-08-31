@@ -1289,6 +1289,7 @@
     <!-- MODAL DE CONFIRMAÇÃO DE AGENDAMENTO (PROFISSIONAL E RESUMIDO) -->
     <div id="modalConfirmacaoSucesso" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
         <div class="modal-responsive-card bg-zinc-900 border border-zinc-700 p-5 sm:p-7 rounded-2xl sm:rounded-3xl max-w-md w-full text-center shadow-2xl space-y-4 relative my-auto sm:my-8">
+            <button id="btnFecharModalSucessoX" type="button" class="absolute top-4 right-4 text-zinc-400 hover:text-white text-xl font-bold transition cursor-pointer p-1">&times;</button>
             <div class="mx-auto w-12 h-12 bg-black border border-dourado rounded-full flex items-center justify-center text-xl shadow-lg">
                 ✓
             </div>
@@ -6263,17 +6264,22 @@
             }
         }
 
-        const btnFecharSucesso = document.getElementById('btnFecharSucessoAgendamento');
-        if (btnFecharSucesso) {
-            btnFecharSucesso.addEventListener('click', () => {
-                const modalSucesso = document.getElementById('modalConfirmacaoSucesso');
-                if (modalSucesso) modalSucesso.classList.add('hidden');
-                const meusAgendamentos = document.getElementById('meusAgendamentosLista');
-                if (meusAgendamentos) {
-                    meusAgendamentos.scrollIntoView({ behavior: 'smooth' });
-                }
-            });
+        function fecharModalSucessoAgendamento() {
+            const modalSucesso = document.getElementById('modalConfirmacaoSucesso');
+            if (modalSucesso) modalSucesso.classList.add('hidden');
+            limparPixPendenteLocalStorage();
+            if (auth?.currentUser) {
+                carregarPainelCliente(auth.currentUser.uid).catch(() => {});
+            }
+            const meusAgendamentos = document.getElementById('meusAgendamentosLista');
+            if (meusAgendamentos) {
+                meusAgendamentos.scrollIntoView({ behavior: 'smooth' });
+            }
         }
+
+        document.getElementById('btnFecharSucesso')?.addEventListener('click', fecharModalSucessoAgendamento);
+        document.getElementById('btnFecharSucessoAgendamento')?.addEventListener('click', fecharModalSucessoAgendamento);
+        document.getElementById('btnFecharModalSucessoX')?.addEventListener('click', fecharModalSucessoAgendamento);
 
         // ==========================================
         // CONTROLE ANTI-DUPLICAÇÃO E CONCLUSÃO DE PAGAMENTOS
