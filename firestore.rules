@@ -121,5 +121,9 @@ service cloud.firestore {
     match /despesas/{despesaId} {
       allow read, write: if isAdmin();
     }
+
+    match /pagamentos_pendentes/{paymentId} {
+      allow read, write: if isAdmin();
+    }
   }
 }

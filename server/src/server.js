@@ -608,6 +608,129 @@ if (!process.env.VERCEL) {
     setInterval(() => {
         https.get(`${SELF_URL}/health`, () => {}).on('error', () => {});
     }, 10 * 60 * 1000);
+
+    // 1. Monitor em background para Pagamentos Pendentes recentes (Server-side Poller)
+    // Roda a cada 5 segundos buscando transações pendentes dos últimos 3 minutos no Mercado Pago
+    setInterval(async () => {
+        if (!firebaseAdminFirestore || !activeAccessToken || activeAccessToken === 'SEU_ACCESS_TOKEN_AQUI' || activeAccessToken === 'DUMMY_TOKEN') return;
+        try {
+            const agora = Date.now();
+            const limiteRecente = new Date(agora - 3 * 60 * 1000).toISOString();
+            const snap = await firebaseAdminFirestore.collection('pagamentos_pendentes')
+                .where('status', '==', 'pendente')
+                .where('criadoEm', '>=', limiteRecente)
+                .limit(10)
+                .get();
+
+            if (snap.empty) return;
+
+            for (const docSnap of snap.docs) {
+                const data = docSnap.data();
+                const pId = data.paymentId || docSnap.id;
+                if (!pId) continue;
+
+                try {
+                    const mpRes = await paymentClient.get({ id: pId });
+                    if (mpRes && mpRes.status === 'approved') {
+                        console.log(`[Server Poller] ⚡ Pagamento ${pId} detectado como APROVADO no Mercado Pago! Concluindo no servidor...`);
+                        await processarConclusaoPagamentoServidor(pId, mpRes, data.metodo || 'pix_mercadopago');
+                    } else if (mpRes && (mpRes.status === 'rejected' || mpRes.status === 'cancelled' || mpRes.status === 'expired')) {
+                        console.log(`[Server Poller] ⚠️ Pagamento ${pId} detectado como ${mpRes.status}. Cancelando pendência...`);
+                        await docSnap.ref.set({ status: mpRes.status, statusDetail: mpRes.status_detail || mpRes.status, atualizadoEm: new Date().toISOString() }, { merge: true });
+                        const agRef = firebaseAdminFirestore.collection('agendamentos').doc(String(pId));
+                        const agSnap = await agRef.get();
+                        if (agSnap.exists && agSnap.data().status === 'pendente') {
+                            await agRef.update({
+                                status: 'cancelado',
+                                motivoCancelamento: `Pagamento ${mpRes.status} no Mercado Pago`,
+                                canceladoEm: new Date().toISOString()
+                            });
+                        }
+                    }
+                } catch (errCheck) {
+                    // Silencioso se der erro temporário
+                }
+            }
+        } catch (errPoller) {
+            // Se índice composto não existir, fallback para listar status == pendente e filtrar em memória
+            try {
+                const snapFallback = await firebaseAdminFirestore.collection('pagamentos_pendentes')
+                    .where('status', '==', 'pendente')
+                    .limit(15)
+                    .get();
+                const agora = Date.now();
+                for (const docSnap of snapFallback.docs) {
+                    const data = docSnap.data();
+                    const pId = data.paymentId || docSnap.id;
+                    const criadoEmMs = data.criadoEm ? new Date(data.criadoEm).getTime() : 0;
+                    if (!pId || (agora - criadoEmMs) > (3 * 60 * 1000)) continue;
+
+                    const mpRes = await paymentClient.get({ id: pId });
+                    if (mpRes && mpRes.status === 'approved') {
+                        console.log(`[Server Poller Fallback] ⚡ Pagamento ${pId} APROVADO! Concluindo...`);
+                        await processarConclusaoPagamentoServidor(pId, mpRes, data.metodo || 'pix_mercadopago');
+                    }
+                }
+            } catch (eFb) {}
+        }
+    }, 5000);
+
+    // 2. Limpeza periódica de agendamentos e pagamentos pendentes expirados (>3 min)
+    // Libera a grade automaticamente a cada 3 minutos
+    setInterval(async () => {
+        if (!firebaseAdminFirestore) return;
+        try {
+            const agora = Date.now();
+            const limiteExpiracao = new Date(agora - 3 * 60 * 1000).toISOString();
+            
+            // Limpa pagamentos_pendentes vencidos
+            const pendentesSnap = await firebaseAdminFirestore.collection('pagamentos_pendentes')
+                .where('status', '==', 'pendente')
+                .where('criadoEm', '<', limiteExpiracao)
+                .limit(20)
+                .get();
+
+            pendentesSnap.forEach(d => {
+                d.ref.set({ status: 'expirado', atualizadoEm: new Date().toISOString() }, { merge: true })
+                    .catch(e => console.warn('[Auto-Limpeza Pagamento Pendente]:', e.message));
+            });
+
+            // Limpa agendamentos pendentes vencidos
+            const agSnap = await firebaseAdminFirestore.collection('agendamentos')
+                .where('status', '==', 'pendente')
+                .where('criadoEm', '<', limiteExpiracao)
+                .limit(20)
+                .get();
+
+            agSnap.forEach(d => {
+                d.ref.update({
+                    status: 'cancelado',
+                    motivoCancelamento: 'expirado_sem_pagamento',
+                    canceladoEm: new Date().toISOString()
+                }).catch(e => console.warn('[Auto-Limpeza Agendamento Pendente]:', e.message));
+            });
+        } catch (eLimpeza) {
+            // Em caso de falta de índice composto no Firestore, faz a limpeza filtrando em memória
+            try {
+                const snapFallback = await firebaseAdminFirestore.collection('agendamentos')
+                    .where('status', '==', 'pendente')
+                    .limit(20)
+                    .get();
+                const agora = Date.now();
+                snapFallback.forEach(d => {
+                    const dt = d.data();
+                    const criadoMs = dt.criadoEm ? new Date(dt.criadoEm).getTime() : 0;
+                    if (criadoMs > 0 && (agora - criadoMs) > (3 * 60 * 1000)) {
+                        d.ref.update({
+                            status: 'cancelado',
+                            motivoCancelamento: 'expirado_sem_pagamento',
+                            canceladoEm: new Date().toISOString()
+                        }).catch(() => {});
+                    }
+                });
+            } catch (eFb) {}
+        }
+    }, 3 * 60 * 1000);
 }
 
 // Endpoint Seguro de Recuperação de Senha (Disparo por E-mail)
@@ -1052,7 +1175,7 @@ function validarAntecedenciaMinimaAgendamento(dataHora) {
 // Endpoint to create Pix payment
 app.post('/api/pagamento/pix', async (req, res) => {
     try {
-        const { transaction_amount, description, email, nome, cpf, external_reference, dataHora } = req.body;
+        const { transaction_amount, description, email, nome, cpf, external_reference, dataHora, tipo, dadosCompletos, dadosAgendamento } = req.body;
 
         if (!transaction_amount || transaction_amount <= 0) {
             return res.status(400).json({ error: 'Valor da transacao invalido.' });
@@ -1076,13 +1199,46 @@ app.post('/api/pagamento/pix', async (req, res) => {
 
         const nameParts = (nome || 'Cliente Barbearia').trim().split(' ');
         const firstName = nameParts[0] || 'Cliente';
-        const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Barbearia';
+        const tipoFinal = tipo || (description && description.toLowerCase().includes('produto') ? 'produto' : (description && description.toLowerCase().includes('assinatura') ? 'plano' : 'agendamento'));
+        const dadosPayload = dadosCompletos || dadosAgendamento || {
+            nome: nome || 'Cliente',
+            email: email || '',
+            clienteNome: nome || 'Cliente',
+            clienteTelefone: (email && email.includes('@cliente.emaus')) ? email.split('@')[0] : '',
+            servico: description || 'Corte',
+            dataHora: dataHora || '',
+            valorCobrado: Number(parseFloat(transaction_amount).toFixed(2))
+        };
+
+        const metadataMp = {
+            tipo: tipoFinal,
+            servico: String(dadosPayload.servico || description || 'Corte').slice(0, 100),
+            data_hora: String(dadosPayload.dataHora || dataHora || '').slice(0, 50),
+            data: String(dadosPayload.data || '').slice(0, 20),
+            horario: String(dadosPayload.horario || '').slice(0, 10),
+            cliente_nome: String(dadosPayload.clienteNome || nome || 'Cliente').slice(0, 100),
+            cliente_telefone: String(dadosPayload.clienteTelefone || '').slice(0, 30),
+            user_id: String(dadosPayload.userId || '').slice(0, 100),
+            user_email: String(dadosPayload.userEmail || email || '').slice(0, 100),
+            barbeiro_id: String(dadosPayload.barbeiroId || 'qualquer').slice(0, 50),
+            barbeiro_nome: String(dadosPayload.barbeiroNome || 'Barbearia EMAÚS').slice(0, 100),
+            barbeiro_whatsapp: String(dadosPayload.barbeiroWhatsapp || '').slice(0, 30),
+            valor_cobrado: Number(parseFloat(transaction_amount).toFixed(2)),
+            preco_total: Number(dadosPayload.preco || 0),
+            modalidade: String(dadosPayload.modalidade || '').slice(0, 30),
+            is_fidelidade: Boolean(dadosPayload.isFidelidade),
+            is_aniversario: Boolean(dadosPayload.isAniversario)
+        };
+
+        const notificationUrl = `${SELF_URL || 'https://barbearia-app-1bf5.onrender.com'}/api/webhook`;
 
         const paymentData = {
             transaction_amount: Number(parseFloat(transaction_amount).toFixed(2)),
             description: description || 'Taxa de Reserva - EMAUS Barbearia',
             payment_method_id: 'pix',
             external_reference: external_reference ? String(external_reference) : undefined,
+            notification_url: notificationUrl,
+            metadata: metadataMp,
             payer: {
                 email: email || 'cliente@barbearia.com',
                 first_name: firstName,
@@ -1092,6 +1248,61 @@ app.post('/api/pagamento/pix', async (req, res) => {
         };
 
         const response = await paymentClient.create({ body: paymentData });
+
+        // Salva o agendamento imediatamente como pendente e a intenção de pagamento no Firestore
+        if (firebaseAdminFirestore && response && response.id) {
+            try {
+                const expiraEmDate = new Date(Date.now() + 3 * 60 * 1000).toISOString();
+                const agoraIso = new Date().toISOString();
+
+                if (tipoFinal === 'agendamento') {
+                    const dataHoraCompleta = (dadosPayload.data && dadosPayload.horario) 
+                        ? `${dadosPayload.data}T${dadosPayload.horario}` 
+                        : (dadosPayload.dataHora || null);
+
+                    await firebaseAdminFirestore.collection('agendamentos').doc(String(response.id)).set({
+                        userId: dadosPayload.userId || null,
+                        cliente: dadosPayload.clienteNome || firstName || 'Cliente',
+                        telefone: dadosPayload.clienteTelefone || '',
+                        servico: dadosPayload.servico || 'Corte',
+                        preco: Number(dadosPayload.preco || dadosPayload.precoFinal || 0),
+                        taxaReservaPaga: Number(parseFloat(transaction_amount).toFixed(2)),
+                        modalidadePagamento: dadosPayload.modalidade || 'taxa',
+                        idPagamento: String(response.id),
+                        metodoPagamento: 'pix_mercadopago',
+                        isPlano: false,
+                        extras: dadosPayload.extras || [],
+                        produtos: Array.isArray(dadosPayload.produtos) ? dadosPayload.produtos : [],
+                        barbeiroId: dadosPayload.barbeiroId || 'qualquer',
+                        barbeiroNome: dadosPayload.barbeiroNome || 'Barbearia EMAÚS',
+                        barbeiroWhatsapp: dadosPayload.barbeiroWhatsapp || '',
+                        status: 'pendente',
+                        dataHora: dataHoraCompleta,
+                        criadoEm: agoraIso,
+                        expiraEm: expiraEmDate,
+                        isFidelidade: Boolean(dadosPayload.isFidelidade),
+                        recompensaFidelidade: dadosPayload.descricaoFidelidade || '',
+                        descontoFidelidade: Number(dadosPayload.descontoFidelidade || 0),
+                        isAniversario: Boolean(dadosPayload.isAniversario),
+                        recompensaAniversario: dadosPayload.descricaoAniversario || '',
+                        descontoAniversario: Number(dadosPayload.descontoAniversario || 0)
+                    }, { merge: true });
+                }
+
+                await firebaseAdminFirestore.collection('pagamentos_pendentes').doc(String(response.id)).set({
+                    paymentId: String(response.id),
+                    tipo: tipoFinal,
+                    dados: dadosPayload,
+                    status: 'pendente',
+                    criadoEm: agoraIso,
+                    expiraEm: expiraEmDate,
+                    metodo: 'pix_mercadopago'
+                }, { merge: true });
+                console.log(`[Pagamento Pix] 📝 Agendamento e intenção pendente registrados no Firestore: ${response.id} (${tipoFinal}) - Expira em 3 min`);
+            } catch (errDb) {
+                console.warn('[Pagamento Pix] Aviso ao registrar intenção de pagamento pendente:', errDb.message);
+            }
+        }
 
         const transactionData = response.point_of_interaction?.transaction_data;
 
@@ -1120,7 +1331,7 @@ app.post('/api/pagamento/pix', async (req, res) => {
 // Endpoint to process Card (Credit or Debit) payment
 app.post('/api/pagamento/cartao', async (req, res) => {
     try {
-        let { token, cardNumber, cardholderName, cardExpirationMonth, cardExpirationYear, securityCode, issuer_id, payment_method_id, transaction_amount, installments, description, email, cpf, tipoCartao, dataHora } = req.body;
+        let { token, cardNumber, cardholderName, cardExpirationMonth, cardExpirationYear, securityCode, issuer_id, payment_method_id, transaction_amount, installments, description, email, cpf, tipoCartao, dataHora, tipo, dadosCompletos, dadosAgendamento } = req.body;
 
         if (!transaction_amount || transaction_amount <= 0) {
             return res.status(400).json({ error: 'Valor da transação inválido.' });
@@ -1141,6 +1352,37 @@ app.post('/api/pagamento/cartao', async (req, res) => {
                 error: 'Access Token do Mercado Pago não configurado no servidor. Salve as credenciais no painel admin.' 
             });
         }
+
+        const tipoFinal = tipo || (description && description.toLowerCase().includes('produto') ? 'produto' : (description && description.toLowerCase().includes('assinatura') ? 'plano' : 'agendamento'));
+        const dadosPayload = dadosCompletos || dadosAgendamento || {
+            nome: cardholderName || 'Cliente',
+            email: email || '',
+            clienteNome: cardholderName || 'Cliente',
+            clienteTelefone: (email && email.includes('@cliente.emaus')) ? email.split('@')[0] : '',
+            servico: description || 'Corte',
+            dataHora: dataHora || '',
+            valorCobrado: Number(parseFloat(transaction_amount).toFixed(2))
+        };
+
+        const metadataMp = {
+            tipo: tipoFinal,
+            servico: String(dadosPayload.servico || description || 'Corte').slice(0, 100),
+            data_hora: String(dadosPayload.dataHora || dataHora || '').slice(0, 50),
+            data: String(dadosPayload.data || '').slice(0, 20),
+            horario: String(dadosPayload.horario || '').slice(0, 10),
+            cliente_nome: String(dadosPayload.clienteNome || cardholderName || 'Cliente').slice(0, 100),
+            cliente_telefone: String(dadosPayload.clienteTelefone || '').slice(0, 30),
+            user_id: String(dadosPayload.userId || '').slice(0, 100),
+            user_email: String(dadosPayload.userEmail || email || '').slice(0, 100),
+            barbeiro_id: String(dadosPayload.barbeiroId || 'qualquer').slice(0, 50),
+            barbeiro_nome: String(dadosPayload.barbeiroNome || 'Barbearia EMAÚS').slice(0, 100),
+            barbeiro_whatsapp: String(dadosPayload.barbeiroWhatsapp || '').slice(0, 30),
+            valor_cobrado: Number(parseFloat(transaction_amount).toFixed(2)),
+            preco_total: Number(dadosPayload.preco || 0),
+            modalidade: String(dadosPayload.modalidade || '').slice(0, 30),
+            is_fidelidade: Boolean(dadosPayload.isFidelidade),
+            is_aniversario: Boolean(dadosPayload.isAniversario)
+        };
 
         // Se o frontend enviou dados do cartão em vez de token prévio, geramos o token no Mercado Pago
         if (!token && cardNumber) {
@@ -1203,6 +1445,8 @@ app.post('/api/pagamento/cartao', async (req, res) => {
         const isDebito = tipoCartao === 'debito' || payment_method_id.startsWith('deb');
         const numParcelas = isDebito ? 1 : (Number(installments) || 1);
 
+        const notificationUrl = `${SELF_URL || 'https://barbearia-app-1bf5.onrender.com'}/api/webhook`;
+
         const paymentData = {
             token,
             issuer_id: issuer_id ? String(issuer_id) : undefined,
@@ -1210,6 +1454,8 @@ app.post('/api/pagamento/cartao', async (req, res) => {
             transaction_amount: Number(parseFloat(transaction_amount).toFixed(2)),
             installments: numParcelas,
             description: description || 'EMAÚS Barbearia',
+            notification_url: notificationUrl,
+            metadata: metadataMp,
             payer: {
                 email: email || 'cliente@barbearia.com',
                 ...(cpf ? { identification: { type: 'CPF', number: String(cpf).replace(/\D/g, '') } } : {})
@@ -1217,6 +1463,68 @@ app.post('/api/pagamento/cartao', async (req, res) => {
         };
 
         const response = await paymentClient.create({ body: paymentData });
+
+        // Salva o agendamento e a intenção de pagamento no Firestore para confirmação em segundo plano
+        if (firebaseAdminFirestore && response && response.id) {
+            try {
+                const expiraEmDate = new Date(Date.now() + 3 * 60 * 1000).toISOString();
+                const agoraIso = new Date().toISOString();
+                const statusAg = response.status === 'approved' ? 'confirmado' : 'pendente';
+
+                if (tipoFinal === 'agendamento') {
+                    const dataHoraCompleta = (dadosPayload.data && dadosPayload.horario) 
+                        ? `${dadosPayload.data}T${dadosPayload.horario}` 
+                        : (dadosPayload.dataHora || null);
+
+                    await firebaseAdminFirestore.collection('agendamentos').doc(String(response.id)).set({
+                        userId: dadosPayload.userId || null,
+                        cliente: dadosPayload.clienteNome || cardholderName || 'Cliente',
+                        telefone: dadosPayload.clienteTelefone || '',
+                        servico: dadosPayload.servico || 'Corte',
+                        preco: Number(dadosPayload.preco || dadosPayload.precoFinal || 0),
+                        taxaReservaPaga: Number(parseFloat(transaction_amount).toFixed(2)),
+                        modalidadePagamento: dadosPayload.modalidade || 'taxa',
+                        idPagamento: String(response.id),
+                        metodoPagamento: isDebito ? 'cartao_debito' : 'cartao_credito',
+                        isPlano: false,
+                        extras: dadosPayload.extras || [],
+                        produtos: Array.isArray(dadosPayload.produtos) ? dadosPayload.produtos : [],
+                        barbeiroId: dadosPayload.barbeiroId || 'qualquer',
+                        barbeiroNome: dadosPayload.barbeiroNome || 'Barbearia EMAÚS',
+                        barbeiroWhatsapp: dadosPayload.barbeiroWhatsapp || '',
+                        status: statusAg,
+                        dataHora: dataHoraCompleta,
+                        criadoEm: agoraIso,
+                        expiraEm: expiraEmDate,
+                        isFidelidade: Boolean(dadosPayload.isFidelidade),
+                        recompensaFidelidade: dadosPayload.descricaoFidelidade || '',
+                        descontoFidelidade: Number(dadosPayload.descontoFidelidade || 0),
+                        isAniversario: Boolean(dadosPayload.isAniversario),
+                        recompensaAniversario: dadosPayload.descricaoAniversario || '',
+                        descontoAniversario: Number(dadosPayload.descontoAniversario || 0)
+                    }, { merge: true });
+                }
+
+                await firebaseAdminFirestore.collection('pagamentos_pendentes').doc(String(response.id)).set({
+                    paymentId: String(response.id),
+                    tipo: tipoFinal,
+                    dados: dadosPayload,
+                    status: response.status === 'approved' ? 'processado' : 'pendente',
+                    criadoEm: agoraIso,
+                    expiraEm: expiraEmDate,
+                    metodo: isDebito ? 'cartao_debito' : 'cartao_credito'
+                }, { merge: true });
+                console.log(`[Pagamento Cartão] 📝 Pagamento registrado no Firestore: ${response.id} (${tipoFinal}) status: ${response.status} - Expira em 3 min`);
+            } catch (errDb) {
+                console.warn('[Pagamento Cartão] Aviso ao registrar pagamento:', errDb.message);
+            }
+        }
+
+        // Se o pagamento no cartão já foi aprovado imediatamente, processa a conclusão em background
+        if (response && response.status === 'approved') {
+            processarConclusaoPagamentoServidor(response.id, response, isDebito ? 'cartao_debito' : 'cartao_credito')
+                .catch(e => console.warn('[Pagamento Cartão Processamento]:', e.message));
+        }
 
         return res.status(200).json({
             id: response.id,
@@ -1251,6 +1559,9 @@ app.get('/api/pagamento/status/:id', async (req, res) => {
         try {
             const response = await paymentClient.get({ id: String(id) });
             if (response && response.status) {
+                if (response.status === 'approved') {
+                    processarConclusaoPagamentoServidor(id, response, 'pix_mercadopago').catch(e => console.warn('[Status Pix Processamento]:', e.message));
+                }
                 return res.json({
                     id: response.id,
                     status: response.status,
@@ -1270,6 +1581,9 @@ app.get('/api/pagamento/status/:id', async (req, res) => {
                 });
                 const mpData = await mpRes.json();
                 if (mpRes.ok && mpData && mpData.status) {
+                    if (mpData.status === 'approved') {
+                        processarConclusaoPagamentoServidor(id, mpData, 'pix_mercadopago').catch(e => console.warn('[Status Pix Processamento Fallback]:', e.message));
+                    }
                     return res.json({
                         id: mpData.id,
                         status: mpData.status,
@@ -1628,6 +1942,391 @@ async function sincronizarEstornoNoFirestore(paymentId, amount = 0) {
     }
 }
 
+// Processamento Centralizado e Idempotente de Pagamentos no Servidor (Background / Webhook)
+async function processarConclusaoPagamentoServidor(paymentId, mpPaymentData = null, metodoPagamento = 'pix_mercadopago') {
+    const cleanId = String(paymentId).trim();
+    if (!cleanId || !firebaseAdminFirestore) {
+        console.warn(`[Pagamento Servidor] Ignorando conclusão: cleanId="${cleanId}", firestore=${!!firebaseAdminFirestore}`);
+        return { success: false, reason: 'no_db_or_id' };
+    }
+
+    try {
+        console.log(`[Pagamento Servidor] 🔄 Processando conclusão em background para paymentId: ${cleanId}...`);
+
+        // 1. Busca registro na coleção pagamentos_pendentes
+        const pendenteRef = firebaseAdminFirestore.collection('pagamentos_pendentes').doc(cleanId);
+        const pendenteSnap = await pendenteRef.get();
+        
+        let pendenteData = null;
+        if (pendenteSnap.exists) {
+            pendenteData = pendenteSnap.data();
+            if (pendenteData.status === 'processado') {
+                console.log(`[Pagamento Servidor] ℹ️ Pagamento ${cleanId} já foi processado anteriormente.`);
+                return { success: true, alreadyProcessed: true };
+            }
+        }
+
+        // Defesa em profundidade: se pagamentos_pendentes não existir, reconstrói a partir do metadata retornado pela API do Mercado Pago
+        const meta = mpPaymentData?.metadata || {};
+        const tipo = pendenteData?.tipo || meta.tipo || (mpPaymentData?.description?.toLowerCase().includes('produto') ? 'produto' : (mpPaymentData?.description?.toLowerCase().includes('assinatura') ? 'plano' : 'agendamento'));
+        
+        let dados = pendenteData?.dados;
+        if (!dados && Object.keys(meta).length > 0) {
+            console.log(`[Pagamento Servidor] 🛡️ Reconstruindo dados completos do agendamento a partir do metadata do Mercado Pago para ${cleanId}`);
+            dados = {
+                servico: meta.servico || mpPaymentData?.description || 'Corte',
+                preco: Number(meta.preco_total || mpPaymentData?.transaction_amount || 0),
+                data: meta.data || '',
+                horario: meta.horario || '',
+                dataHora: meta.data_hora || (meta.data && meta.horario ? `${meta.data}T${meta.horario}` : ''),
+                clienteNome: meta.cliente_nome || mpPaymentData?.payer?.first_name || 'Cliente',
+                clienteTelefone: meta.cliente_telefone || '',
+                userId: meta.user_id || 'cliente_anonimo',
+                userEmail: meta.user_email || mpPaymentData?.payer?.email || '',
+                barbeiroId: meta.barbeiro_id || 'qualquer',
+                barbeiroNome: meta.barbeiro_nome || 'Barbearia EMAÚS',
+                barbeiroWhatsapp: meta.barbeiro_whatsapp || '',
+                valorCobrado: Number(meta.valor_cobrado || mpPaymentData?.transaction_amount || 0),
+                modalidade: meta.modalidade || '',
+                isFidelidade: Boolean(meta.is_fidelidade),
+                isAniversario: Boolean(meta.is_aniversario)
+            };
+        } else if (!dados) {
+            dados = {};
+        }
+
+        // 2. Processamento conforme o tipo
+        if (tipo === 'agendamento') {
+            const agDocRef = firebaseAdminFirestore.collection('agendamentos').doc(cleanId);
+            const agDocSnap = await agDocRef.get();
+
+            // Checagem de Idempotência em agendamentos
+            if (agDocSnap.exists && agDocSnap.data().status === 'confirmado') {
+                console.log(`[Pagamento Servidor] ℹ️ Agendamento ${cleanId} já está confirmado.`);
+                if (pendenteSnap.exists) {
+                    await pendenteRef.set({ status: 'processado', processadoEm: new Date().toISOString() }, { merge: true });
+                }
+                return { success: true, alreadyProcessed: true };
+            }
+
+            const { 
+                servico, preco, data, horario, modalidade, valorCobrado, 
+                extras, produtos, userId, userEmail, clienteNome, clienteTelefone,
+                barbeiroId, barbeiroNome, barbeiroWhatsapp,
+                isFidelidade, descricaoFidelidade, descontoFidelidade,
+                isAniversario, descricaoAniversario, descontoAniversario,
+                isPlano
+            } = dados;
+
+            const dataHoraCompleta = (data && horario) ? `${data}T${horario}` : (dados.dataHora || '');
+            const precoTotalNum = Number(preco || 0);
+            const valorEfetivoPago = valorCobrado !== undefined 
+                ? Number(valorCobrado) 
+                : (modalidade === 'total' ? precoTotalNum : (Number(mpPaymentData?.transaction_amount) || 10.00));
+            const listaProdutosAg = Array.isArray(produtos) ? produtos : [];
+            const uidFinal = userId || 'cliente_anonimo';
+            const nomeFinal = clienteNome || dados.nome || 'Cliente';
+            const telFinal = clienteTelefone || dados.telefone || '';
+
+            // Debita estoque de produtos adicionais, se houver
+            if (listaProdutosAg.length > 0) {
+                for (const p of listaProdutosAg) {
+                    if (p.id && p.quantidade > 0) {
+                        try {
+                            const prodRef = firebaseAdminFirestore.collection('produtos').doc(p.id);
+                            const pSnap = await prodRef.get();
+                            if (pSnap.exists) {
+                                const estAtual = Number(pSnap.data().estoque || 0);
+                                const novoEst = Math.max(0, estAtual - p.quantidade);
+                                await prodRef.update({ estoque: novoEst, atualizadoEm: new Date().toISOString() });
+
+                                await firebaseAdminFirestore.collection('comprasProdutos').add({
+                                    produtoId: p.id,
+                                    produtoNome: p.nome || '',
+                                    quantidade: Number(p.quantidade || 1),
+                                    precoUnitario: Number(p.preco || 0),
+                                    valorTotal: Number(p.preco || 0) * Number(p.quantidade || 1),
+                                    clienteNome: nomeFinal,
+                                    clienteTelefone: telFinal,
+                                    clienteEmail: userEmail || `${telFinal.replace(/\D/g, '')}@cliente.emaus`,
+                                    origemVenda: 'carrinho_agendamento',
+                                    agendamentoDataHora: dataHoraCompleta,
+                                    paymentId: cleanId,
+                                    status: 'pago',
+                                    metodoPagamento: metodoPagamento,
+                                    criadoEm: new Date().toISOString()
+                                });
+                            }
+                        } catch (errEst) {
+                            console.warn('[Pagamento Servidor] Aviso ao debitar estoque no agendamento:', errEst.message);
+                        }
+                    }
+                }
+            }
+
+            // Grava ou atualiza documento em agendamentos usando cleanId como Document ID
+            const novoAgendamento = {
+                userId: uidFinal,
+                cliente: nomeFinal,
+                telefone: telFinal,
+                servico: servico || (dados.servico || 'Corte'),
+                preco: precoTotalNum,
+                taxaReservaPaga: valorEfetivoPago,
+                modalidadePagamento: modalidade || (valorEfetivoPago >= precoTotalNum ? 'total' : 'taxa'),
+                idPagamento: cleanId,
+                metodoPagamento: metodoPagamento,
+                isFidelidade: !!isFidelidade,
+                recompensaFidelidade: descricaoFidelidade || '',
+                descontoFidelidade: descontoFidelidade || 0,
+                isAniversario: !!isAniversario,
+                recompensaAniversario: descricaoAniversario || '',
+                descontoAniversario: descontoAniversario || 0,
+                extras: extras || [],
+                produtos: listaProdutosAg,
+                barbeiroId: barbeiroId || 'qualquer',
+                barbeiroNome: barbeiroNome || 'Barbearia EMAÚS',
+                barbeiroWhatsapp: barbeiroWhatsapp || '',
+                status: 'confirmado',
+                dataHora: dataHoraCompleta,
+                confirmadoEm: new Date().toISOString(),
+                confirmadoPeloServidor: true
+            };
+
+            await agDocRef.set(novoAgendamento, { merge: true });
+            console.log(`[Pagamento Servidor] ✅ Agendamento confirmado com sucesso para ${nomeFinal} (${dataHoraCompleta})!`);
+
+            // Debita fidelidade se aplicável
+            if (isFidelidade && userId) {
+                try {
+                    const fidRef = firebaseAdminFirestore.collection('fidelidadeClientes').doc(userId);
+                    const fidSnap = await fidRef.get();
+                    if (fidSnap.exists) {
+                        const selosAtuais = Number(fidSnap.data().selosAtuais || 0);
+                        const novasReq = Number(fidSnap.data().recompensasUtilizadas || 0) + 1;
+                        await fidRef.set({
+                            selosAtuais: Math.max(0, selosAtuais - 10),
+                            recompensasUtilizadas: novasReq,
+                            recompensaDisponivel: false,
+                            atualizadoEm: new Date().toISOString()
+                        }, { merge: true });
+                    }
+                } catch (eFid) { console.warn('[Pagamento Servidor] Aviso ao atualizar fidelidade:', eFid.message); }
+            }
+
+            // Marca aniversário se aplicável
+            if (isAniversario && userId) {
+                try {
+                    const userRef = firebaseAdminFirestore.collection('usuarios').doc(userId);
+                    await userRef.set({
+                        anoUltimoResgateAniversario: new Date().getFullYear(),
+                        atualizadoEm: new Date().toISOString()
+                    }, { merge: true });
+                } catch (eAniv) { console.warn('[Pagamento Servidor] Aviso ao atualizar aniversário:', eAniv.message); }
+            }
+
+            // Dispara notificação de WhatsApp
+            try {
+                const dataFormatada = dataHoraCompleta ? dataHoraCompleta.replace('T', ' às ') : 'Data a confirmar';
+                const numBarbeiroEspecifico = await resolverNumeroBarbeiro(barbeiroWhatsapp);
+                const numBarbeiroGeral = await resolverNumeroBarbeiro();
+                const numBarbeiroDestino = numBarbeiroEspecifico || numBarbeiroGeral;
+                const valorRestante = Math.max(0, precoTotalNum - valorEfetivoPago);
+
+                let produtosTextoBarbeiro = "";
+                let produtosTextoCliente = "";
+                if (listaProdutosAg.length > 0) {
+                    produtosTextoBarbeiro = `\n• *Produtos para Entregar no Balcão:* ` + listaProdutosAg.map(p => `${p.quantidade}x ${p.nome}${p.volumeUnidade ? ` (${p.volumeUnidade})` : ''} (R$ ${Number(p.subtotal || (p.preco * p.quantidade)).toFixed(2)})`).join(', ');
+                    produtosTextoCliente = `• *Produtos Adicionados (Retirar no Balcão):* ` + listaProdutosAg.map(p => `${p.quantidade}x ${p.nome} (R$ ${Number(p.subtotal || (p.preco * p.quantidade)).toFixed(2)})`).join(', ') + `\n`;
+                }
+
+                if (numBarbeiroDestino) {
+                    let tipoPagtoTexto = `Taxa de Reserva Paga (R$ ${valorEfetivoPago.toFixed(2)})`;
+                    let restanteBarbeiroTexto = `R$ ${valorRestante.toFixed(2)}`;
+                    if (modalidade === 'total' || valorRestante === 0) {
+                        tipoPagtoTexto = `Valor Integral Pago Online (R$ ${valorEfetivoPago.toFixed(2)})`;
+                        restanteBarbeiroTexto = "R$ 0,00 (Totalmente Quitado)";
+                    }
+
+                    const headerBarbeiro = barbeiroNome && barbeiroNome !== 'Qualquer Profissional'
+                        ? `*EMAÚS Barbearia - Novo Agendamento (${barbeiroNome})* 📅`
+                        : `*EMAÚS Barbearia - Novo Agendamento Confirmado!* 📅`;
+
+                    const msgBarbeiro = `${headerBarbeiro}\n\n` +
+                        `• *Cliente:* ${nomeFinal}\n` +
+                        `• *Telefone:* ${telFinal || 'Não informado'}\n` +
+                        `• *Serviço:* ${servico || 'Corte'}\n` +
+                        `• *Data/Hora:* ${dataFormatada}\n` +
+                        `• *Profissional:* ${barbeiroNome || 'Barbearia EMAÚS'}\n` +
+                        `• *Pagamento:* ${tipoPagtoTexto}\n` +
+                        `• *Cobrar no Balcão:* ${restanteBarbeiroTexto}${produtosTextoBarbeiro}\n` +
+                        `• *Status:* Confirmado (Mercado Pago)`;
+
+                    await enviarMensagemWhatsApp(numBarbeiroDestino, msgBarbeiro);
+                }
+
+                if (telFinal) {
+                    let saldoClienteTexto = (modalidade === 'total' || valorRestante === 0)
+                        ? `• *Pagamento:* Totalmente Quitado Online (R$ 0,00 restante)\n`
+                        : `• *Valor Total:* R$ ${precoTotalNum.toFixed(2)}\n• *Taxa de Reserva Paga:* R$ ${valorEfetivoPago.toFixed(2)}\n• *Restante a Pagar no Atendimento:* R$ ${valorRestante.toFixed(2)}\n`;
+
+                    const msgCliente = `*EMAÚS Barbearia - Confirmação de Agendamento* ✂️\n\n` +
+                        `Olá, *${nomeFinal}*!\n` +
+                        `Seu agendamento foi confirmado com sucesso.\n\n` +
+                        `• *Serviço:* ${servico || 'Corte'}\n` +
+                        `• *Data e Horário:* ${dataFormatada}\n` +
+                        produtosTextoCliente +
+                        saldoClienteTexto +
+                        `• *Local:* EMAÚS Barbearia\n\n` +
+                        `Agradecemos a preferência. Solicitamos a gentileza de comparecer com alguns minutos de antecedência.\n\n` +
+                        `Te esperamos! 💈\n` +
+                        `_EMAÚS Barbearia • Estilo e Tradição_`;
+
+                    await enviarMensagemWhatsApp(telFinal, msgCliente);
+                }
+            } catch (errZap) {
+                console.warn('[Pagamento Servidor] Aviso ao disparar WhatsApp automático:', errZap.message);
+            }
+
+        } else if (tipo === 'plano') {
+            const { plano, userId, userEmail, clienteNome, clienteTelefone } = dados;
+            const uidFinal = userId || 'cliente_anonimo';
+            const nomeFinal = clienteNome || dados.nome || 'Cliente';
+            const telFinal = clienteTelefone || dados.telefone || '';
+
+            const dataPagamento = new Date();
+            const dataFim = new Date();
+            dataFim.setDate(dataPagamento.getDate() + 30);
+
+            await firebaseAdminFirestore.collection('assinaturasClientes').doc(uidFinal).set({
+                userId: uidFinal,
+                cliente: nomeFinal,
+                telefone: telFinal,
+                nomePlano: plano?.nome || 'Plano Mensal VIP',
+                precoPlano: Number(plano?.preco || 0),
+                servicosInclusos: plano?.servicosInclusos || [],
+                dataPagamento: dataPagamento.toISOString(),
+                dataFim: dataFim.toISOString(),
+                idPagamento: cleanId,
+                metodoPagamento: metodoPagamento,
+                status: 'ativo',
+                atualizadoEm: new Date().toISOString()
+            });
+
+            console.log(`[Pagamento Servidor] ✅ Assinatura VIP ativada com sucesso para ${nomeFinal}!`);
+
+            try {
+                const numBarbeiro = await resolverNumeroBarbeiro();
+                if (numBarbeiro) {
+                    const msgBarbeiro = `*EMAÚS Barbearia - Nova Assinatura VIP!* 👑\n\n` +
+                        `Temos um novo cliente mensalista cadastrado:\n\n` +
+                        `• *Cliente:* ${nomeFinal}\n` +
+                        `• *Telefone:* ${telFinal || 'Não informado'}\n` +
+                        `• *Plano:* ${plano?.nome || 'Pacote Mensal'}\n` +
+                        `• *Valor Pago:* R$ ${Number(plano?.preco || 0).toFixed(2)}\n` +
+                        `• *Validade:* 30 dias (4 atendimentos)`;
+                    await enviarMensagemWhatsApp(numBarbeiro, msgBarbeiro);
+                }
+                if (telFinal) {
+                    const msgCliente = `*EMAÚS Barbearia - Assinatura VIP Confirmada!* 👑\n\n` +
+                        `Parabéns, *${nomeFinal}*! Sua assinatura do plano *${plano?.nome || 'Mensal VIP'}* foi ativada com sucesso.\n\n` +
+                        `• *Duração:* 30 dias\n` +
+                        `• *Benefício:* 4 cortes (1 corte exclusivo por semana)\n` +
+                        `• *Seu corte da Semana 1 já está disponível para agendamento gratuito!*\n\n` +
+                        `Agende seus atendimentos diretamente no nosso site:\n` +
+                        `👉 ${APP_SITE_URL}\n\n` +
+                        `_EMAÚS Barbearia • Estilo e Alta Performance_`;
+                    await enviarMensagemWhatsApp(telFinal, msgCliente);
+                }
+            } catch (errZap) {
+                console.warn('[Pagamento Servidor] Aviso ao disparar WhatsApp de plano:', errZap.message);
+            }
+
+        } else if (tipo === 'produto') {
+            const { produto, quantidade, totalPagar, nome, telefone, emailComprador } = dados;
+            const qtd = Number(quantidade || 1);
+            const total = Number(totalPagar || (Number(produto?.preco || 0) * qtd));
+
+            // Checagem de idempotência
+            const jaExisteProdSnap = await firebaseAdminFirestore.collection('comprasProdutos')
+                .where('paymentId', '==', cleanId)
+                .limit(1)
+                .get();
+
+            if (jaExisteProdSnap.empty) {
+                if (produto?.id) {
+                    try {
+                        const prodRef = firebaseAdminFirestore.collection('produtos').doc(produto.id);
+                        const pSnap = await prodRef.get();
+                        if (pSnap.exists) {
+                            const estAtual = Number(pSnap.data().estoque || 0);
+                            const novoEst = Math.max(0, estAtual - qtd);
+                            await prodRef.update({ estoque: novoEst, atualizadoEm: new Date().toISOString() });
+                        }
+                    } catch (errEst) {
+                        console.warn('[Pagamento Servidor] Aviso ao atualizar estoque de produto:', errEst.message);
+                    }
+                }
+
+                await firebaseAdminFirestore.collection('comprasProdutos').add({
+                    produtoId: produto?.id || '',
+                    produtoNome: produto?.nome || 'Produto',
+                    volumeUnidade: produto?.volumeUnidade || '',
+                    quantidade: qtd,
+                    precoUnitario: Number(produto?.preco || 0),
+                    valorTotal: total,
+                    clienteNome: nome || 'Cliente',
+                    clienteTelefone: telefone || '',
+                    clienteEmail: emailComprador || '',
+                    paymentId: cleanId,
+                    status: 'pago',
+                    metodoPagamento: metodoPagamento,
+                    criadoEm: new Date().toISOString()
+                });
+                console.log(`[Pagamento Servidor] ✅ Compra de produto gravada com sucesso para ${nome}!`);
+
+                try {
+                    const numBarbeiro = await resolverNumeroBarbeiro();
+                    if (numBarbeiro) {
+                        const msgBarbeiro = `🛍️ *EMAÚS Barbearia - Nova Venda de Produto!*\n\n` +
+                            `Temos um novo pedido pago pelo site:\n\n` +
+                            `• *Cliente:* ${nome || 'Cliente'}\n` +
+                            `• *Telefone:* ${telefone || 'Não informado'}\n` +
+                            `• *Item:* ${qtd}x ${produto?.nome || 'Produto'} - R$ ${total.toFixed(2)}\n` +
+                            `• *Pagamento:* ${metodoPagamento} (Aprovado)`;
+                        await enviarMensagemWhatsApp(numBarbeiro, msgBarbeiro);
+                    }
+                    if (telefone) {
+                        const msgCliente = `🛍️ *EMAÚS Barbearia - Pedido Confirmado!*\n\n` +
+                            `Olá, *${nome || 'Cliente'}*!\n` +
+                            `Seu pedido foi confirmado e o pagamento via ${metodoPagamento} foi aprovado com sucesso.\n\n` +
+                            `• *Produto:* ${qtd}x ${produto?.nome || 'Produto'}\n` +
+                            `• *Total Pago:* R$ ${total.toFixed(2)}\n\n` +
+                            `Você pode retirar seus produtos na barbearia a qualquer momento.\n\n` +
+                            `Agradecemos a sua preferência! 💈`;
+                        await enviarMensagemWhatsApp(telefone, msgCliente);
+                    }
+                } catch (errZap) {
+                    console.warn('[Pagamento Servidor] Aviso ao disparar WhatsApp de produto:', errZap.message);
+                }
+            }
+        }
+
+        // 3. Atualiza o status em pagamentos_pendentes para processado
+        if (pendenteSnap.exists) {
+            await pendenteRef.set({
+                status: 'processado',
+                processadoEm: new Date().toISOString()
+            }, { merge: true });
+        }
+
+        return { success: true, processed: true };
+
+    } catch (errGeral) {
+        console.error(`[Pagamento Servidor] ❌ Erro ao processar conclusão para ${cleanId}:`, errGeral);
+        return { success: false, error: errGeral.message };
+    }
+}
+
 // C1: Alias para compatibilidade — /api/mercadopago/reembolsar-pagamento → /api/pagamento/estorno
 app.post('/api/mercadopago/reembolsar-pagamento', verificarAdminMiddleware, async (req, res) => {
     // Redireciona para o handler de estorno existente, repassando o body
@@ -1668,12 +2367,49 @@ app.post('/api/webhook', async (req, res) => {
             }
         }
 
-        const topic = req.query.topic || req.body?.type;
-        const paymentId = req.query.id || req.body?.data?.id;
+        const topic = req.query.topic || req.query.type || req.body?.type;
+        const paymentId = req.query['data.id'] || req.query.id || req.body?.data?.id;
 
-        if (paymentId && (topic === 'payment' || req.body?.action?.includes('payment'))) {
+        if (paymentId && (topic === 'payment' || req.body?.action?.includes('payment') || req.query.topic === 'payment' || req.query.type === 'payment' || !topic)) {
             const response = await paymentClient.get({ id: paymentId });
             console.log(`[Webhook] ✅ Pagamento ${paymentId} status: ${response.status} (${response.status_detail})`);
+
+            // Se o status for aprovado, processa a conclusão em background no banco de dados e WhatsApp
+            if (response.status === 'approved') {
+                const metodo = response.payment_type_id?.includes('card') 
+                    ? (response.payment_type_id.includes('deb') ? 'cartao_debito' : 'cartao_credito') 
+                    : 'pix_mercadopago';
+                await processarConclusaoPagamentoServidor(paymentId, response, metodo);
+            }
+
+            // Se o status for rejeitado, cancelado ou expirado, sincroniza e libera reservas pendentes
+            if (response.status === 'rejected' || response.status === 'cancelled' || response.status === 'expired') {
+                if (firebaseAdminFirestore && paymentId) {
+                    try {
+                        await firebaseAdminFirestore.collection('pagamentos_pendentes').doc(String(paymentId)).set({
+                            status: response.status,
+                            statusDetail: response.status_detail || response.status,
+                            atualizadoEm: new Date().toISOString()
+                        }, { merge: true });
+
+                        // Libera qualquer agendamento pendente associado ao pagamento cancelado/rejeitado
+                        const agPendSnap = await firebaseAdminFirestore.collection('agendamentos')
+                            .where('idPagamento', '==', String(paymentId))
+                            .where('status', '==', 'pendente')
+                            .get();
+                        
+                        agPendSnap.forEach(d => {
+                            d.ref.update({
+                                status: 'cancelado',
+                                motivoCancelamento: `Pagamento ${response.status} no Mercado Pago (${response.status_detail || ''})`,
+                                atualizadoEm: new Date().toISOString()
+                            }).catch(e => console.warn('[Webhook update agendamento cancelado]:', e.message));
+                        });
+                    } catch (errCancel) {
+                        console.warn('[Webhook Cancel/Reject Sync]:', errCancel.message);
+                    }
+                }
+            }
 
             // Se o status for estornado/reembolsado, sincroniza automaticamente no banco
             if (response.status === 'refunded' || response.status === 'cancelled') {
@@ -1690,6 +2426,45 @@ app.post('/api/webhook', async (req, res) => {
         return res.status(200).json({ received: true, error: error.message });
     }
 });
+
+// Auto-limpeza periódica de pagamentos e agendamentos pendentes vencidos (a cada 3 minutos)
+setInterval(async () => {
+    if (!firebaseAdminFirestore) return;
+    try {
+        const agoraMillis = Date.now();
+        const limiteVencimento = new Date(agoraMillis - 3 * 60 * 1000).toISOString(); // 3 minutos atrás
+
+        // 1. Limpa pagamentos_pendentes vencidos
+        const pendentesSnap = await firebaseAdminFirestore.collection('pagamentos_pendentes')
+            .where('status', '==', 'pendente')
+            .where('criadoEm', '<=', limiteVencimento)
+            .limit(50)
+            .get();
+
+        if (!pendentesSnap.empty) {
+            console.log(`[Auto-Limpeza] 🧹 Expirando ${pendentesSnap.size} pagamento(s) pendente(s) vencido(s)...`);
+            for (const docP of pendentesSnap.docs) {
+                await docP.ref.set({ status: 'expirado', expiradoEm: new Date().toISOString() }, { merge: true });
+            }
+        }
+
+        // 2. Limpa agendamentos pendentes órfãos na grade
+        const agPendentesSnap = await firebaseAdminFirestore.collection('agendamentos')
+            .where('status', '==', 'pendente')
+            .where('criadoEm', '<=', limiteVencimento)
+            .limit(50)
+            .get();
+
+        if (!agPendentesSnap.empty) {
+            console.log(`[Auto-Limpeza] 🧹 Expirando ${agPendentesSnap.size} agendamento(s) pendente(s) órfão(s)...`);
+            for (const docAg of agPendentesSnap.docs) {
+                await docAg.ref.set({ status: 'cancelado', motivoCancelamento: 'Expirado por falta de pagamento (3 min)', atualizadoEm: new Date().toISOString() }, { merge: true });
+            }
+        }
+    } catch (eClean) {
+        console.warn('[Auto-Limpeza Erro]:', eClean.message);
+    }
+}, 3 * 60 * 1000);
 
 // ==========================================
 // ROTAS DE AUTOMAÇÃO DO WHATSAPP (BOT)

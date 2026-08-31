@@ -3962,7 +3962,17 @@
 
                 querySnapshot.forEach(docSnap => {
                     const ag = docSnap.data();
-                    if (ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'reembolsado') return;
+                    if (ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'reembolsado' || ag.status === 'expirado') return;
+                    
+                    // Se for pendente, checa se já expirou (mais de 3 minutos sem pagamento)
+                    if (ag.status === 'pendente' || ag.status === 'pendente_pagamento') {
+                        const criadoEmMillis = ag.criadoEm ? (ag.criadoEm.toMillis ? ag.criadoEm.toMillis() : new Date(ag.criadoEm).getTime()) : 0;
+                        const expiraEmMillis = ag.expiraEm ? (ag.expiraEm.toMillis ? ag.expiraEm.toMillis() : new Date(ag.expiraEm).getTime()) : (criadoEmMillis ? (criadoEmMillis + 3 * 60 * 1000) : 0);
+                        if (expiraEmMillis && Date.now() > expiraEmMillis) {
+                            return; // Ignora agendamento pendente expirado, liberando o horário na grade!
+                        }
+                    }
+
                     if (ag.dataHora && ag.dataHora.startsWith(dataSelecionada)) {
                         const horaStr = ag.dataHora.split('T')[1];
                         if (!horaStr) return;
@@ -5582,7 +5592,7 @@
             try {
                 const payload = {
                     ...infoPix,
-                    expiraEm: Date.now() + 15 * 60 * 1000, // 15 minutos de validade
+                    expiraEm: Date.now() + 3 * 60 * 1000, // 3 minutos de validade
                     criadoEm: Date.now()
                 };
                 localStorage.setItem('emaus_pix_pendente', JSON.stringify(payload));
@@ -5980,6 +5990,16 @@
                     let ocupadoOutro = false;
                     snapCheck.forEach(d => {
                         const ag = d.data();
+                        if (ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'reembolsado' || ag.status === 'expirado') return;
+
+                        if (ag.status === 'pendente' || ag.status === 'pendente_pagamento') {
+                            const criadoEmMillis = ag.criadoEm ? (ag.criadoEm.toMillis ? ag.criadoEm.toMillis() : new Date(ag.criadoEm).getTime()) : 0;
+                            const expiraEmMillis = ag.expiraEm ? (ag.expiraEm.toMillis ? ag.expiraEm.toMillis() : new Date(ag.expiraEm).getTime()) : (criadoEmMillis ? (criadoEmMillis + 3 * 60 * 1000) : 0);
+                            if (expiraEmMillis && Date.now() > expiraEmMillis) {
+                                return; // Ignora agendamento pendente vencido
+                            }
+                        }
+
                         if (ag.status === 'confirmado' || ag.status === 'pendente') {
                             if (!user || ag.userId !== user.uid) {
                                 if (modoMultiBarbeiroCliente && barbeiroAlvoId !== 'qualquer') {
@@ -6109,6 +6129,8 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
+                            tipo: tipo,
+                            dadosCompletos: dadosCompletosComUser,
                             transaction_amount: valorPagar,
                             description: descricao,
                             email: user?.email || `${telefoneCliente.replace(/\D/g, '')}@cliente.emaus`,
@@ -6446,7 +6468,7 @@
                         return;
                     }
 
-                    await addDoc(collection(db, "agendamentos"), {
+                    const dadosNovoAgendamento = {
                         userId: uidFinal,
                         cliente: nomeCliente,
                         telefone: telefoneCliente,
@@ -6469,8 +6491,17 @@
                         barbeiroWhatsapp: barbeiroSelecionadoCliente?.whatsapp || '',
                         status: 'confirmado',
                         dataHora: dataHoraCompleta,
-                        criadoEm: new Date()
-                    });
+                        confirmadoEm: new Date().toISOString()
+                    };
+
+                    if (paymentId && paymentId !== 'manual') {
+                        await setDoc(doc(db, "agendamentos", String(paymentId)), dadosNovoAgendamento, { merge: true });
+                    } else {
+                        await addDoc(collection(db, "agendamentos"), {
+                            ...dadosNovoAgendamento,
+                            criadoEm: new Date()
+                        });
+                    }
 
                     // Se aplicou recompensa de fidelidade com abatimento de valor no checkout
                     if (dadosEfetivos?.isFidelidade) {
@@ -7265,8 +7296,19 @@
                 return;
             }
 
-            const [expMonth, expYear] = cartaoValidade.split('/');
             const user = auth.currentUser;
+            let nomeCliente = user?.email || 'Cliente';
+            let telefoneCliente = "";
+            try {
+                if (user?.uid) {
+                    const uDoc = await getDoc(doc(db, "usuarios", user.uid));
+                    if (uDoc.exists()) {
+                        nomeCliente = uDoc.data().nome || user.email;
+                        telefoneCliente = uDoc.data().telefone || "";
+                    }
+                }
+            } catch (e) { console.error(e); }
+
             let valorBasePagar = 10.00;
             let descricao = "";
 
@@ -7279,6 +7321,17 @@
                 valorBasePagar = dadosPagamentoPendente.plano?.preco || 10.00;
                 descricao = `Assinatura ${dadosPagamentoPendente.plano?.nome} - EMAÚS`;
             }
+
+            const dadosCompletosComUser = {
+                ...(dadosPagamentoPendente || {}),
+                userId: user?.uid,
+                userEmail: user?.email,
+                clienteNome: cartaoNome || nomeCliente,
+                clienteTelefone: telefoneCliente,
+                barbeiroId: barbeiroSelecionadoCliente?.id || 'qualquer',
+                barbeiroNome: barbeiroSelecionadoCliente?.nome || 'Barbearia EMAÚS',
+                barbeiroWhatsapp: barbeiroSelecionadoCliente?.whatsapp || ''
+            };
 
             const valorFinalCobrado = isDebito
                 ? (configTaxaCartaoDebito > 0 ? Number((valorBasePagar * (1 + configTaxaCartaoDebito / 100)).toFixed(2)) : valorBasePagar)
@@ -7313,7 +7366,9 @@
                             tipoCartao: isDebito ? 'debito' : 'credito',
                             email: user?.email || 'cliente@barbearia.com',
                             description: descricao,
-                            dataHora: dataHoraCartao
+                            dataHora: dataHoraCartao,
+                            tipo: tipoPagamentoAtual,
+                            dadosCompletos: dadosCompletosComUser
                         })
                     });
 
@@ -7322,11 +7377,11 @@
                 if (response.ok && data.status === 'approved') {
                     if (msgEl) {
                         msgEl.className = "text-xs text-center font-bold text-green-400";
-                        msgEl.innerText = `✅ Pagamento no cartão de ${isDebito ? 'débito' : 'crédito'} aprovado com sucesso!`;
+                        msgEl.innerText = `✅ Pagamento no cartão de ${isDebito ? 'débito' : 'credito'} aprovado com sucesso!`;
                     }
                     setTimeout(async () => {
                         fecharModalPagamento();
-                        await concluirPagamentoComSucesso(data.id, isDebito ? 'cartao_debito' : 'cartao_credito');
+                        await concluirPagamentoComSucesso(data.id, isDebito ? 'cartao_debito' : 'cartao_credito', dadosCompletosComUser, tipoPagamentoAtual);
                     }, 1200);
                 } else {
                     const msgErro = data.error || (data.status === 'in_process' ? 'Pagamento em análise pela operadora.' : 'Pagamento recusado pela operadora do cartão.');
@@ -7924,11 +7979,22 @@ const tabProdPix = document.getElementById('tabProdPix');
                     msg.innerText = "Conectando ao Mercado Pago para gerar seu Pix seguro...";
                 }
 
+                const dadosCompraProduto = {
+                    produto: produtoSelecionadoCompra,
+                    quantidade: quantidadeCompraProduto,
+                    totalPagar: totalPagar,
+                    nome: nome,
+                    telefone: telefone,
+                    emailComprador: emailComprador
+                };
+
                 try {
                     const response = await fetch(`${getBackendUrlAtivo()}/api/pagamento/pix`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
+                            tipo: 'produto',
+                            dadosCompletos: dadosCompraProduto,
                             transaction_amount: totalPagar,
                             description: `Compra: ${quantidadeCompraProduto}x ${produtoSelecionadoCompra.nome} - EMAÚS Barbearia`,
                             email: emailComprador,
@@ -7957,15 +8023,6 @@ const tabProdPix = document.getElementById('tabProdPix');
                         const paymentId = data.id;
 
                         // Salva dados no localStorage para recuperação se fechar a tela
-                        const dadosCompraProduto = {
-                            produto: produtoSelecionadoCompra,
-                            quantidade: quantidadeCompraProduto,
-                            totalPagar: totalPagar,
-                            nome: nome,
-                            telefone: telefone,
-                            emailComprador: emailComprador
-                        };
-
                         salvarPixPendenteLocalStorage({
                             tipo: 'produto',
                             paymentId: paymentId,
