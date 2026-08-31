@@ -1060,6 +1060,15 @@
                             </div>
                         </div>
 
+                        <!-- Alerta de Manter a Tela Aberta -->
+                        <div class="p-3 bg-amber-500/10 border border-amber-500/40 rounded-xl text-left flex items-start gap-2.5 shadow-sm">
+                            <span class="text-amber-400 text-base leading-none mt-0.5 flex-shrink-0">⚠️</span>
+                            <div class="text-[11px] text-amber-200/90 leading-relaxed font-medium">
+                                <strong class="text-amber-300 block mb-0.5">Importante: Deixe esta tela aberta!</strong>
+                                Ao copiar o código ou escanear o QR Code, <strong>mantenha esta tela e o aplicativo abertos</strong> enquanto paga no app do seu banco para que a confirmação seja processada na hora.
+                            </div>
+                        </div>
+
                         <!-- Status em Tempo Real -->
                         <div id="pixStatusBadge" class="flex items-center justify-center gap-2 text-xs text-amber-300 bg-amber-950/40 p-2.5 rounded-xl border border-amber-800/60 font-medium">
                             <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
@@ -1457,6 +1466,15 @@
                             </div>
                         </div>
 
+                        <!-- Alerta de Manter a Tela Aberta -->
+                        <div class="p-3 bg-amber-500/10 border border-amber-500/40 rounded-xl text-left flex items-start gap-2.5 shadow-sm">
+                            <span class="text-amber-400 text-base leading-none mt-0.5 flex-shrink-0">⚠️</span>
+                            <div class="text-[11px] text-amber-200/90 leading-relaxed font-medium">
+                                <strong class="text-amber-300 block mb-0.5">Importante: Deixe esta tela aberta!</strong>
+                                Ao copiar o código ou escanear o QR Code, <strong>mantenha esta tela e o aplicativo abertos</strong> enquanto paga no app do seu banco para que seu pedido seja confirmado na hora.
+                            </div>
+                        </div>
+
                         <div class="flex items-center justify-center gap-2 text-xs text-amber-300 bg-amber-950/40 p-2.5 rounded-xl border border-amber-800/60 font-medium">
                             <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
                             <span>Aguardando pagamento... (Baixa Instantânea)</span>
@@ -1626,6 +1644,10 @@
                     <span id="bannerPixTempoRestante" class="text-[10px] text-zinc-400 font-mono flex-shrink-0"></span>
                 </div>
                 <p id="bannerPixPendenteDesc" class="text-xs text-zinc-200 mt-0.5 truncate font-medium">Aguardando confirmação do seu banco...</p>
+                <p class="text-[10px] text-amber-300 font-semibold mt-1 leading-tight flex items-center gap-1">
+                    <span>⚠️</span>
+                    <span>Deixe o site e o app abertos até a aprovação.</span>
+                </p>
                 <div class="flex items-center gap-2 mt-2.5">
                     <button id="btnReabrirModalPixPendente" type="button" class="bg-dourado hover:bg-[#C5A028] text-black font-bold text-xs px-3 py-1.5 rounded-lg transition shadow flex items-center gap-1 cursor-pointer active:scale-95">
                         📱 Ver QR Code
@@ -5863,16 +5885,16 @@
                     try {
                         await navigator.clipboard.writeText(input.value);
                         const textoAntigo = btnCopiarPix.innerHTML;
-                        btnCopiarPix.innerHTML = "✅ Copiado!";
-                        btnCopiarPix.className = "bg-green-500 text-black font-bold px-3 py-2 rounded text-xs transition cursor-pointer whitespace-nowrap flex items-center gap-1";
+                        btnCopiarPix.innerHTML = "✅ Código Copiado!";
+                        btnCopiarPix.className = "bg-green-500 text-black font-bold px-3.5 py-2 min-h-[42px] rounded-xl text-xs transition cursor-pointer whitespace-nowrap flex items-center gap-1 shadow flex-shrink-0";
                         setTimeout(() => {
                             btnCopiarPix.innerHTML = textoAntigo;
-                            btnCopiarPix.className = "bg-dourado hover:bg-[#C5A028] text-black font-bold px-3 py-2 rounded text-xs transition cursor-pointer whitespace-nowrap flex items-center gap-1";
+                            btnCopiarPix.className = "bg-dourado hover:bg-[#C5A028] text-black font-bold px-3.5 py-2 min-h-[42px] rounded-xl text-xs transition cursor-pointer whitespace-nowrap flex items-center gap-1 shadow flex-shrink-0";
                         }, 2500);
                     } catch (err) {
                         input.select();
                         document.execCommand('copy');
-                        alert("Código Pix copiado para a área de transferência!");
+                        alert("Código Pix copiado! Deixe esta tela aberta enquanto conclui o pagamento no app do seu banco.");
                     }
                 }
             });
@@ -8172,14 +8194,24 @@ const tabProdPix = document.getElementById('tabProdPix');
         document.getElementById('btnPagarProdDebito')?.addEventListener('click', () => executarPagamentoCartaoProduto('debito'));
 
         if (btnCopiarPixProduto) {
-            btnCopiarPixProduto.addEventListener('click', () => {
+            btnCopiarPixProduto.addEventListener('click', async () => {
                 const codeInput = document.getElementById('inputPixCodeProduto');
                 if (codeInput && codeInput.value) {
                     if (window.vibrarDispositivo) window.vibrarDispositivo('copiar');
-                    codeInput.select();
-                    navigator.clipboard.writeText(codeInput.value);
-                    btnCopiarPixProduto.innerText = "✅ Copiado!";
-                    setTimeout(() => btnCopiarPixProduto.innerText = "📋 Copiar", 2500);
+                    try {
+                        codeInput.select();
+                        await navigator.clipboard.writeText(codeInput.value);
+                        btnCopiarPixProduto.innerHTML = "<span>✅ Copiado!</span>";
+                        btnCopiarPixProduto.className = "bg-green-500 text-black font-bold px-3.5 py-2 min-h-[42px] rounded-xl text-xs transition cursor-pointer whitespace-nowrap inline-flex items-center gap-1 shadow flex-shrink-0";
+                        setTimeout(() => {
+                            btnCopiarPixProduto.innerHTML = `<svg class="w-3.5 h-3.5 fill-none stroke-current stroke-2 flex-shrink-0" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>Copiar</span>`;
+                            btnCopiarPixProduto.className = "bg-dourado hover:bg-[#C5A028] text-black font-bold px-3.5 py-2 min-h-[42px] rounded-xl text-xs transition cursor-pointer whitespace-nowrap inline-flex items-center gap-1 shadow flex-shrink-0";
+                        }, 2500);
+                    } catch (e) {
+                        codeInput.select();
+                        document.execCommand('copy');
+                        alert("Código Pix copiado! Deixe esta tela aberta enquanto conclui o pagamento no app do seu banco.");
+                    }
                 }
             });
         }
