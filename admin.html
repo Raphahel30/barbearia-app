@@ -2779,6 +2779,11 @@
                 icone = '📅';
             }
 
+            // Limita a no máximo 2 toasts simultâneos para não poluir a tela do barbeiro
+            while (container.children.length >= 2) {
+                container.firstElementChild.remove();
+            }
+
             const toast = document.createElement('div');
             toast.className = `p-4 rounded-2xl border shadow-2xl backdrop-blur-md flex items-start gap-3 pointer-events-auto transition-all duration-300 transform translate-y-2 opacity-0 ${borderClass}`;
             toast.innerHTML = `
@@ -2798,7 +2803,7 @@
             setTimeout(() => {
                 toast.classList.add('opacity-0', '-translate-y-2');
                 setTimeout(() => toast.remove(), 400);
-            }, 7000);
+            }, 6000);
         }
 
         function dispararNotificacaoNativa(titulo, corpo) {
@@ -2823,6 +2828,27 @@
         let primeiroCarregamentoAgendamentos = true;
         let primeiroCarregamentoMensalistas = true;
         let mapaUsuariosAdmin = new Map();
+        const mapaNotificacoesRecentesAdmin = new Map();
+
+        // Evita disparar múltiplos alertas para a mesma ação nos últimos 15 segundos
+        function podeDispararNotificacaoAdmin(tipo, id, tempoDebounceMs = 15000) {
+            if (!id) return true;
+            const chave = `${tipo}_${id}`;
+            const agora = Date.now();
+            const ultimoDisparo = mapaNotificacoesRecentesAdmin.get(chave) || 0;
+            if (agora - ultimoDisparo < tempoDebounceMs) {
+                return false; // Ignora duplicatas na mesma janela de tempo
+            }
+            mapaNotificacoesRecentesAdmin.set(chave, agora);
+            
+            // Auto-limpeza do mapa de notificações
+            if (mapaNotificacoesRecentesAdmin.size > 100) {
+                for (const [k, v] of mapaNotificacoesRecentesAdmin.entries()) {
+                    if (agora - v > 60000) mapaNotificacoesRecentesAdmin.delete(k);
+                }
+            }
+            return true;
+        }
 
         function iniciarMonitoramentoTempoRealAdmin() {
             if (monitoramentoIniciado) return;
@@ -2838,48 +2864,61 @@
 
                 snapshot.docChanges().forEach((change) => {
                     const ag = change.doc.data();
+                    const docId = change.doc.id;
+
                     if (change.type === "added") {
+                        // Ignora intenções de pagamento pendentes não confirmadas
+                        if (ag.status === 'pendente' || ag.status === 'pendente_pagamento') return;
+
                         const agoraIso = new Date().toISOString().slice(0, 16);
                         if (ag.dataHora && ag.dataHora >= agoraIso) {
-                            const horaFmt = (ag.dataHora || '').replace('T', ' às ');
-                            tocarSomNotificacao(ag.isPlano ? 'vip' : 'novo');
-                            exibirToastNotificacao(
-                                ag.isPlano ? '👑 Novo Agendamento VIP' : '📅 Novo Agendamento',
-                                `${ag.cliente || 'Cliente'} agendou ${ag.servico} para ${horaFmt}.`,
-                                ag.isPlano ? 'vip' : 'agendamento'
-                            );
-                            dispararNotificacaoNativa(
-                                `EMAÚS - ${ag.isPlano ? '👑 Agendamento VIP' : '📅 Novo Agendamento'}`,
-                                `${ag.cliente || 'Cliente'} • ${ag.servico || 'Corte'} • ${horaFmt}`
-                            );
+                            if (podeDispararNotificacaoAdmin('novo_agendamento', docId)) {
+                                const horaFmt = (ag.dataHora || '').replace('T', ' às ');
+                                tocarSomNotificacao(ag.isPlano ? 'vip' : 'novo');
+                                exibirToastNotificacao(
+                                    ag.isPlano ? '👑 Novo Agendamento VIP' : '📅 Novo Agendamento',
+                                    `${ag.cliente || 'Cliente'} agendou ${ag.servico} para ${horaFmt}.`,
+                                    ag.isPlano ? 'vip' : 'agendamento'
+                                );
+                                dispararNotificacaoNativa(
+                                    `EMAÚS - ${ag.isPlano ? '👑 Agendamento VIP' : '📅 Novo Agendamento'}`,
+                                    `${ag.cliente || 'Cliente'} • ${ag.servico || 'Corte'} • ${horaFmt}`
+                                );
+                            }
                         }
                         buscarAgendamentosFirestore(false);
                     } else if (change.type === "modified") {
                         const ehCancelado = ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'reembolsado';
-                        if (ehCancelado) {
-                            tocarSomNotificacao('cancelamento');
-                            exibirToastNotificacao(
-                                '🚫 Agendamento Cancelado',
-                                `${ag.cliente || 'Cliente'} cancelou o horário ${(ag.dataHora || '').replace('T', ' às ')}.`,
-                                'cancelamento'
-                            );
-                            dispararNotificacaoNativa(
-                                'EMAÚS - Agendamento Cancelado',
-                                `${ag.cliente || 'Cliente'} cancelou o horário ${(ag.dataHora || '').replace('T', ' às ')}.`
-                            );
+                        const ehExpiradoOuCheckout = ag.motivoCancelamento === 'expirado_sem_pagamento' || ag.motivo === 'cancelado_pelo_usuario_no_modal' || String(ag.motivoCancelamento || '').includes('expirado');
+
+                        if (ehCancelado && !ehExpiradoOuCheckout) {
+                            if (podeDispararNotificacaoAdmin('cancelamento', docId)) {
+                                tocarSomNotificacao('cancelamento');
+                                exibirToastNotificacao(
+                                    '🚫 Agendamento Cancelado',
+                                    `${ag.cliente || 'Cliente'} cancelou o horário ${(ag.dataHora || '').replace('T', ' às ')}.`,
+                                    'cancelamento'
+                                );
+                                dispararNotificacaoNativa(
+                                    'EMAÚS - Agendamento Cancelado',
+                                    `${ag.cliente || 'Cliente'} cancelou o horário ${(ag.dataHora || '').replace('T', ' às ')}.`
+                                );
+                            }
                         }
                         buscarAgendamentosFirestore(false);
                     } else if (change.type === "removed") {
-                        tocarSomNotificacao('cancelamento');
-                        exibirToastNotificacao(
-                            '🚫 Agendamento Removido',
-                            'Um agendamento foi removido da agenda.',
-                            'cancelamento'
-                        );
-                        dispararNotificacaoNativa(
-                            'EMAÚS - Agendamento Removido',
-                            'Um horário foi liberado na agenda.'
-                        );
+                        if (podeDispararNotificacaoAdmin('removido', docId)) {
+                            tocarSomNotificacao('cancelamento');
+                            exibirToastNotificacao(
+                                '🚫 Agendamento Removido',
+                                'Um agendamento foi removido da agenda.',
+                                'cancelamento'
+                            );
+                            dispararNotificacaoNativa(
+                                'EMAÚS - Agendamento Removido',
+                                'Um horário foi liberado na agenda.'
+                            );
+                        }
                         buscarAgendamentosFirestore(false);
                     }
                 });
@@ -2896,16 +2935,18 @@
                 snapshot.docChanges().forEach((change) => {
                     if (change.type === "added") {
                         const sub = change.doc.data();
-                        tocarSomNotificacao('vip');
-                        exibirToastNotificacao(
-                            '👑 Nova Assinatura VIP!',
-                            `${sub.cliente || 'Cliente'} assinou o plano ${sub.nomePlano || 'Mensal'}!`,
-                            'vip'
-                        );
-                        dispararNotificacaoNativa(
-                            'EMAÚS - 👑 Novo Assinante VIP!',
-                            `${sub.cliente || 'Cliente'} assinou ${sub.nomePlano}!`
-                        );
+                        if (podeDispararNotificacaoAdmin('nova_assinatura', change.doc.id)) {
+                            tocarSomNotificacao('vip');
+                            exibirToastNotificacao(
+                                '👑 Nova Assinatura VIP!',
+                                `${sub.cliente || 'Cliente'} assinou o plano ${sub.nomePlano || 'Mensal'}!`,
+                                'vip'
+                            );
+                            dispararNotificacaoNativa(
+                                'EMAÚS - 👑 Novo Assinante VIP!',
+                                `${sub.cliente || 'Cliente'} assinou ${sub.nomePlano}!`
+                            );
+                        }
                     }
                 });
                 carregarClientesMensalistasAdmin();
