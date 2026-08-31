@@ -5118,7 +5118,7 @@
                     if (!window.meusAgendamentosCache) window.meusAgendamentosCache = {};
                     window.meusAgendamentosCache[agId] = { id: agId, ...ag };
 
-                    const ehCancelado = ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'reembolsado';
+                    const ehCancelado = ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'reembolsado' || ag.status === 'expirado' || ag.status === 'pendente' || ag.status === 'pendente_pagamento';
                     const ehConcluido = ag.status === 'concluido' || ag.status === 'realizado' || ag.status === 'finalizado' || ag.concluido === true;
                     const ehFalta = ag.status === 'falta' || ag.status === 'cancelado_tardio' || ag.status === 'perdido';
 
@@ -5863,8 +5863,18 @@
         });
 
         document.getElementById('btnReabrirModalPixPendente')?.addEventListener('click', reabrirModalPixPendente);
-        document.getElementById('btnCancelarPixPendente')?.addEventListener('click', () => {
+        document.getElementById('btnCancelarPixPendente')?.addEventListener('click', async () => {
             if (confirm("Deseja realmente cancelar este pagamento Pix pendente?")) {
+                const pendente = obterPixPendenteLocalStorage();
+                if (pendente && pendente.paymentId) {
+                    try {
+                        await setDoc(doc(db, "pagamentos_pendentes", String(pendente.paymentId)), {
+                            status: 'cancelado',
+                            motivo: 'cancelado_pelo_usuario_no_modal',
+                            atualizadoEm: new Date().toISOString()
+                        }, { merge: true });
+                    } catch (e) {}
+                }
                 limparPixPendenteLocalStorage();
                 fecharModalPagamento();
                 fecharModalCompraProduto();

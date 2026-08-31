@@ -1250,45 +1250,11 @@ app.post('/api/pagamento/pix', async (req, res) => {
 
         const response = await paymentClient.create({ body: paymentData });
 
-        // Salva o agendamento imediatamente como pendente e a intenção de pagamento no Firestore
+        // Salva a intenção de pagamento no Firestore para confirmação em segundo plano (Webhook / Server Poller)
         if (firebaseAdminFirestore && response && response.id) {
             try {
                 const expiraEmDate = new Date(Date.now() + 3 * 60 * 1000).toISOString();
                 const agoraIso = new Date().toISOString();
-
-                if (tipoFinal === 'agendamento') {
-                    const dataHoraCompleta = (dadosPayload.data && dadosPayload.horario) 
-                        ? `${dadosPayload.data}T${dadosPayload.horario}` 
-                        : (dadosPayload.dataHora || null);
-
-                    await firebaseAdminFirestore.collection('agendamentos').doc(String(response.id)).set({
-                        userId: dadosPayload.userId || null,
-                        cliente: dadosPayload.clienteNome || firstName || 'Cliente',
-                        telefone: dadosPayload.clienteTelefone || '',
-                        servico: dadosPayload.servico || 'Corte',
-                        preco: Number(dadosPayload.preco || dadosPayload.precoFinal || 0),
-                        taxaReservaPaga: Number(parseFloat(transaction_amount).toFixed(2)),
-                        modalidadePagamento: dadosPayload.modalidade || 'taxa',
-                        idPagamento: String(response.id),
-                        metodoPagamento: 'pix_mercadopago',
-                        isPlano: false,
-                        extras: dadosPayload.extras || [],
-                        produtos: Array.isArray(dadosPayload.produtos) ? dadosPayload.produtos : [],
-                        barbeiroId: dadosPayload.barbeiroId || 'qualquer',
-                        barbeiroNome: dadosPayload.barbeiroNome || 'Barbearia EMAÚS',
-                        barbeiroWhatsapp: dadosPayload.barbeiroWhatsapp || '',
-                        status: 'pendente',
-                        dataHora: dataHoraCompleta,
-                        criadoEm: agoraIso,
-                        expiraEm: expiraEmDate,
-                        isFidelidade: Boolean(dadosPayload.isFidelidade),
-                        recompensaFidelidade: dadosPayload.descricaoFidelidade || '',
-                        descontoFidelidade: Number(dadosPayload.descontoFidelidade || 0),
-                        isAniversario: Boolean(dadosPayload.isAniversario),
-                        recompensaAniversario: dadosPayload.descricaoAniversario || '',
-                        descontoAniversario: Number(dadosPayload.descontoAniversario || 0)
-                    }, { merge: true });
-                }
 
                 await firebaseAdminFirestore.collection('pagamentos_pendentes').doc(String(response.id)).set({
                     paymentId: String(response.id),
@@ -1299,7 +1265,7 @@ app.post('/api/pagamento/pix', async (req, res) => {
                     expiraEm: expiraEmDate,
                     metodo: 'pix_mercadopago'
                 }, { merge: true });
-                console.log(`[Pagamento Pix] 📝 Agendamento e intenção pendente registrados no Firestore: ${response.id} (${tipoFinal}) - Expira em 3 min`);
+                console.log(`[Pagamento Pix] 📝 Intenção pendente registrada no Firestore: ${response.id} (${tipoFinal}) - Expira em 3 min`);
             } catch (errDb) {
                 console.warn('[Pagamento Pix] Aviso ao registrar intenção de pagamento pendente:', errDb.message);
             }
@@ -1465,46 +1431,11 @@ app.post('/api/pagamento/cartao', async (req, res) => {
 
         const response = await paymentClient.create({ body: paymentData });
 
-        // Salva o agendamento e a intenção de pagamento no Firestore para confirmação em segundo plano
+        // Salva a intenção de pagamento no Firestore
         if (firebaseAdminFirestore && response && response.id) {
             try {
                 const expiraEmDate = new Date(Date.now() + 3 * 60 * 1000).toISOString();
                 const agoraIso = new Date().toISOString();
-                const statusAg = response.status === 'approved' ? 'confirmado' : 'pendente';
-
-                if (tipoFinal === 'agendamento') {
-                    const dataHoraCompleta = (dadosPayload.data && dadosPayload.horario) 
-                        ? `${dadosPayload.data}T${dadosPayload.horario}` 
-                        : (dadosPayload.dataHora || null);
-
-                    await firebaseAdminFirestore.collection('agendamentos').doc(String(response.id)).set({
-                        userId: dadosPayload.userId || null,
-                        cliente: dadosPayload.clienteNome || cardholderName || 'Cliente',
-                        telefone: dadosPayload.clienteTelefone || '',
-                        servico: dadosPayload.servico || 'Corte',
-                        preco: Number(dadosPayload.preco || dadosPayload.precoFinal || 0),
-                        taxaReservaPaga: Number(parseFloat(transaction_amount).toFixed(2)),
-                        modalidadePagamento: dadosPayload.modalidade || 'taxa',
-                        idPagamento: String(response.id),
-                        metodoPagamento: isDebito ? 'cartao_debito' : 'cartao_credito',
-                        isPlano: false,
-                        extras: dadosPayload.extras || [],
-                        produtos: Array.isArray(dadosPayload.produtos) ? dadosPayload.produtos : [],
-                        barbeiroId: dadosPayload.barbeiroId || 'qualquer',
-                        barbeiroNome: dadosPayload.barbeiroNome || 'Barbearia EMAÚS',
-                        barbeiroWhatsapp: dadosPayload.barbeiroWhatsapp || '',
-                        status: statusAg,
-                        dataHora: dataHoraCompleta,
-                        criadoEm: agoraIso,
-                        expiraEm: expiraEmDate,
-                        isFidelidade: Boolean(dadosPayload.isFidelidade),
-                        recompensaFidelidade: dadosPayload.descricaoFidelidade || '',
-                        descontoFidelidade: Number(dadosPayload.descontoFidelidade || 0),
-                        isAniversario: Boolean(dadosPayload.isAniversario),
-                        recompensaAniversario: dadosPayload.descricaoAniversario || '',
-                        descontoAniversario: Number(dadosPayload.descontoAniversario || 0)
-                    }, { merge: true });
-                }
 
                 await firebaseAdminFirestore.collection('pagamentos_pendentes').doc(String(response.id)).set({
                     paymentId: String(response.id),
