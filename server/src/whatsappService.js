@@ -297,11 +297,10 @@ async function _conectar({ gerarQr = true, numeroPairing = null, forceNewCredsIf
                 if (connection === 'close') {
                     isConnecting = false;
                     const statusCode = lastDisconnect?.error instanceof Boom ? lastDisconnect.error.output.statusCode : 0;
-                    const registered = !!authState?.creds?.registered;
                     const wasLoggedOut = statusCode === DisconnectReason.loggedOut;
-                    const shouldReconnect = registered && !wasLoggedOut;
+                    const shouldReconnect = !wasLoggedOut;
 
-                    console.log(`[WhatsApp Bot] Conexão finalizada. Código: ${statusCode} | Registrado: ${registered} | Reconectar: ${shouldReconnect}`);
+                    console.log(`[WhatsApp Bot] Conexão finalizada. Código: ${statusCode} | Reconectar: ${shouldReconnect}`);
 
                     if (wasLoggedOut) {
                         connectionStatus = 'disconnected';
