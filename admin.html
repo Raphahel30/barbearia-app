@@ -5671,13 +5671,13 @@
             const userId = ag?.userId || '';
             const semanaPlano = ag?.semanaPlano || '';
             const telCliente = ag?.telefone || '';
-            const jaEstornadoOuCancelado = ag?.status === 'cancelado' || ag?.status === 'cancelado_barbeiro' || ag?.status === 'reembolsado' || ag?.estornoRealizado === true;
+            const ehConcluidoOuHistorico = ag?.status === 'concluido' || ag?.status === 'realizado' || ag?.status === 'finalizado' || ag?.concluido === true || ag?.status === 'falta' || ag?.status === 'cancelado' || ag?.status === 'cancelado_barbeiro' || ag?.status === 'reembolsado' || ag?.estornoRealizado === true;
 
             // =========================================================================
-            // CASO 1: AGENDAMENTO JÁ CANCELADO OU REEMBOLSADO (Exclusão do Histórico)
+            // CASO 1: AGENDAMENTO HISTÓRICO (Concluído, Falta, Cancelado ou Reembolsado)
             // =========================================================================
-            if (jaEstornadoOuCancelado) {
-                if (!confirm(`Deseja realmente apagar o registro histórico de ${cliente} (${servico})? Esta ação removerá o agendamento permanentemente.`)) {
+            if (ehConcluidoOuHistorico) {
+                if (!confirm(`Deseja realmente apagar o registro histórico de ${cliente} (${servico})? Esta ação removerá o agendamento permanentemente do sistema.`)) {
                     return;
                 }
 
