@@ -4899,8 +4899,9 @@
                     badgeStatus = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-950/80 text-red-400 border border-red-800" title="${tx.motivo || 'Estornado'}">↩️ Estornado</span>`;
                 }
 
-                const telLimpo = (tx.telefone || '').replace(/\D/g, '');
-                const zapLink = telLimpo ? `<a href="https://wa.me/55${telLimpo}" target="_blank" class="text-dourado hover:underline text-[11px] block">📲 ${tx.telefone}</a>` : '<span class="text-zinc-500 text-[11px] block">Sem tel</span>';
+                let telLimpo = (tx.telefone || '').replace(/\D/g, '');
+                if (telLimpo && !telLimpo.startsWith('55') && (telLimpo.length === 10 || telLimpo.length === 11)) telLimpo = '55' + telLimpo;
+                const zapLink = telLimpo ? `<a href="https://wa.me/${telLimpo}" target="_blank" class="text-dourado hover:underline text-[11px] block">📲 ${tx.telefone}</a>` : '<span class="text-zinc-500 text-[11px] block">Sem tel</span>';
 
                 const corValor = ehCanceladoRetido
                     ? 'text-amber-300'
@@ -9013,8 +9014,9 @@
                 lista.forEach(b => {
                     const foto = b.fotoUrl || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=150&auto=format&fit=crop&q=80';
                     const telFmt = b.whatsapp || 'Sem WhatsApp';
-                    const telLimpo = b.whatsapp ? b.whatsapp.replace(/\D/g, '') : '';
-                    const linkZap = telLimpo ? `https://wa.me/55${telLimpo}` : '#';
+                    let telLimpo = b.whatsapp ? b.whatsapp.replace(/\D/g, '') : '';
+                    if (telLimpo && !telLimpo.startsWith('55') && (telLimpo.length === 10 || telLimpo.length === 11)) telLimpo = '55' + telLimpo;
+                    const linkZap = telLimpo ? `https://wa.me/${telLimpo}` : '#';
 
                     html += `
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-black p-4 rounded-xl border border-zinc-800">

@@ -169,9 +169,10 @@ export async function enviarMensagemWhatsApp(numeroDestino, texto) {
 
     try {
         await sock.sendMessage(jid, { text: texto });
+        console.log(`[WhatsApp Bot] 📨 Mensagem enviada com sucesso para +${cleanNumber}`);
         return { success: true };
     } catch (err) {
-        console.error('[WhatsApp] Erro ao disparar mensagem:', err.message);
+        console.error(`[WhatsApp Bot] ❌ Erro ao disparar mensagem para +${cleanNumber}:`, err.message);
         return { success: false, error: err.message };
     }
 }

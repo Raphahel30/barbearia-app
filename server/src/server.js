@@ -2479,15 +2479,17 @@ app.post('/api/whatsapp/testar-barbeiro', verificarAdminMiddleware, async (req, 
     }
 });
 
+const WHATSAPP_OFICIAL_BARBEARIA = '5511953789095';
+
 async function resolverNumeroBarbeiro(customNumber) {
     if (customNumber && String(customNumber).trim().replace(/\D/g, '').length >= 10) {
-        return String(customNumber).trim().replace(/\D/g, '');
+        let clean = String(customNumber).trim().replace(/\D/g, '');
+        if (!clean.startsWith('55') && (clean.length === 10 || clean.length === 11)) {
+            clean = '55' + clean;
+        }
+        return clean;
     }
-    const statusWa = await obterStatusWhatsApp();
-    if (statusWa && statusWa.userNumber) {
-        return statusWa.userNumber;
-    }
-    return null;
+    return WHATSAPP_OFICIAL_BARBEARIA;
 }
 
 // Notificação automática de novo agendamento (Barbeiro + Cliente)
