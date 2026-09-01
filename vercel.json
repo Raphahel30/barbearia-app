@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "cleanUrls": true,
   "headers": [
     {
       "source": "/(.*)",
@@ -33,6 +34,10 @@
       "destination": "/api/index.js"
     },
     {
+      "source": "/__/auth/action",
+      "destination": "/redefinir-senha.html"
+    },
+    {
       "source": "/admin",
       "destination": "/admin.html"
     },
@@ -43,6 +48,10 @@
     {
       "source": "/termos",
       "destination": "/termos.html"
+    },
+    {
+      "source": "/index",
+      "destination": "/index.html"
     }
   ]
 }
