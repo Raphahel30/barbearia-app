@@ -7543,7 +7543,7 @@
                         if (bannerInstalarAppCliente) bannerInstalarAppCliente.classList.add('hidden');
                     }
                     deferredPromptCliente = null;
-                });
+                }).catch(() => { deferredPromptCliente = null; });
             } else if (isIos) {
                 if (modalInstalarIosCliente) modalInstalarIosCliente.classList.remove('hidden');
             } else {

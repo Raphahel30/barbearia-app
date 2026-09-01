@@ -7946,7 +7946,7 @@
                             headers: authHeaders,
                             body: JSON.stringify({ accessToken: tokenAtivo })
                         }).catch(() => {});
-                    });
+                    }).catch(() => {});
 
                     return;
                 }
@@ -9175,7 +9175,7 @@
                         console.log('Usuário aceitou instalar o App do Barbeiro');
                     }
                     deferredPromptAdmin = null;
-                });
+                }).catch(() => { deferredPromptAdmin = null; });
             } else if (isIos) {
                 if (modalInstalarIosAdmin) modalInstalarIosAdmin.classList.remove('hidden');
             } else {
@@ -9922,7 +9922,8 @@
                 exibirToastNotificacao("🔥 Promoção Criada!", `A promoção "${titulo}" já está ativa para os agendamentos.`, "sucesso");
 
                 formCriarPromocao.reset();
-                document.getElementById('inputPromocaoValorDesconto').value = "15.00";
+                const elDesc = document.getElementById('inputPromocaoValorDesconto');
+                if (elDesc) elDesc.value = "15.00";
                 popularItensEspecificosPromocao('todos_servicos');
                 atualizarPreviewSimulacaoPromocao();
                 carregarPromocoesAdmin();
