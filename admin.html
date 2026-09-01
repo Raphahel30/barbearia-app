@@ -2638,6 +2638,15 @@
             ? 'http://localhost:3000'
             : 'https://barbearia-app-1bf5.onrender.com';
 
+        function obterDataHojeLocal() {
+            const d = new Date();
+            const ano = d.getFullYear();
+            const mes = String(d.getMonth() + 1).padStart(2, '0');
+            const dia = String(d.getDate()).padStart(2, '0');
+            return `${ano}-${mes}-${dia}`;
+        }
+        window.obterDataHojeLocal = obterDataHojeLocal;
+
         let configWhatsappUrlGlobal = "https://barbearia-app-1bf5.onrender.com";
 
         function getBackendUrlAtivo() {
@@ -3074,7 +3083,7 @@
             if (nomeAba === 'billing') {
                 carregarFaturamentoMensalAdmin();
             } else if (nomeAba === 'schedule') {
-                carregarAgendamentosAdmin('data', new Date().toISOString().split('T')[0]);
+                carregarAgendamentosAdmin('data', (typeof obterDataHojeLocal === 'function') ? obterDataHojeLocal() : new Date().toLocaleDateString('pt-BR').split('/').reverse().join('-'));
             } else if (nomeAba === 'overview') {
                 carregarMetricasOverview();
             } else if (nomeAba === 'vipClients') {
@@ -3760,7 +3769,7 @@
             }
 
             if (inputData) {
-                inputData.value = new Date().toISOString().split('T')[0];
+                inputData.value = (typeof obterDataHojeLocal === 'function') ? obterDataHojeLocal() : new Date().toLocaleDateString('pt-BR').split('/').reverse().join('-');
             }
 
             // Carrega planos no select
@@ -3851,7 +3860,7 @@
             const planoOpt = selectPlano?.options[selectPlano.selectedIndex];
             const planoNome = planoOpt ? planoOpt.getAttribute('data-nome') : 'Plano Mensal VIP';
             const planoPreco = parseFloat(inputValor?.value || planoOpt?.getAttribute('data-preco') || 0);
-            const dataInicioStr = inputData?.value || new Date().toISOString().split('T')[0];
+            const dataInicioStr = inputData?.value || ((typeof obterDataHojeLocal === 'function') ? obterDataHojeLocal() : new Date().toLocaleDateString('pt-BR').split('/').reverse().join('-'));
             const metodoPagto = selectMetodo?.value || 'Balcão';
 
             if (!clienteNome || !clienteTel || !selectPlano?.value) {
@@ -4167,7 +4176,7 @@
         function atualizarMetricasOverviewComDados(lista) {
             const agora = new Date().toISOString().slice(0, 16);
             const limite2Horas = new Date(Date.now() - 2 * 3600000).toISOString().slice(0, 16);
-            const hojeStr = new Date().toISOString().split('T')[0];
+            const hojeStr = (typeof obterDataHojeLocal === 'function') ? obterDataHojeLocal() : new Date().toLocaleDateString('pt-BR').split('/').reverse().join('-');
 
             let faturamentoFuturo = 0;
             let faturamentoRecebido = 0;
@@ -4753,14 +4762,14 @@
         const inputNovoGastoData = document.getElementById('inputNovoGastoData');
 
         if (inputNovoGastoData) {
-            inputNovoGastoData.value = new Date().toISOString().split('T')[0];
+            inputNovoGastoData.value = (typeof obterDataHojeLocal === 'function') ? obterDataHojeLocal() : new Date().toLocaleDateString('pt-BR').split('/').reverse().join('-');
         }
 
         btnToggleFormNovoGasto?.addEventListener('click', () => {
             if (boxFormNovoGastoAdmin) {
                 boxFormNovoGastoAdmin.classList.toggle('hidden');
                 if (!boxFormNovoGastoAdmin.classList.contains('hidden') && inputNovoGastoData) {
-                    inputNovoGastoData.value = new Date().toISOString().split('T')[0];
+                    inputNovoGastoData.value = (typeof obterDataHojeLocal === 'function') ? obterDataHojeLocal() : new Date().toLocaleDateString('pt-BR').split('/').reverse().join('-');
                 }
             }
         });
@@ -4779,7 +4788,7 @@
             const descricao = (inputDesc?.value || '').trim();
             const categoria = selectCat?.value || 'outros';
             const valor = parseFloat(inputVal?.value || '0');
-            const data = inputDat?.value || new Date().toISOString().split('T')[0];
+            const data = inputDat?.value || ((typeof obterDataHojeLocal === 'function') ? obterDataHojeLocal() : new Date().toLocaleDateString('pt-BR').split('/').reverse().join('-'));
 
             if (!descricao) {
                 if (msgStatus) {
@@ -4982,7 +4991,7 @@
         // ==========================================
         // GESTÃO DA AGENDA DE ATENDIMENTOS & CALENDÁRIO MENSAL INTERATIVO
         // ==========================================
-        const dataHojeIso = new Date().toISOString().split('T')[0];
+        const dataHojeIso = (typeof obterDataHojeLocal === 'function') ? obterDataHojeLocal() : new Date().toLocaleDateString('pt-BR').split('/').reverse().join('-');
         const hojeDtObj = new Date();
         let anoCalendarioAgendaAtual = hojeDtObj.getFullYear();
         let mesCalendarioAgendaAtual = hojeDtObj.getMonth(); // 0 a 11
@@ -5048,7 +5057,7 @@
                 mapaAgendamentosPorData[dataIso].items.push(ag);
             });
 
-            const hojeIsoStr = new Date().toISOString().split('T')[0];
+            const hojeIsoStr = (typeof obterDataHojeLocal === 'function') ? obterDataHojeLocal() : new Date().toLocaleDateString('pt-BR').split('/').reverse().join('-');
             let htmlGrid = "";
 
             // 1. Preenchimento de dias do mês anterior
@@ -5187,7 +5196,7 @@
                     mesCalendarioAgendaAtual = mes - 1;
                 }
             } else if (!dataFiltroAgendaSelecionada) {
-                dataFiltroAgendaSelecionada = new Date().toISOString().split('T')[0];
+                dataFiltroAgendaSelecionada = (typeof obterDataHojeLocal === 'function') ? obterDataHojeLocal() : new Date().toLocaleDateString('pt-BR').split('/').reverse().join('-');
             }
 
             const inputData = document.getElementById('inputDataFiltroAgenda');
@@ -5230,7 +5239,7 @@
             const agora = new Date();
             anoCalendarioAgendaAtual = agora.getFullYear();
             mesCalendarioAgendaAtual = agora.getMonth();
-            const hojeStr = agora.toISOString().split('T')[0];
+            const hojeStr = (typeof obterDataHojeLocal === 'function') ? obterDataHojeLocal() : new Date().toLocaleDateString('pt-BR').split('/').reverse().join('-');
             selecionarDiaCalendarioAdmin(hojeStr);
         });
 
@@ -5241,7 +5250,7 @@
             const subtitulo = document.getElementById('subtituloAgendaAdmin');
             if (!tabela) return;
 
-            const hojeStr = new Date().toISOString().split('T')[0];
+            const hojeStr = (typeof obterDataHojeLocal === 'function') ? obterDataHojeLocal() : new Date().toLocaleDateString('pt-BR').split('/').reverse().join('-');
             let listaFiltrada = [];
 
             if (filtroModoAgenda === 'todos') {

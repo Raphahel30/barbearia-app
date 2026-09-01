@@ -1782,15 +1782,25 @@
             } catch (e) {
                 console.warn("[EMAÚS:HISTORICO] Aviso ao limpar parâmetros de URL:", e);
             }
+        function obterDataHojeLocal() {
+            const d = new Date();
+            const ano = d.getFullYear();
+            const mes = String(d.getMonth() + 1).padStart(2, '0');
+            const dia = String(d.getDate()).padStart(2, '0');
+            return `${ano}-${mes}-${dia}`;
         }
+        window.obterDataHojeLocal = obterDataHojeLocal;
 
         // Variável de controle para saber o que está sendo pago no Modal Pix (agendamento ou plano)
         let tipoPagamentoAtual = 'agendamento'; 
         let planoSelecionadoParaCompra = null;
 
-        const hojeIso = new Date().toISOString().split('T')[0];
+        const hojeIso = obterDataHojeLocal();
         const inputData = document.getElementById('dataAtendimento');
-        if (inputData) inputData.setAttribute('min', hojeIso);
+        if (inputData) {
+            inputData.setAttribute('min', hojeIso);
+            if (!inputData.value) inputData.value = hojeIso;
+        }
 
         tabLogin.addEventListener('click', () => {
             loginSection.classList.remove('hidden');
@@ -2089,9 +2099,20 @@
             }
 
             try {
-                // Escuta alterações na coleção agendamentos (quando o barbeiro confirma presença, conclui ou cancela)
+                // Escuta alterações na coleção agendamentos (quando o barbeiro confirma presença, conclui ou cancela ou novo agendamento entra)
                 unsubscribeRealtimeAgendamentos = onSnapshot(collection(db, "agendamentos"), () => {
                     if (auth.currentUser) carregarPainelCliente(auth.currentUser.uid);
+                    const inputDataAtual = document.getElementById('dataAtendimento');
+                    const selectHoraAtual = document.getElementById('horarioGrade');
+                    const avisoBloqueioAtual = document.getElementById('avisoDataBloqueada');
+                    if (inputDataAtual && inputDataAtual.value && selectHoraAtual) {
+                        const horarioAntes = selectHoraAtual.value;
+                        carregarGradeHorariosPadrao(inputDataAtual.value, selectHoraAtual, avisoBloqueioAtual).then(() => {
+                            if (horarioAntes && selectHoraAtual.querySelector(`option[value='${horarioAntes}']:not(:disabled)`)) {
+                                selectHoraAtual.value = horarioAntes;
+                            }
+                        }).catch(() => {});
+                    }
                 }, (err) => console.warn("Aviso realtime agendamentos:", err));
             } catch (eSnapAg) {
                 console.warn("Erro ao configurar snapshot agendamentos:", eSnapAg);
@@ -5018,24 +5039,31 @@
             });
         }
 
-        // Auto-atualização periódica da grade de horários a cada 30s para aplicar a trava de 20 min dinamicamente
+        // Auto-atualização periódica da data e grade de horários em tempo real (a cada 10s)
         setInterval(() => {
+            const hojeIsoAtual = (typeof obterDataHojeLocal === 'function') ? obterDataHojeLocal() : new Date().toLocaleDateString('pt-BR').split('/').reverse().join('-');
             const inputDataAtual = document.getElementById('dataAtendimento');
             const selectHoraAtual = document.getElementById('horarioGrade');
             const avisoBloqueioAtual = document.getElementById('avisoDataBloqueada');
+            
+            if (inputDataAtual) {
+                inputDataAtual.setAttribute('min', hojeIsoAtual);
+                if (inputDataAtual.value && inputDataAtual.value < hojeIsoAtual) {
+                    inputDataAtual.value = hojeIsoAtual;
+                }
+            }
+
             if (inputDataAtual && inputDataAtual.value && selectHoraAtual) {
-                const dAgora = new Date();
-                const hojeIso = `${dAgora.getFullYear()}-${String(dAgora.getMonth() + 1).padStart(2, '0')}-${String(dAgora.getDate()).padStart(2, '0')}`;
-                if (inputDataAtual.value === hojeIso) {
+                if (inputDataAtual.value === hojeIsoAtual) {
                     const horarioSelecionadoAntes = selectHoraAtual.value;
-                    carregarGradeHorariosPadrao(hojeIso, selectHoraAtual, avisoBloqueioAtual).then(() => {
+                    carregarGradeHorariosPadrao(hojeIsoAtual, selectHoraAtual, avisoBloqueioAtual).then(() => {
                         if (horarioSelecionadoAntes && selectHoraAtual.querySelector(`option[value='${horarioSelecionadoAntes}']:not(:disabled)`)) {
                             selectHoraAtual.value = horarioSelecionadoAntes;
                         }
                     }).catch(() => {});
                 }
             }
-        }, 30000);
+        }, 10000);
 
         async function carregarPainelCliente(userId) {
             const divOcupados = document.getElementById('horariosOcupadosLista');
