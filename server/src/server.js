@@ -2330,7 +2330,9 @@ app.post('/api/webhook', async (req, res) => {
             }
 
             // Se o status for estornado/reembolsado, sincroniza automaticamente no banco
-            if (response.status === 'refunded' || response.status === 'cancelled') {
+            // (removido 'cancelled' daqui: cancelamento já é tratado no bloco acima com status 'cancelado';
+            // deixá-lo aqui também sobrescrevia o agendamento para 'reembolsado' mesmo sem reembolso real)
+            if (response.status === 'refunded') {
                 sincronizarEstornoNoFirestore(paymentId, response.transaction_amount_refunded || 0)
                     .catch(e => console.warn("[Webhook Sync Error]:", e.message));
             }

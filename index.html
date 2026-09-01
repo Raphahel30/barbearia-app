@@ -2110,7 +2110,10 @@
 
             try {
                 // Escuta alterações na coleção agendamentos (quando o barbeiro confirma presença, conclui ou cancela ou novo agendamento entra)
-                unsubscribeRealtimeAgendamentos = onSnapshot(collection(db, "agendamentos"), () => {
+                // Filtrado para hoje/futuro: agendamentos antigos não afetam a grade nem os horários ocupados,
+                // e isso evita reler/re-escutar a coleção inteira (que consumia a cota de leitura do Firestore).
+                const hojeStrRealtime = (typeof obterDataHojeLocal === 'function') ? obterDataHojeLocal() : new Date().toISOString().slice(0, 10);
+                unsubscribeRealtimeAgendamentos = onSnapshot(query(collection(db, "agendamentos"), where("dataHora", ">=", `${hojeStrRealtime}T00:00`)), () => {
                     if (auth.currentUser) carregarPainelCliente(auth.currentUser.uid);
                     const inputDataAtual = document.getElementById('dataAtendimento');
                     const selectHoraAtual = document.getElementById('horarioGrade');
@@ -3943,8 +3946,12 @@
                     }
                 }
 
-                // Busca horários já ocupados de todos os clientes no Firestore
-                const querySnapshot = await getDocs(collection(db, "agendamentos"));
+                // Busca horários já ocupados APENAS do dia selecionado (evita ler a coleção inteira a cada consulta)
+                const querySnapshot = await getDocs(query(
+                    collection(db, "agendamentos"),
+                    where("dataHora", ">=", `${dataSelecionada}T00:00`),
+                    where("dataHora", "<", `${dataSelecionada}T23:59:59`)
+                ));
                 let horariosOcupados = [];
 
                 const barbeiroIdFiltro = (modoMultiBarbeiroCliente && barbeiroSelecionadoCliente) ? barbeiroSelecionadoCliente.id : 'qualquer';
@@ -5083,7 +5090,6 @@
             meusAgendamentosLista.innerHTML = "";
 
             try {
-                const querySnapshot = await getDocs(collection(db, "agendamentos"));
                 const dAgora = new Date();
                 const anoLocal = dAgora.getFullYear();
                 const mesLocal = String(dAgora.getMonth() + 1).padStart(2, '0');
@@ -5093,12 +5099,23 @@
                 const hojeDataStr = `${anoLocal}-${mesLocal}-${diaLocal}`;
                 const agoraLocalStr = `${hojeDataStr}T${horaLocal}:${minLocal}`;
 
+                // Em vez de ler a coleção inteira, busca só (1) horários futuros ocupados de todos
+                // e (2) os agendamentos do próprio cliente (inclui histórico) — duas queries bem mais baratas.
+                const [snapFuturos, snapMeus] = await Promise.all([
+                    getDocs(query(collection(db, "agendamentos"), where("dataHora", ">=", agoraLocalStr))),
+                    getDocs(query(collection(db, "agendamentos"), where("userId", "==", userId)))
+                ]);
+
+                const mapaDocsUnicos = new Map();
+                snapFuturos.forEach(docSnap => mapaDocsUnicos.set(docSnap.id, docSnap.data()));
+                snapMeus.forEach(docSnap => mapaDocsUnicos.set(docSnap.id, docSnap.data()));
+
                 let temMeusAgendamentosAtivos = false;
                 let agendamentosAtivosHtml = "";
                 let meusAgendamentosConcluidos = [];
                 let temHorariosOcupadosFuturos = false;
 
-                if (querySnapshot.empty) {
+                if (mapaDocsUnicos.size === 0) {
                     divOcupados.innerHTML = "<span class='text-zinc-500'>Nenhum horário ocupado no momento.</span>";
                     meusAgendamentosLista.innerHTML = "<p class='text-xs text-zinc-500'>Não possui agendamentos ativos no momento.</p>";
                     window.meusAgendamentosConcluidosCache = [];
@@ -5108,7 +5125,7 @@
 
                 // Ordena agendamentos por dataHora decrescente para pegar os mais recentes primeiro
                 const docsOrdenados = [];
-                querySnapshot.forEach(docSnap => docsOrdenados.push({ id: docSnap.id, data: docSnap.data() }));
+                mapaDocsUnicos.forEach((data, id) => docsOrdenados.push({ id, data }));
                 docsOrdenados.sort((a, b) => (b.data.dataHora || '').localeCompare(a.data.dataHora || ''));
 
                 docsOrdenados.forEach(({ id: agId, data: ag }) => {

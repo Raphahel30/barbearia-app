@@ -2879,11 +2879,19 @@
                     return;
                 }
 
+                // Aplica as mudanças diretamente a partir do próprio snapshot (que já veio "de graça" com
+                // os dados atualizados), em vez de disparar buscarAgendamentosFirestore() — que relia
+                // TODA a coleção do zero a cada mudança. Isso evita multiplicar leituras do Firestore.
+                if (!window.agendamentosCache) window.agendamentosCache = {};
+                if (!window.listaAgendamentosMemoria) window.listaAgendamentosMemoria = [];
+
                 snapshot.docChanges().forEach((change) => {
                     const ag = change.doc.data();
                     const docId = change.doc.id;
 
                     if (change.type === "added") {
+                        window.agendamentosCache[docId] = { id: docId, ...ag };
+
                         // Ignora intenções de pagamento pendentes não confirmadas
                         if (ag.status === 'pendente' || ag.status === 'pendente_pagamento') return;
 
@@ -2903,8 +2911,9 @@
                                 );
                             }
                         }
-                        buscarAgendamentosFirestore(false);
                     } else if (change.type === "modified") {
+                        window.agendamentosCache[docId] = { id: docId, ...ag };
+
                         const ehCancelado = ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'reembolsado';
                         const ehExpiradoOuCheckout = ag.motivoCancelamento === 'expirado_sem_pagamento' || ag.motivo === 'cancelado_pelo_usuario_no_modal' || String(ag.motivoCancelamento || '').includes('expirado');
 
@@ -2922,8 +2931,9 @@
                                 );
                             }
                         }
-                        buscarAgendamentosFirestore(false);
                     } else if (change.type === "removed") {
+                        delete window.agendamentosCache[docId];
+
                         if (podeDispararNotificacaoAdmin('removido', docId)) {
                             tocarSomNotificacao('cancelamento');
                             exibirToastNotificacao(
@@ -2936,9 +2946,14 @@
                                 'Um horário foi liberado na agenda.'
                             );
                         }
-                        buscarAgendamentosFirestore(false);
                     }
                 });
+
+                // Re-renderiza a UI usando o cache local já atualizado (sem nova leitura ao Firestore)
+                window.listaAgendamentosMemoria = Object.values(window.agendamentosCache);
+                atualizarMetricasOverviewComDados(window.listaAgendamentosMemoria);
+                if (typeof renderizarGradeMesAdmin === 'function') renderizarGradeMesAdmin();
+                renderizarTabelaAgendamentos();
             });
 
             // 2. Monitora Mensalistas em Tempo Real
