@@ -2479,8 +2479,6 @@ app.post('/api/whatsapp/testar-barbeiro', verificarAdminMiddleware, async (req, 
     }
 });
 
-const WHATSAPP_OFICIAL_BARBEARIA = '5511953789095';
-
 async function resolverNumeroBarbeiro(customNumber) {
     if (customNumber && String(customNumber).trim().replace(/\D/g, '').length >= 10) {
         let clean = String(customNumber).trim().replace(/\D/g, '');
@@ -2489,7 +2487,20 @@ async function resolverNumeroBarbeiro(customNumber) {
         }
         return clean;
     }
-    return WHATSAPP_OFICIAL_BARBEARIA;
+    // Consulta dinamicamente a configuração salva no Firestore pelo painel admin
+    if (firebaseAdminFirestore) {
+        try {
+            const snap = await firebaseAdminFirestore.collection('configuracoes').doc('pagamento').get();
+            if (snap.exists && snap.data().whatsappAdmin) {
+                let clean = String(snap.data().whatsappAdmin).trim().replace(/\D/g, '');
+                if (!clean.startsWith('55') && (clean.length === 10 || clean.length === 11)) {
+                    clean = '55' + clean;
+                }
+                if (clean.length >= 10) return clean;
+            }
+        } catch (_) {}
+    }
+    return null;
 }
 
 // Notificação automática de novo agendamento (Barbeiro + Cliente)
@@ -2527,7 +2538,7 @@ app.post('/api/whatsapp/notificar-agendamento', verificarInternalKeyMiddleware, 
             produtosTextoCliente = `• *Produtos Adicionados (Retirar no Balcão):* ` + produtos.map(p => `${p.quantidade}x ${p.nome} (R$ ${Number(p.subtotal || (p.preco * p.quantidade)).toFixed(2)})`).join(', ') + `\n`;
         }
 
-        // 1. Mensagem para o Barbeiro
+        // 1. Mensagem para o Barbeiro (Única)
         let envioBarbeiro = null;
         if (numBarbeiroDestino) {
             let tipoPagtoTexto = `Taxa de Reserva Paga (R$ ${valorPago.toFixed(2)})`;
@@ -2555,13 +2566,6 @@ app.post('/api/whatsapp/notificar-agendamento', verificarInternalKeyMiddleware, 
                 produtosTextoBarbeiro;
 
             envioBarbeiro = await enviarMensagemWhatsApp(numBarbeiroDestino, msgBarbeiro);
-
-            // Se o barbeiro específico for diferente do dono principal, envia cópia de acompanhamento para o dono
-            if (numBarbeiroGeral && numBarbeiroEspecifico && numBarbeiroGeral !== numBarbeiroEspecifico) {
-                try {
-                    await enviarMensagemWhatsApp(numBarbeiroGeral, `*[Aviso Master]* Novo agendamento para o profissional *${barbeiroNome || 'da Equipe'}*:\n` + msgBarbeiro);
-                } catch (eMaster) { console.warn("Aviso ao notificar master:", eMaster.message); }
-            }
         }
 
         // 2. Mensagem de Confirmação para o Cliente (se tiver telefone)

@@ -151,6 +151,8 @@ export async function desconectarWhatsApp() {
 // ============================================================================
 // DISPARO DE MENSAGENS
 // ============================================================================
+const mapaMensagensRecentes = new Map();
+
 export async function enviarMensagemWhatsApp(numeroDestino, texto) {
     if (!numeroDestino || !texto) {
         return { success: false, error: 'Número ou mensagem inválidos.' };
@@ -161,6 +163,23 @@ export async function enviarMensagemWhatsApp(numeroDestino, texto) {
         cleanNumber = '55' + cleanNumber;
     }
     const jid = `${cleanNumber}@s.whatsapp.net`;
+
+    // Deduplicação estrita: Impede enviar exatamente a mesma mensagem para o mesmo número nos últimos 30 segundos
+    const chaveMsg = `${cleanNumber}_${texto.trim().slice(0, 100)}`;
+    const agora = Date.now();
+    const ultimoEnvio = mapaMensagensRecentes.get(chaveMsg) || 0;
+    if (agora - ultimoEnvio < 30000) {
+        console.log(`[WhatsApp Bot] ⚠️ Mensagem duplicada ignorada para +${cleanNumber} (enviada há ${((agora - ultimoEnvio)/1000).toFixed(1)}s).`);
+        return { success: true, duplicated: true };
+    }
+    mapaMensagensRecentes.set(chaveMsg, agora);
+
+    // Auto-limpeza periódica do mapa de deduplicação
+    if (mapaMensagensRecentes.size > 200) {
+        for (const [k, v] of mapaMensagensRecentes.entries()) {
+            if (agora - v > 60000) mapaMensagensRecentes.delete(k);
+        }
+    }
 
     if (!sock || connectionStatus !== 'connected') {
         console.log(`[WhatsApp Simulado / Offline] Para: ${cleanNumber} | Texto: ${String(texto).slice(0, 60)}...`);

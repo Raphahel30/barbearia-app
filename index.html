@@ -6581,20 +6581,22 @@
                     // Abre a tela de agradecimento e confirmação com valores
                     exibirModalSucessoAgendamento(servico, dataHoraCompleta, nomeCliente, precoTotalNum, valorEfetivoPago, false);
 
-                    // Disparo automático via WhatsApp Bot em background (Sem abrir tela manual)
-                    dispararNotificacaoAutomaticaWhatsApp({
-                        cliente: nomeCliente,
-                        telefone: telefoneCliente,
-                        servico: servico,
-                        dataHora: dataHoraCompleta,
-                        preco: preco,
-                        taxaReservaPaga: valorEfetivoPago,
-                        modalidade: modalidade || 'taxa',
-                        produtos: listaProdutosAg,
-                        isPlano: false,
-                        barbeiroNome: barbeiroSelecionadoCliente?.nome || '',
-                        barbeiroWhatsapp: barbeiroSelecionadoCliente?.whatsapp || ''
-                    });
+                    // Disparo automático via WhatsApp Bot em background apenas se foi pagamento manual (para Pix/Cartão online o backend já enviou)
+                    if (!paymentId || paymentId === 'manual') {
+                        dispararNotificacaoAutomaticaWhatsApp({
+                            cliente: nomeCliente,
+                            telefone: telefoneCliente,
+                            servico: servico,
+                            dataHora: dataHoraCompleta,
+                            preco: preco,
+                            taxaReservaPaga: valorEfetivoPago,
+                            modalidade: modalidade || 'taxa',
+                            produtos: listaProdutosAg,
+                            isPlano: false,
+                            barbeiroNome: barbeiroSelecionadoCliente?.nome || '',
+                            barbeiroWhatsapp: barbeiroSelecionadoCliente?.whatsapp || ''
+                        });
+                    }
 
                 } else if (tipoEfetivo === 'plano' && dadosEfetivos?.plano) {
                     const plano = dadosEfetivos.plano;
