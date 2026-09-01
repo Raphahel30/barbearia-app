@@ -123,7 +123,7 @@ service cloud.firestore {
     }
 
     match /pagamentos_pendentes/{paymentId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid || request.resource.data.userId == request.auth.uid || isAdmin());
     }
   }
 }
