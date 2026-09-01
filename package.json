@@ -8,6 +8,7 @@
     "dev": "node --watch server/src/server.js"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "@whiskeysockets/baileys": "^7.0.0-rc14",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
