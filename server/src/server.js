@@ -615,11 +615,9 @@ if (!process.env.VERCEL) {
         if (!firebaseAdminFirestore || !activeAccessToken || activeAccessToken === 'SEU_ACCESS_TOKEN_AQUI' || activeAccessToken === 'DUMMY_TOKEN') return;
         try {
             const agora = Date.now();
-            const limiteRecente = new Date(agora - 3 * 60 * 1000).toISOString();
             const snap = await firebaseAdminFirestore.collection('pagamentos_pendentes')
                 .where('status', '==', 'pendente')
-                .where('criadoEm', '>=', limiteRecente)
-                .limit(10)
+                .limit(20)
                 .get();
 
             if (snap.empty) return;
@@ -628,6 +626,15 @@ if (!process.env.VERCEL) {
                 const data = docSnap.data();
                 const pId = data.paymentId || docSnap.id;
                 if (!pId) continue;
+
+                let criadoEmMs = 0;
+                if (data.criadoEm) {
+                    if (typeof data.criadoEm.toMillis === 'function') criadoEmMs = data.criadoEm.toMillis();
+                    else if (data.criadoEm._seconds) criadoEmMs = data.criadoEm._seconds * 1000;
+                    else criadoEmMs = new Date(data.criadoEm).getTime();
+                }
+                // Apenas checa se foi criado nos últimos 3 minutos
+                if (criadoEmMs > 0 && (agora - criadoEmMs) > (3 * 60 * 1000)) continue;
 
                 try {
                     const mpRes = await paymentClient.get({ id: pId });
@@ -652,26 +659,7 @@ if (!process.env.VERCEL) {
                 }
             }
         } catch (errPoller) {
-            // Se índice composto não existir, fallback para listar status == pendente e filtrar em memória
-            try {
-                const snapFallback = await firebaseAdminFirestore.collection('pagamentos_pendentes')
-                    .where('status', '==', 'pendente')
-                    .limit(15)
-                    .get();
-                const agora = Date.now();
-                for (const docSnap of snapFallback.docs) {
-                    const data = docSnap.data();
-                    const pId = data.paymentId || docSnap.id;
-                    const criadoEmMs = data.criadoEm ? new Date(data.criadoEm).getTime() : 0;
-                    if (!pId || (agora - criadoEmMs) > (3 * 60 * 1000)) continue;
-
-                    const mpRes = await paymentClient.get({ id: pId });
-                    if (mpRes && mpRes.status === 'approved') {
-                        console.log(`[Server Poller Fallback] ⚡ Pagamento ${pId} APROVADO! Concluindo...`);
-                        await processarConclusaoPagamentoServidor(pId, mpRes, data.metodo || 'pix_mercadopago');
-                    }
-                }
-            } catch (eFb) {}
+            console.warn('[Server Poller Erro]:', errPoller.message);
         }
     }, 5000);
 
@@ -681,54 +669,52 @@ if (!process.env.VERCEL) {
         if (!firebaseAdminFirestore) return;
         try {
             const agora = Date.now();
-            const limiteExpiracao = new Date(agora - 3 * 60 * 1000).toISOString();
+            const limiteExpiracaoMs = agora - 3 * 60 * 1000;
             
             // Limpa pagamentos_pendentes vencidos
             const pendentesSnap = await firebaseAdminFirestore.collection('pagamentos_pendentes')
                 .where('status', '==', 'pendente')
-                .where('criadoEm', '<', limiteExpiracao)
-                .limit(20)
+                .limit(30)
                 .get();
 
             pendentesSnap.forEach(d => {
-                d.ref.set({ status: 'expirado', atualizadoEm: new Date().toISOString() }, { merge: true })
-                    .catch(e => console.warn('[Auto-Limpeza Pagamento Pendente]:', e.message));
+                const dt = d.data();
+                let criadoMs = 0;
+                if (dt.criadoEm) {
+                    if (typeof dt.criadoEm.toMillis === 'function') criadoMs = dt.criadoEm.toMillis();
+                    else if (dt.criadoEm._seconds) criadoMs = dt.criadoEm._seconds * 1000;
+                    else criadoMs = new Date(dt.criadoEm).getTime();
+                }
+                if (criadoMs > 0 && criadoMs <= limiteExpiracaoMs) {
+                    d.ref.set({ status: 'expirado', atualizadoEm: new Date().toISOString() }, { merge: true })
+                        .catch(() => {});
+                }
             });
 
             // Limpa agendamentos pendentes vencidos
             const agSnap = await firebaseAdminFirestore.collection('agendamentos')
                 .where('status', '==', 'pendente')
-                .where('criadoEm', '<', limiteExpiracao)
-                .limit(20)
+                .limit(30)
                 .get();
 
             agSnap.forEach(d => {
-                d.ref.update({
-                    status: 'cancelado',
-                    motivoCancelamento: 'expirado_sem_pagamento',
-                    canceladoEm: new Date().toISOString()
-                }).catch(e => console.warn('[Auto-Limpeza Agendamento Pendente]:', e.message));
+                const dt = d.data();
+                let criadoMs = 0;
+                if (dt.criadoEm) {
+                    if (typeof dt.criadoEm.toMillis === 'function') criadoMs = dt.criadoEm.toMillis();
+                    else if (dt.criadoEm._seconds) criadoMs = dt.criadoEm._seconds * 1000;
+                    else criadoMs = new Date(dt.criadoEm).getTime();
+                }
+                if (criadoMs > 0 && criadoMs <= limiteExpiracaoMs) {
+                    d.ref.update({
+                        status: 'cancelado',
+                        motivoCancelamento: 'expirado_sem_pagamento',
+                        canceladoEm: new Date().toISOString()
+                    }).catch(() => {});
+                }
             });
         } catch (eLimpeza) {
-            // Em caso de falta de índice composto no Firestore, faz a limpeza filtrando em memória
-            try {
-                const snapFallback = await firebaseAdminFirestore.collection('agendamentos')
-                    .where('status', '==', 'pendente')
-                    .limit(20)
-                    .get();
-                const agora = Date.now();
-                snapFallback.forEach(d => {
-                    const dt = d.data();
-                    const criadoMs = dt.criadoEm ? new Date(dt.criadoEm).getTime() : 0;
-                    if (criadoMs > 0 && (agora - criadoMs) > (3 * 60 * 1000)) {
-                        d.ref.update({
-                            status: 'cancelado',
-                            motivoCancelamento: 'expirado_sem_pagamento',
-                            canceladoEm: new Date().toISOString()
-                        }).catch(() => {});
-                    }
-                });
-            } catch (eFb) {}
+            console.warn('[Auto-Limpeza Erro]:', eLimpeza.message);
         }
     }, 3 * 60 * 1000);
 }
@@ -2364,33 +2350,73 @@ setInterval(async () => {
     if (!firebaseAdminFirestore) return;
     try {
         const agoraMillis = Date.now();
-        const limiteVencimento = new Date(agoraMillis - 3 * 60 * 1000).toISOString(); // 3 minutos atrás
+        const limiteVencimentoMillis = agoraMillis - 3 * 60 * 1000; // 3 minutos atrás
 
         // 1. Limpa pagamentos_pendentes vencidos
         const pendentesSnap = await firebaseAdminFirestore.collection('pagamentos_pendentes')
             .where('status', '==', 'pendente')
-            .where('criadoEm', '<=', limiteVencimento)
             .limit(50)
             .get();
 
         if (!pendentesSnap.empty) {
-            console.log(`[Auto-Limpeza] 🧹 Expirando ${pendentesSnap.size} pagamento(s) pendente(s) vencido(s)...`);
+            let expiradosQtd = 0;
             for (const docP of pendentesSnap.docs) {
-                await docP.ref.set({ status: 'expirado', expiradoEm: new Date().toISOString() }, { merge: true });
+                const dados = docP.data();
+                let criadoEmMillis = 0;
+                if (dados.criadoEm) {
+                    if (typeof dados.criadoEm.toMillis === 'function') criadoEmMillis = dados.criadoEm.toMillis();
+                    else if (dados.criadoEm._seconds) criadoEmMillis = dados.criadoEm._seconds * 1000;
+                    else criadoEmMillis = new Date(dados.criadoEm).getTime();
+                }
+                let expiraEmMillis = 0;
+                if (dados.expiraEm) {
+                    if (typeof dados.expiraEm.toMillis === 'function') expiraEmMillis = dados.expiraEm.toMillis();
+                    else if (dados.expiraEm._seconds) expiraEmMillis = dados.expiraEm._seconds * 1000;
+                    else expiraEmMillis = new Date(dados.expiraEm).getTime();
+                }
+
+                const jaVenceu = expiraEmMillis ? (agoraMillis > expiraEmMillis) : (criadoEmMillis > 0 && criadoEmMillis <= limiteVencimentoMillis);
+                if (jaVenceu) {
+                    await docP.ref.set({ status: 'expirado', expiradoEm: new Date().toISOString() }, { merge: true });
+                    expiradosQtd++;
+                }
+            }
+            if (expiradosQtd > 0) {
+                console.log(`[Auto-Limpeza] 🧹 Expirando ${expiradosQtd} pagamento(s) pendente(s) vencido(s)...`);
             }
         }
 
         // 2. Limpa agendamentos pendentes órfãos na grade
         const agPendentesSnap = await firebaseAdminFirestore.collection('agendamentos')
             .where('status', '==', 'pendente')
-            .where('criadoEm', '<=', limiteVencimento)
             .limit(50)
             .get();
 
         if (!agPendentesSnap.empty) {
-            console.log(`[Auto-Limpeza] 🧹 Expirando ${agPendentesSnap.size} agendamento(s) pendente(s) órfão(s)...`);
+            let agExpiradosQtd = 0;
             for (const docAg of agPendentesSnap.docs) {
-                await docAg.ref.set({ status: 'cancelado', motivoCancelamento: 'Expirado por falta de pagamento (3 min)', atualizadoEm: new Date().toISOString() }, { merge: true });
+                const dados = docAg.data();
+                let criadoEmMillis = 0;
+                if (dados.criadoEm) {
+                    if (typeof dados.criadoEm.toMillis === 'function') criadoEmMillis = dados.criadoEm.toMillis();
+                    else if (dados.criadoEm._seconds) criadoEmMillis = dados.criadoEm._seconds * 1000;
+                    else criadoEmMillis = new Date(dados.criadoEm).getTime();
+                }
+                let expiraEmMillis = 0;
+                if (dados.expiraEm) {
+                    if (typeof dados.expiraEm.toMillis === 'function') expiraEmMillis = dados.expiraEm.toMillis();
+                    else if (dados.expiraEm._seconds) expiraEmMillis = dados.expiraEm._seconds * 1000;
+                    else expiraEmMillis = new Date(dados.expiraEm).getTime();
+                }
+
+                const jaVenceu = expiraEmMillis ? (agoraMillis > expiraEmMillis) : (criadoEmMillis > 0 && criadoEmMillis <= limiteVencimentoMillis);
+                if (jaVenceu) {
+                    await docAg.ref.set({ status: 'cancelado', motivoCancelamento: 'Expirado por falta de pagamento (3 min)', atualizadoEm: new Date().toISOString() }, { merge: true });
+                    agExpiradosQtd++;
+                }
+            }
+            if (agExpiradosQtd > 0) {
+                console.log(`[Auto-Limpeza] 🧹 Expirando ${agExpiradosQtd} agendamento(s) pendente(s) órfão(s)...`);
             }
         }
     } catch (eClean) {
