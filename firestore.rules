@@ -55,9 +55,9 @@ service cloud.firestore {
     }
 
     match /assinaturasClientes/{userId} {
-      // Leitura restrita ao próprio usuário ou administradores
-      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      // Leitura e gerenciamento pelo próprio usuário ou administradores (inclui assinaturas temporárias vip_ para migração)
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin() || (resource != null && resource.data.userId == request.auth.uid) || userId.matches('vip_.*'));
+      allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin() || (resource != null && resource.data.userId == request.auth.uid) || userId.matches('vip_.*'));
     }
 
     match /produtos/{produtoId} {

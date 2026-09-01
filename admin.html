@@ -775,6 +775,10 @@
                             <span>🔄</span>
                             <span>Atualizar</span>
                         </button>
+                        <button id="btnSincronizarMensalistasAdmin" class="bg-purple-900/80 hover:bg-purple-800 text-purple-200 px-3.5 py-2.5 rounded-xl text-xs font-bold uppercase transition cursor-pointer flex items-center gap-1.5 border border-purple-700 shadow-md">
+                            <span>⚡</span>
+                            <span>Sincronizar & Ativar Contas</span>
+                        </button>
                     </div>
                 </div>
 
@@ -3806,7 +3810,8 @@
                         selectPlano.innerHTML = '<option value="">Selecione o plano...</option>';
                         planosSnap.forEach(pDoc => {
                             const p = pDoc.data();
-                            selectPlano.innerHTML += `<option value="${pDoc.id}" data-nome="${p.nome}" data-preco="${p.preco}">${p.nome} - R$ ${p.preco.toFixed(2)}</option>`;
+                            const servicosJson = encodeURIComponent(JSON.stringify(p.servicosInclusos || []));
+                            selectPlano.innerHTML += `<option value="${pDoc.id}" data-nome="${p.nome}" data-preco="${p.preco}" data-servicos="${servicosJson}">${p.nome} - R$ ${p.preco.toFixed(2)}</option>`;
                         });
                     }
                 } catch (e) {
@@ -3886,6 +3891,12 @@
             const dataInicioStr = inputData?.value || ((typeof obterDataHojeLocal === 'function') ? obterDataHojeLocal() : new Date().toLocaleDateString('pt-BR').split('/').reverse().join('-'));
             const metodoPagto = selectMetodo?.value || 'Balcão';
 
+            let servicosInclusosPlano = [];
+            try {
+                const rawServicos = planoOpt ? planoOpt.getAttribute('data-servicos') : null;
+                if (rawServicos) servicosInclusosPlano = JSON.parse(decodeURIComponent(rawServicos));
+            } catch (_) {}
+
             if (!clienteNome || !clienteTel || !selectPlano?.value) {
                 if (msgStatus) {
                     msgStatus.className = "text-center text-xs p-2 rounded-lg bg-red-950 text-red-400 border border-red-800";
@@ -3906,9 +3917,39 @@
                 const dataFim = new Date(dataPagamento.getTime() + 30 * 86400000);
 
                 let userId = selectCli?.value;
+                const cTelLimpo = clienteTel.replace(/\D/g, '');
+
+                // Se o barbeiro não selecionou o usuário no dropdown, busca na base de usuários por telefone
+                if (!userId && cTelLimpo) {
+                    if (mapaUsuariosAdmin && mapaUsuariosAdmin.size > 0) {
+                        mapaUsuariosAdmin.forEach((u, k) => {
+                            if (!userId && u && u.telefone) {
+                                const uTel = String(u.telefone).replace(/\D/g, '');
+                                if (uTel && (uTel === cTelLimpo || uTel.endsWith(cTelLimpo) || cTelLimpo.endsWith(uTel))) {
+                                    userId = (typeof k === 'string' && k.length > 15) ? k : (u.uid || u.id);
+                                }
+                            }
+                        });
+                    }
+
+                    // Se ainda não encontrou no mapa em memória, busca diretamente na coleção usuarios
+                    if (!userId) {
+                        try {
+                            const snapU = await getDocs(collection(db, "usuarios"));
+                            snapU.forEach(d => {
+                                const u = d.data();
+                                const uTel = (u.telefone || '').replace(/\D/g, '');
+                                if (!userId && uTel && (uTel === cTelLimpo || uTel.endsWith(cTelLimpo) || cTelLimpo.endsWith(uTel))) {
+                                    userId = d.id;
+                                }
+                            });
+                        } catch (eU) { console.warn("Aviso ao buscar UID do usuario:", eU); }
+                    }
+                }
+
                 if (!userId) {
-                    // Gera ID único baseado no telefone
-                    userId = 'vip_' + clienteTel.replace(/\D/g, '');
+                    // Se o cliente ainda não tem conta criada, usa o identificador vip_<telefone>
+                    userId = 'vip_' + cTelLimpo;
                 }
 
                 await setDoc(doc(db, "assinaturasClientes", userId), {
@@ -3917,6 +3958,7 @@
                     telefone: clienteTel,
                     nomePlano: planoNome,
                     precoPlano: planoPreco,
+                    servicosInclusos: servicosInclusosPlano,
                     dataPagamento: dataPagamento.toISOString(),
                     dataFim: dataFim.toISOString(),
                     idPagamento: 'manual_admin_' + Date.now(),
@@ -3926,12 +3968,13 @@
                     atualizadoEm: new Date().toISOString()
                 });
 
-                // Disparo WhatsApp opcional
+                // Disparo WhatsApp autenticado com token de Admin
                 if (checkNotif && checkNotif.checked) {
                     try {
+                        const authHdrs = await getAdminAuthHeaders();
                         fetch(`${getBackendUrlAtivo()}/api/whatsapp/notificar-compra-plano`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: authHdrs,
                             body: JSON.stringify({
                                 cliente: clienteNome,
                                 telefone: clienteTel,
@@ -3962,6 +4005,103 @@
                 }
             }
         });
+
+        // Sincronizar e Ativar Mensalistas em Massa
+        window.sincronizarMensalistasAdmin = async function(exibirToast = true) {
+            const btnSync = document.getElementById('btnSincronizarMensalistasAdmin');
+            if (btnSync) {
+                btnSync.disabled = true;
+                btnSync.innerHTML = "<span>⏳</span><span>Sincronizando...</span>";
+            }
+
+            try {
+                let resData = null;
+                try {
+                    const authHdrs = await getAdminAuthHeaders();
+                    const res = await fetch(`${getBackendUrlAtivo()}/api/admin/sincronizar-mensalistas`, {
+                        method: 'POST',
+                        headers: authHdrs
+                    });
+                    if (res.ok) {
+                        resData = await res.json();
+                    }
+                } catch (eApi) {
+                    console.warn("Aviso na sync via API, tentando fallback direto:", eApi);
+                }
+
+                let vinculadosLocal = 0;
+                if (!resData || !resData.success) {
+                    const [uSnap, aSnap] = await Promise.all([
+                        getDocs(collection(db, "usuarios")),
+                        getDocs(collection(db, "assinaturasClientes"))
+                    ]);
+
+                    const mapaTel = new Map();
+                    const mapaEmail = new Map();
+                    uSnap.forEach(d => {
+                        const u = d.data();
+                        if (u.telefone) {
+                            const t = String(u.telefone).replace(/\D/g, '');
+                            if (t) {
+                                mapaTel.set(t, d.id);
+                                if (t.length >= 10 && !t.startsWith('55')) mapaTel.set('55' + t, d.id);
+                                if (t.startsWith('55') && t.length > 11) mapaTel.set(t.slice(2), d.id);
+                            }
+                        }
+                        if (u.email) mapaEmail.set(u.email.toLowerCase().trim(), d.id);
+                    });
+
+                    for (const aDoc of aSnap.docs) {
+                        const aId = aDoc.id;
+                        const aData = aDoc.data();
+                        let uidEncontrado = null;
+
+                        if (aId.startsWith('vip_')) {
+                            const t = aId.replace(/^vip_/, '').replace(/\D/g, '');
+                            uidEncontrado = mapaTel.get(t);
+                        }
+                        if (!uidEncontrado && aData.telefone) {
+                            const t = String(aData.telefone).replace(/\D/g, '');
+                            uidEncontrado = mapaTel.get(t);
+                        }
+                        if (!uidEncontrado && (aData.userEmail || aData.email)) {
+                            const em = String(aData.userEmail || aData.email).toLowerCase().trim();
+                            uidEncontrado = mapaEmail.get(em);
+                        }
+
+                        if (uidEncontrado && uidEncontrado !== aId) {
+                            await setDoc(doc(db, "assinaturasClientes", uidEncontrado), {
+                                ...aData,
+                                userId: uidEncontrado,
+                                sincronizadoEm: new Date().toISOString(),
+                                atualizadoEm: new Date().toISOString()
+                            }, { merge: true });
+
+                            if (aId.startsWith('vip_')) {
+                                try { await deleteDoc(doc(db, "assinaturasClientes", aId)); } catch (_) {}
+                            }
+                            vinculadosLocal++;
+                        }
+                    }
+                }
+
+                const qtd = resData?.vinculadas !== undefined ? resData.vinculadas : vinculadosLocal;
+                if (exibirToast) {
+                    exibirToastNotificacao('⚡ Mensalistas Sincronizados!', `${qtd > 0 ? `${qtd} assinaturas vinculadas às contas dos clientes com sucesso.` : 'Todas as contas de mensalistas já estão ativas e atualizadas!'}`, 'vip');
+                }
+                await window.carregarClientesMensalistasAdmin();
+            } catch (err) {
+                console.error("Erro ao sincronizar mensalistas:", err);
+                if (exibirToast) alert("Erro ao sincronizar mensalistas: " + err.message);
+            } finally {
+                if (btnSync) {
+                    btnSync.disabled = false;
+                    btnSync.innerHTML = "<span>⚡</span><span>Sincronizar & Ativar Contas</span>";
+                }
+            }
+        };
+
+        document.getElementById('btnSincronizarMensalistasAdmin')?.addEventListener('click', () => window.sincronizarMensalistasAdmin(true));
 
         // Renovar Assinatura VIP (+30 dias)
         window.renovarAssinaturaMensalistaAdmin = async function(userId, nomePlano, clienteNome) {

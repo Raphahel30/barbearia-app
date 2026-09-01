@@ -3407,12 +3407,48 @@
 
             try {
                 // 1. Verifica se o cliente tem um plano ativo
+                let assinatura = null;
                 const assinaturaSnap = await getDoc(doc(db, "assinaturasClientes", userId));
 
                 if (assinaturaSnap.exists()) {
-                    const assinatura = assinaturaSnap.data();
+                    assinatura = assinaturaSnap.data();
+                } else {
+                    // 1.1 Se não encontrou pelo UID direto, tenta autovinculação buscando por vip_<telefone>
+                    try {
+                        let telefoneCliente = "";
+                        let nomeCliente = "";
+                        const uDoc = await getDoc(doc(db, "usuarios", userId));
+                        if (uDoc.exists()) {
+                            telefoneCliente = uDoc.data().telefone || "";
+                            nomeCliente = uDoc.data().nome || "";
+                        }
+                        const telLimpo = telefoneCliente ? String(telefoneCliente).replace(/\D/g, '') : '';
+                        if (telLimpo) {
+                            const vipSnap = await getDoc(doc(db, "assinaturasClientes", "vip_" + telLimpo));
+                            if (vipSnap.exists()) {
+                                const dadosVip = vipSnap.data();
+                                const dadosMigrados = {
+                                    ...dadosVip,
+                                    userId: userId,
+                                    cliente: nomeCliente || dadosVip.cliente || 'Cliente VIP',
+                                    telefone: telefoneCliente || dadosVip.telefone || '',
+                                    sincronizadoEm: new Date().toISOString(),
+                                    atualizadoEm: new Date().toISOString()
+                                };
+                                await setDoc(doc(db, "assinaturasClientes", userId), dadosMigrados, { merge: true });
+                                try { await deleteDoc(doc(db, "assinaturasClientes", "vip_" + telLimpo)); } catch (_) {}
+                                assinatura = dadosMigrados;
+                            }
+                        }
+                    } catch (eAutoLink) {
+                        console.warn("Aviso ao autovincular plano por telefone:", eAutoLink);
+                    }
+                }
+
+                if (assinatura) {
                     const info = processarCicloPlano(assinatura);
                     dadosAssinaturaAtiva = info;
+                    try { renderizarCartaoFidelidadeCliente(); } catch (_) {}
 
                     if (info && info.ehAtivo) {
                         // Atualiza banner de status VIP no topo dos agendamentos informando sobre a assinatura
@@ -3518,7 +3554,9 @@
                                         </span>
                                         ${badge}
                                     </div>
-                                    <p class="text-[11px] text-zinc-400 font-mono">📅 ${s.inicioStr} até ${s.fimStr}</p>
+                                    <div class="text-[10px] text-zinc-400">
+                                        Período: <strong>${s.inicioStr} a ${s.fimStr}</strong>
+                                    </div>
                                 </div>
                             `;
                         });
