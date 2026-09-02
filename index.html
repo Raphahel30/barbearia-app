@@ -350,7 +350,7 @@
                     </div>
 
                     <!-- CARD DO PLANO MENSAL VIP NO PERFIL -->
-                    <div id="cardPlanoPerfilCliente" class="bg-gradient-to-br from-amber-950/60 via-black to-zinc-950 p-3.5 sm:p-4 rounded-2xl border border-dourado/40 space-y-2.5 shadow-xl">
+                    <div id="cardPlanoPerfilCliente" class="hidden bg-gradient-to-br from-amber-950/60 via-black to-zinc-950 p-3.5 sm:p-4 rounded-2xl border border-dourado/40 space-y-2.5 shadow-xl">
                         <!-- Renderizado dinamicamente via JS -->
                     </div>
 
@@ -2168,29 +2168,22 @@
                     const resultado = await runTransaction(db, async (transaction) => {
                         const slotRef = doc(db, "slots_agendamentos", itemSlot.slotId);
                         const proprietarioRef = doc(db, "slots_proprietarios", itemSlot.slotId);
-                        const [slotDoc, proprietarioDoc] = await Promise.all([
-                            transaction.get(slotRef),
-                            transaction.get(proprietarioRef)
-                        ]);
+                        // O documento de proprietário é privado. Ler um documento ainda
+                        // inexistente fazia o Firestore negar a transação para clientes
+                        // comuns antes mesmo da criação; admins passavam pela regra isAdmin().
+                        const slotDoc = await transaction.get(slotRef);
                         const agora = Date.now();
-                        const dadosProprietario = proprietarioDoc.exists() ? proprietarioDoc.data() : {};
-                        const pertenceAoUsuario = dadosProprietario.userId === userIdAtual;
-                        const pertenceAoPagamento = paymentIdAtual && dadosProprietario.paymentId === paymentIdAtual;
 
                         if (slotDoc.exists()) {
                             const dataSlot = slotDoc.data();
                             const st = dataSlot.status;
 
                             if (st === 'confirmado') {
-                                if (!pertenceAoUsuario && !pertenceAoPagamento) {
-                                    throw new Error("HORARIO_JA_RESERVADO");
-                                }
+                                throw new Error("HORARIO_JA_RESERVADO");
                             } else if (st === 'pendente' || st === 'pendente_pagamento') {
                                 const expiraEm = Number(dataSlot.expiraEm || 0);
                                 if (expiraEm > agora) {
-                                    if (!pertenceAoUsuario && !pertenceAoPagamento) {
-                                        throw new Error("HORARIO_EM_PAGAMENTO_POR_OUTRO");
-                                    }
+                                    throw new Error("HORARIO_EM_PAGAMENTO_POR_OUTRO");
                                 }
                             }
                         }
@@ -3510,22 +3503,8 @@
                     </div>
                 `;
             } else {
-                card.classList.remove('hidden');
-                card.className = "bg-gradient-to-br from-zinc-900 to-black p-3.5 sm:p-4 rounded-2xl border border-zinc-800 space-y-2.5";
-                card.innerHTML = `
-                    <div class="flex items-center justify-between gap-2">
-                        <div class="flex items-center gap-2 min-w-0">
-                            <span class="text-xl flex-shrink-0">👑</span>
-                            <div class="min-w-0">
-                                <h3 class="text-xs font-bold text-zinc-300 uppercase tracking-wide">Plano Mensal</h3>
-                                <p class="text-[10px] text-zinc-500">Economize até 30% com 4 cortes no mês</p>
-                            </div>
-                        </div>
-                        <button type="button" onclick="window.fecharModalPerfilCliente ? window.fecharModalPerfilCliente() : null; window.alternarAbaCliente('planos');" class="bg-dourado/10 hover:bg-dourado/20 text-dourado border border-dourado/40 px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase transition cursor-pointer flex-shrink-0">
-                            Ver Planos Mensais
-                        </button>
-                    </div>
-                `;
+                card.classList.add('hidden');
+                card.innerHTML = '';
             }
         }
         window.renderizarCardPlanoPerfilCliente = renderizarCardPlanoPerfilCliente;
@@ -7163,15 +7142,15 @@
         async function executarAgendamentoVipGratuito(dados) {
             if (isSalvandoAgendamento) {
                 console.warn("⚠️ Agendamento VIP já em andamento.");
-                return;
+                throw new Error("Já existe uma confirmação em andamento. Aguarde alguns segundos.");
             }
             isSalvandoAgendamento = true;
 
             const { servico, data, horario, beneficio, subtotalExtras, extras } = dados;
-            const msgStatus = document.getElementById('msgStatus');
+            const msgStatus = document.getElementById('msgStatusModalMensalista') || document.getElementById('msgStatus');
             try {
                 const user = auth.currentUser;
-                if (!user) return;
+                if (!user) throw new Error("Sua sessão expirou. Entre novamente para agendar.");
 
                 let nomeCliente = user.email;
                 let telefoneCliente = "";
@@ -7217,12 +7196,10 @@
                 }
 
                 if (slotOcupadoOutro) {
-                    alert("⚠️ Este horário acabou de ser reservado por outro cliente. Por favor, escolha outro horário disponível na grade.");
-                    isSalvandoAgendamento = false;
                     const selectHora = document.getElementById('selectHorarioAgendamentoMensalista');
                     const avisoBloqueio = document.getElementById('avisoDataBloqueadaMensalista');
                     await carregarGradeHorariosPadrao(data, selectHora, avisoBloqueio);
-                    return;
+                    throw new Error("Este horário acabou de ser reservado. Escolha outro horário disponível.");
                 }
 
                 // A consulta acima melhora a UX, mas a decisão final é feita atomicamente no Firestore.
@@ -7258,8 +7235,9 @@
                 await updateDoc(doc(db, "assinaturasClientes", user.uid), updateObj);
 
                 if (msgStatus) {
-                    msgStatus.className = "text-center text-sm text-green-400 font-bold";
+                    msgStatus.className = "text-center text-xs p-2.5 rounded-xl bg-green-950 text-green-400 border border-green-800 font-bold";
                     msgStatus.innerText = "✨ Agendamento do plano confirmado com sucesso!";
+                    msgStatus.classList.remove('hidden');
                 }
 
                 const elDataV = document.getElementById('dataAtendimento');
@@ -7292,9 +7270,14 @@
             } catch (err) {
                 console.error("Erro ao registrar agendamento VIP:", err);
                 if (msgStatus) {
-                    msgStatus.className = "text-center text-sm text-red-400";
-                    msgStatus.innerText = "Erro ao registrar agendamento VIP: " + err.message;
+                    const horarioIndisponivel = err?.message === "HORARIO_JA_RESERVADO" || err?.message === "HORARIO_EM_PAGAMENTO_POR_OUTRO";
+                    msgStatus.className = "text-center text-xs p-2.5 rounded-xl bg-red-950 text-red-400 border border-red-800";
+                    msgStatus.innerText = horarioIndisponivel
+                        ? "Este horário acabou de ser reservado. Escolha outro horário disponível."
+                        : "Não foi possível confirmar o agendamento: " + (err?.message || "erro inesperado");
+                    msgStatus.classList.remove('hidden');
                 }
+                throw err;
             } finally {
                 isSalvandoAgendamento = false;
             }
