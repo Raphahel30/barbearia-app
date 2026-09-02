@@ -319,6 +319,11 @@
                         <p id="msgTrocaSenhaPerfil" class="text-[11px] text-zinc-400 leading-tight"></p>
                     </div>
 
+                    <!-- CARD DO PLANO MENSAL VIP NO PERFIL -->
+                    <div id="cardPlanoPerfilCliente" class="bg-gradient-to-br from-amber-950/60 via-black to-zinc-950 p-3.5 sm:p-4 rounded-2xl border border-dourado/40 space-y-2.5 shadow-xl">
+                        <!-- Renderizado dinamicamente via JS -->
+                    </div>
+
                     <!-- CARD GAMIFICADO DO PROGRAMA DE FIDELIDADE VIP -->
                     <div id="cardFidelidadePerfilCliente" class="bg-gradient-to-br from-amber-950/40 via-black to-zinc-950 p-3.5 sm:p-4 rounded-2xl border border-dourado/40 space-y-3 shadow-xl">
                         <div class="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
@@ -2705,11 +2710,16 @@
             atualizarPreviewFotoPerfilModal(fotoAtual);
 
             try {
+                renderizarCardPlanoPerfilCliente();
                 renderizarCartaoFidelidadeCliente();
                 renderizarCardAniversarioCliente();
                 carregarFidelidadeCliente(auth.currentUser.uid);
+                carregarPainelPlanosCliente(auth.currentUser.uid).then(() => {
+                    renderizarCardPlanoPerfilCliente();
+                    renderizarCartaoFidelidadeCliente();
+                }).catch(() => {});
             } catch (e) {
-                console.warn("[EMAÚS:PERFIL] Aviso ao carregar fidelidade/aniversário no perfil:", e);
+                console.warn("[EMAÚS:PERFIL] Aviso ao carregar fidelidade/plano no perfil:", e);
             }
 
             if (modalPerfilCliente) modalPerfilCliente.classList.remove('hidden');
@@ -3157,6 +3167,79 @@
         }
         window.carregarFidelidadeCliente = carregarFidelidadeCliente;
 
+        function renderizarCardPlanoPerfilCliente() {
+            const card = document.getElementById('cardPlanoPerfilCliente');
+            if (!card) return;
+
+            const ehAssinanteVip = Boolean(dadosAssinaturaAtiva && dadosAssinaturaAtiva.ehAtivo);
+            if (ehAssinanteVip) {
+                card.classList.remove('hidden');
+                card.className = "bg-gradient-to-br from-amber-950/70 via-black to-zinc-950 p-3.5 sm:p-4 rounded-2xl border border-dourado shadow-2xl space-y-3";
+                const sem = dadosAssinaturaAtiva.semanaAtualInfo;
+                let statusSemanaBadge = '<span class="bg-green-500 text-black px-2 py-0.5 rounded font-extrabold text-[9px] uppercase">1 Corte Disponível</span>';
+                if (sem) {
+                    if (sem.status === 'concluido') statusSemanaBadge = '<span class="bg-green-950 text-green-400 border border-green-700 px-2 py-0.5 rounded font-extrabold text-[9px] uppercase">Corte Concluído ✅</span>';
+                    else if (sem.status === 'agendado') statusSemanaBadge = '<span class="bg-blue-950 text-blue-300 border border-blue-700 px-2 py-0.5 rounded font-extrabold text-[9px] uppercase">Já Agendado 📅</span>';
+                }
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="text-2xl flex-shrink-0">👑</span>
+                            <div class="min-w-0">
+                                <h3 class="text-xs font-extrabold text-dourado uppercase tracking-wide truncate">Plano Mensal VIP Ativo</h3>
+                                <p class="text-[11px] text-white font-bold truncate">${dadosAssinaturaAtiva.nomePlano || 'Plano VIP'}</p>
+                            </div>
+                        </div>
+                        <span class="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-green-950 text-green-400 border border-green-700 flex-shrink-0 uppercase shadow">
+                            Ativo ✅
+                        </span>
+                    </div>
+
+                    <div class="bg-black/90 p-3 rounded-xl border border-zinc-800 space-y-2 text-[11px]">
+                        <div class="flex justify-between items-center text-zinc-300">
+                            <span>Validade do Ciclo:</span>
+                            <strong class="text-white">${dadosAssinaturaAtiva.dataFimFormatada} (${dadosAssinaturaAtiva.diasRestantes} dias restantes)</strong>
+                        </div>
+                        <div class="flex justify-between items-center text-zinc-300 border-t border-zinc-800/80 pt-1.5">
+                            <span>Semana Atual:</span>
+                            <div class="flex items-center gap-1.5">
+                                <span class="font-bold text-dourado">Semana ${dadosAssinaturaAtiva.semanaAtualNumero || 1}</span>
+                                ${statusSemanaBadge}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-2 pt-0.5">
+                        <button type="button" onclick="window.fecharModalPerfilCliente ? window.fecharModalPerfilCliente() : null; window.abrirModalAgendamentoMensalista ? window.abrirModalAgendamentoMensalista() : null;" class="flex-1 bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-2.5 px-3 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-1.5">
+                            <span>📅</span> Agendar do Plano
+                        </button>
+                        <button type="button" onclick="window.fecharModalPerfilCliente ? window.fecharModalPerfilCliente() : null; window.alternarAbaCliente('planos');" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-bold py-2.5 px-3 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer border border-zinc-700 flex items-center justify-center gap-1">
+                            Ver 4 Semanas
+                        </button>
+                    </div>
+                `;
+            } else {
+                card.classList.remove('hidden');
+                card.className = "bg-gradient-to-br from-zinc-900 to-black p-3.5 sm:p-4 rounded-2xl border border-zinc-800 space-y-2.5";
+                card.innerHTML = `
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="text-xl flex-shrink-0">👑</span>
+                            <div class="min-w-0">
+                                <h3 class="text-xs font-bold text-zinc-300 uppercase tracking-wide">Plano Mensal VIP</h3>
+                                <p class="text-[10px] text-zinc-500">Nenhum plano mensal ativo no momento</p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="window.fecharModalPerfilCliente ? window.fecharModalPerfilCliente() : null; window.alternarAbaCliente('planos');" class="bg-dourado/10 hover:bg-dourado/20 text-dourado border border-dourado/40 px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase transition cursor-pointer flex-shrink-0">
+                            Ver Planos VIP
+                        </button>
+                    </div>
+                `;
+            }
+        }
+        window.renderizarCardPlanoPerfilCliente = renderizarCardPlanoPerfilCliente;
+
         function renderizarCartaoFidelidadeCliente() {
             const cardPerfil = document.getElementById('cardFidelidadePerfilCliente');
             const cardDashboard = document.getElementById('cardDestaqueFidelidadeDashboard');
@@ -3170,31 +3253,7 @@
             // Clientes com Plano Mensal VIP ativo não utilizam selos avulsos
             const ehAssinanteVip = Boolean(dadosAssinaturaAtiva && dadosAssinaturaAtiva.ehAtivo);
             if (ehAssinanteVip) {
-                if (cardPerfil) {
-                    cardPerfil.classList.remove('hidden');
-                    cardPerfil.innerHTML = `
-                        <div class="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
-                            <div class="flex items-center gap-2 min-w-0">
-                                <span class="text-xl flex-shrink-0">👑</span>
-                                <div class="min-w-0">
-                                    <h3 class="text-xs font-bold text-dourado uppercase tracking-wide truncate">Assinante Mensal VIP</h3>
-                                    <p class="text-[10px] text-zinc-400 truncate">${dadosAssinaturaAtiva.nomePlano || 'Plano VIP Ativo'}</p>
-                                </div>
-                            </div>
-                            <span class="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-700 flex-shrink-0 whitespace-nowrap">
-                                ⚡ Cortes VIP Inclusos
-                            </span>
-                        </div>
-                        <div class="bg-black/80 p-3 rounded-xl border border-zinc-800 text-[11px] text-zinc-300 space-y-1">
-                            <p class="font-bold text-white flex items-center gap-1">
-                                <span>✨</span> Benefício Máximo Ativo
-                            </p>
-                            <p class="text-zinc-400 text-[10px] leading-relaxed">
-                                Seu plano mensal já garante cortes semanais com o melhor valor e desconto máximo! O programa de selos do Cartão Fidelidade é voltado exclusivamente para agendamentos avulsos.
-                            </p>
-                        </div>
-                    `;
-                }
+                if (cardPerfil) cardPerfil.classList.add('hidden');
                 if (cardDashboard) cardDashboard.classList.add('hidden');
                 return;
             }
@@ -3413,42 +3472,117 @@
                 if (assinaturaSnap.exists()) {
                     assinatura = assinaturaSnap.data();
                 } else {
-                    // 1.1 Se não encontrou pelo UID direto, tenta autovinculação buscando por vip_<telefone>
+                    // 1.1 Se não encontrou pelo UID direto, tenta autovinculação inteligente multi-critério
                     try {
-                        let telefoneCliente = "";
-                        let nomeCliente = "";
-                        const uDoc = await getDoc(doc(db, "usuarios", userId));
-                        if (uDoc.exists()) {
-                            telefoneCliente = uDoc.data().telefone || "";
-                            nomeCliente = uDoc.data().nome || "";
+                        let telefoneCliente = (dadosUsuarioAtual && dadosUsuarioAtual.telefone) ? dadosUsuarioAtual.telefone : "";
+                        let nomeCliente = (dadosUsuarioAtual && dadosUsuarioAtual.nome) ? dadosUsuarioAtual.nome : (auth.currentUser ? (auth.currentUser.displayName || "") : "");
+                        let emailCliente = auth.currentUser ? (auth.currentUser.email || "") : "";
+
+                        if (!telefoneCliente || !nomeCliente) {
+                            try {
+                                const uDoc = await getDoc(doc(db, "usuarios", userId));
+                                if (uDoc.exists()) {
+                                    const uData = uDoc.data();
+                                    if (!telefoneCliente) telefoneCliente = uData.telefone || "";
+                                    if (!nomeCliente) nomeCliente = uData.nome || "";
+                                    if (!emailCliente) emailCliente = uData.email || "";
+                                }
+                            } catch (_) {}
                         }
+
+                        const candidatosIds = [];
                         const telLimpo = telefoneCliente ? String(telefoneCliente).replace(/\D/g, '') : '';
                         if (telLimpo) {
-                            const vipSnap = await getDoc(doc(db, "assinaturasClientes", "vip_" + telLimpo));
-                            if (vipSnap.exists()) {
-                                const dadosVip = vipSnap.data();
-                                const dadosMigrados = {
-                                    ...dadosVip,
-                                    userId: userId,
-                                    cliente: nomeCliente || dadosVip.cliente || 'Cliente VIP',
-                                    telefone: telefoneCliente || dadosVip.telefone || '',
-                                    sincronizadoEm: new Date().toISOString(),
-                                    atualizadoEm: new Date().toISOString()
-                                };
-                                await setDoc(doc(db, "assinaturasClientes", userId), dadosMigrados, { merge: true });
-                                try { await deleteDoc(doc(db, "assinaturasClientes", "vip_" + telLimpo)); } catch (_) {}
-                                assinatura = dadosMigrados;
+                            candidatosIds.push(`vip_${telLimpo}`);
+                            if (telLimpo.startsWith('55') && telLimpo.length > 11) {
+                                candidatosIds.push(`vip_${telLimpo.slice(2)}`);
+                            } else if (!telLimpo.startsWith('55') && telLimpo.length >= 10) {
+                                candidatosIds.push(`vip_55${telLimpo}`);
+                            }
+                            if (telLimpo.length >= 9) candidatosIds.push(`vip_${telLimpo.slice(-9)}`);
+                            if (telLimpo.length >= 8) candidatosIds.push(`vip_${telLimpo.slice(-8)}`);
+                        }
+
+                        // 1.2 Busca por IDs candidatos
+                        for (const cId of [...new Set(candidatosIds)]) {
+                            try {
+                                const vipSnap = await getDoc(doc(db, "assinaturasClientes", cId));
+                                if (vipSnap.exists()) {
+                                    const dadosVip = vipSnap.data();
+                                    const dadosMigrados = {
+                                        ...dadosVip,
+                                        userId: userId,
+                                        cliente: nomeCliente || dadosVip.cliente || 'Cliente VIP',
+                                        telefone: telefoneCliente || dadosVip.telefone || '',
+                                        sincronizadoEm: new Date().toISOString(),
+                                        atualizadoEm: new Date().toISOString()
+                                    };
+                                    await setDoc(doc(db, "assinaturasClientes", userId), dadosMigrados, { merge: true });
+                                    try { await deleteDoc(doc(db, "assinaturasClientes", cId)); } catch (_) {}
+                                    assinatura = dadosMigrados;
+                                    break;
+                                }
+                            } catch (_) {}
+                        }
+
+                        // 1.3 Se ainda não encontrou, realiza varredura com matcher inteligente
+                        if (!assinatura) {
+                            try {
+                                const allSubSnap = await getDocs(collection(db, "assinaturasClientes"));
+                                const normN = (str) => String(str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                                const uNomeNorm = normN(nomeCliente);
+
+                                for (const sDoc of allSubSnap.docs) {
+                                    const sData = sDoc.data();
+                                    const sId = sDoc.id;
+                                    if (sId === userId) continue;
+
+                                    let matched = false;
+                                    if (sData.userId === userId) matched = true;
+                                    if (!matched && emailCliente && (sData.userEmail || sData.email)) {
+                                        if (String(sData.userEmail || sData.email).toLowerCase().trim() === emailCliente.toLowerCase().trim()) matched = true;
+                                    }
+                                    if (!matched && telLimpo) {
+                                        const sTel = String(sData.telefone || (sId.startsWith('vip_') ? sId.replace(/^vip_/, '') : '')).replace(/\D/g, '');
+                                        if (sTel && (sTel === telLimpo || sTel.slice(-8) === telLimpo.slice(-8))) matched = true;
+                                    }
+                                    if (!matched && uNomeNorm && uNomeNorm.length > 4 && sData.cliente) {
+                                        if (normN(sData.cliente) === uNomeNorm) matched = true;
+                                    }
+
+                                    if (matched) {
+                                        const dadosMigrados = {
+                                            ...sData,
+                                            userId: userId,
+                                            cliente: nomeCliente || sData.cliente || 'Cliente VIP',
+                                            telefone: telefoneCliente || sData.telefone || '',
+                                            sincronizadoEm: new Date().toISOString(),
+                                            atualizadoEm: new Date().toISOString()
+                                        };
+                                        await setDoc(doc(db, "assinaturasClientes", userId), dadosMigrados, { merge: true });
+                                        if (sId.startsWith('vip_')) {
+                                            try { await deleteDoc(doc(db, "assinaturasClientes", sId)); } catch (_) {}
+                                        }
+                                        assinatura = dadosMigrados;
+                                        break;
+                                    }
+                                }
+                            } catch (eScan) {
+                                console.warn("Aviso na varredura de assinaturas:", eScan);
                             }
                         }
                     } catch (eAutoLink) {
-                        console.warn("Aviso ao autovincular plano por telefone:", eAutoLink);
+                        console.warn("Aviso ao autovincular plano:", eAutoLink);
                     }
                 }
 
                 if (assinatura) {
                     const info = processarCicloPlano(assinatura);
                     dadosAssinaturaAtiva = info;
-                    try { renderizarCartaoFidelidadeCliente(); } catch (_) {}
+                    try {
+                        renderizarCardPlanoPerfilCliente();
+                        renderizarCartaoFidelidadeCliente();
+                    } catch (_) {}
 
                     if (info && info.ehAtivo) {
                         // Atualiza banner de status VIP no topo dos agendamentos informando sobre a assinatura

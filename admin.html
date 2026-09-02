@@ -4038,6 +4038,9 @@
 
                     const mapaTel = new Map();
                     const mapaEmail = new Map();
+                    const mapaNome = new Map();
+                    const normStr = (str) => String(str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
                     uSnap.forEach(d => {
                         const u = d.data();
                         if (u.telefone) {
@@ -4046,9 +4049,15 @@
                                 mapaTel.set(t, d.id);
                                 if (t.length >= 10 && !t.startsWith('55')) mapaTel.set('55' + t, d.id);
                                 if (t.startsWith('55') && t.length > 11) mapaTel.set(t.slice(2), d.id);
+                                if (t.length >= 9) mapaTel.set(t.slice(-9), d.id);
+                                if (t.length >= 8) mapaTel.set(t.slice(-8), d.id);
                             }
                         }
                         if (u.email) mapaEmail.set(u.email.toLowerCase().trim(), d.id);
+                        if (u.nome) {
+                            const nN = normStr(u.nome);
+                            if (nN.length > 4) mapaNome.set(nN, d.id);
+                        }
                     });
 
                     for (const aDoc of aSnap.docs) {
@@ -4058,18 +4067,22 @@
 
                         if (aId.startsWith('vip_')) {
                             const t = aId.replace(/^vip_/, '').replace(/\D/g, '');
-                            uidEncontrado = mapaTel.get(t);
+                            uidEncontrado = mapaTel.get(t) || (t.length >= 9 ? mapaTel.get(t.slice(-9)) : null) || (t.length >= 8 ? mapaTel.get(t.slice(-8)) : null);
                         }
                         if (!uidEncontrado && aData.telefone) {
                             const t = String(aData.telefone).replace(/\D/g, '');
-                            uidEncontrado = mapaTel.get(t);
+                            uidEncontrado = mapaTel.get(t) || (t.length >= 9 ? mapaTel.get(t.slice(-9)) : null) || (t.length >= 8 ? mapaTel.get(t.slice(-8)) : null);
                         }
                         if (!uidEncontrado && (aData.userEmail || aData.email)) {
                             const em = String(aData.userEmail || aData.email).toLowerCase().trim();
                             uidEncontrado = mapaEmail.get(em);
                         }
+                        if (!uidEncontrado && aData.cliente) {
+                            const nN = normStr(aData.cliente);
+                            if (nN.length > 4) uidEncontrado = mapaNome.get(nN);
+                        }
 
-                        if (uidEncontrado && uidEncontrado !== aId) {
+                        if (uidEncontrado) {
                             await setDoc(doc(db, "assinaturasClientes", uidEncontrado), {
                                 ...aData,
                                 userId: uidEncontrado,
@@ -4077,7 +4090,7 @@
                                 atualizadoEm: new Date().toISOString()
                             }, { merge: true });
 
-                            if (aId.startsWith('vip_')) {
+                            if (aId.startsWith('vip_') && aId !== uidEncontrado) {
                                 try { await deleteDoc(doc(db, "assinaturasClientes", aId)); } catch (_) {}
                             }
                             vinculadosLocal++;

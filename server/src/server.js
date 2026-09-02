@@ -2823,25 +2823,41 @@ app.post('/api/admin/sincronizar-mensalistas', verificarInternalKeyMiddleware, a
         const mapaUsuarios = new Map();
         const mapaPorTelefone = new Map();
         const mapaPorEmail = new Map();
+        const mapaPorNome = new Map();
+
+        const normStr = (str) => String(str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
         usersSnap.forEach(docSnap => {
             const u = docSnap.data();
             const uId = docSnap.id;
             mapaUsuarios.set(uId, { id: uId, ...u });
+
             if (u.telefone) {
-                const telLimpo = String(u.telefone).replace(/\D/g, '');
-                if (telLimpo) {
-                    mapaPorTelefone.set(telLimpo, { id: uId, ...u });
-                    if (telLimpo.length >= 10 && !telLimpo.startsWith('55')) {
-                        mapaPorTelefone.set('55' + telLimpo, { id: uId, ...u });
+                const telClean = String(u.telefone).replace(/\D/g, '');
+                if (telClean) {
+                    mapaPorTelefone.set(telClean, { id: uId, ...u });
+                    if (telClean.length >= 10 && !telClean.startsWith('55')) {
+                        mapaPorTelefone.set('55' + telClean, { id: uId, ...u });
                     }
-                    if (telLimpo.startsWith('55') && telLimpo.length > 11) {
-                        mapaPorTelefone.set(telLimpo.slice(2), { id: uId, ...u });
+                    if (telClean.startsWith('55') && telClean.length > 11) {
+                        mapaPorTelefone.set(telClean.slice(2), { id: uId, ...u });
+                    }
+                    if (telClean.length >= 9) {
+                        mapaPorTelefone.set(telClean.slice(-9), { id: uId, ...u });
+                    }
+                    if (telClean.length >= 8) {
+                        mapaPorTelefone.set(telClean.slice(-8), { id: uId, ...u });
                     }
                 }
             }
             if (u.email) {
                 mapaPorEmail.set(u.email.toLowerCase().trim(), { id: uId, ...u });
+            }
+            if (u.nome) {
+                const nNorm = normStr(u.nome);
+                if (nNorm.length > 4) {
+                    mapaPorNome.set(nNorm, { id: uId, ...u });
+                }
             }
         });
 
@@ -2872,17 +2888,28 @@ app.post('/api/admin/sincronizar-mensalistas', verificarInternalKeyMiddleware, a
 
             if (!usuarioAlvo && subData.telefone) {
                 const telClean = String(subData.telefone).replace(/\D/g, '');
-                usuarioAlvo = mapaPorTelefone.get(telClean);
+                usuarioAlvo = mapaPorTelefone.get(telClean) ||
+                              (telClean.length >= 9 ? mapaPorTelefone.get(telClean.slice(-9)) : null) ||
+                              (telClean.length >= 8 ? mapaPorTelefone.get(telClean.slice(-8)) : null);
             }
 
             if (!usuarioAlvo && subId.startsWith('vip_')) {
                 const telClean = subId.replace(/^vip_/, '').replace(/\D/g, '');
-                usuarioAlvo = mapaPorTelefone.get(telClean);
+                usuarioAlvo = mapaPorTelefone.get(telClean) ||
+                              (telClean.length >= 9 ? mapaPorTelefone.get(telClean.slice(-9)) : null) ||
+                              (telClean.length >= 8 ? mapaPorTelefone.get(telClean.slice(-8)) : null);
             }
 
             if (!usuarioAlvo && (subData.userEmail || subData.email)) {
                 const em = String(subData.userEmail || subData.email).toLowerCase().trim();
                 usuarioAlvo = mapaPorEmail.get(em);
+            }
+
+            if (!usuarioAlvo && subData.cliente) {
+                const nNorm = normStr(subData.cliente);
+                if (nNorm.length > 4) {
+                    usuarioAlvo = mapaPorNome.get(nNorm);
+                }
             }
 
             if (usuarioAlvo) {
