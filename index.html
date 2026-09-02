@@ -3947,31 +3947,68 @@
                         info.semanas.forEach(s => {
                             let badge = "";
                             let borderBox = "border-zinc-800 bg-black";
+                            let acaoSemanaHtml = "";
 
                             if (s.status === 'concluido') {
                                 badge = '<span class="bg-green-950 text-green-400 border border-green-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">✅ Concluído</span>';
                                 borderBox = "border-green-900/40 bg-green-950/20";
+                                acaoSemanaHtml = `
+                                    <div class="mt-2 pt-2 border-t border-green-900/30 flex items-center justify-between text-[11px] text-green-400 font-semibold">
+                                        <span>✂️ Atendimento Realizado</span>
+                                        <span class="text-[10px] text-zinc-500 font-mono">100% OK</span>
+                                    </div>
+                                `;
                             } else if (s.status === 'agendado') {
                                 const horaFormat = s.agendamentoData ? s.agendamentoData.replace('T', ' às ') : 'Agendado';
                                 badge = `<span class="bg-blue-950 text-blue-300 border border-blue-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">📅 ${horaFormat}</span>`;
                                 borderBox = "border-blue-900/40 bg-blue-950/20";
+                                acaoSemanaHtml = `
+                                    <div class="mt-2 pt-2 border-t border-blue-900/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5">
+                                        <span class="text-[11px] text-blue-200">Horário Marcado</span>
+                                        <button onclick="window.cancelarAgendamentoSemanaPlano(${s.numero})" class="w-full sm:w-auto bg-red-600/90 hover:bg-red-600 text-white px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer shadow flex items-center justify-center gap-1">
+                                            <span>❌</span> Cancelar / Reagendar
+                                        </button>
+                                    </div>
+                                `;
                             } else if (s.status === 'disponivel') {
                                 if (s.ehSemanaAtual && s.diasAteFimSemana <= 3) {
                                     badge = `<span class="bg-amber-950 text-amber-300 border border-amber-500 px-2 py-0.5 rounded text-[10px] font-bold uppercase animate-pulse">⚠️ Expira em ${s.diasAteFimSemana}d</span>`;
-                                    borderBox = "border-amber-500/60 bg-amber-950/30";
+                                    borderBox = "border-amber-500/60 bg-amber-950/30 ring-1 ring-amber-500/40";
                                 } else {
                                     badge = '<span class="bg-green-900/60 text-green-300 border border-green-600 px-2 py-0.5 rounded text-[10px] font-bold uppercase animate-pulse">🟢 Disponível</span>';
                                     borderBox = "border-green-600/40 bg-green-950/20";
                                 }
+                                acaoSemanaHtml = `
+                                    <div class="mt-2 pt-2 border-t border-zinc-800/80">
+                                        <button onclick="window.abrirModalAgendamentoMensalista(${s.numero});" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-2 px-3 rounded-lg text-xs uppercase tracking-wider transition cursor-pointer shadow flex items-center justify-center gap-1.5 active:scale-95">
+                                            <span>📅</span> Agendar Horário (Semana ${s.numero})
+                                        </button>
+                                    </div>
+                                `;
                             } else if (s.status === 'falta' || s.status === 'cancelado_tardio' || s.status === 'perdido') {
-                                badge = '<span class="bg-red-950 text-red-400 border border-red-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">🚫 Cancelado com menos de 3h / Falta (Perdido)</span>';
+                                badge = '<span class="bg-red-950 text-red-400 border border-red-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">🚫 Perdido (menos de 3h)</span>';
                                 borderBox = "border-red-900/30 bg-red-950/10";
+                                acaoSemanaHtml = `
+                                    <div class="mt-2 pt-2 border-t border-red-900/20 text-[10px] text-red-400/90 font-medium">
+                                        Cancelado com menos de 3h de antecedência ou falta.
+                                    </div>
+                                `;
                             } else if (s.status === 'expirado') {
-                                badge = '<span class="bg-zinc-800 text-zinc-400 border border-zinc-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase">⚠️ Expirou (Não Utilizado)</span>';
+                                badge = '<span class="bg-zinc-800 text-zinc-400 border border-zinc-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase">⚠️ Expirou</span>';
                                 borderBox = "border-zinc-800 bg-zinc-950/40 opacity-70";
+                                acaoSemanaHtml = `
+                                    <div class="mt-2 pt-2 border-t border-zinc-800/60 text-[10px] text-zinc-500 font-medium">
+                                        Semana encerrada sem uso do crédito.
+                                    </div>
+                                `;
                             } else {
-                                badge = '<span class="bg-zinc-900 text-zinc-500 border border-zinc-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">⏳ Em Breve</span>';
+                                badge = `<span class="bg-zinc-900 text-zinc-500 border border-zinc-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">⏳ Em Breve</span>`;
                                 borderBox = "border-zinc-800/50 bg-zinc-950/30 opacity-60";
+                                acaoSemanaHtml = `
+                                    <div class="mt-2 pt-2 border-t border-zinc-800/40 text-[10px] text-zinc-500 font-medium flex items-center gap-1">
+                                        <span>🔒</span> Bloqueado até o início da semana
+                                    </div>
+                                `;
                             }
 
                             semanasHtml += `
@@ -3985,66 +4022,69 @@
                                     <div class="text-[10px] text-zinc-400">
                                         Período: <strong>${s.inicioStr} a ${s.fimStr}</strong>
                                     </div>
+                                    ${acaoSemanaHtml}
                                 </div>
                             `;
                         });
 
-                        // Bloco de destaque da semana atual
+                        // Bloco de destaque de agendamento principal
                         let destaqueSemanaAtualHtml = "";
+                        const semDisponivelHero = info.semanas.find(s => s.ehSemanaAtual && s.status === 'disponivel') 
+                            || info.semanas.find(s => s.status === 'disponivel');
                         const semAtual = info.semanaAtualInfo;
-                        if (semAtual) {
-                            if (semAtual.status === 'disponivel') {
-                                destaqueSemanaAtualHtml = `
-                                    <div class="bg-gradient-to-r from-amber-950/80 via-black to-amber-950/80 border-2 border-dourado p-4 rounded-2xl shadow-xl space-y-3">
-                                        <div class="flex items-start justify-between gap-3">
-                                            <div class="space-y-1">
-                                                <div class="flex items-center gap-2">
-                                                    <span class="text-xl animate-bounce">✂️</span>
-                                                    <h4 class="font-bold text-sm uppercase text-dourado">Seu corte da Semana ${semAtual.numero} está DISPONÍVEL!</h4>
-                                                </div>
-                                                <p class="text-xs text-amber-200">
-                                                    ⚠️ <strong>Atenção:</strong> O corte desta semana expira em <strong>${semAtual.diasAteFimSemana} dia(s) (${semAtual.fimStr})</strong> e não acumula para a próxima semana!
-                                                </p>
+
+                        if (semDisponivelHero) {
+                            destaqueSemanaAtualHtml = `
+                                <div class="bg-gradient-to-r from-amber-950/80 via-black to-amber-950/80 border-2 border-dourado p-4 rounded-2xl shadow-xl space-y-3">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <div class="space-y-1">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xl animate-bounce">✂️</span>
+                                                <h4 class="font-bold text-sm uppercase text-dourado">Seu corte da Semana ${semDisponivelHero.numero} está DISPONÍVEL!</h4>
                                             </div>
+                                            <p class="text-xs text-amber-200">
+                                                ⚠️ <strong>Atenção:</strong> O corte desta semana expira em <strong>${semDisponivelHero.diasAteFimSemana} dia(s) (${semDisponivelHero.fimStr})</strong> e não acumula para a próxima semana!
+                                            </p>
                                         </div>
-                                        <button onclick="window.abrirModalAgendamentoMensalista();" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-2 active:scale-98">
-                                            <span>📅</span>
-                                            <span>Agendar Corte do Plano Mensal</span>
-                                        </button>
                                     </div>
-                                `;
-                            } else if (semAtual.status === 'agendado') {
-                                const horaFmt = semAtual.agendamentoData ? semAtual.agendamentoData.replace('T', ' às ') : '';
-                                destaqueSemanaAtualHtml = `
-                                    <div class="bg-blue-950/40 border border-blue-600/60 p-4 rounded-2xl text-blue-200 space-y-1">
-                                        <h4 class="font-bold text-xs uppercase flex items-center gap-2 text-blue-300">
-                                            <span>📅</span>
-                                            <span>Corte da Semana ${semAtual.numero} Agendado com Sucesso!</span>
-                                        </h4>
-                                        <p class="text-xs">Horário marcado: <strong class="text-white">${horaFmt}</strong>. Compareça com alguns minutos de antecedência.</p>
-                                    </div>
-                                `;
-                            } else if (semAtual.status === 'concluido') {
-                                destaqueSemanaAtualHtml = `
-                                    <div class="bg-green-950/40 border border-green-600/60 p-4 rounded-2xl text-green-200 space-y-1">
-                                        <h4 class="font-bold text-xs uppercase flex items-center gap-2 text-green-400">
-                                            <span>✅</span>
-                                            <span>Corte da Semana ${semAtual.numero} Concluído!</span>
-                                        </h4>
-                                        <p class="text-xs">Seu atendimento desta semana foi realizado. Seu próximo corte estará disponível no início da próxima semana.</p>
-                                    </div>
-                                `;
-                            } else if (semAtual.status === 'falta' || semAtual.status === 'cancelado_tardio' || semAtual.status === 'perdido') {
-                                destaqueSemanaAtualHtml = `
-                                    <div class="bg-red-950/40 border border-red-600/60 p-4 rounded-2xl text-red-200 space-y-1">
-                                        <h4 class="font-bold text-xs uppercase flex items-center gap-2 text-red-300">
-                                            <span>🚫</span>
-                                            <span>Corte da Semana ${semAtual.numero} Perdido (Cancelado com menos de 3h / Falta)</span>
-                                        </h4>
-                                        <p class="text-xs">O corte desta semana foi perdido devido ao cancelamento com 3 horas ou menos de antecedência ou falta. Seu próximo corte estará disponível no início da próxima semana.</p>
-                                    </div>
-                                `;
-                            }
+                                    <button onclick="window.abrirModalAgendamentoMensalista(${semDisponivelHero.numero});" class="w-full bg-dourado hover:bg-[#C5A028] text-black font-extrabold py-3 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-2 active:scale-98">
+                                        <span>📅</span>
+                                        <span>Agendar Corte do Plano Mensal (Semana ${semDisponivelHero.numero})</span>
+                                    </button>
+                                </div>
+                            `;
+                        } else if (semAtual && semAtual.status === 'agendado') {
+                            const horaFmt = semAtual.agendamentoData ? semAtual.agendamentoData.replace('T', ' às ') : '';
+                            destaqueSemanaAtualHtml = `
+                                <div class="bg-blue-950/40 border border-blue-600/60 p-4 rounded-2xl text-blue-200 space-y-1">
+                                    <h4 class="font-bold text-xs uppercase flex items-center gap-2 text-blue-300">
+                                        <span>📅</span>
+                                        <span>Corte da Semana ${semAtual.numero} Agendado com Sucesso!</span>
+                                    </h4>
+                                    <p class="text-xs">Horário marcado: <strong class="text-white">${horaFmt}</strong>. Compareça com alguns minutos de antecedência.</p>
+                                </div>
+                            `;
+                        } else if (semAtual && semAtual.status === 'concluido') {
+                            const proxSem = semAtual.numero < 4 ? `O corte da <strong>Semana ${semAtual.numero + 1}</strong> estará liberado no início da próxima semana.` : `Você completou os 4 cortes deste ciclo mensal!`;
+                            destaqueSemanaAtualHtml = `
+                                <div class="bg-green-950/40 border border-green-600/60 p-4 rounded-2xl text-green-200 space-y-1">
+                                    <h4 class="font-bold text-xs uppercase flex items-center gap-2 text-green-400">
+                                        <span>✅</span>
+                                        <span>Corte da Semana ${semAtual.numero} Concluído!</span>
+                                    </h4>
+                                    <p class="text-xs">Seu atendimento desta semana foi realizado. ${proxSem}</p>
+                                </div>
+                            `;
+                        } else if (semAtual && (semAtual.status === 'falta' || semAtual.status === 'cancelado_tardio' || semAtual.status === 'perdido')) {
+                            destaqueSemanaAtualHtml = `
+                                <div class="bg-red-950/40 border border-red-600/60 p-4 rounded-2xl text-red-200 space-y-1">
+                                    <h4 class="font-bold text-xs uppercase flex items-center gap-2 text-red-300">
+                                        <span>🚫</span>
+                                        <span>Corte da Semana ${semAtual.numero} Perdido (Cancelado com menos de 3h / Falta)</span>
+                                    </h4>
+                                    <p class="text-xs">O corte desta semana foi perdido devido ao cancelamento com 3 horas ou menos de antecedência ou falta. Seu próximo corte estará disponível no início da próxima semana.</p>
+                                </div>
+                            `;
                         }
 
                         meuPlanoAtivoDiv.innerHTML = `
@@ -4222,7 +4262,7 @@
             return false;
         }
 
-        window.abrirModalAgendamentoMensalista = async function() {
+        window.abrirModalAgendamentoMensalista = async function(semanaDesejada = null) {
             const user = auth.currentUser;
             if (!user) {
                 alert("Por favor, faça login para agendar.");
@@ -4234,17 +4274,27 @@
                 return;
             }
 
-            const semDisponivel = dadosAssinaturaAtiva.semanas.find(s => s.ehSemanaAtual && s.status === 'disponivel') 
-                || dadosAssinaturaAtiva.semanas.find(s => s.status === 'disponivel');
+            let semDisponivel = null;
+            if (semanaDesejada) {
+                semDisponivel = dadosAssinaturaAtiva.semanas.find(s => s.numero === Number(semanaDesejada) && s.status === 'disponivel');
+            }
+            if (!semDisponivel) {
+                semDisponivel = dadosAssinaturaAtiva.semanas.find(s => s.ehSemanaAtual && s.status === 'disponivel') 
+                    || dadosAssinaturaAtiva.semanas.find(s => s.status === 'disponivel');
+            }
 
             if (!semDisponivel) {
                 if (dadosAssinaturaAtiva.semanaAtualInfo && dadosAssinaturaAtiva.semanaAtualInfo.status === 'concluido') {
                     alert(`✂️ O seu corte da Semana ${dadosAssinaturaAtiva.semanaAtualInfo.numero} já foi realizado com sucesso pelo barbeiro!\n\nSeu próximo corte estará liberado no início da próxima semana.`);
+                } else if (dadosAssinaturaAtiva.semanaAtualInfo && dadosAssinaturaAtiva.semanaAtualInfo.status === 'agendado') {
+                    alert(`📅 O seu corte da Semana ${dadosAssinaturaAtiva.semanaAtualInfo.numero} já está agendado (${dadosAssinaturaAtiva.semanaAtualInfo.agendamentoData ? dadosAssinaturaAtiva.semanaAtualInfo.agendamentoData.replace('T', ' às ') : ''}).\n\nCaso queira reagendar, cancele o agendamento atual primeiro.`);
                 } else {
                     alert("Você não possui nenhum corte disponível para agendamento no momento.");
                 }
                 return;
             }
+
+            window.semanaAgendamentoMensalistaSelecionada = semDisponivel.numero;
 
             const modal = document.getElementById('modalAgendamentoMensalista');
             const subSemana = document.getElementById('subtituloSemanaModalMensalista');
@@ -4615,8 +4665,15 @@
                 return;
             }
 
-            const semDisponivel = dadosAssinaturaAtiva.semanas.find(s => s.ehSemanaAtual && s.status === 'disponivel') 
-                || dadosAssinaturaAtiva.semanas.find(s => s.status === 'disponivel');
+            const targetSemana = window.semanaAgendamentoMensalistaSelecionada;
+            let semDisponivel = null;
+            if (targetSemana) {
+                semDisponivel = dadosAssinaturaAtiva.semanas.find(s => s.numero === Number(targetSemana) && s.status === 'disponivel');
+            }
+            if (!semDisponivel) {
+                semDisponivel = dadosAssinaturaAtiva.semanas.find(s => s.ehSemanaAtual && s.status === 'disponivel') 
+                    || dadosAssinaturaAtiva.semanas.find(s => s.status === 'disponivel');
+            }
 
             if (!semDisponivel) {
                 alert("Nenhum crédito semanal disponível no seu plano.");
