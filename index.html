@@ -17,7 +17,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="apple-touch-icon" href="/logo.png">
 
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="assets/tailwind.css">
     <script src="https://sdk.mercadopago.com/js/v2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
     
@@ -165,8 +165,18 @@
                 <input type="email" id="regEmail" autocomplete="email" placeholder="seuemail@exemplo.com" class="w-full px-3.5 py-2.5 bg-black rounded-xl border border-zinc-800 focus:outline-none focus:border-dourado text-white text-xs sm:text-sm">
             </div>
             <div>
-                <label class="block text-xs font-semibold uppercase mb-1 text-zinc-300">Data de Nascimento 🎂 (Presente de Aniversário)</label>
-                <input type="date" id="regDataNascimento" class="w-full px-3.5 py-2.5 bg-black rounded-xl border border-zinc-800 focus:outline-none focus:border-dourado text-white text-xs sm:text-sm cursor-pointer">
+                <label class="block text-xs font-semibold uppercase mb-1 text-zinc-300">Data de Nascimento (Presente de Aniversário)</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <select id="regNascDia" class="w-full min-h-[44px] px-2.5 py-2.5 bg-black rounded-xl border border-zinc-800 focus:outline-none focus:border-dourado text-white text-xs sm:text-sm cursor-pointer">
+                        <option value="">Dia</option>
+                    </select>
+                    <select id="regNascMes" class="w-full min-h-[44px] px-2.5 py-2.5 bg-black rounded-xl border border-zinc-800 focus:outline-none focus:border-dourado text-white text-xs sm:text-sm cursor-pointer">
+                        <option value="">Mês</option>
+                    </select>
+                    <select id="regNascAno" class="w-full min-h-[44px] px-2.5 py-2.5 bg-black rounded-xl border border-zinc-800 focus:outline-none focus:border-dourado text-white text-xs sm:text-sm cursor-pointer">
+                        <option value="">Ano</option>
+                    </select>
+                </div>
             </div>
             <div>
                 <label class="block text-xs font-semibold uppercase mb-1 text-zinc-300">Senha</label>
@@ -215,8 +225,18 @@
                     <input type="tel" id="googleTelefoneWhatsApp" placeholder="(11) 99999-9999" class="w-full min-h-[42px] px-3.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white text-xs sm:text-sm focus:outline-none focus:border-dourado">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold uppercase text-zinc-300 mb-1">Data de Nascimento 🎂 (Opcional)</label>
-                    <input type="date" id="googleDataNascimento" class="w-full min-h-[44px] px-3.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white text-xs sm:text-sm focus:outline-none focus:border-dourado cursor-pointer">
+                    <label class="block text-xs font-semibold uppercase text-zinc-300 mb-1">Data de Nascimento (Opcional)</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <select id="googleNascDia" class="w-full min-h-[44px] px-2.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white text-xs sm:text-sm focus:outline-none focus:border-dourado cursor-pointer">
+                            <option value="">Dia</option>
+                        </select>
+                        <select id="googleNascMes" class="w-full min-h-[44px] px-2.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white text-xs sm:text-sm focus:outline-none focus:border-dourado cursor-pointer">
+                            <option value="">Mês</option>
+                        </select>
+                        <select id="googleNascAno" class="w-full min-h-[44px] px-2.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white text-xs sm:text-sm focus:outline-none focus:border-dourado cursor-pointer">
+                            <option value="">Ano</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -301,10 +321,20 @@
                         <input type="email" id="perfilEmailCliente" readonly class="w-full min-w-0 min-h-[42px] px-3.5 py-2.5 bg-zinc-950 rounded-xl border border-zinc-800 text-zinc-400 cursor-not-allowed font-mono text-[11px] select-all truncate">
                     </div>
 
-                    <!-- Data de Nascimento (Presente de Aniversário 🎂) -->
+                    <!-- Data de Nascimento (Presente de Aniversário) -->
                     <div>
-                        <label class="block font-semibold text-zinc-300 uppercase mb-1">Data de Nascimento 🎂</label>
-                        <input type="date" id="perfilDataNascimentoCliente" class="w-full min-h-[44px] px-3.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white focus:outline-none focus:border-dourado font-medium text-xs sm:text-sm cursor-pointer">
+                        <label class="block font-semibold text-zinc-300 uppercase mb-1">Data de Nascimento</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <select id="perfilNascDia" class="w-full min-h-[44px] px-2.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white focus:outline-none focus:border-dourado font-medium text-xs sm:text-sm cursor-pointer">
+                                <option value="">Dia</option>
+                            </select>
+                            <select id="perfilNascMes" class="w-full min-h-[44px] px-2.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white focus:outline-none focus:border-dourado font-medium text-xs sm:text-sm cursor-pointer">
+                                <option value="">Mês</option>
+                            </select>
+                            <select id="perfilNascAno" class="w-full min-h-[44px] px-2.5 py-2.5 bg-black rounded-xl border border-zinc-700 text-white focus:outline-none focus:border-dourado font-medium text-xs sm:text-sm cursor-pointer">
+                                <option value="">Ano</option>
+                            </select>
+                        </div>
                         <p class="text-[10px] text-zinc-500 mt-1">Cadastre sua data para desbloquear benefícios e presentes especiais no seu aniversário!</p>
                     </div>
 
@@ -1417,7 +1447,7 @@
                 <div id="containerPixAtivoProduto" class="space-y-3 hidden">
                     <div class="bg-black p-4 rounded-2xl border border-zinc-800 space-y-3">
                         <p class="text-xs text-zinc-400">Escaneie o QR Code abaixo no app do seu banco:</p>
-                        
+
                         <div class="bg-white p-2.5 rounded-xl inline-block mx-auto shadow-inner">
                             <img id="imgPixQrProduto" src="" alt="QR Code Pix" class="w-40 h-40 sm:w-44 sm:h-44 object-contain mx-auto">
                         </div>
@@ -1714,7 +1744,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, query, where, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, query, where, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDGjisHwvyBNHoZvS0DP-BTcXYufU6b5YY",
@@ -2026,6 +2056,16 @@
                 : 'https://barbearia-app-1bf5.onrender.com';
         }
 
+        async function obterHeadersApiAutenticada() {
+            const usuario = auth?.currentUser;
+            if (!usuario) throw new Error('Faça login para continuar.');
+            const token = await usuario.getIdToken();
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            };
+        }
+
         async function carregarConfiguracoesGerais() {
             try {
                 const configSnap = await getDoc(doc(db, "configuracoes", "pagamento"));
@@ -2070,6 +2110,155 @@
             }
         }
 
+        // ==========================================
+        // RESERVA ATÔMICA DE SLOTS (ANTI-CONCORRÊNCIA E OVERBOOKING)
+        // ==========================================
+        function normalizarSlotId(dataHora, barbeiroId) {
+            const dh = String(dataHora || '').trim();
+            const bId = String(barbeiroId || 'principal').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+            return `slot_${dh}_${bId}`;
+        }
+
+        async function liberarSlotAgendamento(slotId) {
+            if (!slotId) return;
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const slotRef = doc(db, "slots_agendamentos", slotId);
+                    const proprietarioRef = doc(db, "slots_proprietarios", slotId);
+                    await transaction.get(proprietarioRef);
+                    transaction.delete(slotRef);
+                    transaction.delete(proprietarioRef);
+                });
+            } catch (e) {
+                console.warn("[Slots] Aviso ao liberar slot:", e);
+            }
+        }
+
+        async function reservarSlotAgendamentoAtomico(db, dadosAgendamento, paymentId = null) {
+            const dataHoraCompleta = dadosAgendamento.dataHora;
+            const barbeiroIdDesejado = dadosAgendamento.barbeiroId || 'principal';
+            const userIdAtual = dadosAgendamento.userId;
+            const paymentIdAtual = paymentId ? String(paymentId) : null;
+
+            let slotsParaTentar = [];
+            if (modoMultiBarbeiroCliente && barbeiroIdDesejado === 'qualquer' && Array.isArray(listaBarbeirosCliente) && listaBarbeirosCliente.length > 0) {
+                slotsParaTentar = listaBarbeirosCliente.map(b => ({
+                    barbeiroId: b.id,
+                    barbeiroNome: b.nome,
+                    barbeiroWhatsapp: b.whatsapp || '',
+                    slotId: normalizarSlotId(dataHoraCompleta, b.id)
+                }));
+            } else {
+                slotsParaTentar = [{
+                    barbeiroId: barbeiroIdDesejado,
+                    barbeiroNome: dadosAgendamento.barbeiroNome || 'Barbearia EMAÚS',
+                    barbeiroWhatsapp: dadosAgendamento.barbeiroWhatsapp || '',
+                    slotId: normalizarSlotId(dataHoraCompleta, barbeiroIdDesejado)
+                }];
+            }
+
+            let erroUltimo = null;
+            for (const itemSlot of slotsParaTentar) {
+                try {
+                    const resultado = await runTransaction(db, async (transaction) => {
+                        const slotRef = doc(db, "slots_agendamentos", itemSlot.slotId);
+                        const proprietarioRef = doc(db, "slots_proprietarios", itemSlot.slotId);
+                        const [slotDoc, proprietarioDoc] = await Promise.all([
+                            transaction.get(slotRef),
+                            transaction.get(proprietarioRef)
+                        ]);
+                        const agora = Date.now();
+                        const dadosProprietario = proprietarioDoc.exists() ? proprietarioDoc.data() : {};
+                        const pertenceAoUsuario = dadosProprietario.userId === userIdAtual;
+                        const pertenceAoPagamento = paymentIdAtual && dadosProprietario.paymentId === paymentIdAtual;
+
+                        if (slotDoc.exists()) {
+                            const dataSlot = slotDoc.data();
+                            const st = dataSlot.status;
+
+                            if (st === 'confirmado') {
+                                if (!pertenceAoUsuario && !pertenceAoPagamento) {
+                                    throw new Error("HORARIO_JA_RESERVADO");
+                                }
+                            } else if (st === 'pendente' || st === 'pendente_pagamento') {
+                                const expiraEm = Number(dataSlot.expiraEm || 0);
+                                if (expiraEm > agora) {
+                                    if (!pertenceAoUsuario && !pertenceAoPagamento) {
+                                        throw new Error("HORARIO_EM_PAGAMENTO_POR_OUTRO");
+                                    }
+                                }
+                            }
+                        }
+
+                        // 1. Grava o bloqueio atômico do slot
+                        transaction.set(slotRef, {
+                            slotId: itemSlot.slotId,
+                            dataHora: dataHoraCompleta,
+                            barbeiroId: itemSlot.barbeiroId,
+                            barbeiroNome: itemSlot.barbeiroNome,
+                            status: dadosAgendamento.status || 'confirmado',
+                            expiraEm: (dadosAgendamento.status === 'pendente') ? (agora + 3 * 60 * 1000) : null,
+                            atualizadoEm: new Date().toISOString()
+                        });
+                        transaction.set(proprietarioRef, {
+                            userId: userIdAtual,
+                            paymentId: paymentIdAtual,
+                            atualizadoEm: new Date().toISOString()
+                        });
+
+                        // 2. Grava ou atualiza o agendamento
+                        const agDocId = paymentIdAtual || `ag_${itemSlot.slotId.replace('slot_', '')}_${userIdAtual}`;
+                        const agRef = doc(db, "agendamentos", agDocId);
+
+                        const dadosCompletos = {
+                            ...dadosAgendamento,
+                            id: agDocId,
+                            barbeiroId: itemSlot.barbeiroId,
+                            barbeiroNome: itemSlot.barbeiroNome,
+                            barbeiroWhatsapp: itemSlot.barbeiroWhatsapp,
+                            slotId: itemSlot.slotId,
+                            atualizadoEm: new Date().toISOString()
+                        };
+
+                        transaction.set(agRef, dadosCompletos, { merge: true });
+
+                        return {
+                            success: true,
+                            slotId: itemSlot.slotId,
+                            agDocId: agDocId,
+                            barbeiroId: itemSlot.barbeiroId,
+                            barbeiroNome: itemSlot.barbeiroNome,
+                            barbeiroWhatsapp: itemSlot.barbeiroWhatsapp
+                        };
+                    });
+
+                    return resultado;
+                } catch (err) {
+                    erroUltimo = err;
+                    if (err.message === "HORARIO_JA_RESERVADO" || err.message === "HORARIO_EM_PAGAMENTO_POR_OUTRO") {
+                        continue;
+                    }
+                    throw err;
+                }
+            }
+
+            throw erroUltimo || new Error("HORARIO_JA_RESERVADO");
+        }
+
+        // Estoque e registros financeiros são processados exclusivamente pelo backend.
+        async function restaurarProdutosAgendamentoBackend(agendamentoId) {
+            const resposta = await fetch(`${getBackendUrlAtivo()}/api/produtos/restaurar-agendamento`, {
+                method: 'POST',
+                headers: await obterHeadersApiAutenticada(),
+                body: JSON.stringify({ agendamentoId })
+            });
+            const dados = await resposta.json();
+            if (!resposta.ok || !dados.success) {
+                throw new Error(dados.error || 'Falha ao restaurar estoque do agendamento.');
+            }
+            return dados;
+        }
+
         let unsubscribeRealtimeAgendamentos = null;
         let unsubscribeRealtimeAssinatura = null;
 
@@ -2109,11 +2298,9 @@
             }
 
             try {
-                // Escuta alterações na coleção agendamentos (quando o barbeiro confirma presença, conclui ou cancela ou novo agendamento entra)
-                // Filtrado para hoje/futuro: agendamentos antigos não afetam a grade nem os horários ocupados,
-                // e isso evita reler/re-escutar a coleção inteira (que consumia a cota de leitura do Firestore).
+                // A grade observa apenas slots sem dados pessoais de outros clientes.
                 const hojeStrRealtime = (typeof obterDataHojeLocal === 'function') ? obterDataHojeLocal() : new Date().toISOString().slice(0, 10);
-                unsubscribeRealtimeAgendamentos = onSnapshot(query(collection(db, "agendamentos"), where("dataHora", ">=", `${hojeStrRealtime}T00:00`)), () => {
+                unsubscribeRealtimeAgendamentos = onSnapshot(query(collection(db, "slots_agendamentos"), where("dataHora", ">=", `${hojeStrRealtime}T00:00`)), () => {
                     if (auth.currentUser) carregarPainelCliente(auth.currentUser.uid);
                     const inputDataAtual = document.getElementById('dataAtendimento');
                     const selectHoraAtual = document.getElementById('horarioGrade');
@@ -2154,6 +2341,122 @@
             }
         }
 
+        // ==========================================
+        // UTILITÁRIOS: SELETORES DE DATA DE NASCIMENTO (DIA / MÊS / ANO)
+        // ==========================================
+        function inicializarSelectsDataNascimento(prefixo) {
+            const sDia = document.getElementById(`${prefixo}Dia`);
+            const sMes = document.getElementById(`${prefixo}Mes`);
+            const sAno = document.getElementById(`${prefixo}Ano`);
+
+            if (sDia && sDia.options.length <= 1) {
+                let optionsDia = '<option value="">Dia</option>';
+                for (let d = 1; d <= 31; d++) {
+                    const val = String(d).padStart(2, '0');
+                    optionsDia += `<option value="${val}">${val}</option>`;
+                }
+                sDia.innerHTML = optionsDia;
+            }
+
+            if (sMes && sMes.options.length <= 1) {
+                const meses = [
+                    { val: '01', nome: '01 - Janeiro' },
+                    { val: '02', nome: '02 - Fevereiro' },
+                    { val: '03', nome: '03 - Março' },
+                    { val: '04', nome: '04 - Abril' },
+                    { val: '05', nome: '05 - Maio' },
+                    { val: '06', nome: '06 - Junho' },
+                    { val: '07', nome: '07 - Julho' },
+                    { val: '08', nome: '08 - Agosto' },
+                    { val: '09', nome: '09 - Setembro' },
+                    { val: '10', nome: '10 - Outubro' },
+                    { val: '11', nome: '11 - Novembro' },
+                    { val: '12', nome: '12 - Dezembro' }
+                ];
+                let optionsMes = '<option value="">Mês</option>';
+                meses.forEach(m => {
+                    optionsMes += `<option value="${m.val}">${m.nome}</option>`;
+                });
+                sMes.innerHTML = optionsMes;
+            }
+
+            if (sAno && sAno.options.length <= 1) {
+                const anoAtual = new Date().getFullYear();
+                let optionsAno = '<option value="">Ano</option>';
+                for (let a = anoAtual - 8; a >= 1930; a--) {
+                    optionsAno += `<option value="${a}">${a}</option>`;
+                }
+                sAno.innerHTML = optionsAno;
+            }
+        }
+
+        function obterDataNascimentoSelects(prefixo) {
+            const sDia = document.getElementById(`${prefixo}Dia`);
+            const sMes = document.getElementById(`${prefixo}Mes`);
+            const sAno = document.getElementById(`${prefixo}Ano`);
+
+            const dia = sDia ? sDia.value : '';
+            const mes = sMes ? sMes.value : '';
+            const ano = sAno ? sAno.value : '';
+
+            if (dia && mes && ano) {
+                return `${ano}-${mes}-${dia}`;
+            }
+            if (dia && mes) {
+                return `--${mes}-${dia}`;
+            }
+            return '';
+        }
+
+        function definirDataNascimentoSelects(prefixo, dataStr) {
+            inicializarSelectsDataNascimento(prefixo);
+            const sDia = document.getElementById(`${prefixo}Dia`);
+            const sMes = document.getElementById(`${prefixo}Mes`);
+            const sAno = document.getElementById(`${prefixo}Ano`);
+
+            if (!dataStr) {
+                if (sDia) sDia.value = '';
+                if (sMes) sMes.value = '';
+                if (sAno) sAno.value = '';
+                return;
+            }
+
+            let dia = '', mes = '', ano = '';
+            const cleanStr = String(dataStr).trim();
+
+            if (cleanStr.includes('-')) {
+                const partes = cleanStr.split('-');
+                if (partes.length === 3) {
+                    if (partes[0].length === 4) {
+                        ano = partes[0];
+                        mes = String(partes[1]).padStart(2, '0');
+                        dia = String(partes[2]).padStart(2, '0');
+                    } else if (partes[2].length === 4) {
+                        dia = String(partes[0]).padStart(2, '0');
+                        mes = String(partes[1]).padStart(2, '0');
+                        ano = partes[2];
+                    }
+                } else if (partes.length === 2 && cleanStr.startsWith('--')) {
+                    mes = String(partes[1]).padStart(2, '0');
+                    dia = String(partes[2] || '').padStart(2, '0');
+                }
+            } else if (cleanStr.includes('/')) {
+                const partes = cleanStr.split('/');
+                if (partes.length === 3) {
+                    dia = String(partes[0]).padStart(2, '0');
+                    mes = String(partes[1]).padStart(2, '0');
+                    ano = partes[2];
+                }
+            }
+
+            if (sDia) sDia.value = dia;
+            if (sMes) sMes.value = mes;
+            if (sAno) sAno.value = ano;
+        }
+
+        // Inicializa selects ao carregar
+        ['regNasc', 'googleNasc', 'perfilNasc'].forEach(inicializarSelectsDataNascimento);
+
         onAuthStateChanged(auth, async (user) => {
             try {
                 if (user) {
@@ -2168,6 +2471,7 @@
                             usuarioPendenteGoogle = user;
                             if (googleNomeCompleto) googleNomeCompleto.value = (userDoc.exists() && userDoc.data().nome) ? userDoc.data().nome : (user.displayName || "");
                             if (googleTelefoneWhatsApp) googleTelefoneWhatsApp.value = (userDoc.exists() && userDoc.data().telefone) ? userDoc.data().telefone : "";
+                            definirDataNascimentoSelects('googleNasc', (userDoc.exists() && userDoc.data().dataNascimento) ? userDoc.data().dataNascimento : "");
                             if (msgGoogleCadastroErro) msgGoogleCadastroErro.innerText = "";
                             if (modalCompletarCadastroGoogle) modalCompletarCadastroGoogle.classList.remove('hidden');
                             authScreen.classList.add('hidden');
@@ -2216,7 +2520,7 @@
             btnSalvarCadastroGoogle.innerText = "Salvando...";
 
             try {
-                const dataNasc = googleDataNascimento?.value || '';
+                const dataNasc = obterDataNascimentoSelects('googleNasc');
                 const dados = {
                     nome: nome,
                     telefone: telefone,
@@ -2278,7 +2582,7 @@
             const nome = (document.getElementById('regNome')?.value || '').trim();
             const telefone = (document.getElementById('regTelefone')?.value || '').trim();
             const email = (document.getElementById('regEmail')?.value || '').trim();
-            const dataNascimento = (document.getElementById('regDataNascimento')?.value || '').trim();
+            const dataNascimento = obterDataNascimentoSelects('regNasc');
             const password = document.getElementById('regPassword')?.value || '';
             if (authMsg) authMsg.innerText = "";
 
@@ -2300,7 +2604,7 @@
                 });
                 if (authMsg) {
                     authMsg.className = "text-center text-sm text-green-400 font-bold";
-                    authMsg.innerText = "✅ Conta criada com sucesso!";
+                    authMsg.innerText = "Conta criada com sucesso!";
                 }
             } catch (error) {
                 console.warn("[EMAÚS:AUTH] Erro no cadastro:", error);
@@ -2458,7 +2762,6 @@
             if (!grid || !userId) return;
 
             try {
-                const telLimpo = dadosUsuarioAtual?.telefone ? dadosUsuarioAtual.telefone.replace(/\D/g, '') : '';
                 let fotos = [];
 
                 const qFotos = query(collection(db, "galeria_cortes_clientes"), where("clienteId", "==", userId));
@@ -2466,16 +2769,6 @@
                 snap.forEach(docSnap => {
                     fotos.push({ id: docSnap.id, ...docSnap.data() });
                 });
-
-                if (telLimpo && telLimpo.length >= 10) {
-                    const qTel = query(collection(db, "galeria_cortes_clientes"), where("clienteTelefoneLimpo", "==", telLimpo));
-                    const snapTel = await getDocs(qTel);
-                    snapTel.forEach(docSnap => {
-                        if (!fotos.some(f => f.id === docSnap.id)) {
-                            fotos.push({ id: docSnap.id, ...docSnap.data() });
-                        }
-                    });
-                }
 
                 // Ordena por data decrescente (mais recente primeiro)
                 fotos.sort((a, b) => new Date(b.dataCriacao || 0) - new Date(a.dataCriacao || 0));
@@ -2694,8 +2987,7 @@
             if (perfilTelefoneCliente) perfilTelefoneCliente.value = dadosUsuarioAtual?.telefone || '';
             if (perfilEmailCliente) perfilEmailCliente.value = auth.currentUser.email || '';
             
-            const perfilDataNasc = document.getElementById('perfilDataNascimentoCliente');
-            if (perfilDataNasc) perfilDataNasc.value = dadosUsuarioAtual?.dataNascimento || '';
+            definirDataNascimentoSelects('perfilNasc', dadosUsuarioAtual?.dataNascimento || '');
 
             if (msgPerfilStatus) { msgPerfilStatus.innerText = ''; msgPerfilStatus.className = 'text-xs text-center font-medium min-h-[16px]'; }
             if (msgTrocaSenhaPerfil) { msgTrocaSenhaPerfil.innerText = ''; }
@@ -2731,7 +3023,7 @@
 
             const novoNome = perfilNomeCliente?.value.trim();
             const novoTelefone = perfilTelefoneCliente?.value.trim();
-            const novaDataNascimento = document.getElementById('perfilDataNascimentoCliente')?.value || '';
+            const novaDataNascimento = obterDataNascimentoSelects('perfilNasc');
 
             if (!novoNome || !novoTelefone) {
                 if (msgPerfilStatus) {
@@ -3177,12 +3469,12 @@
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-xl flex-shrink-0">👑</span>
                                 <div class="min-w-0">
-                                    <h3 class="text-xs font-bold text-dourado uppercase tracking-wide truncate">Assinante Mensal VIP</h3>
-                                    <p class="text-[10px] text-zinc-400 truncate">${dadosAssinaturaAtiva.nomePlano || 'Plano VIP Ativo'}</p>
+                                    <h3 class="text-xs font-bold text-dourado uppercase tracking-wide truncate">Assinante Mensal</h3>
+                                    <p class="text-[10px] text-zinc-400 truncate">${dadosAssinaturaAtiva.nomePlano || 'Plano Mensal Ativo'}</p>
                                 </div>
                             </div>
                             <span class="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-700 flex-shrink-0 whitespace-nowrap">
-                                ⚡ Cortes VIP Inclusos
+                                ⚡ Cortes Inclusos no Plano
                             </span>
                         </div>
                         <div class="bg-black/80 p-3 rounded-xl border border-zinc-800 text-[11px] text-zinc-300 space-y-1">
@@ -3326,7 +3618,8 @@
             
             const agora = new Date();
             const diasRestantes = Math.max(0, Math.ceil((dataFim.getTime() - agora.getTime()) / (1000 * 60 * 60 * 24)));
-            const ehAtivo = (dataFim >= agora);
+            const statusAssinatura = String(assinatura.status || '').trim().toLowerCase();
+            const ehAtivo = statusAssinatura === 'ativo' && dataFim >= agora;
 
             const semanasSalvas = assinatura.semanas || {};
             const semanasInfo = [];
@@ -3946,9 +4239,9 @@
                     }
                 }
 
-                // Busca horários já ocupados APENAS do dia selecionado (evita ler a coleção inteira a cada consulta)
-                const querySnapshot = await getDocs(query(
-                    collection(db, "agendamentos"),
+                // Busca horários já ocupados APENAS do dia selecionado (agendamentos + slots atômicos)
+                const querySlotsSnapshot = await getDocs(query(
+                    collection(db, "slots_agendamentos"),
                     where("dataHora", ">=", `${dataSelecionada}T00:00`),
                     where("dataHora", "<", `${dataSelecionada}T23:59:59`)
                 ));
@@ -3956,27 +4249,28 @@
 
                 const barbeiroIdFiltro = (modoMultiBarbeiroCliente && barbeiroSelecionadoCliente) ? barbeiroSelecionadoCliente.id : 'qualquer';
                 const agendamentosPorHora = {};
+                const idsProcessados = new Set();
 
-                querySnapshot.forEach(docSnap => {
-                    const ag = docSnap.data();
-                    if (ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'reembolsado' || ag.status === 'expirado') return;
-                    
-                    // Se for pendente, checa se já expirou (mais de 3 minutos sem pagamento)
-                    if (ag.status === 'pendente' || ag.status === 'pendente_pagamento') {
-                        const criadoEmMillis = ag.criadoEm ? (ag.criadoEm.toMillis ? ag.criadoEm.toMillis() : new Date(ag.criadoEm).getTime()) : 0;
-                        const expiraEmMillis = ag.expiraEm ? (ag.expiraEm.toMillis ? ag.expiraEm.toMillis() : new Date(ag.expiraEm).getTime()) : (criadoEmMillis ? (criadoEmMillis + 3 * 60 * 1000) : 0);
-                        if (expiraEmMillis && Date.now() > expiraEmMillis) {
-                            return; // Ignora agendamento pendente expirado, liberando o horário na grade!
+                if (querySlotsSnapshot && typeof querySlotsSnapshot.forEach === 'function') {
+                    querySlotsSnapshot.forEach(slotDoc => {
+                        const s = slotDoc.data();
+                        if (s.status === 'cancelado' || s.status === 'expirado') return;
+                        if (s.status === 'pendente' || s.status === 'pendente_pagamento') {
+                            const exp = Number(s.expiraEm || 0);
+                            if (exp > 0 && Date.now() > exp) return;
                         }
-                    }
-
-                    if (ag.dataHora && ag.dataHora.startsWith(dataSelecionada)) {
-                        const horaStr = ag.dataHora.split('T')[1];
-                        if (!horaStr) return;
-                        if (!agendamentosPorHora[horaStr]) agendamentosPorHora[horaStr] = [];
-                        agendamentosPorHora[horaStr].push(ag);
-                    }
-                });
+                        if (s.dataHora && s.dataHora.startsWith(dataSelecionada)) {
+                            const horaStr = s.dataHora.split('T')[1];
+                            if (!horaStr) return;
+                            const chaveUnica = `${s.dataHora}_${s.barbeiroId || 'principal'}`;
+                            if (!idsProcessados.has(chaveUnica)) {
+                                idsProcessados.add(chaveUnica);
+                                if (!agendamentosPorHora[horaStr]) agendamentosPorHora[horaStr] = [];
+                                agendamentosPorHora[horaStr].push(s);
+                            }
+                        }
+                    });
+                }
 
                 const totalBarbeirosAtivos = (listaBarbeirosCliente && listaBarbeirosCliente.length > 0) ? listaBarbeirosCliente.length : 1;
 
@@ -5099,15 +5393,13 @@
                 const hojeDataStr = `${anoLocal}-${mesLocal}-${diaLocal}`;
                 const agoraLocalStr = `${hojeDataStr}T${horaLocal}:${minLocal}`;
 
-                // Em vez de ler a coleção inteira, busca só (1) horários futuros ocupados de todos
-                // e (2) os agendamentos do próprio cliente (inclui histórico) — duas queries bem mais baratas.
-                const [snapFuturos, snapMeus] = await Promise.all([
-                    getDocs(query(collection(db, "agendamentos"), where("dataHora", ">=", agoraLocalStr))),
+                // Horários globais vêm dos slots sem PII; detalhes somente do próprio cliente.
+                const [snapSlotsFuturos, snapMeus] = await Promise.all([
+                    getDocs(query(collection(db, "slots_agendamentos"), where("dataHora", ">=", agoraLocalStr))),
                     getDocs(query(collection(db, "agendamentos"), where("userId", "==", userId)))
                 ]);
 
                 const mapaDocsUnicos = new Map();
-                snapFuturos.forEach(docSnap => mapaDocsUnicos.set(docSnap.id, docSnap.data()));
                 snapMeus.forEach(docSnap => mapaDocsUnicos.set(docSnap.id, docSnap.data()));
 
                 let temMeusAgendamentosAtivos = false;
@@ -5115,8 +5407,16 @@
                 let meusAgendamentosConcluidos = [];
                 let temHorariosOcupadosFuturos = false;
 
+                snapSlotsFuturos.forEach(slotSnap => {
+                    const slot = slotSnap.data();
+                    if (slot.status === 'cancelado' || slot.status === 'expirado') return;
+                    if ((slot.status === 'pendente' || slot.status === 'pendente_pagamento') && Number(slot.expiraEm || 0) < Date.now()) return;
+                    temHorariosOcupadosFuturos = true;
+                    divOcupados.innerHTML += `<div>❌ ${(slot.dataHora || '').replace('T', ' às ')}</div>`;
+                });
+
                 if (mapaDocsUnicos.size === 0) {
-                    divOcupados.innerHTML = "<span class='text-zinc-500'>Nenhum horário ocupado no momento.</span>";
+                    if (!temHorariosOcupadosFuturos) divOcupados.innerHTML = "<span class='text-zinc-500'>Nenhum horário ocupado no momento.</span>";
                     meusAgendamentosLista.innerHTML = "<p class='text-xs text-zinc-500'>Não possui agendamentos ativos no momento.</p>";
                     window.meusAgendamentosConcluidosCache = [];
                     if (window.renderizarHistoricoConcluidoPerfil) window.renderizarHistoricoConcluidoPerfil();
@@ -5135,12 +5435,6 @@
                     const ehCancelado = ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'reembolsado' || ag.status === 'expirado' || ag.status === 'pendente' || ag.status === 'pendente_pagamento';
                     const ehConcluido = ag.status === 'concluido' || ag.status === 'realizado' || ag.status === 'finalizado' || ag.concluido === true;
                     const ehFalta = ag.status === 'falta' || ag.status === 'cancelado_tardio' || ag.status === 'perdido';
-
-                    // Exibe na lista de ocupados APENAS se a data/hora for no futuro ou hoje e estiver ativo (não cancelado e não concluído)
-                    if (ag.dataHora && ag.dataHora >= agoraLocalStr && !ehCancelado && !ehConcluido) {
-                        temHorariosOcupadosFuturos = true;
-                        divOcupados.innerHTML += `<div>❌ ${(ag.dataHora || '').replace('T', ' às ')}</div>`;
-                    }
 
                     if (ag.userId === userId) {
                         const agDataStr = String(ag.dataHora || '').slice(0, 10);
@@ -5244,12 +5538,15 @@
                     if (semData?.agendamentoId) targetAgId = semData.agendamentoId;
                 }
 
-                // 2. Se não achou agendamentoId direto na assinatura, busca na coleção agendamentos
+                // 2. Se não achou agendamentoId direto na assinatura, busca na coleção agendamentos do próprio cliente
                 if (!targetAgId) {
-                    const snapAgs = await getDocs(collection(db, "agendamentos"));
+                    const snapAgs = await getDocs(query(
+                        collection(db, "agendamentos"),
+                        where("userId", "==", auth.currentUser.uid)
+                    ));
                     snapAgs.forEach(dSnap => {
                         const d = dSnap.data();
-                        if (d.userId === auth.currentUser.uid && (d.semanaPlano == numSemana || String(d.servico || '').includes(`Semana ${numSemana}`)) && d.status !== 'cancelado' && d.status !== 'reembolsado') {
+                        if ((d.semanaPlano == numSemana || String(d.servico || '').includes(`Semana ${numSemana}`)) && d.status !== 'cancelado' && d.status !== 'reembolsado') {
                             targetAgId = dSnap.id;
                         }
                     });
@@ -5366,22 +5663,9 @@
                     }
                 }
 
-                // 2. Devolve produtos ao estoque caso existam
+                // 2. Devolve produtos ao estoque caso existam (atômico)
                 if (ag && Array.isArray(ag.produtos) && ag.produtos.length > 0) {
-                    for (const p of ag.produtos) {
-                        if (p.id && p.quantidade > 0) {
-                            try {
-                                const prodSnap = await getDoc(doc(db, "produtos", p.id));
-                                if (prodSnap.exists()) {
-                                    const estAtual = Number(prodSnap.data().estoque || 0);
-                                    await updateDoc(doc(db, "produtos", p.id), {
-                                        estoque: estAtual + p.quantidade,
-                                        atualizadoEm: new Date().toISOString()
-                                    });
-                                }
-                            } catch (eEst) { console.warn("Erro ao devolver estoque no cancelamento:", eEst); }
-                        }
-                    }
+                    await restaurarProdutosAgendamentoBackend(id);
                     carregarProdutosCliente().catch(e => console.warn(e));
                 }
 
@@ -5395,6 +5679,10 @@
                     motivoCancelamento: elegivelEstorno ? 'Cancelado pelo cliente (+3h de antecedência - Estorno automático efetuado)' : 'Cancelado pelo cliente (<3h de antecedência)',
                     atualizadoEm: new Date().toISOString()
                 });
+
+                // 3.1 Libera o slot atômico para outros clientes poderem agendar imediatamente
+                const slotIdLiberar = ag?.slotId || normalizarSlotId(ag?.dataHora, ag?.barbeiroId || 'principal');
+                await liberarSlotAgendamento(slotIdLiberar);
 
                 // 3. Atualiza o crédito do plano VIP
                 if (isPlano && auth.currentUser) {
@@ -5663,7 +5951,7 @@
                 if (pendente.tipo === 'produto') {
                     descEl.innerText = `Compra: ${pendente.descricao || 'Produto'} (R$ ${valorFormatado})`;
                 } else if (pendente.tipo === 'plano') {
-                    descEl.innerText = `Assinatura: ${pendente.descricao || 'Plano VIP'} (R$ ${valorFormatado})`;
+                    descEl.innerText = `Assinatura: ${pendente.descricao || 'Plano Mensal'} (R$ ${valorFormatado})`;
                 } else {
                     descEl.innerText = `Agendamento: ${pendente.descricao || 'Serviço'} (R$ ${valorFormatado})`;
                 }
@@ -5741,73 +6029,7 @@
             if (!dadosCompra || !dadosCompra.produto) return;
             const { produto, quantidade, totalPagar, nome, telefone, emailComprador } = dadosCompra;
 
-            // Idempotência: Checa se já existe registro com esse paymentId no Firestore
-            try {
-                const jaExisteSnap = await getDocs(query(
-                    collection(db, "comprasProdutos"),
-                    where("paymentId", "==", String(paymentId))
-                ));
-                if (!jaExisteSnap.empty) {
-                    console.log("⚠️ Compra de produto já processada anteriormente para o paymentId:", paymentId);
-                    limparPixPendenteLocalStorage();
-                    return;
-                }
-            } catch (eCheck) { console.warn(eCheck); }
-
-            // 1. Atualiza estoque no Firestore
-            const novoEstoque = Math.max(0, Number(produto.estoque || 0) - Number(quantidade || 1));
-            try {
-                await updateDoc(doc(db, "produtos", produto.id), {
-                    estoque: novoEstoque,
-                    atualizadoEm: new Date().toISOString()
-                });
-            } catch (errEst) { console.warn("Aviso ao baixar estoque:", errEst); }
-
-            // 2. Registra compra no Firestore
-            try {
-                await addDoc(collection(db, "comprasProdutos"), {
-                    produtoId: produto.id,
-                    produtoNome: produto.nome,
-                    volumeUnidade: produto.volumeUnidade || '',
-                    quantidade: Number(quantidade || 1),
-                    precoUnitario: produto.preco,
-                    valorTotal: totalPagar,
-                    clienteNome: nome,
-                    clienteTelefone: telefone,
-                    clienteEmail: emailComprador,
-                    paymentId: String(paymentId),
-                    status: 'pago',
-                    metodoPagamento: 'Pix Mercado Pago',
-                    criadoEm: new Date().toISOString()
-                });
-            } catch (errComp) { console.warn("Aviso ao registrar compra:", errComp); }
-
-            // 3. Notifica Barbeiro e Cliente no WhatsApp
-            try {
-                const authHdrsP1 = { 'Content-Type': 'application/json' };
-                try {
-                    const tkn = auth?.currentUser ? await auth.currentUser.getIdToken() : null;
-                    if (tkn) authHdrsP1['Authorization'] = `Bearer ${tkn}`;
-                } catch (_) {}
-                fetch(`${getBackendUrlAtivo()}/api/whatsapp/notificar-compra-produto`, {
-                    method: 'POST',
-                    headers: authHdrsP1,
-                    body: JSON.stringify({
-                        cliente: nome,
-                        telefone: telefone,
-                        produtos: [{
-                            nome: produto.nome,
-                            volumeUnidade: produto.volumeUnidade,
-                            quantidade: Number(quantidade || 1),
-                            preco: produto.preco,
-                            subtotal: totalPagar
-                        }],
-                        valorTotal: totalPagar,
-                        metodoPagamento: 'Pix Mercado Pago',
-                        whatsappBarbeiro: MEU_WHATSAPP
-                    })
-                }).catch(e => console.warn("Aviso WhatsApp compra produto:", e));
-            } catch (eZap) { console.warn(eZap); }
+            // O endpoint de status acionou o processamento idempotente no backend.
 
             limparPixPendenteLocalStorage();
             fecharModalCompraProduto();
@@ -5839,7 +6061,9 @@
 
             loopGlobalPixEmExecucao = true;
             try {
-                const res = await fetch(`${getBackendUrlAtivo()}/api/pagamento/status/${pendente.paymentId}`);
+                const res = await fetch(`${getBackendUrlAtivo()}/api/pagamento/status/${pendente.paymentId}`, {
+                    headers: await obterHeadersApiAutenticada()
+                });
                 const data = await res.json();
 
                 if (data && data.status === 'approved') {
@@ -6010,37 +6234,32 @@
                 }
 
                 try {
-                    const snapCheck = await getDocs(query(collection(db, "agendamentos"), where("dataHora", "==", dataHoraAlvo)));
-                    let ocupadoOutro = false;
-                    snapCheck.forEach(d => {
-                        const ag = d.data();
-                        if (ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro' || ag.status === 'reembolsado' || ag.status === 'expirado') return;
+                    const slotIdCheck = normalizarSlotId(dataHoraAlvo, (modoMultiBarbeiroCliente && barbeiroAlvoId !== 'qualquer') ? barbeiroAlvoId : 'principal');
+                    const slotSnap = await getDoc(doc(db, "slots_agendamentos", slotIdCheck));
+                    let ocupadoSlot = false;
 
-                        if (ag.status === 'pendente' || ag.status === 'pendente_pagamento') {
-                            const criadoEmMillis = ag.criadoEm ? (ag.criadoEm.toMillis ? ag.criadoEm.toMillis() : new Date(ag.criadoEm).getTime()) : 0;
-                            const expiraEmMillis = ag.expiraEm ? (ag.expiraEm.toMillis ? ag.expiraEm.toMillis() : new Date(ag.expiraEm).getTime()) : (criadoEmMillis ? (criadoEmMillis + 3 * 60 * 1000) : 0);
-                            if (expiraEmMillis && Date.now() > expiraEmMillis) {
-                                return; // Ignora agendamento pendente vencido
+                    if (slotSnap.exists()) {
+                        const sData = slotSnap.data();
+                        const agoraMs = Date.now();
+                        if (sData.status === 'confirmado') {
+                            ocupadoSlot = true;
+                        } else if (sData.status === 'pendente' || sData.status === 'pendente_pagamento') {
+                            const exp = Number(sData.expiraEm || 0);
+                            if (exp > agoraMs) {
+                                ocupadoSlot = true;
                             }
                         }
+                    }
 
-                        if (ag.status === 'confirmado' || ag.status === 'pendente') {
-                            if (!user || ag.userId !== user.uid) {
-                                if (modoMultiBarbeiroCliente && barbeiroAlvoId !== 'qualquer') {
-                                    if (ag.barbeiroId === barbeiroAlvoId) ocupadoOutro = true;
-                                } else if (!modoMultiBarbeiroCliente) {
-                                    ocupadoOutro = true;
-                                }
-                            }
-                        }
-                    });
-                    if (ocupadoOutro) {
+                    if (ocupadoSlot) {
                         alert("⚠️ Este horário acabou de ser reservado por outro cliente. Por favor, escolha outro horário disponível na grade antes de efetuar o pagamento.");
                         const selectHora = document.getElementById('horarioGrade');
                         const avisoBloqueio = document.getElementById('avisoDataBloqueada');
                         if (selectHora && dados.data) await carregarGradeHorariosPadrao(dados.data, selectHora, avisoBloqueio);
                         return;
                     }
+
+                    // A verificação de concorrência é feita exclusivamente pelo slot atômico.
                 } catch (errCheck) {
                     console.warn("Aviso ao checar concorrência pré-pagamento:", errCheck);
                 }
@@ -6151,7 +6370,7 @@
                     const dataHoraPayload = (tipo === 'agendamento' && dados.data && dados.horario) ? `${dados.data}T${dados.horario}` : undefined;
                     const response = await fetch(`${getBackendUrlAtivo()}/api/pagamento/pix`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: await obterHeadersApiAutenticada(),
                         body: JSON.stringify({
                             tipo: tipo,
                             dadosCompletos: dadosCompletosComUser,
@@ -6202,7 +6421,9 @@
                         pollingIntervalPix = setInterval(async () => {
                             try {
                                 if (pagamentoPixConcluido) return;
-                                const statusRes = await fetch(`${getBackendUrlAtivo()}/api/pagamento/status/${paymentId}`);
+                                const statusRes = await fetch(`${getBackendUrlAtivo()}/api/pagamento/status/${paymentId}`, {
+                                    headers: await obterHeadersApiAutenticada()
+                                });
                                 const statusData = await statusRes.json();
 
                                 if (statusData && statusData.status === 'approved' && !pagamentoPixConcluido) {
@@ -6256,7 +6477,7 @@
             if (elCliente) elCliente.innerText = cliente;
 
             if (isPlano) {
-                if (elTotal) elTotal.innerText = "Plano VIP";
+                if (elTotal) elTotal.innerText = "Plano Mensal";
                 if (elPago) elPago.innerText = "Isento";
                 if (elRestante) elRestante.innerText = "R$ 0,00 (Sem cobrança)";
             } else {
@@ -6354,6 +6575,7 @@
                         try {
                             const queryPayment = await getDocs(query(
                                 collection(db, "agendamentos"),
+                                where("userId", "==", uidFinal),
                                 where("idPagamento", "==", String(paymentId))
                             ));
                             if (!queryPayment.empty) {
@@ -6391,54 +6613,12 @@
                         return;
                     }
 
-                    // 1. Debita o estoque de cada produto escolhido no Firestore e registra a venda
-                    if (listaProdutosAg.length > 0) {
-                        for (const p of listaProdutosAg) {
-                            if (p.id && p.quantidade > 0) {
-                                try {
-                                    const prodSnap = await getDoc(doc(db, "produtos", p.id));
-                                    if (prodSnap.exists()) {
-                                        const estAtual = Number(prodSnap.data().estoque || 0);
-                                        const novoEstoque = Math.max(0, estAtual - p.quantidade);
-                                        await updateDoc(doc(db, "produtos", p.id), {
-                                            estoque: novoEstoque,
-                                            atualizadoEm: new Date().toISOString()
-                                        });
-
-                                        await addDoc(collection(db, "comprasProdutos"), {
-                                            produtoId: p.id,
-                                            produtoNome: p.nome,
-                                            quantidade: p.quantidade,
-                                            precoUnitario: p.preco,
-                                            valorTotal: p.preco * p.quantidade,
-                                            clienteNome: nomeCliente,
-                                            clienteTelefone: telefoneCliente,
-                                            clienteEmail: (user && user.email) || `${telefoneCliente.replace(/\D/g, '')}@cliente.emaus`,
-                                            origemVenda: 'carrinho_agendamento',
-                                            agendamentoDataHora: dataHoraCompleta,
-                                            paymentId: String(paymentId),
-                                            status: 'pago',
-                                            metodoPagamento: metodo,
-                                            criadoEm: new Date().toISOString()
-                                        });
-                                    }
-                                } catch (errEst) {
-                                    console.warn("Aviso ao debitar estoque no agendamento:", errEst);
-                                }
-                            }
-                        }
-                    }
+                    // A reserva atômica do horário vem ANTES de qualquer efeito colateral
+                    // (estoque, fidelidade ou consumo do plano).
 
                     // 2. Se for agendamento feito por Assinante de Plano, consome o corte da semana
                     if (dadosEfetivos.isPlano) {
-                        const corteConsumido = await consumirCorteSemanalAssinatura(uidFinal);
-                        if (!corteConsumido) {
-                            alert("Não foi possível validar o corte do seu plano para esta semana. O agendamento foi cancelado.");
-                            isSalvandoAgendamento = false;
-                            return;
-                        }
-
-                        await addDoc(collection(db, "agendamentos"), {
+                        const dadosNovoAgPlano = {
                             userId: uidFinal,
                             cliente: nomeCliente,
                             telefone: telefoneCliente,
@@ -6457,7 +6637,30 @@
                             status: 'confirmado',
                             dataHora: dataHoraCompleta,
                             criadoEm: new Date()
-                        });
+                        };
+
+                        try {
+                            const resSlotPlano = await reservarSlotAgendamentoAtomico(db, dadosNovoAgPlano, null);
+                            console.log("✅ [Reserva Atômica Plano] Slot travado com sucesso:", resSlotPlano.slotId);
+
+                            // Só consome o benefício depois que o horário foi realmente garantido.
+                            const corteConsumido = await consumirCorteSemanalAssinatura(uidFinal);
+                            if (!corteConsumido) {
+                                await liberarSlotAgendamento(resSlotPlano.slotId);
+                                try { await deleteDoc(doc(db, "agendamentos", resSlotPlano.agDocId)); } catch (_) {}
+                                alert("Não foi possível validar o corte do seu plano para esta semana. O agendamento foi cancelado.");
+                                isSalvandoAgendamento = false;
+                                return;
+                            }
+
+                            // Produtos adicionados a benefícios gratuitos ficam apenas como
+                            // reserva para pagamento no balcão; estoque não é debitado pelo cliente.
+                        } catch (errReserva) {
+                            console.error("❌ [Reserva Atômica Plano] Conflito de horário detectado:", errReserva);
+                            alert("⚠️ Conflito de Horário:\n\nEste horário acabou de ser reservado por outro cliente no mesmo instante!\n\nSeu crédito do Plano Mensal NÃO foi perdido. Por favor, selecione outro horário disponível na grade.");
+                            isSalvandoAgendamento = false;
+                            return;
+                        }
 
                         fecharModalPagamento();
                         limparPixPendenteLocalStorage();
@@ -6520,17 +6723,21 @@
                         barbeiroWhatsapp: barbeiroSelecionadoCliente?.whatsapp || '',
                         status: 'confirmado',
                         dataHora: dataHoraCompleta,
-                        confirmadoEm: new Date().toISOString()
+                        confirmadoEm: new Date().toISOString(),
+                        criadoEm: new Date()
                     };
 
-                    if (paymentId && paymentId !== 'manual') {
-                        await setDoc(doc(db, "agendamentos", String(paymentId)), dadosNovoAgendamento, { merge: true });
-                    } else {
-                        await addDoc(collection(db, "agendamentos"), {
-                            ...dadosNovoAgendamento,
-                            criadoEm: new Date()
-                        });
+                    try {
+                        const resSlotAvulso = await reservarSlotAgendamentoAtomico(db, dadosNovoAgendamento, (paymentId && paymentId !== 'manual') ? paymentId : null);
+                        console.log("✅ [Reserva Atômica Avulso] Slot travado com sucesso:", resSlotAvulso.slotId);
+                    } catch (errReservaAvulso) {
+                        console.error("❌ [Reserva Atômica Avulso] Conflito de horário detectado:", errReservaAvulso);
+                        alert("⚠️ Conflito de Horário:\n\nEste horário acabou de ser reservado por outro cliente no mesmo instante!\n\nPor favor, escolha outro horário disponível na grade.");
+                        isSalvandoAgendamento = false;
+                        return;
                     }
+
+                    // Pagamentos online processam estoque no webhook/backend.
 
                     // Se aplicou recompensa de fidelidade com abatimento de valor no checkout
                     if (dadosEfetivos?.isFidelidade) {
@@ -6751,27 +6958,24 @@
                 const valorCobrarExtras = Number(subtotalExtras || 0);
 
                 // Idempotência & Concorrência: Checa se o usuário já possui ou se outro cliente acabou de reservar
-                const queryConcorrenciaVip = await getDocs(query(
-                    collection(db, "agendamentos"),
-                    where("dataHora", "==", dataHoraCompleta)
-                ));
+                const [queryConcorrenciaVip, slotsConcorrenciaVip] = await Promise.all([
+                    getDocs(query(collection(db, "agendamentos"), where("userId", "==", user.uid), where("dataHora", "==", dataHoraCompleta))),
+                    getDocs(query(collection(db, "slots_agendamentos"), where("dataHora", "==", dataHoraCompleta)))
+                ]);
                 let jaExisteVip = false;
                 let slotOcupadoOutro = false;
                 const barbeiroAlvoId = (modoMultiBarbeiroCliente && barbeiroSelecionadoCliente) ? barbeiroSelecionadoCliente.id : 'qualquer';
 
                 queryConcorrenciaVip.forEach(d => {
                     const agData = d.data();
-                    if (agData.status === 'confirmado' || agData.status === 'pendente') {
-                        if (d.data().userId === user.uid) {
-                            jaExisteVip = true;
-                        } else {
-                            if (modoMultiBarbeiroCliente && barbeiroAlvoId !== 'qualquer') {
-                                if (agData.barbeiroId === barbeiroAlvoId) slotOcupadoOutro = true;
-                            } else if (!modoMultiBarbeiroCliente) {
-                                slotOcupadoOutro = true;
-                            }
-                        }
-                    }
+                    if (agData.status === 'confirmado' || agData.status === 'pendente') jaExisteVip = true;
+                });
+                slotsConcorrenciaVip.forEach(d => {
+                    const slot = d.data();
+                    if (slot.status === 'cancelado' || slot.status === 'expirado') return;
+                    if (modoMultiBarbeiroCliente && barbeiroAlvoId !== 'qualquer') {
+                        if (slot.barbeiroId === barbeiroAlvoId) slotOcupadoOutro = true;
+                    } else if (!modoMultiBarbeiroCliente) slotOcupadoOutro = true;
                 });
 
                 if (jaExisteVip) {
@@ -6791,7 +6995,8 @@
                     return;
                 }
 
-                const docRef = await addDoc(collection(db, "agendamentos"), {
+                // A consulta acima melhora a UX, mas a decisão final é feita atomicamente no Firestore.
+                const reservaPlano = await reservarSlotAgendamentoAtomico(db, {
                     userId: user.uid,
                     cliente: nomeCliente,
                     telefone: telefoneCliente,
@@ -6815,7 +7020,7 @@
                 const updateObj = {};
                 updateObj[`semanas.${beneficio.semana}`] = {
                     status: 'agendado',
-                    agendamentoId: docRef.id,
+                    agendamentoId: reservaPlano.agDocId,
                     agendamentoData: dataHoraCompleta,
                     servico: servico,
                     atualizadoEm: new Date().toISOString()
@@ -7114,10 +7319,10 @@
                 const msgStatus = document.getElementById('msgStatus');
 
                 // Idempotência e concorrência pré-agendamento
-                const queryConcorrencia = await getDocs(query(
-                    collection(db, "agendamentos"),
-                    where("dataHora", "==", dataHoraCompleta)
-                ));
+                const [queryConcorrencia, slotsConcorrencia] = await Promise.all([
+                    getDocs(query(collection(db, "agendamentos"), where("userId", "==", user.uid), where("dataHora", "==", dataHoraCompleta))),
+                    getDocs(query(collection(db, "slots_agendamentos"), where("dataHora", "==", dataHoraCompleta)))
+                ]);
 
                 let jaExiste = false;
                 let slotOcupadoOutro = false;
@@ -7125,17 +7330,14 @@
 
                 queryConcorrencia.forEach(d => {
                     const agData = d.data();
-                    if (agData.status === 'confirmado' || agData.status === 'pendente') {
-                        if (agData.userId === user.uid) {
-                            jaExiste = true;
-                        } else {
-                            if (modoMultiBarbeiroCliente && barbeiroAlvoId !== 'qualquer') {
-                                if (agData.barbeiroId === barbeiroAlvoId) slotOcupadoOutro = true;
-                            } else if (!modoMultiBarbeiroCliente) {
-                                slotOcupadoOutro = true;
-                            }
-                        }
-                    }
+                    if (agData.status === 'confirmado' || agData.status === 'pendente') jaExiste = true;
+                });
+                slotsConcorrencia.forEach(d => {
+                    const slot = d.data();
+                    if (slot.status === 'cancelado' || slot.status === 'expirado') return;
+                    if (modoMultiBarbeiroCliente && barbeiroAlvoId !== 'qualquer') {
+                        if (slot.barbeiroId === barbeiroAlvoId) slotOcupadoOutro = true;
+                    } else if (!modoMultiBarbeiroCliente) slotOcupadoOutro = true;
                 });
 
                 if (jaExiste) {
@@ -7155,25 +7357,7 @@
                     return;
                 }
 
-                // 1. Debita estoque de produtos se houver
-                if (Array.isArray(produtos) && produtos.length > 0) {
-                    for (const p of produtos) {
-                        if (p.id && p.quantidade > 0) {
-                            try {
-                                const prodSnap = await getDoc(doc(db, "produtos", p.id));
-                                if (prodSnap.exists()) {
-                                    const estAtual = Number(prodSnap.data().estoque || 0);
-                                    await updateDoc(doc(db, "produtos", p.id), {
-                                        estoque: Math.max(0, estAtual - p.quantidade),
-                                        atualizadoEm: new Date().toISOString()
-                                    });
-                                }
-                            } catch (eEst) { console.warn(eEst); }
-                        }
-                    }
-                }
-
-                // 2. Determina titulo e salva o agendamento
+                // 1. Determina o título e RESERVA O SLOT + AGENDAMENTO atomicamente.
                 let sufixoTitulo = "(🎁 Fidelidade VIP)";
                 if (dados.isFidelidade && dados.isAniversario) {
                     sufixoTitulo = "(🎁 Fidelidade VIP & 🎂 Aniversário)";
@@ -7181,7 +7365,7 @@
                     sufixoTitulo = "(🎂 Presente de Aniversário)";
                 }
 
-                await addDoc(collection(db, "agendamentos"), {
+                const reservaFidelidade = await reservarSlotAgendamentoAtomico(db, {
                     userId: user.uid,
                     cliente: nomeCliente,
                     telefone: telefoneCliente,
@@ -7206,6 +7390,8 @@
                     dataHora: dataHoraCompleta,
                     criadoEm: new Date()
                 });
+
+                // Produtos vinculados a resgates gratuitos são cobrados/baixados no balcão.
 
                 // 3. Debita os selos da fidelidade se foi aplicada
                 if (dados.isFidelidade) {
@@ -7384,7 +7570,7 @@
 
                     const response = await fetch(`${getBackendUrlAtivo()}/api/pagamento/cartao`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: await obterHeadersApiAutenticada(),
                         body: JSON.stringify({
                             cardNumber: cartaoNumero,
                             cardholderName: cartaoNome,
@@ -8022,7 +8208,7 @@ const tabProdPix = document.getElementById('tabProdPix');
                 try {
                     const response = await fetch(`${getBackendUrlAtivo()}/api/pagamento/pix`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: await obterHeadersApiAutenticada(),
                         body: JSON.stringify({
                             tipo: 'produto',
                             dadosCompletos: dadosCompraProduto,
@@ -8072,7 +8258,9 @@ const tabProdPix = document.getElementById('tabProdPix');
                         pollingIntervalPixProduto = setInterval(async () => {
                             try {
                                 if (compraPixConcluida) return;
-                                const statusRes = await fetch(`${getBackendUrlAtivo()}/api/pagamento/status/${paymentId}`);
+                                const statusRes = await fetch(`${getBackendUrlAtivo()}/api/pagamento/status/${paymentId}`, {
+                                    headers: await obterHeadersApiAutenticada()
+                                });
                                 const statusData = await statusRes.json();
 
                                 if (statusData && statusData.status === 'approved' && !compraPixConcluida) {
@@ -8166,7 +8354,7 @@ const tabProdPix = document.getElementById('tabProdPix');
             try {
                 const response = await fetch(`${getBackendUrlAtivo()}/api/pagamento/cartao`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: await obterHeadersApiAutenticada(),
                     body: JSON.stringify({
                         cardNumber: cartaoNumero,
                         cardholderName: cartaoNome,
@@ -8178,6 +8366,15 @@ const tabProdPix = document.getElementById('tabProdPix');
                         installments: parcelas,
                         tipoCartao: isDebito ? 'debito' : 'credito',
                         email: emailComprador,
+                        tipo: 'produto',
+                        dadosCompletos: {
+                            produto: produtoSelecionadoCompra,
+                            quantidade: quantidadeCompraProduto,
+                            totalPagar: totalPagarFinal,
+                            nome,
+                            telefone,
+                            emailComprador
+                        },
                         description: `Compra: ${quantidadeCompraProduto}x ${produtoSelecionadoCompra.nome} - EMAÚS`
                     })
                 });
@@ -8185,62 +8382,7 @@ const tabProdPix = document.getElementById('tabProdPix');
                 const data = await response.json();
 
                 if (response.ok && data.status === 'approved') {
-                    // 1. Baixa no estoque
-                    const novoEstoque = Math.max(0, Number(produtoSelecionadoCompra.estoque || 0) - quantidadeCompraProduto);
-                    try {
-                        await updateDoc(doc(db, "produtos", produtoSelecionadoCompra.id), {
-                            estoque: novoEstoque,
-                            atualizadoEm: new Date().toISOString()
-                        });
-                    } catch (errEst) { console.warn("Aviso ao baixar estoque:", errEst); }
-
-                    // 2. Registra compra
-                    try {
-                        await addDoc(collection(db, "comprasProdutos"), {
-                            produtoId: produtoSelecionadoCompra.id,
-                            produtoNome: produtoSelecionadoCompra.nome,
-                            volumeUnidade: produtoSelecionadoCompra.volumeUnidade || '',
-                            quantidade: quantidadeCompraProduto,
-                            precoUnitario: produtoSelecionadoCompra.preco,
-                            valorTotal: totalPagarFinal,
-                            clienteNome: nome,
-                            clienteTelefone: telefone,
-                            clienteEmail: emailComprador,
-                            paymentId: data.id,
-                            metodoPagamento: isDebito ? 'Cartão de Débito' : 'Cartão de Crédito',
-                            status: 'pago',
-                            criadoEm: new Date().toISOString()
-                        });
-                    } catch (errComp) { console.warn("Aviso ao registrar compra:", errComp); }
-
-                    // 3. Notifica WhatsApp
-                    try {
-                        const authHdrsP2 = { 'Content-Type': 'application/json' };
-                        try {
-                            const tkn = auth?.currentUser ? await auth.currentUser.getIdToken() : null;
-                            if (tkn) authHdrsP2['Authorization'] = `Bearer ${tkn}`;
-                        } catch (_) {}
-                        fetch(`${getBackendUrlAtivo()}/api/whatsapp/notificar-compra-produto`, {
-                            method: 'POST',
-                            headers: authHdrsP2,
-                            body: JSON.stringify({
-                                cliente: nome,
-                                telefone: telefone,
-                                produtos: [{
-                                    nome: produtoSelecionadoCompra.nome,
-                                    volumeUnidade: produtoSelecionadoCompra.volumeUnidade,
-                                    quantidade: quantidadeCompraProduto,
-                                    preco: produtoSelecionadoCompra.preco,
-                                    subtotal: totalPagarFinal
-                                }],
-                                valorTotal: totalPagarFinal,
-                                metodoPagamento: isDebito ? 'Cartão de Débito' : 'Cartão de Crédito',
-                                whatsappBarbeiro: MEU_WHATSAPP
-                            })
-                        }).catch(e => console.warn("Aviso WhatsApp compra produto:", e));
-                    } catch (eZap) { console.warn(eZap); }
-
-                    // 4. Modal de Sucesso
+                    // Estoque, registro financeiro e notificações são processados no backend.
                     fecharModalCompraProduto();
                     const nomeQtdEl = document.getElementById('sucessoProdutoNomeQtd');
                     const totalPagoEl = document.getElementById('sucessoProdutoTotalPago');

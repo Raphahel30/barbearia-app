@@ -18,16 +18,21 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import https from 'https';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 
-process.on('uncaughtException', (err) => {
-    console.error('⚠️ [UncaughtException capturado]:', err?.message || err);
-});
-process.on('unhandledRejection', (reason) => {
-    console.error('⚠️ [UnhandledRejection capturado]:', reason?.message || reason);
-});
+// Importar o app (testes/Vercel) não deve abrir portas nem iniciar tarefas em
+// background. Esses efeitos colaterais só pertencem ao processo executado por
+// `node server/src/server.js`.
+const isMainModule = process.argv[1]
+    ? import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href
+    : false;
 
 import serviceAccount from './firebaseServiceAccount.js';
+import {
+    assinaturaMensalEstaAtiva,
+    consolidarClientesDuplicadosCRMServidor,
+    normalizarTelefoneCRMServidor
+} from './crmUtils.js';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
@@ -319,6 +324,14 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Servir arquivos estáticos do frontend (admin.html, index.html, imagens, assets) localmente
+app.use(express.static(path.resolve(__dirname, '../../')));
+
+// Rota mock para silenciar 404 de scripts da Vercel em ambiente local
+app.all(['/_vercel/insights/script.js', '/_vercel/speed-insights/script.js', '/_vercel/*'], (req, res) => {
+    res.type('application/javascript').send('/* vercel analytics disabled locally */');
+});
+
 // M1: Rate limiting — protege endpoints com limites dimensionados para produção e SPAs em tempo real
 const limiterGeral = rateLimit({ 
     windowMs: 60 * 1000, 
@@ -368,32 +381,15 @@ app.use('/api/mercadopago/reembolsar-pagamento', limiterEstorno);
 app.use('/api/auth/recuperar-senha', limiterAuth);
 app.use('/api/whatsapp/', limiterWhatsApp);
 
-// Lista de e-mails autorizados como Administradores do sistema (Super Admins)
-const ADMIN_EMAILS = [
-    'aldo540@outlook.com',
-    'rafaelcassu@hotmail.com',
-    'cassurafael30@gmail.com',
-    'admin@emausbarbearia.com'
-];
-
-// Função unificada para verificar se um e-mail possui privilégio de Administrador
+// Verifica o cadastro administrativo por UID. Custom claim `admin` é validada
+// diretamente pelos middlewares antes deste fallback de migração.
 async function isEmailAdmin(email, uid = null) {
-    if (!email) return false;
-    const emailLower = email.toLowerCase().trim();
-    if (ADMIN_EMAILS.includes(emailLower)) return true;
-
-    // Consulta dinâmica na coleção 'administradores' do Firestore
     if (firebaseAdminFirestore) {
         try {
             if (uid) {
                 const docSnap = await firebaseAdminFirestore.collection('administradores').doc(uid).get();
                 if (docSnap.exists) return true;
             }
-            const querySnap = await firebaseAdminFirestore.collection('administradores')
-                .where('email', '==', emailLower)
-                .limit(1)
-                .get();
-            if (!querySnap.empty) return true;
         } catch (e) {
             console.warn('[AdminCheck] Aviso ao consultar administradores no Firestore:', e.message);
         }
@@ -491,7 +487,7 @@ async function verificarAdminMiddleware(req, res, next) {
             });
         }
 
-        const ehAdmin = await isEmailAdmin(decoded.email, decoded.uid || decoded.user_id);
+        const ehAdmin = decoded.admin === true || await isEmailAdmin(decoded.email, decoded.uid || decoded.user_id);
         if (!ehAdmin) {
             console.warn(`[Segurança] Tentativa de acesso não autorizado por: ${decoded.email}`);
             return res.status(403).json({
@@ -563,13 +559,79 @@ async function verificarAuthEstornoMiddleware(req, res, next) {
         }
 
         req.authUser = decoded;
-        req.ehAdmin = await isEmailAdmin(decoded.email, decoded.uid || decoded.user_id);
+        req.ehAdmin = decoded.admin === true || await isEmailAdmin(decoded.email, decoded.uid || decoded.user_id);
         next();
     } catch (err) {
         console.error('Erro na validação de estorno:', err);
         return res.status(500).json({ success: false, error: 'Erro interno ao validar autenticação.' });
     }
 }
+
+// Middleware para qualquer rota privada de cliente autenticado.
+async function verificarUsuarioMiddleware(req, res, next) {
+    try {
+        const authHeader = req.headers['authorization'] || '';
+        const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
+        if (!token) {
+            return res.status(401).json({ success: false, error: 'Autenticação obrigatória.' });
+        }
+        const decoded = await validarTokenFirebaseAdmin(token);
+        if (!decoded || !(decoded.uid || decoded.user_id)) {
+            return res.status(403).json({ success: false, error: 'Token inválido ou expirado.' });
+        }
+        req.authUser = decoded;
+        req.ehAdmin = decoded.admin === true || await isEmailAdmin(decoded.email, decoded.uid || decoded.user_id);
+        return next();
+    } catch (err) {
+        console.error('[Auth Cliente] Erro:', err.message);
+        return res.status(500).json({ success: false, error: 'Erro ao validar autenticação.' });
+    }
+}
+
+app.post('/api/admin/conceder', verificarAdminMiddleware, async (req, res) => {
+    try {
+        const email = String(req.body?.email || '').trim().toLowerCase();
+        if (!email || !firebaseAdminAuth || !firebaseAdminFirestore) {
+            return res.status(400).json({ success: false, error: 'E-mail inválido.' });
+        }
+        const usuario = await firebaseAdminAuth.getUserByEmail(email);
+        await firebaseAdminAuth.setCustomUserClaims(usuario.uid, {
+            ...(usuario.customClaims || {}),
+            admin: true
+        });
+        await firebaseAdminFirestore.collection('administradores').doc(usuario.uid).set({
+            uid: usuario.uid,
+            email,
+            adicionadoPor: req.adminUser.email || req.adminUser.uid,
+            criadoEm: new Date().toISOString()
+        }, { merge: true });
+        return res.json({ success: true, uid: usuario.uid, email });
+    } catch (err) {
+        const status = err.code === 'auth/user-not-found' ? 404 : 500;
+        return res.status(status).json({ success: false, error: status === 404 ? 'Crie a conta do usuário antes de conceder acesso.' : 'Erro ao conceder acesso.' });
+    }
+});
+
+app.post('/api/admin/remover', verificarAdminMiddleware, async (req, res) => {
+    try {
+        const uid = String(req.body?.uid || '').trim();
+        if (!uid || !firebaseAdminAuth || !firebaseAdminFirestore) {
+            return res.status(400).json({ success: false, error: 'UID inválido.' });
+        }
+        const usuario = await firebaseAdminAuth.getUser(uid);
+        if (usuario.customClaims?.master === true) {
+            return res.status(403).json({ success: false, error: 'O administrador master não pode ser removido.' });
+        }
+        const novasClaims = { ...(usuario.customClaims || {}) };
+        delete novasClaims.admin;
+        await firebaseAdminAuth.setCustomUserClaims(uid, novasClaims);
+        await firebaseAdminFirestore.collection('administradores').doc(uid).delete();
+        return res.json({ success: true });
+    } catch (err) {
+        console.error('[Admin Remover] Erro:', err.message);
+        return res.status(500).json({ success: false, error: 'Erro ao remover acesso.' });
+    }
+});
 
 // Rota raiz para verificação imediata de uptime no Render e UptimeRobot
 app.get('/', (req, res) => {
@@ -597,7 +659,7 @@ app.get('/health', async (req, res) => {
 });
 
 // Inicializa WhatsApp em background somente no servidor dedicado / localhost
-if (!process.env.VERCEL) {
+if (isMainModule) {
     try {
         iniciarWhatsApp({ onlyIfRegistered: true }).catch(err => console.log('WhatsApp Bot aguardando conexão local/nuvem...'));
     } catch (e) {
@@ -609,114 +671,6 @@ if (!process.env.VERCEL) {
         https.get(`${SELF_URL}/health`, () => {}).on('error', () => {});
     }, 10 * 60 * 1000);
 
-    // 1. Monitor em background para Pagamentos Pendentes recentes (Server-side Poller)
-    // Roda a cada 5 segundos buscando transações pendentes dos últimos 3 minutos no Mercado Pago
-    setInterval(async () => {
-        if (!firebaseAdminFirestore || !activeAccessToken || activeAccessToken === 'SEU_ACCESS_TOKEN_AQUI' || activeAccessToken === 'DUMMY_TOKEN') return;
-        try {
-            const agora = Date.now();
-            const snap = await firebaseAdminFirestore.collection('pagamentos_pendentes')
-                .where('status', '==', 'pendente')
-                .limit(20)
-                .get();
-
-            if (snap.empty) return;
-
-            for (const docSnap of snap.docs) {
-                const data = docSnap.data();
-                const pId = data.paymentId || docSnap.id;
-                if (!pId) continue;
-
-                let criadoEmMs = 0;
-                if (data.criadoEm) {
-                    if (typeof data.criadoEm.toMillis === 'function') criadoEmMs = data.criadoEm.toMillis();
-                    else if (data.criadoEm._seconds) criadoEmMs = data.criadoEm._seconds * 1000;
-                    else criadoEmMs = new Date(data.criadoEm).getTime();
-                }
-                // Apenas checa se foi criado nos últimos 3 minutos
-                if (criadoEmMs > 0 && (agora - criadoEmMs) > (3 * 60 * 1000)) continue;
-
-                try {
-                    const mpRes = await paymentClient.get({ id: pId });
-                    if (mpRes && mpRes.status === 'approved') {
-                        console.log(`[Server Poller] ⚡ Pagamento ${pId} detectado como APROVADO no Mercado Pago! Concluindo no servidor...`);
-                        await processarConclusaoPagamentoServidor(pId, mpRes, data.metodo || 'pix_mercadopago');
-                    } else if (mpRes && (mpRes.status === 'rejected' || mpRes.status === 'cancelled' || mpRes.status === 'expired')) {
-                        console.log(`[Server Poller] ⚠️ Pagamento ${pId} detectado como ${mpRes.status}. Cancelando pendência...`);
-                        await docSnap.ref.set({ status: mpRes.status, statusDetail: mpRes.status_detail || mpRes.status, atualizadoEm: new Date().toISOString() }, { merge: true });
-                        const agRef = firebaseAdminFirestore.collection('agendamentos').doc(String(pId));
-                        const agSnap = await agRef.get();
-                        if (agSnap.exists && agSnap.data().status === 'pendente') {
-                            await agRef.update({
-                                status: 'cancelado',
-                                motivoCancelamento: `Pagamento ${mpRes.status} no Mercado Pago`,
-                                canceladoEm: new Date().toISOString()
-                            });
-                        }
-                    }
-                } catch (errCheck) {
-                    // Silencioso se der erro temporário
-                }
-            }
-        } catch (errPoller) {
-            console.warn('[Server Poller Erro]:', errPoller.message);
-        }
-    }, 5000);
-
-    // 2. Limpeza periódica de agendamentos e pagamentos pendentes expirados (>3 min)
-    // Libera a grade automaticamente a cada 3 minutos
-    setInterval(async () => {
-        if (!firebaseAdminFirestore) return;
-        try {
-            const agora = Date.now();
-            const limiteExpiracaoMs = agora - 3 * 60 * 1000;
-            
-            // Limpa pagamentos_pendentes vencidos
-            const pendentesSnap = await firebaseAdminFirestore.collection('pagamentos_pendentes')
-                .where('status', '==', 'pendente')
-                .limit(30)
-                .get();
-
-            pendentesSnap.forEach(d => {
-                const dt = d.data();
-                let criadoMs = 0;
-                if (dt.criadoEm) {
-                    if (typeof dt.criadoEm.toMillis === 'function') criadoMs = dt.criadoEm.toMillis();
-                    else if (dt.criadoEm._seconds) criadoMs = dt.criadoEm._seconds * 1000;
-                    else criadoMs = new Date(dt.criadoEm).getTime();
-                }
-                if (criadoMs > 0 && criadoMs <= limiteExpiracaoMs) {
-                    d.ref.set({ status: 'expirado', atualizadoEm: new Date().toISOString() }, { merge: true })
-                        .catch(() => {});
-                }
-            });
-
-            // Limpa agendamentos pendentes vencidos
-            const agSnap = await firebaseAdminFirestore.collection('agendamentos')
-                .where('status', '==', 'pendente')
-                .limit(30)
-                .get();
-
-            agSnap.forEach(d => {
-                const dt = d.data();
-                let criadoMs = 0;
-                if (dt.criadoEm) {
-                    if (typeof dt.criadoEm.toMillis === 'function') criadoMs = dt.criadoEm.toMillis();
-                    else if (dt.criadoEm._seconds) criadoMs = dt.criadoEm._seconds * 1000;
-                    else criadoMs = new Date(dt.criadoEm).getTime();
-                }
-                if (criadoMs > 0 && criadoMs <= limiteExpiracaoMs) {
-                    d.ref.update({
-                        status: 'cancelado',
-                        motivoCancelamento: 'expirado_sem_pagamento',
-                        canceladoEm: new Date().toISOString()
-                    }).catch(() => {});
-                }
-            });
-        } catch (eLimpeza) {
-            console.warn('[Auto-Limpeza Erro]:', eLimpeza.message);
-        }
-    }, 3 * 60 * 1000);
 }
 
 // Endpoint Seguro de Recuperação de Senha (Disparo por E-mail)
@@ -1159,7 +1113,7 @@ function validarAntecedenciaMinimaAgendamento(dataHora) {
 }
 
 // Endpoint to create Pix payment
-app.post('/api/pagamento/pix', async (req, res) => {
+app.post('/api/pagamento/pix', verificarUsuarioMiddleware, async (req, res) => {
     try {
         const { transaction_amount, description, email, nome, cpf, external_reference, dataHora, tipo, dadosCompletos, dadosAgendamento } = req.body;
 
@@ -1187,7 +1141,7 @@ app.post('/api/pagamento/pix', async (req, res) => {
         const firstName = nameParts[0] || 'Cliente';
         const lastName = nameParts.slice(1).join(' ') || 'Barbearia';
         const tipoFinal = tipo || (description && description.toLowerCase().includes('produto') ? 'produto' : (description && description.toLowerCase().includes('assinatura') ? 'plano' : 'agendamento'));
-        const dadosPayload = dadosCompletos || dadosAgendamento || {
+        let dadosPayload = dadosCompletos || dadosAgendamento || {
             nome: nome || 'Cliente',
             email: email || '',
             clienteNome: nome || 'Cliente',
@@ -1196,6 +1150,39 @@ app.post('/api/pagamento/pix', async (req, res) => {
             dataHora: dataHora || '',
             valorCobrado: Number(parseFloat(transaction_amount).toFixed(2))
         };
+
+        const uidAutenticado = req.authUser.uid || req.authUser.user_id;
+        dadosPayload = {
+            ...dadosPayload,
+            userId: uidAutenticado,
+            userEmail: req.authUser.email || email || ''
+        };
+
+        if (tipoFinal === 'produto') {
+            const produtoId = dadosPayload.produto?.id;
+            const quantidade = Number(dadosPayload.quantidade || 1);
+            if (!firebaseAdminFirestore || !produtoId || !Number.isInteger(quantidade) || quantidade < 1 || quantidade > 20) {
+                return res.status(400).json({ error: 'Produto ou quantidade inválida.' });
+            }
+            const produtoDoc = await firebaseAdminFirestore.collection('produtos').doc(String(produtoId)).get();
+            if (!produtoDoc.exists || produtoDoc.data().ativo === false) {
+                return res.status(404).json({ error: 'Produto indisponível.' });
+            }
+            const produtoServidor = produtoDoc.data();
+            if (Number(produtoServidor.estoque || 0) < quantidade) {
+                return res.status(409).json({ error: 'Estoque insuficiente.' });
+            }
+            const totalServidor = Number((Number(produtoServidor.preco || 0) * quantidade).toFixed(2));
+            if (Math.abs(Number(transaction_amount) - totalServidor) > 0.01) {
+                return res.status(400).json({ error: 'Valor da compra divergente do catálogo.' });
+            }
+            dadosPayload = {
+                ...dadosPayload,
+                produto: { id: produtoId, nome: produtoServidor.nome || 'Produto', preco: Number(produtoServidor.preco || 0), volumeUnidade: produtoServidor.volumeUnidade || '' },
+                quantidade,
+                totalPagar: totalServidor
+            };
+        }
 
         const metadataMp = {
             tipo: tipoFinal,
@@ -1244,6 +1231,7 @@ app.post('/api/pagamento/pix', async (req, res) => {
 
                 await firebaseAdminFirestore.collection('pagamentos_pendentes').doc(String(response.id)).set({
                     paymentId: String(response.id),
+                    userId: uidAutenticado,
                     tipo: tipoFinal,
                     dados: dadosPayload,
                     status: 'pendente',
@@ -1282,7 +1270,7 @@ app.post('/api/pagamento/pix', async (req, res) => {
 });
 
 // Endpoint to process Card (Credit or Debit) payment
-app.post('/api/pagamento/cartao', async (req, res) => {
+app.post('/api/pagamento/cartao', verificarUsuarioMiddleware, async (req, res) => {
     try {
         let { token, cardNumber, cardholderName, cardExpirationMonth, cardExpirationYear, securityCode, issuer_id, payment_method_id, transaction_amount, installments, description, email, cpf, tipoCartao, dataHora, tipo, dadosCompletos, dadosAgendamento } = req.body;
 
@@ -1307,7 +1295,7 @@ app.post('/api/pagamento/cartao', async (req, res) => {
         }
 
         const tipoFinal = tipo || (description && description.toLowerCase().includes('produto') ? 'produto' : (description && description.toLowerCase().includes('assinatura') ? 'plano' : 'agendamento'));
-        const dadosPayload = dadosCompletos || dadosAgendamento || {
+        let dadosPayload = dadosCompletos || dadosAgendamento || {
             nome: cardholderName || 'Cliente',
             email: email || '',
             clienteNome: cardholderName || 'Cliente',
@@ -1316,6 +1304,39 @@ app.post('/api/pagamento/cartao', async (req, res) => {
             dataHora: dataHora || '',
             valorCobrado: Number(parseFloat(transaction_amount).toFixed(2))
         };
+
+        const uidAutenticado = req.authUser.uid || req.authUser.user_id;
+        dadosPayload = {
+            ...dadosPayload,
+            userId: uidAutenticado,
+            userEmail: req.authUser.email || email || ''
+        };
+
+        if (tipoFinal === 'produto') {
+            const produtoId = dadosPayload.produto?.id;
+            const quantidade = Number(dadosPayload.quantidade || 1);
+            if (!firebaseAdminFirestore || !produtoId || !Number.isInteger(quantidade) || quantidade < 1 || quantidade > 20) {
+                return res.status(400).json({ error: 'Produto ou quantidade inválida.' });
+            }
+            const produtoDoc = await firebaseAdminFirestore.collection('produtos').doc(String(produtoId)).get();
+            if (!produtoDoc.exists || produtoDoc.data().ativo === false) {
+                return res.status(404).json({ error: 'Produto indisponível.' });
+            }
+            const produtoServidor = produtoDoc.data();
+            if (Number(produtoServidor.estoque || 0) < quantidade) {
+                return res.status(409).json({ error: 'Estoque insuficiente.' });
+            }
+            const totalServidor = Number((Number(produtoServidor.preco || 0) * quantidade).toFixed(2));
+            if (Math.abs(Number(transaction_amount) - totalServidor) > 0.01) {
+                return res.status(400).json({ error: 'Valor da compra divergente do catálogo.' });
+            }
+            dadosPayload = {
+                ...dadosPayload,
+                produto: { id: produtoId, nome: produtoServidor.nome || 'Produto', preco: Number(produtoServidor.preco || 0), volumeUnidade: produtoServidor.volumeUnidade || '' },
+                quantidade,
+                totalPagar: totalServidor
+            };
+        }
 
         const metadataMp = {
             tipo: tipoFinal,
@@ -1425,9 +1446,10 @@ app.post('/api/pagamento/cartao', async (req, res) => {
 
                 await firebaseAdminFirestore.collection('pagamentos_pendentes').doc(String(response.id)).set({
                     paymentId: String(response.id),
+                    userId: uidAutenticado,
                     tipo: tipoFinal,
                     dados: dadosPayload,
-                    status: response.status === 'approved' ? 'processado' : 'pendente',
+                    status: 'pendente',
                     criadoEm: agoraIso,
                     expiraEm: expiraEmDate,
                     metodo: isDebito ? 'cartao_debito' : 'cartao_credito'
@@ -1464,10 +1486,18 @@ app.post('/api/pagamento/cartao', async (req, res) => {
 });
 
 // Endpoint to check payment status in real-time
-app.get('/api/pagamento/status/:id', async (req, res) => {
+app.get('/api/pagamento/status/:id', verificarUsuarioMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         if (!id) return res.status(400).json({ error: 'ID do pagamento obrigatorio.' });
+
+        if (firebaseAdminFirestore && !req.ehAdmin) {
+            const pendente = await firebaseAdminFirestore.collection('pagamentos_pendentes').doc(String(id)).get();
+            const uid = req.authUser.uid || req.authUser.user_id;
+            if (!pendente.exists || pendente.data().userId !== uid) {
+                return res.status(403).json({ error: 'Pagamento não pertence ao usuário autenticado.' });
+            }
+        }
 
         if (!activeAccessToken || activeAccessToken === 'SEU_ACCESS_TOKEN_AQUI') {
             await carregarConfiguracoesMercadoPagoFirestore();
@@ -1860,6 +1890,153 @@ async function sincronizarEstornoNoFirestore(paymentId, amount = 0) {
     }
 }
 
+// Trava em Memória (Node.js Mutex) para Concorrência Zero entre Webhook e Poller
+const locksProcessamentoPagamento = new Set();
+
+// Débito Atômico ACID de Estoque e Registro de Venda no Servidor
+async function debitarEstoqueERegistrarVendaBackend(itemVenda, paymentId, metodoPagamento = 'pix_mercadopago', origem = 'loja_direta') {
+    if (!firebaseAdminFirestore) return { success: false, reason: 'no_db' };
+    const prodId = itemVenda.produtoId || itemVenda.id;
+    if (!prodId) return { success: false, reason: 'no_prod_id' };
+    const qtd = Number(itemVenda.quantidade || 1);
+    if (!Number.isInteger(qtd) || qtd < 1 || qtd > 20) {
+        return { success: false, reason: 'invalid_quantity' };
+    }
+    const cleanPaymentId = String(paymentId || 'manual').trim();
+    const compraDocId = `compra_${cleanPaymentId}_${prodId}`;
+
+    try {
+        const resultado = await firebaseAdminFirestore.runTransaction(async (transaction) => {
+            const prodRef = firebaseAdminFirestore.collection('produtos').doc(prodId);
+            const compraRef = firebaseAdminFirestore.collection('comprasProdutos').doc(compraDocId);
+
+            const [prodDoc, compraDoc] = await Promise.all([
+                transaction.get(prodRef),
+                transaction.get(compraRef)
+            ]);
+
+            // Idempotência por Document ID determinístico: se já foi gravada, não debita novamente!
+            if (compraDoc.exists) {
+                console.log(`[Estoque Backend] ℹ️ Compra ${compraDocId} já registrada anteriormente. Ignorando débito duplicado.`);
+                return { success: true, alreadyRecorded: true, compraId: compraDocId };
+            }
+
+            if (!prodDoc.exists || prodDoc.data().ativo === false) {
+                throw new Error('Produto indisponível.');
+            }
+            const produtoAtual = prodDoc.data();
+            const estAtual = Number(produtoAtual.estoque || 0);
+            if (estAtual < qtd) {
+                throw new Error('Estoque insuficiente.');
+            }
+            const novoEstoque = estAtual - qtd;
+            const precoCatalogo = Number(produtoAtual.preco || 0);
+            transaction.update(prodRef, {
+                estoque: novoEstoque,
+                atualizadoEm: new Date().toISOString()
+            });
+
+            // Grava o registro da compra atomicamente na mesma transação
+            transaction.set(compraRef, {
+                id: compraDocId,
+                userId: itemVenda.userId || '',
+                produtoId: prodId,
+                produtoNome: produtoAtual.nome || itemVenda.produtoNome || itemVenda.nome || 'Produto',
+                volumeUnidade: produtoAtual.volumeUnidade || itemVenda.volumeUnidade || '',
+                quantidade: qtd,
+                precoUnitario: precoCatalogo,
+                valorTotal: Number((precoCatalogo * qtd).toFixed(2)),
+                clienteNome: itemVenda.clienteNome || itemVenda.nome || 'Cliente',
+                clienteTelefone: itemVenda.clienteTelefone || itemVenda.telefone || '',
+                clienteEmail: itemVenda.clienteEmail || itemVenda.email || '',
+                origemVenda: origem,
+                agendamentoDataHora: itemVenda.agendamentoDataHora || '',
+                paymentId: cleanPaymentId,
+                status: 'pago',
+                metodoPagamento: metodoPagamento || 'pix_mercadopago',
+                criadoEm: new Date().toISOString()
+            });
+
+            return { success: true, novoEstoque, compraId: compraDocId };
+        });
+
+        console.log(`[Estoque Backend] ✅ Transação ACID concluída: Produto ${prodId} (Qtd: ${qtd}) -> Compra ${compraDocId}`);
+        return resultado;
+    } catch (e) {
+        console.error(`[Estoque Backend] ❌ Erro na transação ACID de produto ${prodId}:`, e.message);
+        return { success: false, error: e.message };
+    }
+}
+
+app.post('/api/produtos/restaurar-agendamento', verificarUsuarioMiddleware, async (req, res) => {
+    try {
+        const agendamentoId = String(req.body?.agendamentoId || '').trim();
+        if (!agendamentoId || !firebaseAdminFirestore) {
+            return res.status(400).json({ success: false, error: 'Agendamento inválido.' });
+        }
+        const agSnap = await firebaseAdminFirestore.collection('agendamentos').doc(agendamentoId).get();
+        if (!agSnap.exists) {
+            return res.status(404).json({ success: false, error: 'Agendamento não encontrado.' });
+        }
+        const ag = agSnap.data();
+        const uid = req.authUser.uid || req.authUser.user_id;
+        if (!req.ehAdmin && ag.userId !== uid) {
+            return res.status(403).json({ success: false, error: 'Agendamento não pertence ao usuário.' });
+        }
+
+        const compras = await firebaseAdminFirestore.collection('comprasProdutos')
+            .where('paymentId', '==', agendamentoId)
+            .get();
+        let restaurados = 0;
+        for (const compraDoc of compras.docs) {
+            await firebaseAdminFirestore.runTransaction(async transaction => {
+                const compraRef = compraDoc.ref;
+                const compraAtual = await transaction.get(compraRef);
+                if (!compraAtual.exists || compraAtual.data().estoqueRestauradoEm) return;
+                const compra = compraAtual.data();
+                const produtoRef = firebaseAdminFirestore.collection('produtos').doc(String(compra.produtoId || ''));
+                const produtoAtual = await transaction.get(produtoRef);
+                if (produtoAtual.exists) {
+                    transaction.update(produtoRef, {
+                        estoque: Number(produtoAtual.data().estoque || 0) + Number(compra.quantidade || 0),
+                        atualizadoEm: new Date().toISOString()
+                    });
+                }
+                transaction.update(compraRef, {
+                    status: 'estornado',
+                    estoqueRestauradoEm: new Date().toISOString()
+                });
+                restaurados++;
+            });
+        }
+        return res.json({ success: true, restaurados });
+    } catch (err) {
+        console.error('[Restaurar Produtos Agendamento] Erro:', err.message);
+        return res.status(500).json({ success: false, error: 'Erro ao restaurar estoque.' });
+    }
+});
+
+// Devolução Atômica de Estoque no Servidor (Cancelamento / Estorno)
+async function restaurarEstoqueProdutoBackend(prodId, qtd) {
+    if (!firebaseAdminFirestore || !prodId || qtd <= 0) return;
+    try {
+        await firebaseAdminFirestore.runTransaction(async (transaction) => {
+            const prodRef = firebaseAdminFirestore.collection('produtos').doc(prodId);
+            const prodDoc = await transaction.get(prodRef);
+            if (prodDoc.exists) {
+                const estAtual = Number(prodDoc.data().estoque || 0);
+                transaction.update(prodRef, {
+                    estoque: estAtual + Number(qtd),
+                    atualizadoEm: new Date().toISOString()
+                });
+            }
+        });
+        console.log(`[Estoque Backend] ✅ ${qtd} unidade(s) restaurada(s) atomicamente para o produto ${prodId}.`);
+    } catch (e) {
+        console.warn(`[Estoque Backend] Aviso ao restaurar estoque:`, e.message);
+    }
+}
+
 // Processamento Centralizado e Idempotente de Pagamentos no Servidor (Background / Webhook)
 async function processarConclusaoPagamentoServidor(paymentId, mpPaymentData = null, metodoPagamento = 'pix_mercadopago') {
     const cleanId = String(paymentId).trim();
@@ -1868,27 +2045,76 @@ async function processarConclusaoPagamentoServidor(paymentId, mpPaymentData = nu
         return { success: false, reason: 'no_db_or_id' };
     }
 
-    try {
-        console.log(`[Pagamento Servidor] 🔄 Processando conclusão em background para paymentId: ${cleanId}...`);
+    // Camada 1: Mutex em memória do Node.js (bloqueia 2 chamadas simultâneas de Webhook/Poller na mesma instância)
+    if (locksProcessamentoPagamento.has(cleanId)) {
+        console.log(`[Pagamento Servidor] 🔒 Pagamento ${cleanId} já está sendo processado ativamente por outra thread concorrente. Ignorando chamada redundante.`);
+        return { success: true, alreadyProcessing: true };
+    }
+    locksProcessamentoPagamento.add(cleanId);
 
-        // 1. Busca registro na coleção pagamentos_pendentes
+    try {
+        console.log(`[Pagamento Servidor] 🔄 Iniciando processamento atômico para paymentId: ${cleanId}...`);
+
         const pendenteRef = firebaseAdminFirestore.collection('pagamentos_pendentes').doc(cleanId);
-        const pendenteSnap = await pendenteRef.get();
         
-        let pendenteData = null;
-        if (pendenteSnap.exists) {
-            pendenteData = pendenteSnap.data();
-            if (pendenteData.status === 'processado') {
-                console.log(`[Pagamento Servidor] ℹ️ Pagamento ${cleanId} já foi processado anteriormente.`);
+        // Camada 2: Transição de Estados Atômica ACID no Firestore (pendente -> processando)
+        let autorizacao = null;
+        try {
+            autorizacao = await firebaseAdminFirestore.runTransaction(async (transaction) => {
+                const pendenteDoc = await transaction.get(pendenteRef);
+                const agoraMs = Date.now();
+
+                let pData = pendenteDoc.exists ? pendenteDoc.data() : null;
+
+                if (pData) {
+                    if (pData.status === 'processado') {
+                        return { podeExecutar: false, reason: 'already_processed', dados: pData.dados, tipo: pData.tipo };
+                    }
+                    if (pData.status === 'conflito_horario') {
+                        return { podeExecutar: false, reason: 'schedule_conflict', dados: pData.dados, tipo: pData.tipo };
+                    }
+                    if (pData.status === 'processando') {
+                        const iniciadoEm = pData.processandoIniciadoEm ? new Date(pData.processandoIniciadoEm).getTime() : 0;
+                        // Lock válido por 60 segundos contra travamentos/crashes
+                        if (agoraMs - iniciadoEm < 60000) {
+                            return { podeExecutar: false, reason: 'already_processing', dados: pData.dados, tipo: pData.tipo };
+                        }
+                    }
+                }
+
+                // Marca atomicamente como "processando"
+                transaction.set(pendenteRef, {
+                    status: 'processando',
+                    processandoIniciadoEm: new Date().toISOString(),
+                    metodoPagamento: metodoPagamento,
+                    atualizadoEm: new Date().toISOString()
+                }, { merge: true });
+
+                return { podeExecutar: true, dados: pData?.dados || null, tipo: pData?.tipo || null };
+            });
+        } catch (eTxPendente) {
+            console.warn('[Pagamento Servidor] Aviso ao obter lock de transação:', eTxPendente.message);
+            // Fallback defensivo
+            const snap = await pendenteRef.get();
+            if (snap.exists && snap.data().status === 'processado') {
                 return { success: true, alreadyProcessed: true };
             }
+            autorizacao = { podeExecutar: true, dados: snap.exists ? snap.data().dados : null, tipo: snap.exists ? snap.data().tipo : null };
         }
 
-        // Defesa em profundidade: se pagamentos_pendentes não existir, reconstrói a partir do metadata retornado pela API do Mercado Pago
+        if (!autorizacao || !autorizacao.podeExecutar) {
+            console.log(`[Pagamento Servidor] ℹ️ Pagamento ${cleanId} não deve ser reprocessado (${autorizacao?.reason}).`);
+            if (autorizacao?.reason === 'schedule_conflict') {
+                return { success: false, reason: 'schedule_conflict', requiresManualResolution: true };
+            }
+            return { success: true, alreadyProcessed: true };
+        }
+
+        // Defesa em profundidade: se pagamentos_pendentes não possuir dados completos, reconstrói a partir do metadata do Mercado Pago
         const meta = mpPaymentData?.metadata || {};
-        const tipo = pendenteData?.tipo || meta.tipo || (mpPaymentData?.description?.toLowerCase().includes('produto') ? 'produto' : (mpPaymentData?.description?.toLowerCase().includes('assinatura') ? 'plano' : 'agendamento'));
+        const tipo = autorizacao.tipo || meta.tipo || (mpPaymentData?.description?.toLowerCase().includes('produto') ? 'produto' : (mpPaymentData?.description?.toLowerCase().includes('assinatura') ? 'plano' : 'agendamento'));
         
-        let dados = pendenteData?.dados;
+        let dados = autorizacao.dados;
         if (!dados && Object.keys(meta).length > 0) {
             console.log(`[Pagamento Servidor] 🛡️ Reconstruindo dados completos do agendamento a partir do metadata do Mercado Pago para ${cleanId}`);
             dados = {
@@ -1921,9 +2147,7 @@ async function processarConclusaoPagamentoServidor(paymentId, mpPaymentData = nu
             // Checagem de Idempotência em agendamentos
             if (agDocSnap.exists && agDocSnap.data().status === 'confirmado') {
                 console.log(`[Pagamento Servidor] ℹ️ Agendamento ${cleanId} já está confirmado.`);
-                if (pendenteSnap.exists) {
-                    await pendenteRef.set({ status: 'processado', processadoEm: new Date().toISOString() }, { merge: true });
-                }
+                await pendenteRef.set({ status: 'processado', processadoEm: new Date().toISOString() }, { merge: true });
                 return { success: true, alreadyProcessed: true };
             }
 
@@ -1945,42 +2169,6 @@ async function processarConclusaoPagamentoServidor(paymentId, mpPaymentData = nu
             const uidFinal = userId || 'cliente_anonimo';
             const nomeFinal = clienteNome || dados.nome || 'Cliente';
             const telFinal = clienteTelefone || dados.telefone || '';
-
-            // Debita estoque de produtos adicionais, se houver
-            if (listaProdutosAg.length > 0) {
-                for (const p of listaProdutosAg) {
-                    if (p.id && p.quantidade > 0) {
-                        try {
-                            const prodRef = firebaseAdminFirestore.collection('produtos').doc(p.id);
-                            const pSnap = await prodRef.get();
-                            if (pSnap.exists) {
-                                const estAtual = Number(pSnap.data().estoque || 0);
-                                const novoEst = Math.max(0, estAtual - p.quantidade);
-                                await prodRef.update({ estoque: novoEst, atualizadoEm: new Date().toISOString() });
-
-                                await firebaseAdminFirestore.collection('comprasProdutos').add({
-                                    produtoId: p.id,
-                                    produtoNome: p.nome || '',
-                                    quantidade: Number(p.quantidade || 1),
-                                    precoUnitario: Number(p.preco || 0),
-                                    valorTotal: Number(p.preco || 0) * Number(p.quantidade || 1),
-                                    clienteNome: nomeFinal,
-                                    clienteTelefone: telFinal,
-                                    clienteEmail: userEmail || `${telFinal.replace(/\D/g, '')}@cliente.emaus`,
-                                    origemVenda: 'carrinho_agendamento',
-                                    agendamentoDataHora: dataHoraCompleta,
-                                    paymentId: cleanId,
-                                    status: 'pago',
-                                    metodoPagamento: metodoPagamento,
-                                    criadoEm: new Date().toISOString()
-                                });
-                            }
-                        } catch (errEst) {
-                            console.warn('[Pagamento Servidor] Aviso ao debitar estoque no agendamento:', errEst.message);
-                        }
-                    }
-                }
-            }
 
             // Grava ou atualiza documento em agendamentos usando cleanId como Document ID
             const novoAgendamento = {
@@ -2010,8 +2198,74 @@ async function processarConclusaoPagamentoServidor(paymentId, mpPaymentData = nu
                 confirmadoPeloServidor: true
             };
 
-            await agDocRef.set(novoAgendamento, { merge: true });
-            console.log(`[Pagamento Servidor] ✅ Agendamento confirmado com sucesso para ${nomeFinal} (${dataHoraCompleta})!`);
+            const slotId = `slot_${dataHoraCompleta}_${barbeiroId || 'principal'}`;
+            try {
+                await firebaseAdminFirestore.runTransaction(async (t) => {
+                    const slotRef = firebaseAdminFirestore.collection('slots_agendamentos').doc(slotId);
+                    const slotDoc = await t.get(slotRef);
+                    if (slotDoc.exists) {
+                        const sData = slotDoc.data();
+                        const pertenceAoMesmoPagamento = String(sData.paymentId || '') === cleanId;
+                        if (!pertenceAoMesmoPagamento && (sData.status === 'confirmado' || sData.status === 'pendente' || sData.status === 'pendente_pagamento')) {
+                            const erroConflito = new Error('HORARIO_JA_RESERVADO');
+                            erroConflito.code = 'HORARIO_JA_RESERVADO';
+                            throw erroConflito;
+                        }
+                    }
+
+                    t.set(slotRef, {
+                        slotId: slotId,
+                        dataHora: dataHoraCompleta,
+                        barbeiroId: barbeiroId || 'principal',
+                        barbeiroNome: barbeiroNome || 'Barbearia EMAÚS',
+                        userId: uidFinal,
+                        cliente: nomeFinal,
+                        telefone: telFinal,
+                        status: 'confirmado',
+                        paymentId: cleanId,
+                        atualizadoEm: new Date().toISOString()
+                    }, { merge: true });
+
+                    t.set(agDocRef, {
+                        ...novoAgendamento,
+                        slotId: slotId
+                    }, { merge: true });
+                });
+                console.log(`[Pagamento Servidor] ✅ Agendamento e Slot ${slotId} confirmados atomicamente para ${nomeFinal}!`);
+            } catch (eTx) {
+                console.warn('[Backend Slot Transaction]:', eTx.message);
+                if (eTx.code === 'HORARIO_JA_RESERVADO' || eTx.message === 'HORARIO_JA_RESERVADO') {
+                    await pendenteRef.set({
+                        status: 'conflito_horario',
+                        conflitoHorarioEm: new Date().toISOString(),
+                        conflitoDataHora: dataHoraCompleta,
+                        conflitoSlotId: slotId,
+                        requerResolucaoManual: true
+                    }, { merge: true });
+                }
+                // Nunca confirmar fora da transação: isso reabriria a condição de corrida.
+                throw eTx;
+            }
+
+            // Debita estoque de produtos adicionais com transação ACID e ID determinístico
+            if (listaProdutosAg.length > 0) {
+                for (const p of listaProdutosAg) {
+                    if (p.id && p.quantidade > 0) {
+                        await debitarEstoqueERegistrarVendaBackend({
+                            produtoId: p.id,
+                            produtoNome: p.nome || '',
+                            volumeUnidade: p.volumeUnidade || '',
+                            quantidade: Number(p.quantidade || 1),
+                            precoUnitario: Number(p.preco || 0),
+                            valorTotal: Number(p.preco || 0) * Number(p.quantidade || 1),
+                            clienteNome: nomeFinal,
+                            clienteTelefone: telFinal,
+                            clienteEmail: userEmail || `${telFinal.replace(/\D/g, '')}@cliente.emaus`,
+                            agendamentoDataHora: dataHoraCompleta
+                        }, cleanId, metodoPagamento, 'carrinho_agendamento');
+                    }
+                }
+            }
 
             // Debita fidelidade se aplicável
             if (isFidelidade && userId) {
@@ -2130,29 +2384,39 @@ async function processarConclusaoPagamentoServidor(paymentId, mpPaymentData = nu
                 atualizadoEm: new Date().toISOString()
             });
 
-            console.log(`[Pagamento Servidor] ✅ Assinatura VIP ativada com sucesso para ${nomeFinal}!`);
+            await sincronizarAssinaturaNoCRM(uidFinal, {
+                userId: uidFinal,
+                cliente: nomeFinal,
+                telefone: telFinal,
+                userEmail,
+                nomePlano: plano?.nome || 'Plano Mensal VIP',
+                dataFim: dataFim.toISOString(),
+                status: 'ativo'
+            });
+
+            console.log(`[Pagamento Servidor] ✅ Assinatura Mensal ativada com sucesso para ${nomeFinal}!`);
 
             try {
                 const numBarbeiro = await resolverNumeroBarbeiro();
                 if (numBarbeiro) {
-                    const msgBarbeiro = `*EMAÚS Barbearia - Nova Assinatura VIP!* 👑\n\n` +
+                    const msgBarbeiro = `*EMAÚS Barbearia - Nova Assinatura Mensal!* ✂️\n\n` +
                         `Temos um novo cliente mensalista cadastrado:\n\n` +
                         `• *Cliente:* ${nomeFinal}\n` +
                         `• *Telefone:* ${telFinal || 'Não informado'}\n` +
-                        `• *Plano:* ${plano?.nome || 'Pacote Mensal'}\n` +
+                        `• *Plano:* ${plano?.nome || 'Plano Mensal'}\n` +
                         `• *Valor Pago:* R$ ${Number(plano?.preco || 0).toFixed(2)}\n` +
                         `• *Validade:* 30 dias (4 atendimentos)`;
                     await enviarMensagemWhatsApp(numBarbeiro, msgBarbeiro);
                 }
                 if (telFinal) {
-                    const msgCliente = `*EMAÚS Barbearia - Assinatura VIP Confirmada!* 👑\n\n` +
-                        `Parabéns, *${nomeFinal}*! Sua assinatura do plano *${plano?.nome || 'Mensal VIP'}* foi ativada com sucesso.\n\n` +
+                    const msgCliente = `*EMAÚS Barbearia - Assinatura Mensal Confirmada!* ✂️\n\n` +
+                        `Parabéns, *${nomeFinal}*! Sua assinatura do plano *${plano?.nome || 'Plano Mensal'}* foi ativada com sucesso.\n\n` +
                         `• *Duração:* 30 dias\n` +
                         `• *Benefício:* 4 cortes (1 corte exclusivo por semana)\n` +
                         `• *Seu corte da Semana 1 já está disponível para agendamento gratuito!*\n\n` +
                         `Agende seus atendimentos diretamente no nosso site:\n` +
                         `👉 ${APP_SITE_URL}\n\n` +
-                        `_EMAÚS Barbearia • Estilo e Alta Performance_`;
+                        `_EMAÚS Barbearia • Estilo e Tradição_`;
                     await enviarMensagemWhatsApp(telFinal, msgCliente);
                 }
             } catch (errZap) {
@@ -2160,48 +2424,24 @@ async function processarConclusaoPagamentoServidor(paymentId, mpPaymentData = nu
             }
 
         } else if (tipo === 'produto') {
-            const { produto, quantidade, totalPagar, nome, telefone, emailComprador } = dados;
+            const { produto, quantidade, totalPagar, nome, telefone, emailComprador, userId } = dados;
             const qtd = Number(quantidade || 1);
             const total = Number(totalPagar || (Number(produto?.preco || 0) * qtd));
 
-            // Checagem de idempotência
-            const jaExisteProdSnap = await firebaseAdminFirestore.collection('comprasProdutos')
-                .where('paymentId', '==', cleanId)
-                .limit(1)
-                .get();
+            const resVenda = await debitarEstoqueERegistrarVendaBackend({
+                produtoId: produto?.id || '',
+                userId: userId || '',
+                produtoNome: produto?.nome || 'Produto',
+                volumeUnidade: produto?.volumeUnidade || '',
+                quantidade: qtd,
+                precoUnitario: Number(produto?.preco || 0),
+                valorTotal: total,
+                clienteNome: nome || 'Cliente',
+                clienteTelefone: telefone || '',
+                clienteEmail: emailComprador || ''
+            }, cleanId, metodoPagamento, 'loja_direta');
 
-            if (jaExisteProdSnap.empty) {
-                if (produto?.id) {
-                    try {
-                        const prodRef = firebaseAdminFirestore.collection('produtos').doc(produto.id);
-                        const pSnap = await prodRef.get();
-                        if (pSnap.exists) {
-                            const estAtual = Number(pSnap.data().estoque || 0);
-                            const novoEst = Math.max(0, estAtual - qtd);
-                            await prodRef.update({ estoque: novoEst, atualizadoEm: new Date().toISOString() });
-                        }
-                    } catch (errEst) {
-                        console.warn('[Pagamento Servidor] Aviso ao atualizar estoque de produto:', errEst.message);
-                    }
-                }
-
-                await firebaseAdminFirestore.collection('comprasProdutos').add({
-                    produtoId: produto?.id || '',
-                    produtoNome: produto?.nome || 'Produto',
-                    volumeUnidade: produto?.volumeUnidade || '',
-                    quantidade: qtd,
-                    precoUnitario: Number(produto?.preco || 0),
-                    valorTotal: total,
-                    clienteNome: nome || 'Cliente',
-                    clienteTelefone: telefone || '',
-                    clienteEmail: emailComprador || '',
-                    paymentId: cleanId,
-                    status: 'pago',
-                    metodoPagamento: metodoPagamento,
-                    criadoEm: new Date().toISOString()
-                });
-                console.log(`[Pagamento Servidor] ✅ Compra de produto gravada com sucesso para ${nome}!`);
-
+            if (resVenda.success && !resVenda.alreadyRecorded) {
                 try {
                     const numBarbeiro = await resolverNumeroBarbeiro();
                     if (numBarbeiro) {
@@ -2229,19 +2469,20 @@ async function processarConclusaoPagamentoServidor(paymentId, mpPaymentData = nu
             }
         }
 
-        // 3. Atualiza o status em pagamentos_pendentes para processado
-        if (pendenteSnap.exists) {
-            await pendenteRef.set({
-                status: 'processado',
-                processadoEm: new Date().toISOString()
-            }, { merge: true });
-        }
+        // 3. Transição final de estado: Marca como "processado" em pagamentos_pendentes
+        await pendenteRef.set({
+            status: 'processado',
+            processadoEm: new Date().toISOString()
+        }, { merge: true });
 
+        console.log(`[Pagamento Servidor] 🏁 Pagamento ${cleanId} concluído e transicionado para 'processado' com sucesso!`);
         return { success: true, processed: true };
 
     } catch (errGeral) {
         console.error(`[Pagamento Servidor] ❌ Erro ao processar conclusão para ${cleanId}:`, errGeral);
         return { success: false, error: errGeral.message };
+    } finally {
+        locksProcessamentoPagamento.delete(cleanId);
     }
 }
 
@@ -2347,14 +2588,16 @@ app.post('/api/webhook', async (req, res) => {
     }
 });
 
-// Auto-limpeza periódica de pagamentos e agendamentos pendentes vencidos (a cada 3 minutos)
-setInterval(async () => {
+// ==========================================
+// ROTINA CENTRALIZADA E ÚNICA DE AUTO-LIMPEZA (A CADA 3 MINUTOS)
+// ==========================================
+async function executarAutoLimpezaPendenciasVencidas() {
     if (!firebaseAdminFirestore) return;
     try {
         const agoraMillis = Date.now();
         const limiteVencimentoMillis = agoraMillis - 3 * 60 * 1000; // 3 minutos atrás
 
-        // 1. Limpa pagamentos_pendentes vencidos
+        // 1. Limpa pagamentos_pendentes vencidos com conciliação de segurança
         const pendentesSnap = await firebaseAdminFirestore.collection('pagamentos_pendentes')
             .where('status', '==', 'pendente')
             .limit(50)
@@ -2362,8 +2605,10 @@ setInterval(async () => {
 
         if (!pendentesSnap.empty) {
             let expiradosQtd = 0;
+            let reconciliadosQtd = 0;
             for (const docP of pendentesSnap.docs) {
                 const dados = docP.data();
+                const pId = dados.paymentId || docP.id;
                 let criadoEmMillis = 0;
                 if (dados.criadoEm) {
                     if (typeof dados.criadoEm.toMillis === 'function') criadoEmMillis = dados.criadoEm.toMillis();
@@ -2379,16 +2624,35 @@ setInterval(async () => {
 
                 const jaVenceu = expiraEmMillis ? (agoraMillis > expiraEmMillis) : (criadoEmMillis > 0 && criadoEmMillis <= limiteVencimentoMillis);
                 if (jaVenceu) {
-                    await docP.ref.set({ status: 'expirado', expiradoEm: new Date().toISOString() }, { merge: true });
-                    expiradosQtd++;
+                    // Conciliação de Segurança: Checa status no Mercado Pago caso o Webhook tenha falhado
+                    let aprovadoNoMP = false;
+                    if (paymentClient && activeAccessToken && activeAccessToken !== 'SEU_ACCESS_TOKEN_AQUI' && activeAccessToken !== 'DUMMY_TOKEN' && pId) {
+                        try {
+                            const mpRes = await paymentClient.get({ id: pId });
+                            if (mpRes && mpRes.status === 'approved') {
+                                console.log(`[Reconciliação 3m] ⚡ Pagamento ${pId} detectado como APROVADO no Mercado Pago! Concluindo...`);
+                                await processarConclusaoPagamentoServidor(pId, mpRes, dados.metodo || 'pix_mercadopago');
+                                aprovadoNoMP = true;
+                                reconciliadosQtd++;
+                            }
+                        } catch (eCheck) {}
+                    }
+
+                    if (!aprovadoNoMP) {
+                        await docP.ref.set({ status: 'expirado', expiradoEm: new Date().toISOString() }, { merge: true });
+                        expiradosQtd++;
+                    }
                 }
+            }
+            if (reconciliadosQtd > 0) {
+                console.log(`[Auto-Limpeza / Conciliação] ✅ Reconciliados ${reconciliadosQtd} pagamento(s) aprovado(s).`);
             }
             if (expiradosQtd > 0) {
                 console.log(`[Auto-Limpeza] 🧹 Expirando ${expiradosQtd} pagamento(s) pendente(s) vencido(s)...`);
             }
         }
 
-        // 2. Limpa agendamentos pendentes órfãos na grade
+        // 2. Limpa agendamentos pendentes órfãos na grade e LIBERA os slots
         const agPendentesSnap = await firebaseAdminFirestore.collection('agendamentos')
             .where('status', '==', 'pendente')
             .limit(50)
@@ -2413,18 +2677,31 @@ setInterval(async () => {
 
                 const jaVenceu = expiraEmMillis ? (agoraMillis > expiraEmMillis) : (criadoEmMillis > 0 && criadoEmMillis <= limiteVencimentoMillis);
                 if (jaVenceu) {
-                    await docAg.ref.set({ status: 'cancelado', motivoCancelamento: 'Expirado por falta de pagamento (3 min)', atualizadoEm: new Date().toISOString() }, { merge: true });
+                    await docAg.ref.set({
+                        status: 'cancelado',
+                        motivoCancelamento: 'Expirado por falta de pagamento (3 min)',
+                        atualizadoEm: new Date().toISOString()
+                    }, { merge: true });
+
+                    // Libera o slot atômico correspondente na grade
+                    const slotId = dados.slotId || `slot_${dados.dataHora}_${dados.barbeiroId || 'principal'}`;
+                    try {
+                        await firebaseAdminFirestore.collection('slots_agendamentos').doc(slotId).delete();
+                    } catch (eSlot) {}
+
                     agExpiradosQtd++;
                 }
             }
             if (agExpiradosQtd > 0) {
-                console.log(`[Auto-Limpeza] 🧹 Expirando ${agExpiradosQtd} agendamento(s) pendente(s) órfão(s)...`);
+                console.log(`[Auto-Limpeza] 🧹 Expirando ${agExpiradosQtd} agendamento(s) pendente(s) e liberando slots...`);
             }
         }
     } catch (eClean) {
         console.warn('[Auto-Limpeza Erro]:', eClean.message);
     }
-}, 3 * 60 * 1000);
+}
+
+setInterval(executarAutoLimpezaPendenciasVencidas, 3 * 60 * 1000);
 
 // ==========================================
 // ROTAS DE AUTOMAÇÃO DO WHATSAPP (BOT)
@@ -2551,8 +2828,12 @@ app.post('/api/whatsapp/notificar-agendamento', verificarInternalKeyMiddleware, 
         } = req.body;
 
         const dataFormatada = dataHora ? dataHora.replace('T', ' às ') : 'Data a confirmar';
-        const numBarbeiroEspecifico = await resolverNumeroBarbeiro(barbeiroWhatsapp);
-        const numBarbeiroGeral = await resolverNumeroBarbeiro(whatsappBarbeiro);
+        const numBarbeiroEspecifico = barbeiroWhatsapp
+            ? await resolverNumeroBarbeiro(barbeiroWhatsapp)
+            : null;
+        const numBarbeiroGeral = numBarbeiroEspecifico
+            ? null
+            : await resolverNumeroBarbeiro(whatsappBarbeiro);
         const numBarbeiroDestino = numBarbeiroEspecifico || numBarbeiroGeral;
 
         const precoTotal = Number(preco || 0);
@@ -2573,8 +2854,8 @@ app.post('/api/whatsapp/notificar-agendamento', verificarInternalKeyMiddleware, 
             let restanteBarbeiroTexto = `R$ ${valorRestante.toFixed(2)}`;
 
             if (isPlano) {
-                tipoPagtoTexto = `Assinatura VIP (Semana ${semanaPlano || '1'})`;
-                restanteBarbeiroTexto = "R$ 0,00 (Plano VIP - Isento)";
+                tipoPagtoTexto = `Assinatura Mensal (Semana ${semanaPlano || '1'})`;
+                restanteBarbeiroTexto = "R$ 0,00 (Plano Mensal - Incluso)";
             } else if (modalidade === 'total' || valorRestante === 0) {
                 tipoPagtoTexto = `Valor Integral Pago Online (R$ ${valorPago.toFixed(2)})`;
                 restanteBarbeiroTexto = "R$ 0,00 (Totalmente Quitado)";
@@ -2601,7 +2882,7 @@ app.post('/api/whatsapp/notificar-agendamento', verificarInternalKeyMiddleware, 
         if (telefone) {
             let saldoClienteTexto = "";
             if (isPlano) {
-                saldoClienteTexto = `• *Plano VIP:* Corte incluso no pacote (R$ 0,00 restante)\n`;
+                saldoClienteTexto = `• *Plano Mensal:* Corte incluso no pacote (R$ 0,00 restante)\n`;
             } else if (modalidade === 'total' || valorRestante === 0) {
                 saldoClienteTexto = `• *Pagamento:* Totalmente Quitado Online (R$ 0,00 restante)\n`;
             } else {
@@ -2637,7 +2918,7 @@ app.post('/api/whatsapp/notificar-agendamento', verificarInternalKeyMiddleware, 
     }
 });
 
-// Notificação de aviso de expiração de corte semanal para assinantes VIP
+// Notificação de aviso de expiração de corte semanal para assinantes do plano mensal
 app.post('/api/whatsapp/lembrete-expiracao-plano', verificarAdminMiddleware, async (req, res) => {
     try {
         const { cliente, telefone, nomePlano, semanaNumero, diasRestantesSemana, dataLimiteSemana } = req.body;
@@ -2645,13 +2926,13 @@ app.post('/api/whatsapp/lembrete-expiracao-plano', verificarAdminMiddleware, asy
             return res.status(400).json({ success: false, error: 'Telefone do cliente é obrigatório.' });
         }
 
-        const msgLembrete = `*EMAÚS Barbearia - Aviso de Crédito VIP*\n\n` +
-            `Olá, *${cliente || 'Cliente'}*! 👑\n\n` +
-            `Identificamos que você possui *1 atendimento disponível* da *Semana ${semanaNumero || 'atual'}* no seu plano *${nomePlano || 'Mensal VIP'}*.\n\n` +
+        const msgLembrete = `*EMAÚS Barbearia - Aviso de Corte Mensal*\n\n` +
+            `Olá, *${cliente || 'Cliente'}*! ✂️\n\n` +
+            `Identificamos que você possui *1 atendimento disponível* da *Semana ${semanaNumero || 'atual'}* no seu plano *${nomePlano || 'Plano Mensal'}*.\n\n` +
             `⚠️ *Atenção:* O crédito desta semana expira em *${dataLimiteSemana || 'breve'}* (${diasRestantesSemana || 'poucos'} dias restantes) e não acumula para a próxima semana.\n\n` +
             `Agende seu horário agora mesmo pelo nosso site para garantir o seu atendimento:\n` +
             `👉 ${APP_SITE_URL}\n\n` +
-            `_EMAÚS Barbearia • Estilo e Alta Performance_`;
+            `_EMAÚS Barbearia • Estilo e Tradição_`;
 
         const resultado = await enviarMensagemWhatsApp(telefone, msgLembrete);
         return res.json({ success: true, resultado });
@@ -2676,9 +2957,9 @@ app.post('/api/whatsapp/disparar-lembretes-expiracao-lote', verificarAdminMiddle
         let enviadosCount = 0;
         for (const item of lista) {
             if (!item.telefone) continue;
-            const msgLembrete = `*EMAÚS Barbearia - Aviso de Crédito VIP*\n\n` +
-                `Olá, *${item.cliente || 'Cliente'}*! 👑\n\n` +
-                `Lembramos que o seu corte da *Semana ${item.semanaNumero || 'atual'}* do plano *${item.nomePlano || 'Mensal VIP'}* está *disponível* e expira em *${item.dataLimiteSemana || 'breve'}*.\n\n` +
+            const msgLembrete = `*EMAÚS Barbearia - Aviso de Corte Mensal*\n\n` +
+                `Olá, *${item.cliente || 'Cliente'}*! ✂️\n\n` +
+                `Lembramos que o seu corte da *Semana ${item.semanaNumero || 'atual'}* do plano *${item.nomePlano || 'Plano Mensal'}* está *disponível* e expira em *${item.dataLimiteSemana || 'breve'}*.\n\n` +
                 `Garanta o seu horário no link abaixo para não perder seu crédito semanal:\n` +
                 `👉 ${APP_SITE_URL}\n\n` +
                 `_EMAÚS Barbearia_`;
@@ -2719,10 +3000,22 @@ app.post('/api/whatsapp/notificar-cancelamento', verificarInternalKeyMiddleware,
         const dataFormatada = dataHora ? dataHora.replace('T', ' às ') : 'Data não informada';
         const numBarbeiro = await resolverNumeroBarbeiro(whatsappBarbeiro);
 
+        // Libera o slot no banco para liberar a grade imediatamente
+        if (firebaseAdminFirestore && dataHora) {
+            try {
+                const bId = req.body.barbeiroId || 'principal';
+                const slotId = `slot_${dataHora}_${bId}`;
+                await firebaseAdminFirestore.collection('slots_agendamentos').doc(slotId).delete();
+                console.log(`[Backend Slot Release] ✅ Slot ${slotId} liberado com sucesso após cancelamento.`);
+            } catch (eSlot) {
+                console.warn('[Backend Slot Release]:', eSlot.message);
+            }
+        }
+
         // 1. Mensagem para o Barbeiro
         let statusEstornoTexto = "Sem estorno (Cancelamento fora do prazo de 3h)";
         if (isPlano) {
-            statusEstornoTexto = "Plano VIP (Crédito semanal restaurado)";
+            statusEstornoTexto = "Plano Mensal (Crédito semanal restaurado)";
         } else if (estornoRealizado) {
             statusEstornoTexto = `Estorno de R$ ${Number(valorEstornado || 0).toFixed(2)} efetuado via Mercado Pago`;
         }
@@ -2748,7 +3041,7 @@ app.post('/api/whatsapp/notificar-cancelamento', verificarInternalKeyMiddleware,
                 `Informamos que o seu agendamento para *${servico || 'Corte'}* marcado para *${dataFormatada}* foi cancelado.\n\n`;
 
             if (isPlano) {
-                msgCliente += `👑 *Plano VIP:* O crédito do seu corte semanal já está disponível para você reagendar quando desejar.\n\n`;
+                msgCliente += `✂️ *Plano Mensal:* O crédito do seu corte semanal já está disponível para você reagendar quando desejar.\n\n`;
             } else if (estornoRealizado) {
                 msgCliente += `💸 *Estorno:* A devolução de R$ ${Number(valorEstornado || 0).toFixed(2)} foi processada com sucesso.\n\n`;
             }
@@ -2767,18 +3060,18 @@ app.post('/api/whatsapp/notificar-cancelamento', verificarInternalKeyMiddleware,
     }
 });
 
-// Notificação Instantânea de Compra de Pacote Mensal VIP (Barbeiro + Cliente)
+// Notificação Instantânea de Compra de Pacote/Plano Mensal (Barbeiro + Cliente)
 app.post('/api/whatsapp/notificar-compra-plano', verificarInternalKeyMiddleware, async (req, res) => {
     try {
         const { cliente, telefone, nomePlano, preco, dataFim, whatsappBarbeiro } = req.body;
         const numBarbeiro = await resolverNumeroBarbeiro(whatsappBarbeiro);
 
         // 1. Mensagem para o Barbeiro
-        const msgBarbeiro = `*EMAÚS Barbearia - Nova Assinatura VIP!* 👑\n\n` +
+        const msgBarbeiro = `*EMAÚS Barbearia - Nova Assinatura Mensal!* ✂️\n\n` +
             `Temos um novo cliente mensalista cadastrado:\n\n` +
             `• *Cliente:* ${cliente || 'Cliente'}\n` +
             `• *Telefone:* ${telefone || 'Não informado'}\n` +
-            `• *Plano:* ${nomePlano || 'Pacote Mensal'}\n` +
+            `• *Plano:* ${nomePlano || 'Plano Mensal'}\n` +
             `• *Valor Pago:* R$ ${Number(preco || 0).toFixed(2)}\n` +
             `• *Validade:* 30 dias (4 atendimentos)`;
 
@@ -2787,17 +3080,17 @@ app.post('/api/whatsapp/notificar-compra-plano', verificarInternalKeyMiddleware,
             envioBarbeiro = await enviarMensagemWhatsApp(numBarbeiro, msgBarbeiro);
         }
 
-        // 2. Mensagem de Boas-Vindas para o Cliente VIP
+        // 2. Mensagem de Boas-Vindas para o Cliente Mensalista
         let envioCliente = null;
         if (telefone) {
-            const msgCliente = `*EMAÚS Barbearia - Assinatura VIP Confirmada!* 👑\n\n` +
-                `Parabéns, *${cliente || 'Cliente'}*! Sua assinatura do plano *${nomePlano || 'Mensal VIP'}* foi ativada com sucesso.\n\n` +
+            const msgCliente = `*EMAÚS Barbearia - Assinatura Mensal Confirmada!* ✂️\n\n` +
+                `Parabéns, *${cliente || 'Cliente'}*! Sua assinatura do plano *${nomePlano || 'Plano Mensal'}* foi ativada com sucesso.\n\n` +
                 `• *Duração:* 30 dias\n` +
                 `• *Benefício:* 4 cortes (1 corte exclusivo por semana)\n` +
                 `• *Seu corte da Semana 1 já está disponível para agendamento gratuito!*\n\n` +
                 `Agende seus atendimentos diretamente no nosso site:\n` +
                 `👉 ${APP_SITE_URL}\n\n` +
-                `_EMAÚS Barbearia • Estilo e Alta Performance_`;
+                `_EMAÚS Barbearia • Estilo e Tradição_`;
 
             envioCliente = await enviarMensagemWhatsApp(telefone, msgCliente);
         }
@@ -2990,24 +3283,529 @@ app.post('/api/galeria/excluir', verificarAdminMiddleware, async (req, res) => {
     }
 });
 
-if (!process.env.VERCEL) {
-    try {
-        app.listen(port, '0.0.0.0', () => {
-            console.log(`🚀 Servidor EMAÚS Barbearia rodando em 0.0.0.0:${port}`);
-            
-            // Inicia checagem periódica de lembretes 4h da agenda a cada 5 minutos
-            setInterval(() => {
-                verificarLembretes4hAgenda().catch(e => console.warn("Aviso cron 4h:", e.message));
-            }, 5 * 60 * 1000);
+// ==========================================
+// MÓDULO: CRM DE CLIENTES (ADMIN SDK)
+// ==========================================
 
-            // Executa uma checagem inicial 30 segundos após ligar
-            setTimeout(() => {
-                verificarLembretes4hAgenda().catch(e => console.warn("Aviso checagem inicial 4h:", e.message));
-            }, 30000);
-        });
+async function montarDadosClienteComAssinatura(assinaturaId, assinatura) {
+    const clienteId = String(assinatura.userId || assinaturaId || '').trim();
+    if (!clienteId) throw new Error('Assinatura sem identificador de cliente.');
+
+    const clienteRef = firebaseAdminFirestore.collection('clientes').doc(clienteId);
+    const usuarioRef = firebaseAdminFirestore.collection('usuarios').doc(clienteId);
+    const [clienteSnap, usuarioSnap] = await Promise.all([clienteRef.get(), usuarioRef.get()]);
+    const clienteAtual = clienteSnap.exists ? clienteSnap.data() : {};
+    const usuario = usuarioSnap.exists ? usuarioSnap.data() : {};
+    const ativo = assinaturaMensalEstaAtiva(assinatura);
+    const tags = Array.isArray(clienteAtual.tags)
+        ? [...clienteAtual.tags]
+        : (Array.isArray(usuario.tags) ? [...usuario.tags] : []);
+    const tagsSemVip = tags.filter(tag => String(tag).trim().toLowerCase() !== 'vip');
+    if (ativo) tagsSemVip.push('VIP');
+
+    return {
+        clienteRef,
+        dados: {
+            nome: clienteAtual.nome || usuario.nome || usuario.displayName || assinatura.cliente || 'Cliente',
+            nomeNormalizado: String(clienteAtual.nome || usuario.nome || usuario.displayName || assinatura.cliente || 'Cliente')
+                .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim(),
+            telefone: clienteAtual.telefone || usuario.telefone || assinatura.telefone || '',
+            telefoneNormalizado: normalizarTelefoneCRMServidor(clienteAtual.telefone || usuario.telefone || assinatura.telefone),
+            email: clienteAtual.email || usuario.email || assinatura.userEmail || assinatura.email || '',
+            emailNormalizado: String(clienteAtual.email || usuario.email || assinatura.userEmail || assinatura.email || '').toLowerCase().trim(),
+            status: clienteAtual.status || usuario.status || 'ativo',
+            tags: tagsSemVip,
+            isVip: ativo,
+            planoAtivoId: ativo ? assinaturaId : null,
+            planoStatus: ativo ? 'ativo' : String(assinatura.status || 'inativo').toLowerCase(),
+            nomePlanoAtivo: ativo ? (assinatura.nomePlano || 'Plano Mensal') : null,
+            planoDataFim: ativo ? (assinatura.dataFim || null) : null,
+            updatedAt: new Date().toISOString(),
+            ...(clienteSnap.exists ? {} : { createdAt: new Date().toISOString() })
+        }
+    };
+}
+
+async function sincronizarAssinaturaNoCRM(assinaturaId, assinatura) {
+    if (!firebaseAdminFirestore) return;
+    const { clienteRef, dados } = await montarDadosClienteComAssinatura(assinaturaId, assinatura);
+    await clienteRef.set(dados, { merge: true });
+}
+
+app.post('/api/admin/mensalistas/ativar', verificarAdminMiddleware, async (req, res) => {
+    try {
+        if (!firebaseAdminFirestore) {
+            return res.status(500).json({ success: false, error: 'Firestore Admin SDK não inicializado.' });
+        }
+        const userId = String(req.body?.userId || '').trim();
+        const cliente = String(req.body?.cliente || '').trim();
+        const telefone = String(req.body?.telefone || '').trim();
+        const planoId = String(req.body?.planoId || '').trim();
+        const nomePlano = String(req.body?.nomePlano || 'Plano Mensal').trim();
+        const dataPagamento = new Date(req.body?.dataPagamento || Date.now());
+        const dataFim = new Date(req.body?.dataFim || (dataPagamento.getTime() + 30 * 86400000));
+        const precoPlano = Number(req.body?.precoPlano || 0);
+        if (!userId || !cliente || !telefone || !planoId || Number.isNaN(dataPagamento.getTime()) || Number.isNaN(dataFim.getTime())) {
+            return res.status(400).json({ success: false, error: 'Dados obrigatórios da assinatura são inválidos.' });
+        }
+
+        const assinaturaRef = firebaseAdminFirestore.collection('assinaturasClientes').doc(userId);
+        const assinatura = {
+            userId,
+            cliente,
+            telefone,
+            planoId,
+            nomePlano,
+            precoPlano,
+            dataPagamento: dataPagamento.toISOString(),
+            dataFim: dataFim.toISOString(),
+            idPagamento: String(req.body?.idPagamento || `manual_admin_${Date.now()}`),
+            metodoPagamento: String(req.body?.metodoPagamento || 'Balcão'),
+            status: 'ativo',
+            ativadoPorAdmin: true,
+            ativadoPor: req.adminUser?.email || req.adminUser?.uid || 'admin',
+            atualizadoEm: new Date().toISOString()
+        };
+        const { clienteRef, dados } = await montarDadosClienteComAssinatura(userId, assinatura);
+        const batch = firebaseAdminFirestore.batch();
+        batch.set(assinaturaRef, assinatura);
+        batch.set(clienteRef, dados, { merge: true });
+        await batch.commit();
+        return res.json({ success: true, userId, status: 'ativo' });
     } catch (e) {
-        console.warn("Aviso servidor:", e.message);
+        console.error('Erro em /api/admin/mensalistas/ativar:', e);
+        return res.status(500).json({ success: false, error: 'Erro ao ativar e sincronizar mensalista.' });
     }
+});
+
+app.post('/api/admin/mensalistas/sincronizar', verificarAdminMiddleware, async (req, res) => {
+    try {
+        if (!firebaseAdminFirestore) {
+            return res.status(500).json({ success: false, error: 'Firestore Admin SDK não inicializado.' });
+        }
+        const [subsSnap, clientesSnap] = await Promise.all([
+            firebaseAdminFirestore.collection('assinaturasClientes').get(),
+            firebaseAdminFirestore.collection('clientes').get()
+        ]);
+        const idsAtivos = new Set();
+        let sincronizados = 0;
+        let ativos = 0;
+
+        for (const subDoc of subsSnap.docs) {
+            const assinatura = subDoc.data();
+            if (assinaturaMensalEstaAtiva(assinatura)) {
+                idsAtivos.add(String(assinatura.userId || subDoc.id));
+                ativos += 1;
+            }
+            await sincronizarAssinaturaNoCRM(subDoc.id, assinatura);
+            sincronizados += 1;
+        }
+
+        for (const clienteDoc of clientesSnap.docs) {
+            const dados = clienteDoc.data();
+            if ((dados.isVip === true || dados.planoAtivoId) && !idsAtivos.has(clienteDoc.id)) {
+                const tags = Array.isArray(dados.tags)
+                    ? dados.tags.filter(tag => String(tag).trim().toLowerCase() !== 'vip')
+                    : [];
+                await clienteDoc.ref.set({
+                    isVip: false,
+                    planoAtivoId: null,
+                    planoStatus: 'inativo',
+                    nomePlanoAtivo: null,
+                    planoDataFim: null,
+                    tags,
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+            }
+        }
+
+        return res.json({ success: true, sincronizados, ativos });
+    } catch (e) {
+        console.error('Erro em /api/admin/mensalistas/sincronizar:', e);
+        return res.status(500).json({ success: false, error: 'Erro ao sincronizar mensalistas com o CRM.' });
+    }
+});
+
+app.get('/api/crm/clientes/listar', verificarAdminMiddleware, async (req, res) => {
+    try {
+        if (!firebaseAdminFirestore) {
+            return res.status(500).json({ success: false, error: 'Firestore Admin SDK não inicializado.' });
+        }
+
+        // 1. Tenta buscar da coleção 'clientes'
+        const clientesSnap = await firebaseAdminFirestore.collection('clientes').get();
+        let lista = [];
+        clientesSnap.forEach(doc => {
+            lista.push({ id: doc.id, ...doc.data() });
+        });
+
+        // 2. Completa a coleção a partir de 'usuarios' e 'agendamentos'. Isso é
+        // necessário mesmo quando alguns mensalistas já existem no CRM.
+        {
+            const [uSnap, agSnap, subSnap] = await Promise.all([
+                firebaseAdminFirestore.collection('usuarios').get(),
+                firebaseAdminFirestore.collection('agendamentos').get(),
+                firebaseAdminFirestore.collection('assinaturasClientes').get().catch(() => ({ forEach: () => {} }))
+            ]);
+
+            const mapaAgendamentos = new Map();
+            agSnap.forEach(d => {
+                const ag = d.data();
+                const tel = String(ag.telefone || ag.clienteTelefone || ag.tel || '').replace(/\D/g, '');
+                const email = (ag.clienteEmail || ag.email || '').toLowerCase().trim();
+                const uid = ag.userId || ag.clienteId;
+                const chave = tel || email || uid;
+                if (!chave) return;
+
+                if (!mapaAgendamentos.has(chave)) {
+                    mapaAgendamentos.set(chave, {
+                        total: 0,
+                        concluidos: 0,
+                        cancelados: 0,
+                        gastoCentavos: 0,
+                        ultimoAtendimento: null
+                    });
+                }
+                const stats = mapaAgendamentos.get(chave);
+                stats.total++;
+                if (ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro') {
+                    stats.cancelados++;
+                } else {
+                    stats.concluidos++;
+                    const preco = Number(ag.preco) || Number(ag.valorPago) || 0;
+                    stats.gastoCentavos += Math.round(preco * 100);
+                }
+                if (ag.dataHora) {
+                    if (!stats.ultimoAtendimento || ag.dataHora > stats.ultimoAtendimento) {
+                        stats.ultimoAtendimento = ag.dataHora;
+                    }
+                }
+            });
+
+            const assinantesVipSet = new Set();
+            const assinaturasAtivasMap = new Map();
+            subSnap.forEach(d => {
+                const sub = d.data();
+                if (!assinaturaMensalEstaAtiva(sub)) return;
+                const assinaturaComId = { id: d.id, ...sub };
+                const tel = String(sub.telefone || sub.clienteTelefone || '').replace(/\D/g, '');
+                if (tel) {
+                    assinantesVipSet.add(tel);
+                    assinaturasAtivasMap.set(tel, assinaturaComId);
+                }
+                if (d.id) {
+                    assinantesVipSet.add(d.id);
+                    assinaturasAtivasMap.set(d.id, assinaturaComId);
+                }
+            });
+
+            const chavesClientesExistentes = new Set();
+            lista.forEach(cliente => {
+                chavesClientesExistentes.add(`id:${cliente.id}`);
+                const telefone = normalizarTelefoneCRMServidor(cliente.telefone || cliente.telefoneNormalizado);
+                const email = String(cliente.email || cliente.emailNormalizado || '').trim().toLowerCase();
+                if (telefone) chavesClientesExistentes.add(`tel:${telefone}`);
+                if (email) chavesClientesExistentes.add(`email:${email}`);
+            });
+            const batch = firebaseAdminFirestore.batch();
+            let gravacoesPendentes = 0;
+            uSnap.forEach(d => {
+                const u = d.data();
+                const telLimpo = String(u.telefone || u.tel || '').replace(/\D/g, '');
+                const emailLimpo = (u.email || '').toLowerCase().trim();
+                const jaExiste = chavesClientesExistentes.has(`id:${d.id}`)
+                    || (telLimpo && chavesClientesExistentes.has(`tel:${telLimpo}`))
+                    || (emailLimpo && chavesClientesExistentes.has(`email:${emailLimpo}`));
+                if (jaExiste) return;
+                const stats = mapaAgendamentos.get(telLimpo) || mapaAgendamentos.get(emailLimpo) || mapaAgendamentos.get(d.id) || { total: 0, concluidos: 0, cancelados: 0, gastoCentavos: 0, ultimoAtendimento: null };
+
+                const isVip = assinantesVipSet.has(telLimpo) || assinantesVipSet.has(d.id);
+                const assinaturaAtiva = assinaturasAtivasMap.get(d.id) || assinaturasAtivasMap.get(telLimpo) || null;
+                const tags = Array.isArray(u.tags) ? [...u.tags] : [];
+                if (isVip && !tags.some(tag => String(tag).toLowerCase() === 'vip')) tags.push('VIP');
+                if (stats.total >= 3 && !tags.some(tag => String(tag).toLowerCase() === 'frequente')) tags.push('Frequente');
+
+                const clienteDoc = {
+                    nome: u.nome || u.displayName || 'Cliente',
+                    nomeNormalizado: String(u.nome || u.displayName || 'Cliente').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim(),
+                    telefone: u.telefone || '',
+                    telefoneNormalizado: telLimpo,
+                    email: u.email || '',
+                    emailNormalizado: emailLimpo,
+                    status: 'ativo',
+                    tags,
+                    observacoes: u.observacoes || '',
+                    ultimoAgendamentoEm: stats.ultimoAtendimento || null,
+                    totalAgendamentos: stats.total,
+                    totalConcluidos: stats.concluidos,
+                    totalCancelados: stats.cancelados,
+                    totalGastoCentavos: stats.gastoCentavos,
+                    isVip,
+                    planoAtivoId: assinaturaAtiva?.id || null,
+                    planoStatus: assinaturaAtiva ? 'ativo' : 'inativo',
+                    nomePlanoAtivo: assinaturaAtiva?.nomePlano || null,
+                    planoDataFim: assinaturaAtiva?.dataFim || null,
+                    createdAt: u.createdAt || new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+
+                const ref = firebaseAdminFirestore.collection('clientes').doc(d.id);
+                batch.set(ref, clienteDoc, { merge: true });
+                gravacoesPendentes += 1;
+                lista.push({ id: d.id, ...clienteDoc });
+                chavesClientesExistentes.add(`id:${d.id}`);
+                if (telLimpo) chavesClientesExistentes.add(`tel:${telLimpo}`);
+                if (emailLimpo) chavesClientesExistentes.add(`email:${emailLimpo}`);
+            });
+
+            if (gravacoesPendentes > 0) {
+                await batch.commit().catch(e => console.warn('Aviso batch clientes:', e.message));
+            }
+        }
+
+        // Enriquece sempre o CRM com a fonte oficial de assinaturas, mesmo quando
+        // a coleção clientes já existe. Isso evita perfil mensalista desatualizado.
+        const assinaturasSnapAtual = await firebaseAdminFirestore.collection('assinaturasClientes').get();
+        const assinaturasPorId = new Map();
+        const assinaturasPorTelefone = new Map();
+        assinaturasSnapAtual.forEach(documento => {
+            const assinatura = { id: documento.id, ...documento.data() };
+            assinaturasPorId.set(String(assinatura.userId || documento.id), assinatura);
+            const telefone = normalizarTelefoneCRMServidor(assinatura.telefone || assinatura.clienteTelefone);
+            if (telefone) assinaturasPorTelefone.set(telefone, assinatura);
+        });
+
+        const idsPresentes = new Set();
+        lista = lista.map(cliente => {
+            const telefone = normalizarTelefoneCRMServidor(cliente.telefone || cliente.telefoneNormalizado);
+            const assinatura = assinaturasPorId.get(String(cliente.id)) || assinaturasPorTelefone.get(telefone);
+            idsPresentes.add(String(cliente.id));
+            if (!assinatura) {
+                if (!cliente.planoAtivoId) return cliente;
+                return { ...cliente, isVip: false, planoAtivoId: null, assinaturaAtiva: null };
+            }
+            const ativo = assinaturaMensalEstaAtiva(assinatura);
+            const tags = Array.isArray(cliente.tags) ? [...cliente.tags] : [];
+            const tagsSemVip = tags.filter(tag => String(tag).trim().toLowerCase() !== 'vip');
+            if (ativo) tagsSemVip.push('VIP');
+            return {
+                ...cliente,
+                tags: tagsSemVip,
+                isVip: ativo,
+                planoAtivoId: ativo ? assinatura.id : null,
+                planoStatus: ativo ? 'ativo' : String(assinatura.status || 'inativo').toLowerCase(),
+                assinaturaAtiva: ativo ? assinatura : null
+            };
+        });
+
+        assinaturasSnapAtual.forEach(documento => {
+            const assinatura = { id: documento.id, ...documento.data() };
+            const clienteId = String(assinatura.userId || documento.id);
+            if (!assinaturaMensalEstaAtiva(assinatura) || idsPresentes.has(clienteId)) return;
+            lista.push({
+                id: clienteId,
+                nome: assinatura.cliente || 'Cliente Mensalista',
+                telefone: assinatura.telefone || '',
+                telefoneNormalizado: normalizarTelefoneCRMServidor(assinatura.telefone),
+                email: assinatura.userEmail || assinatura.email || '',
+                status: 'ativo',
+                tags: ['VIP'],
+                isVip: true,
+                planoAtivoId: assinatura.id,
+                assinaturaAtiva: assinatura,
+                totalAgendamentos: 0,
+                totalGastoCentavos: 0,
+                createdAt: assinatura.dataPagamento || assinatura.atualizadoEm || ''
+            });
+        });
+
+        // Consolida cadastros repetidos sem apagar documentos ou históricos.
+        lista = consolidarClientesDuplicadosCRMServidor(lista);
+
+        // Ordena pela última atividade
+        lista.sort((a, b) => {
+            const dtA = a.ultimoAgendamentoEm || a.createdAt || '';
+            const dtB = b.ultimoAgendamentoEm || b.createdAt || '';
+            return dtB.localeCompare(dtA);
+        });
+
+        return res.json({ success: true, clientes: lista });
+    } catch (e) {
+        console.error('Erro em /api/crm/clientes/listar:', e);
+        return res.status(500).json({ success: false, error: e.message });
+    }
+});
+
+app.post('/api/crm/clientes/salvar', verificarAdminMiddleware, async (req, res) => {
+    try {
+        if (!firebaseAdminFirestore) {
+            return res.status(500).json({ success: false, error: 'Firestore Admin SDK não inicializado.' });
+        }
+
+        const { id, nome, telefone, email, dataNascimento, status, tags, observacoes } = req.body;
+        if (!nome || !telefone) {
+            return res.status(400).json({ success: false, error: 'Nome e telefone são obrigatórios.' });
+        }
+
+        const telLimpo = String(telefone).replace(/\D/g, '');
+        const docId = id || (`cli_${telLimpo || Date.now()}`);
+
+        const dadosCliente = {
+            nome: nome.trim(),
+            nomeNormalizado: String(nome).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim(),
+            telefone: telefone.trim(),
+            telefoneNormalizado: telLimpo,
+            email: email ? email.trim() : '',
+            emailNormalizado: email ? email.toLowerCase().trim() : '',
+            dataNascimento: dataNascimento || '',
+            status: status || 'ativo',
+            tags: Array.isArray(tags) ? tags : [],
+            observacoes: observacoes || '',
+            updatedAt: new Date().toISOString()
+        };
+
+        if (!id) {
+            dadosCliente.createdAt = new Date().toISOString();
+            dadosCliente.totalAgendamentos = 0;
+            dadosCliente.totalGastoCentavos = 0;
+        }
+
+        await firebaseAdminFirestore.collection('clientes').doc(docId).set(dadosCliente, { merge: true });
+        return res.json({ success: true, id: docId, cliente: { id: docId, ...dadosCliente } });
+    } catch (e) {
+        console.error('Erro em /api/crm/clientes/salvar:', e);
+        return res.status(500).json({ success: false, error: e.message });
+    }
+});
+
+app.post('/api/crm/clientes/sincronizar', verificarAdminMiddleware, async (req, res) => {
+    try {
+        if (!firebaseAdminFirestore) {
+            return res.status(500).json({ success: false, error: 'Firestore Admin SDK não inicializado.' });
+        }
+
+        const [uSnap, agSnap, subSnap] = await Promise.all([
+            firebaseAdminFirestore.collection('usuarios').get(),
+            firebaseAdminFirestore.collection('agendamentos').get(),
+            firebaseAdminFirestore.collection('assinaturasClientes').get().catch(() => ({ forEach: () => {} }))
+        ]);
+
+        const mapaAgendamentos = new Map();
+        agSnap.forEach(d => {
+            const ag = d.data();
+            const tel = String(ag.telefone || ag.clienteTelefone || ag.tel || '').replace(/\D/g, '');
+            const email = (ag.clienteEmail || ag.email || '').toLowerCase().trim();
+            const uid = ag.userId || ag.clienteId;
+            const chave = tel || email || uid;
+            if (!chave) return;
+
+            if (!mapaAgendamentos.has(chave)) {
+                mapaAgendamentos.set(chave, {
+                    total: 0,
+                    concluidos: 0,
+                    cancelados: 0,
+                    gastoCentavos: 0,
+                    ultimoAtendimento: null
+                });
+            }
+            const stats = mapaAgendamentos.get(chave);
+            stats.total++;
+            if (ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro') {
+                stats.cancelados++;
+            } else {
+                stats.concluidos++;
+                const preco = Number(ag.preco) || Number(ag.valorPago) || 0;
+                stats.gastoCentavos += Math.round(preco * 100);
+            }
+            if (ag.dataHora) {
+                if (!stats.ultimoAtendimento || ag.dataHora > stats.ultimoAtendimento) {
+                    stats.ultimoAtendimento = ag.dataHora;
+                }
+            }
+        });
+
+        const assinantesVipSet = new Set();
+        const assinaturasAtivasMap = new Map();
+        subSnap.forEach(d => {
+            const sub = d.data();
+            if (!assinaturaMensalEstaAtiva(sub)) return;
+            const assinaturaComId = { id: d.id, ...sub };
+            const tel = String(sub.telefone || sub.clienteTelefone || '').replace(/\D/g, '');
+            if (tel) {
+                assinantesVipSet.add(tel);
+                assinaturasAtivasMap.set(tel, assinaturaComId);
+            }
+            if (d.id) {
+                assinantesVipSet.add(d.id);
+                assinaturasAtivasMap.set(d.id, assinaturaComId);
+            }
+        });
+
+        const batch = firebaseAdminFirestore.batch();
+        const listaSinc = [];
+
+        uSnap.forEach(d => {
+            const u = d.data();
+            const telLimpo = String(u.telefone || u.tel || '').replace(/\D/g, '');
+            const emailLimpo = (u.email || '').toLowerCase().trim();
+            const stats = mapaAgendamentos.get(telLimpo) || mapaAgendamentos.get(emailLimpo) || mapaAgendamentos.get(d.id) || { total: 0, concluidos: 0, cancelados: 0, gastoCentavos: 0, ultimoAtendimento: null };
+
+            const isVip = assinantesVipSet.has(telLimpo) || assinantesVipSet.has(d.id);
+            const assinaturaAtiva = assinaturasAtivasMap.get(d.id) || assinaturasAtivasMap.get(telLimpo) || null;
+            const tags = Array.isArray(u.tags) ? [...u.tags] : [];
+            if (isVip && !tags.some(tag => String(tag).toLowerCase() === 'vip')) tags.push('VIP');
+            if (stats.total >= 3 && !tags.some(tag => String(tag).toLowerCase() === 'frequente')) tags.push('Frequente');
+
+            const clienteDoc = {
+                nome: u.nome || u.displayName || 'Cliente',
+                nomeNormalizado: String(u.nome || u.displayName || 'Cliente').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim(),
+                telefone: u.telefone || '',
+                telefoneNormalizado: telLimpo,
+                email: u.email || '',
+                emailNormalizado: emailLimpo,
+                status: 'ativo',
+                tags,
+                observacoes: u.observacoes || '',
+                ultimoAgendamentoEm: stats.ultimoAtendimento || null,
+                totalAgendamentos: stats.total,
+                totalConcluidos: stats.concluidos,
+                totalCancelados: stats.cancelados,
+                totalGastoCentavos: stats.gastoCentavos,
+                isVip,
+                planoAtivoId: assinaturaAtiva?.id || null,
+                planoStatus: assinaturaAtiva ? 'ativo' : 'inativo',
+                nomePlanoAtivo: assinaturaAtiva?.nomePlano || null,
+                planoDataFim: assinaturaAtiva?.dataFim || null,
+                updatedAt: new Date().toISOString()
+            };
+
+            const ref = firebaseAdminFirestore.collection('clientes').doc(d.id);
+            batch.set(ref, clienteDoc, { merge: true });
+            listaSinc.push({ id: d.id, ...clienteDoc });
+        });
+
+        await batch.commit();
+        return res.json({ success: true, total: listaSinc.length, clientes: listaSinc });
+    } catch (e) {
+        console.error('Erro em /api/crm/clientes/sincronizar:', e);
+        return res.status(500).json({ success: false, error: e.message });
+    }
+});
+
+if (isMainModule) {
+    app.listen(port, '0.0.0.0', () => {
+        console.log(`🚀 Servidor EMAÚS Barbearia rodando em 0.0.0.0:${port}`);
+
+        // Inicia checagem periódica de lembretes 4h da agenda a cada 5 minutos
+        setInterval(() => {
+            verificarLembretes4hAgenda().catch(e => console.warn("Aviso cron 4h:", e.message));
+        }, 5 * 60 * 1000);
+
+        // Executa uma checagem inicial 30 segundos após ligar
+        setTimeout(() => {
+            verificarLembretes4hAgenda().catch(e => console.warn("Aviso checagem inicial 4h:", e.message));
+        }, 30000);
+    });
 }
 
 export default app;

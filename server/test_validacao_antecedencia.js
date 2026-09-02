@@ -1,6 +1,11 @@
 import fs from 'fs';
+import path from 'path';
 
-const content = fs.readFileSync('server/src/server.js', 'utf8');
+const serverPath = fs.existsSync('./server/src/server.js') 
+    ? './server/src/server.js' 
+    : (fs.existsSync('./src/server.js') ? './src/server.js' : path.resolve('../server/src/server.js'));
+
+const content = fs.readFileSync(serverPath, 'utf8');
 
 // Extract function validarAntecedenciaMinimaAgendamento
 const fnMatch = content.match(/function validarAntecedenciaMinimaAgendamento[\s\S]*?\n\}/);

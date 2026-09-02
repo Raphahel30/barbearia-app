@@ -8,11 +8,8 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() && (
-        request.auth.token.email == 'aldo540@outlook.com' ||
-        request.auth.token.email == 'rafaelcassu@hotmail.com' ||
-        request.auth.token.email == 'cassurafael30@gmail.com' ||
-        request.auth.token.email == 'admin@emausbarbearia.com' ||
-        request.auth.token.admin == true
+        ('admin' in request.auth.token && request.auth.token.admin == true) ||
+        exists(/databases/$(database)/documents/administradores/$(request.auth.uid))
       );
     }
 
@@ -22,15 +19,90 @@ service cloud.firestore {
       allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
     }
 
+    match /clientes/{clienteId} {
+      // CRM de Clientes e dados de perfil (LGPD): exclusivo para administradores
+      allow read, write: if isAdmin();
+    }
+
     match /agendamentos/{agendamentoId} {
-      // Leitura restrita a usuários autenticados (LGPD: protege nome, telefone e e-mail dos clientes)
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
+      // Dados pessoais: somente o cliente proprietário ou administradores.
+      // A grade pública utiliza exclusivamente slots_agendamentos.
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+      // Criação: exige que o userId pertença ao próprio usuário autenticado OU seja criado por administrador (balcão)
+      allow create: if isAuthenticated() && (
+        request.resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
       // Apenas o próprio cliente dono do agendamento ou administrador pode alterar/cancelar
       allow update, delete: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
         resource.data.clienteEmail == request.auth.token.email ||
         isAdmin()
+      );
+    }
+
+    match /slots_agendamentos/{slotId} {
+      // Grade pública sem dados pessoais. A titularidade fica em slots_proprietarios.
+      allow read: if true;
+      allow create: if isAuthenticated() &&
+        request.resource.data.keys().hasOnly([
+          'slotId', 'dataHora', 'barbeiroId', 'barbeiroNome',
+          'status', 'expiraEm', 'atualizadoEm'
+        ]) && (
+          isAdmin() || (
+            existsAfter(/databases/$(database)/documents/slots_proprietarios/$(slotId)) &&
+            getAfter(/databases/$(database)/documents/slots_proprietarios/$(slotId)).data.userId == request.auth.uid
+          )
+        );
+      allow update: if isAuthenticated() &&
+        request.resource.data.keys().hasOnly([
+          'slotId', 'dataHora', 'barbeiroId', 'barbeiroNome',
+          'status', 'expiraEm', 'atualizadoEm'
+        ]) && (
+          isAdmin() || (
+            exists(/databases/$(database)/documents/slots_proprietarios/$(slotId)) &&
+            get(/databases/$(database)/documents/slots_proprietarios/$(slotId)).data.userId == request.auth.uid
+          ) || (
+            resource.data.status in ['pendente', 'pendente_pagamento'] &&
+            resource.data.expiraEm is number &&
+            resource.data.expiraEm <= request.time.toMillis() &&
+            existsAfter(/databases/$(database)/documents/slots_proprietarios/$(slotId)) &&
+            getAfter(/databases/$(database)/documents/slots_proprietarios/$(slotId)).data.userId == request.auth.uid
+          )
+        );
+      allow delete: if isAuthenticated() && (
+        isAdmin() || (
+          exists(/databases/$(database)/documents/slots_proprietarios/$(slotId)) &&
+          get(/databases/$(database)/documents/slots_proprietarios/$(slotId)).data.userId == request.auth.uid
+        )
+      );
+    }
+
+    match /slots_proprietarios/{slotId} {
+      allow create: if isAuthenticated() && (
+        isAdmin() || (
+          request.resource.data.userId == request.auth.uid &&
+          request.resource.data.keys().hasOnly(['userId', 'paymentId', 'atualizadoEm'])
+        )
+      );
+      allow read, delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+      allow update: if isAuthenticated() && (
+        isAdmin() || (
+          resource.data.userId == request.auth.uid &&
+          request.resource.data.userId == request.auth.uid &&
+          request.resource.data.keys().hasOnly(['userId', 'paymentId', 'atualizadoEm'])
+        ) || (
+          get(/databases/$(database)/documents/slots_agendamentos/$(slotId)).data.status in ['pendente', 'pendente_pagamento'] &&
+          get(/databases/$(database)/documents/slots_agendamentos/$(slotId)).data.expiraEm is number &&
+          get(/databases/$(database)/documents/slots_agendamentos/$(slotId)).data.expiraEm <= request.time.toMillis() &&
+          request.resource.data.userId == request.auth.uid &&
+          request.resource.data.keys().hasOnly(['userId', 'paymentId', 'atualizadoEm'])
+        )
       );
     }
 
@@ -62,15 +134,18 @@ service cloud.firestore {
 
     match /produtos/{produtoId} {
       allow read: if true;
-      // Criação, exclusão e alteração de produtos (preço, nome, fotos, estoque) restritas a administradores
-      allow write: if isAdmin();
+      // Estoque e catálogo são alterados apenas pelo backend/Admin SDK ou admin.
+      allow create, update, delete: if isAdmin();
     }
 
     match /comprasProdutos/{compraId} {
       // Leitura apenas pelo próprio comprador ou admins
-      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isAuthenticated();
-      allow update, delete: if isAdmin();
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+      // Registros de venda são criados pelo backend após confirmação.
+      allow create, update, delete: if isAdmin();
     }
 
     match /diasBloqueados/{diaId} {
@@ -89,7 +164,7 @@ service cloud.firestore {
     }
 
     match /administradores/{adminId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() && (request.auth.uid == adminId || isAdmin());
       allow write: if isAdmin();
     }
 
@@ -100,10 +175,13 @@ service cloud.firestore {
     }
 
     match /galeria_cortes_clientes/{fotoId} {
-      // Leitura permitida para exibição no perfil do cliente e painel administrativo
-      allow read: if true;
-      // Criação, exclusão e alteração de fotos dos cortes por usuários autenticados
-      allow write: if isAuthenticated();
+      // Foto pessoal: somente o cliente vinculado e administradores podem ler.
+      allow read: if isAuthenticated() && (
+        resource.data.clienteId == request.auth.uid ||
+        isAdmin()
+      );
+      // Inclusão/remoção é exclusiva do painel administrativo.
+      allow create, update, delete: if isAdmin();
     }
 
     match /promocoes/{promocaoId} {
@@ -123,7 +201,22 @@ service cloud.firestore {
     }
 
     match /pagamentos_pendentes/{paymentId} {
-      allow read, write: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid || request.resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && (
+        request.resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+      allow read, delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+      allow update: if isAuthenticated() && (
+        (
+          resource.data.userId == request.auth.uid &&
+          request.resource.data.userId == resource.data.userId &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'motivo', 'atualizadoEm'])
+        ) ||
+        isAdmin()
+      );
     }
   }
 }

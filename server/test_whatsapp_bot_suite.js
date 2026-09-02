@@ -1,4 +1,4 @@
-process.env.INTERNAL_SERVICE_KEY = process.env.INTERNAL_SERVICE_KEY || '81c4e36048d120da4a23d25fb91065bc0549da7b776516b36760a5ff7768d157';
+process.env.INTERNAL_SERVICE_KEY = process.env.INTERNAL_SERVICE_KEY || 'test-internal-service-key';
 
 import { 
     iniciarWhatsApp, 
@@ -103,7 +103,18 @@ async function runTests() {
         { path: '/api/whatsapp/notificar-agendamento', method: 'POST', body: { cliente: 'Teste' } },
         { path: '/api/whatsapp/notificar-cancelamento', method: 'POST', body: { cliente: 'Teste' } },
         { path: '/api/whatsapp/notificar-compra-plano', method: 'POST', body: { cliente: 'Teste' } },
-        { path: '/api/whatsapp/notificar-compra-produto', method: 'POST', body: { cliente: 'Teste' } }
+        { path: '/api/whatsapp/notificar-compra-produto', method: 'POST', body: { cliente: 'Teste' } },
+        { path: '/api/pagamento/pix', method: 'POST', body: {} },
+        { path: '/api/pagamento/cartao', method: 'POST', body: {} },
+        { path: '/api/pagamento/status/pagamento-falso', method: 'GET' },
+        { path: '/api/produtos/restaurar-agendamento', method: 'POST', body: { agendamentoId: 'ag-falso' } },
+        { path: '/api/admin/conceder', method: 'POST', body: { email: 'teste@example.com' } },
+        { path: '/api/admin/remover', method: 'POST', body: { email: 'teste@example.com' } },
+        { path: '/api/admin/mensalistas/ativar', method: 'POST', body: {} },
+        { path: '/api/admin/mensalistas/sincronizar', method: 'POST', body: {} },
+        { path: '/api/crm/clientes/listar', method: 'GET' },
+        { path: '/api/crm/clientes/salvar', method: 'POST', body: {} },
+        { path: '/api/crm/clientes/sincronizar', method: 'POST', body: {} }
     ];
 
     for (const rota of rotasProtegidas) {
@@ -113,7 +124,7 @@ async function runTests() {
 
     // Headers autenticados via Chave Interna de Serviço
     const internalHeaders = {
-        'x-internal-key': process.env.INTERNAL_SERVICE_KEY || '81c4e36048d120da4a23d25fb91065bc0549da7b776516b36760a5ff7768d157'
+        'x-internal-key': process.env.INTERNAL_SERVICE_KEY
     };
 
     // 2.3 Testando Rotas de Notificação de Agendamento (Completas com x-internal-key)
@@ -171,7 +182,8 @@ async function runTests() {
         cliente: 'Lucas Silva',
         telefone: '11988887777',
         servico: 'Corte Degradê Navalhado',
-        dataHora: '2026-08-30T15:00',
+        // Sem dataHora: evita que este teste de notificação altere um slot real no Firestore.
+        dataHora: null,
         motivo: 'Imprevisto no trabalho',
         canceladoPor: 'cliente',
         estornoRealizado: true,

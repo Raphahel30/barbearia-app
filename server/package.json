@@ -6,7 +6,10 @@
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "dev": "node --watch src/server.js",
+    "test": "node test_validacao_antecedencia.js && node test_pix_webhook_logic.js && node test_whatsapp_bot_suite.js",
+    "test:all": "node test_validacao_antecedencia.js && node test_pix_webhook_logic.js && node test_whatsapp_bot_suite.js",
+    "slots:migrate": "node scripts/migrate-slots-privacy.js"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^7.0.0-rc14",
@@ -14,14 +17,15 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-rate-limit": "^8.6.2",
-    "firebase-admin": "^13.0.0",
+    "firebase-admin": "^14.3.0",
     "helmet": "^8.0.0",
-    "mercadopago": "^2.0.11",
+    "mercadopago": "^3.6.0",
     "pino": "^9.6.0",
     "qrcode": "^1.5.4"
   },
   "overrides": {
-    "jose": "^4.15.5"
+    "jose": "^4.15.5",
+    "uuid": "^11.1.1"
   },
   "engines": {
     "node": ">=20.18.0"

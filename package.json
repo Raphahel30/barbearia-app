@@ -5,7 +5,16 @@
   "type": "module",
   "scripts": {
     "start": "node server/src/server.js",
-    "dev": "node --watch server/src/server.js"
+    "dev": "node --watch server/src/server.js",
+    "build:css": "npx @tailwindcss/cli -i ./assets/tailwind-input.css -o ./assets/tailwind.css --minify",
+    "watch:css": "npx @tailwindcss/cli -i ./assets/tailwind-input.css -o ./assets/tailwind.css --watch",
+    "test": "node --test server/tests/crm-utils.test.js && node server/test_validacao_antecedencia.js && node server/test_pix_webhook_logic.js && node server/test_whatsapp_bot_suite.js",
+    "test:syntax": "node server/tests/check-html-scripts.js && node --check server/src/server.js && node --check server/scripts/set-admin-claim.js && node --check server/scripts/migrate-slots-privacy.js && node --check server/scripts/sync-monthly-crm.js",
+    "test:firebase": "firebase emulators:exec --only firestore --project demo-emaus-barbearia \"node --test server/tests/firestore.rules.test.js\"",
+    "test:all": "npm run test:syntax && npm test && npm run test:firebase",
+    "admin:grant": "node server/scripts/set-admin-claim.js",
+    "slots:migrate": "node server/scripts/migrate-slots-privacy.js",
+    "monthly:sync": "node server/scripts/sync-monthly-crm.js"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^7.0.0-rc14",
@@ -13,16 +22,25 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-rate-limit": "^8.6.2",
-    "firebase-admin": "^13.0.0",
+    "firebase-admin": "^14.3.0",
     "helmet": "^8.0.0",
-    "mercadopago": "^2.0.11",
+    "mercadopago": "^3.6.0",
     "pino": "^9.6.0",
     "qrcode": "^1.5.4"
   },
   "overrides": {
-    "jose": "^4.15.5"
+    "jose": "^4.15.5",
+    "uuid": "^11.1.1"
   },
   "engines": {
     "node": ">=20.18.0"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
+    "@tailwindcss/cli": "^4.3.0",
+    "acorn": "^8.18.0",
+    "firebase": "^12.18.0",
+    "firebase-tools": "^15.28.2",
+    "tailwindcss": "^4.3.0"
   }
 }

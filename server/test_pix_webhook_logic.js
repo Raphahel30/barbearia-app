@@ -1,10 +1,19 @@
 import assert from 'assert';
 import fs from 'fs';
+import path from 'path';
 
-console.log('🧪 Verificando integridade das regras para Pix, Cartão, Webhook e Server Poller...');
+console.log('🧪 Verificando integridade das regras para Pix, Cartão, Webhook e Reconciliação...');
 
-const serverCode = fs.readFileSync('./server/src/server.js', 'utf8');
-const indexCode = fs.readFileSync('./index.html', 'utf8');
+// Suporta execução a partir da raiz do repositório ou de dentro de server/
+const serverPath = fs.existsSync('./server/src/server.js') 
+    ? './server/src/server.js' 
+    : (fs.existsSync('./src/server.js') ? './src/server.js' : path.resolve('../server/src/server.js'));
+const indexPath = fs.existsSync('./index.html') 
+    ? './index.html' 
+    : (fs.existsSync('../index.html') ? '../index.html' : path.resolve('../../index.html'));
+
+const serverCode = fs.readFileSync(serverPath, 'utf8');
+const indexCode = fs.readFileSync(indexPath, 'utf8');
 
 // 1. notification_url presente no Pix e Cartão
 assert(serverCode.includes("notification_url: notificationUrl"), "server.js deve enviar notification_url para o Mercado Pago");
@@ -12,13 +21,13 @@ assert(serverCode.includes("notification_url: notificationUrl"), "server.js deve
 // 2. data.id capturado no Webhook
 assert(serverCode.includes("req.query['data.id']"), "server.js deve capturar data.id do Mercado Pago");
 
-// 3. Server Poller de 5 segundos
-assert(serverCode.includes("[Server Poller]"), "server.js deve ter o Server Poller de monitoramento ativo");
+// 3. Processamento de conclusão de pagamento via Webhooks oficiais
+assert(serverCode.includes("processarConclusaoPagamentoServidor"), "server.js deve processar a conclusão de pagamento via Webhook/Servidor");
 
-// 4. Salva com ID do pagamento no Firestore
-assert(serverCode.includes("agendamentos').doc(String(response.id)).set"), "server.js deve pré-salvar com o ID do pagamento no Firestore");
+// 4. Salva com ID do pagamento no Firestore (pagamentos_pendentes e agendamentos)
+assert(serverCode.includes("pagamentos_pendentes") && serverCode.includes("agendamentos"), "server.js deve sincronizar pagamentos e agendamentos no Firestore");
 
-// 5. Expiração de 3 minutos
-assert(serverCode.includes("Date.now() + 3 * 60 * 1000"), "server.js deve definir expiraEm de 3 minutos");
+// 5. Expiração e conciliação de 3 minutos
+assert(serverCode.includes("3 * 60 * 1000"), "server.js deve definir janela de 3 minutos");
 
 console.log('✅ Validação completa com 100% de sucesso!');

@@ -1,0 +1,10 @@
+@import "tailwindcss" source(none);
+
+@source "../index.html";
+@source "../admin.html";
+@source "../redefinir-senha.html";
+@source "../termos.html";
+
+@theme {
+    --color-dourado: #D4AF37;
+}
