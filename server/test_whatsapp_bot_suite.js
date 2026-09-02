@@ -112,6 +112,7 @@ async function runTests() {
         { path: '/api/admin/remover', method: 'POST', body: { email: 'teste@example.com' } },
         { path: '/api/admin/mensalistas/ativar', method: 'POST', body: {} },
         { path: '/api/admin/mensalistas/sincronizar', method: 'POST', body: {} },
+        { path: '/api/admin/sincronizar-mensalistas', method: 'POST', body: {} },
         { path: '/api/crm/clientes/listar', method: 'GET' },
         { path: '/api/crm/clientes/salvar', method: 'POST', body: {} },
         { path: '/api/crm/clientes/sincronizar', method: 'POST', body: {} }

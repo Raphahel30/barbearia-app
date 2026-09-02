@@ -3063,16 +3063,18 @@ app.post('/api/whatsapp/notificar-cancelamento', verificarInternalKeyMiddleware,
 // Notificação Instantânea de Compra de Pacote/Plano Mensal (Barbeiro + Cliente)
 app.post('/api/whatsapp/notificar-compra-plano', verificarInternalKeyMiddleware, async (req, res) => {
     try {
-        const { cliente, telefone, nomePlano, preco, dataFim, whatsappBarbeiro } = req.body;
+        const { cliente, telefone, nomePlano, preco, dataFim, whatsappBarbeiro, plano } = req.body;
         const numBarbeiro = await resolverNumeroBarbeiro(whatsappBarbeiro);
+        const nomePlanoFinal = nomePlano || plano?.nome || 'Plano Mensal VIP';
+        const precoFinal = preco !== undefined ? preco : (plano?.preco || 0);
 
         // 1. Mensagem para o Barbeiro
         const msgBarbeiro = `*EMAÚS Barbearia - Nova Assinatura Mensal!* ✂️\n\n` +
             `Temos um novo cliente mensalista cadastrado:\n\n` +
             `• *Cliente:* ${cliente || 'Cliente'}\n` +
             `• *Telefone:* ${telefone || 'Não informado'}\n` +
-            `• *Plano:* ${nomePlano || 'Plano Mensal'}\n` +
-            `• *Valor Pago:* R$ ${Number(preco || 0).toFixed(2)}\n` +
+            `• *Plano:* ${nomePlanoFinal}\n` +
+            `• *Valor Pago:* R$ ${Number(precoFinal || 0).toFixed(2)}\n` +
             `• *Validade:* 30 dias (4 atendimentos)`;
 
         let envioBarbeiro = null;
@@ -3083,8 +3085,8 @@ app.post('/api/whatsapp/notificar-compra-plano', verificarInternalKeyMiddleware,
         // 2. Mensagem de Boas-Vindas para o Cliente Mensalista
         let envioCliente = null;
         if (telefone) {
-            const msgCliente = `*EMAÚS Barbearia - Assinatura Mensal Confirmada!* ✂️\n\n` +
-                `Parabéns, *${cliente || 'Cliente'}*! Sua assinatura do plano *${nomePlano || 'Plano Mensal'}* foi ativada com sucesso.\n\n` +
+            const msgCliente = `*EMAÚS Barbearia - Assinatura VIP Confirmada!* 👑\n\n` +
+                `Parabéns, *${cliente || 'Cliente'}*! Sua assinatura do plano *${nomePlanoFinal}* foi ativada com sucesso.\n\n` +
                 `• *Duração:* 30 dias\n` +
                 `• *Benefício:* 4 cortes (1 corte exclusivo por semana)\n` +
                 `• *Seu corte da Semana 1 já está disponível para agendamento gratuito!*\n\n` +
@@ -3098,6 +3100,163 @@ app.post('/api/whatsapp/notificar-compra-plano', verificarInternalKeyMiddleware,
         return res.json({ success: true, barbeiro: envioBarbeiro, cliente: envioCliente });
     } catch (err) {
         console.error('Erro na rota notificar-compra-plano:', err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Sincronização & Migração em Massa de Mensalistas Existentes
+app.post('/api/admin/sincronizar-mensalistas', verificarAdminMiddleware, async (req, res) => {
+    try {
+        if (!firebaseAdminFirestore) {
+            return res.status(500).json({ success: false, error: 'Banco de dados Firestore não inicializado no servidor.' });
+        }
+
+        // 1. Carrega todos os usuários para mapeamento
+        const usersSnap = await firebaseAdminFirestore.collection('usuarios').get();
+        const mapaUsuarios = new Map();
+        const mapaPorTelefone = new Map();
+        const mapaPorEmail = new Map();
+        const mapaPorNome = new Map();
+
+        const normStr = (str) => String(str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
+        usersSnap.forEach(docSnap => {
+            const u = docSnap.data();
+            const uId = docSnap.id;
+            mapaUsuarios.set(uId, { id: uId, ...u });
+
+            if (u.telefone) {
+                const telClean = String(u.telefone).replace(/\D/g, '');
+                if (telClean) {
+                    mapaPorTelefone.set(telClean, { id: uId, ...u });
+                    if (telClean.length >= 10 && !telClean.startsWith('55')) {
+                        mapaPorTelefone.set('55' + telClean, { id: uId, ...u });
+                    }
+                    if (telClean.startsWith('55') && telClean.length > 11) {
+                        mapaPorTelefone.set(telClean.slice(2), { id: uId, ...u });
+                    }
+                    if (telClean.length >= 9) {
+                        mapaPorTelefone.set(telClean.slice(-9), { id: uId, ...u });
+                    }
+                    if (telClean.length >= 8) {
+                        mapaPorTelefone.set(telClean.slice(-8), { id: uId, ...u });
+                    }
+                }
+            }
+            if (u.email) {
+                mapaPorEmail.set(u.email.toLowerCase().trim(), { id: uId, ...u });
+            }
+            if (u.nome) {
+                const nNorm = normStr(u.nome);
+                if (nNorm.length > 4) {
+                    mapaPorNome.set(nNorm, { id: uId, ...u });
+                }
+            }
+        });
+
+        // 2. Carrega todas as assinaturas
+        const subSnap = await firebaseAdminFirestore.collection('assinaturasClientes').get();
+        let totalAssinaturas = 0;
+        let vinculadas = 0;
+        let jaVinculadas = 0;
+        let naoEncontradas = 0;
+        const detalhes = [];
+
+        for (const docSnap of subSnap.docs) {
+            totalAssinaturas++;
+            const subId = docSnap.id;
+            const subData = docSnap.data();
+
+            // Se já está vinculado a um ID de usuário real existente
+            if (mapaUsuarios.has(subId)) {
+                jaVinculadas++;
+                continue;
+            }
+
+            // Tenta encontrar o usuário correspondente
+            let usuarioAlvo = null;
+            if (subData.userId && mapaUsuarios.has(subData.userId)) {
+                usuarioAlvo = mapaUsuarios.get(subData.userId);
+            }
+
+            if (!usuarioAlvo && subData.telefone) {
+                const telClean = String(subData.telefone).replace(/\D/g, '');
+                usuarioAlvo = mapaPorTelefone.get(telClean) ||
+                              (telClean.length >= 9 ? mapaPorTelefone.get(telClean.slice(-9)) : null) ||
+                              (telClean.length >= 8 ? mapaPorTelefone.get(telClean.slice(-8)) : null);
+            }
+
+            if (!usuarioAlvo && subId.startsWith('vip_')) {
+                const telClean = subId.replace(/^vip_/, '').replace(/\D/g, '');
+                usuarioAlvo = mapaPorTelefone.get(telClean) ||
+                              (telClean.length >= 9 ? mapaPorTelefone.get(telClean.slice(-9)) : null) ||
+                              (telClean.length >= 8 ? mapaPorTelefone.get(telClean.slice(-8)) : null);
+            }
+
+            if (!usuarioAlvo && (subData.userEmail || subData.email)) {
+                const em = String(subData.userEmail || subData.email).toLowerCase().trim();
+                usuarioAlvo = mapaPorEmail.get(em);
+            }
+
+            if (!usuarioAlvo && subData.cliente) {
+                const nNorm = normStr(subData.cliente);
+                if (nNorm.length > 4) {
+                    usuarioAlvo = mapaPorNome.get(nNorm);
+                }
+            }
+
+            if (usuarioAlvo) {
+                const targetUid = usuarioAlvo.id;
+                const dadosAtualizados = {
+                    ...subData,
+                    userId: targetUid,
+                    cliente: usuarioAlvo.nome || subData.cliente || 'Cliente VIP',
+                    telefone: usuarioAlvo.telefone || subData.telefone || '',
+                    sincronizadoEm: new Date().toISOString(),
+                    atualizadoEm: new Date().toISOString()
+                };
+
+                // Grava no documento correto correspondente ao UID do cliente
+                await firebaseAdminFirestore.collection('assinaturasClientes').doc(targetUid).set(dadosAtualizados, { merge: true });
+
+                // Se o ID original era um "vip_*" temporário, deleta o temporário para evitar duplicidade
+                if (subId !== targetUid && subId.startsWith('vip_')) {
+                    try {
+                        await firebaseAdminFirestore.collection('assinaturasClientes').doc(subId).delete();
+                    } catch (eDel) {
+                        console.warn('[Sync Mensalistas] Aviso ao remover documento antigo:', eDel.message);
+                    }
+                }
+
+                vinculadas++;
+                detalhes.push({
+                    origemId: subId,
+                    usuarioId: targetUid,
+                    cliente: usuarioAlvo.nome || subData.cliente,
+                    status: 'migrado'
+                });
+            } else {
+                naoEncontradas++;
+                detalhes.push({
+                    origemId: subId,
+                    cliente: subData.cliente,
+                    telefone: subData.telefone,
+                    status: 'pendente_cadastro'
+                });
+            }
+        }
+
+        console.log(`[Sync Mensalistas] ✅ Sincronização concluída: ${vinculadas} assinaturas vinculadas com sucesso.`);
+        return res.json({
+            success: true,
+            totalAssinaturas,
+            vinculadas,
+            jaVinculadas,
+            naoEncontradas,
+            detalhes
+        });
+    } catch (err) {
+        console.error('Erro na sincronização de mensalistas:', err);
         return res.status(500).json({ success: false, error: err.message });
     }
 });
@@ -3342,6 +3501,7 @@ app.post('/api/admin/mensalistas/ativar', verificarAdminMiddleware, async (req, 
         const telefone = String(req.body?.telefone || '').trim();
         const planoId = String(req.body?.planoId || '').trim();
         const nomePlano = String(req.body?.nomePlano || 'Plano Mensal').trim();
+        const servicosInclusos = Array.isArray(req.body?.servicosInclusos) ? req.body.servicosInclusos : [];
         const dataPagamento = new Date(req.body?.dataPagamento || Date.now());
         const dataFim = new Date(req.body?.dataFim || (dataPagamento.getTime() + 30 * 86400000));
         const precoPlano = Number(req.body?.precoPlano || 0);
@@ -3357,6 +3517,7 @@ app.post('/api/admin/mensalistas/ativar', verificarAdminMiddleware, async (req, 
             planoId,
             nomePlano,
             precoPlano,
+            servicosInclusos,
             dataPagamento: dataPagamento.toISOString(),
             dataFim: dataFim.toISOString(),
             idPagamento: String(req.body?.idPagamento || `manual_admin_${Date.now()}`),

@@ -20,3 +20,4 @@ firebase-service-account*.json
 Thumbs.db
 .wa_session/
 server/.wa_session/
+*.zip

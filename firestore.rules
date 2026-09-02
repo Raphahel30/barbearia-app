@@ -127,7 +127,7 @@ service cloud.firestore {
     }
 
     match /assinaturasClientes/{userId} {
-      // Leitura restrita ao próprio usuário ou administradores
+      // Cada cliente acessa apenas a própria assinatura; administradores gerenciam a base.
       allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
     }
