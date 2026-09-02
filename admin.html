@@ -3549,15 +3549,56 @@
                         });
                     } catch (eu) { console.warn("Aviso ao sincronizar usuarios:", eu); }
                 }
-
                 const querySnap = await getDocs(collection(db, "assinaturasClientes"));
-                const lista = [];
+                const mapaPorChaveUnica = new Map();
+                const docsObsoletosParaDeletar = [];
 
                 querySnap.forEach(docSnap => {
                     const data = docSnap.data();
-                    const processado = processarCicloMensalistaAdmin({ id: docSnap.id, ...data });
-                    if (processado) lista.push(processado);
+                    const docId = docSnap.id;
+                    const processado = processarCicloMensalistaAdmin({ id: docId, ...data });
+                    if (!processado) return;
+
+                    const telLimpo = processado.telefone ? String(processado.telefone).replace(/\D/g, '') : (docId.startsWith('vip_') ? docId.replace(/^vip_/, '').replace(/\D/g, '') : '');
+                    const emailNorm = (processado.userEmail || processado.email) ? String(processado.userEmail || processado.email).toLowerCase().trim() : '';
+                    const uidReal = (!docId.startsWith('vip_') && docId.length > 15) ? docId : (processado.userId && !processado.userId.startsWith('vip_') ? processado.userId : '');
+                    const nomeNorm = processado.cliente ? String(processado.cliente).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() : '';
+
+                    // Cria chave única para agrupar duplicatas do mesmo cliente
+                    const chaveUnica = uidReal || (telLimpo.length >= 8 ? `tel_${telLimpo.slice(-8)}` : (emailNorm ? `email_${emailNorm}` : (nomeNorm.length > 4 ? `nome_${nomeNorm}` : `doc_${docId}`)));
+
+                    if (!mapaPorChaveUnica.has(chaveUnica)) {
+                        mapaPorChaveUnica.set(chaveUnica, processado);
+                    } else {
+                        const existente = mapaPorChaveUnica.get(chaveUnica);
+                        // Se há um documento com UID real e outro com vip_*, mantém o com UID real e remove o vip_*
+                        if (existente.id.startsWith('vip_') && !processado.id.startsWith('vip_')) {
+                            docsObsoletosParaDeletar.push(existente.id);
+                            mapaPorChaveUnica.set(chaveUnica, processado);
+                        } else if (!existente.id.startsWith('vip_') && processado.id.startsWith('vip_')) {
+                            docsObsoletosParaDeletar.push(processado.id);
+                        } else {
+                            // Se ambos são do mesmo tipo, mantém o com data de atualização mais recente
+                            const dataAtual = new Date(processado.atualizadoEm || processado.dataPagamento || 0).getTime();
+                            const dataExistente = new Date(existente.atualizadoEm || existente.dataPagamento || 0).getTime();
+                            if (dataAtual >= dataExistente) {
+                                if (existente.id !== processado.id) docsObsoletosParaDeletar.push(existente.id);
+                                mapaPorChaveUnica.set(chaveUnica, processado);
+                            } else {
+                                if (existente.id !== processado.id) docsObsoletosParaDeletar.push(processado.id);
+                            }
+                        }
+                    }
                 });
+
+                // Limpeza silenciosa de duplicatas no Firestore
+                if (docsObsoletosParaDeletar.length > 0) {
+                    for (const dId of docsObsoletosParaDeletar) {
+                        try { deleteDoc(doc(db, "assinaturasClientes", dId)).catch(() => {}); } catch (_) {}
+                    }
+                }
+
+                const lista = Array.from(mapaPorChaveUnica.values());
 
                 // Ordena: ativos primeiro, depois pelos que têm crédito expirando, depois por data
                 lista.sort((a, b) => {

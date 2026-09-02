@@ -3563,6 +3563,9 @@
                                         if (sId.startsWith('vip_')) {
                                             try { await deleteDoc(doc(db, "assinaturasClientes", sId)); } catch (_) {}
                                         }
+                                        for (const cId of [...new Set(candidatosIds)]) {
+                                            try { await deleteDoc(doc(db, "assinaturasClientes", cId)); } catch (_) {}
+                                        }
                                         assinatura = dadosMigrados;
                                         break;
                                     }
