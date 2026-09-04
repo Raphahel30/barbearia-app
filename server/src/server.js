@@ -36,6 +36,7 @@ import { solicitarPixManual, decidirPixManual } from './manualBooking.js';
 import { agendarPlanoMensal, cancelarPlanoMensal, validarSemanaPlano } from './monthlyBooking.js';
 import { cancelarAgendamentoAvulso } from './singleBooking.js';
 import { vincularMensalista } from './monthlyIdentity.js';
+import { gravarCicloMensal } from './monthlyCycle.js';
 import {
     assinaturaMensalEstaAtiva,
     consolidarClientesDuplicadosCRMServidor,
@@ -404,13 +405,13 @@ app.use('/api/whatsapp/', limiterWhatsApp);
 
 // Verifica o cadastro administrativo por UID. Custom claim `admin` é validada
 // diretamente pelos middlewares antes deste fallback de migração.
-export async function isEmailAdmin(email, uid = null, db = null) {
+export async function isEmailAdmin(email, uid = null, db = null, claimAdmin = false) {
     const firestore = db || firebaseAdminFirestore;
     if (firestore) {
         try {
             if (uid) {
                 const docSnap = await firestore.collection('administradores').doc(uid).get();
-                if (docSnap.exists) return true;
+                if (docSnap.exists) return docSnap.data().ativo !== false;
             }
             if (email) {
                 const emailNormalizado = String(email).trim().toLowerCase();
@@ -418,13 +419,14 @@ export async function isEmailAdmin(email, uid = null, db = null) {
                     .where('email', '==', emailNormalizado)
                     .limit(1)
                     .get();
-                if (!snap.empty) return true;
+                if (!snap.empty) return snap.docs.every(doc => doc.data().ativo !== false);
             }
         } catch (e) {
             console.warn('[AdminCheck] Aviso ao consultar administradores no Firestore:', e.message);
+            return false;
         }
     }
-    return false;
+    return claimAdmin === true;
 }
 
 let publicCertsCache = null;
@@ -517,7 +519,7 @@ async function verificarAdminMiddleware(req, res, next) {
             });
         }
 
-        const ehAdmin = decoded.admin === true || await isEmailAdmin(decoded.email, decoded.uid || decoded.user_id);
+        const ehAdmin = await isEmailAdmin(decoded.email, decoded.uid || decoded.user_id, null, decoded.admin === true);
         if (!ehAdmin) {
             console.warn(`[Segurança] Tentativa de acesso não autorizado por: ${decoded.email}`);
             return res.status(403).json({
@@ -555,7 +557,7 @@ async function verificarInternalKeyMiddleware(req, res, next) {
     if (token) {
         const decoded = await validarTokenFirebaseAdmin(token);
         if (decoded && decoded.email) {
-            const ehAdmin = decoded.admin === true || await isEmailAdmin(decoded.email, decoded.uid || decoded.user_id);
+            const ehAdmin = await isEmailAdmin(decoded.email, decoded.uid || decoded.user_id, null, decoded.admin === true);
             if (ehAdmin) {
                 req.authUser = decoded;
                 req.ehAdmin = true;
@@ -596,7 +598,7 @@ async function verificarAuthEstornoMiddleware(req, res, next) {
         }
 
         req.authUser = decoded;
-        req.ehAdmin = decoded.admin === true || await isEmailAdmin(decoded.email, decoded.uid || decoded.user_id);
+        req.ehAdmin = await isEmailAdmin(decoded.email, decoded.uid || decoded.user_id, null, decoded.admin === true);
         next();
     } catch (err) {
         console.error('Erro na validação de estorno:', err);
@@ -617,7 +619,7 @@ async function verificarUsuarioMiddleware(req, res, next) {
             return res.status(403).json({ success: false, error: 'Token inválido ou expirado.' });
         }
         req.authUser = decoded;
-        req.ehAdmin = decoded.admin === true || await isEmailAdmin(decoded.email, decoded.uid || decoded.user_id);
+        req.ehAdmin = await isEmailAdmin(decoded.email, decoded.uid || decoded.user_id, null, decoded.admin === true);
         return next();
     } catch (err) {
         console.error('[Auth Cliente] Erro:', err.message);
@@ -708,7 +710,9 @@ app.post('/api/cliente/plano/cancelar-semana', verificarUsuarioMiddleware, async
     try {
         if (!firebaseAdminFirestore) return res.status(503).json({ success: false, error: 'Banco de dados indisponível.' });
         const uid = String(req.authUser.uid || req.authUser.user_id || '');
-        const resultado = await cancelarPlanoMensal(firebaseAdminFirestore, uid, req.body?.agendamentoId);
+        const resultado = await cancelarPlanoMensal(firebaseAdminFirestore, uid, req.body?.agendamentoId, new Date(), {
+            processarEstorno: (pid, valor, chave) => executarEstornoMercadoPagoInterno(pid, valor, chave)
+        });
         let notificacaoPendente = false;
         if (!resultado.alreadyRecorded) {
             try {
@@ -725,7 +729,7 @@ app.post('/api/cliente/plano/cancelar-semana', verificarUsuarioMiddleware, async
                 console.warn('[Plano] Cancelado; aviso WhatsApp não confirmado:', e.message);
             }
         }
-        return res.json({ success: true, status: resultado.status, alreadyRecorded: resultado.alreadyRecorded, notificacaoPendente });
+        return res.json({ success: true, status: resultado.status, alreadyRecorded: resultado.alreadyRecorded, notificacaoPendente, estornoExtrasStatus: resultado.agendamento.estornoExtrasStatus || 'nao_aplicavel' });
     } catch (err) {
         const status = Number(err.statusCode) || 500;
         return res.status(status).json({ success: false, error: status === 500 ? 'Não foi possível cancelar o plano.' : err.message });
@@ -3843,7 +3847,6 @@ app.post('/api/admin/mensalistas/ativar', verificarAdminMiddleware, async (req, 
             return res.status(400).json({ success: false, error: 'Dados obrigatórios da assinatura são inválidos.' });
         }
 
-        const assinaturaRef = firebaseAdminFirestore.collection('assinaturasClientes').doc(userId);
         const assinatura = {
             userId,
             userEmail,
@@ -3865,14 +3868,11 @@ app.post('/api/admin/mensalistas/ativar', verificarAdminMiddleware, async (req, 
             atualizadoEm: new Date().toISOString()
         };
         const { clienteRef, dados } = await montarDadosClienteComAssinatura(userId, assinatura);
-        const batch = firebaseAdminFirestore.batch();
-        batch.set(assinaturaRef, assinatura);
-        batch.set(clienteRef, dados, { merge: true });
-        await batch.commit();
-        return res.json({ success: true, userId, status: 'ativo' });
+        const ciclo = await gravarCicloMensal(firebaseAdminFirestore, userId, assinatura, clienteRef, dados);
+        return res.json({ success: true, userId, status: 'ativo', ...ciclo });
     } catch (e) {
         console.error('Erro em /api/admin/mensalistas/ativar:', e);
-        return res.status(500).json({ success: false, error: 'Erro ao ativar e sincronizar mensalista.' });
+        return res.status(e.statusCode || 500).json({ success: false, error: e.statusCode ? e.message : 'Erro ao ativar e sincronizar mensalista.' });
     }
 });
 

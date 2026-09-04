@@ -1,11 +1,11 @@
 const DAY = 86400000;
 const fail = (message, statusCode = 409) => Object.assign(new Error(message), { statusCode });
 
-export async function cancelarPlanoMensal(db, uid, agendamentoId, now = new Date()) {
+export async function cancelarPlanoMensal(db, uid, agendamentoId, now = new Date(), dependencies = {}) {
     if (!agendamentoId || typeof agendamentoId !== 'string' || agendamentoId.includes('/')) throw fail('Agendamento inválido.', 400);
     const agRef = db.collection('agendamentos').doc(agendamentoId);
     const subRef = db.collection('assinaturasClientes').doc(uid);
-    return db.runTransaction(async tx => {
+    const resultado = await db.runTransaction(async tx => {
         const [agSnap, subSnap] = await Promise.all([tx.get(agRef), tx.get(subRef)]);
         if (!agSnap.exists || !subSnap.exists) throw fail('Plano ou agendamento não encontrado.', 404);
         const ag = agSnap.data();
@@ -18,7 +18,7 @@ export async function cancelarPlanoMensal(db, uid, agendamentoId, now = new Date
         const horario = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(ag.dataHora || '') ? `${ag.dataHora}:00-03:00` : ag.dataHora;
         const data = new Date(horario);
         if (!Number.isFinite(data.getTime())) throw fail('Horário inválido. Procure o administrador.');
-        const status = data.getTime() - now.getTime() > 3 * 3600000 ? 'disponivel' : 'falta';
+        const status = data.getTime() - now.getTime() >= 3 * 3600000 ? 'disponivel' : 'falta';
         const iso = now.toISOString();
         const slotId = ag.slotId || `slot_${ag.dataHora}_${ag.barbeiroId || 'principal'}`;
         const slotRef = db.collection('slots_agendamentos').doc(slotId);
@@ -36,11 +36,31 @@ export async function cancelarPlanoMensal(db, uid, agendamentoId, now = new Date
             agendamentoData: status === 'disponivel' ? null : ag.dataHora, atualizadoEm: iso,
             versaoReserva: Number(semanas[semana].versaoReserva || 0) + (status === 'disponivel' ? 1 : 0)
         };
-        const atualizacao = { status: ag.status === 'reembolsado' ? 'reembolsado' : 'cancelado', canceladoEm: iso, canceladoPor: 'cliente', semanaCanceladaEm: iso, statusSemanaAposCancelamento: status, atualizadoEm: iso };
+        const valorExtras = Number(ag.taxaReservaPaga ?? ag.precoPago ?? 0);
+        const deveEstornar = status === 'disponivel' && Number.isFinite(valorExtras) && valorExtras > 0 && ag.status !== 'reembolsado';
+        const estornoExtrasStatus = deveEstornar ? (/^\d+$/.test(String(ag.idPagamento || '')) ? 'pendente' : 'manual') : 'nao_aplicavel';
+        const atualizacao = { status: ag.status === 'reembolsado' ? 'reembolsado' : 'cancelado', canceladoEm: iso, canceladoPor: 'cliente', semanaCanceladaEm: iso, statusSemanaAposCancelamento: status, atualizadoEm: iso, estornoExtrasStatus, valorExtrasEstornar: deveEstornar ? valorExtras : 0 };
+        if (deveEstornar) tx.set(db.collection('estornos_extras').doc(agendamentoId), { userId: uid, agendamentoId, paymentId: ag.idPagamento || '', valor: valorExtras, status: estornoExtrasStatus, criadoEm: iso });
         tx.update(subRef, { [`semanas.${semana}`]: semanaAtualizada, atualizadoEm: iso });
         tx.update(agRef, atualizacao);
         return { status, alreadyRecorded: false, agendamento: { ...ag, ...atualizacao } };
     });
+    const ag = resultado.agendamento;
+    if (ag.estornoExtrasStatus === 'pendente' && typeof dependencies.processarEstorno === 'function') {
+        try {
+            const refund = await dependencies.processarEstorno(ag.idPagamento, ag.valorExtrasEstornar, `cancelamento_${agendamentoId}`);
+            if (!refund?.success) throw new Error('Estorno não confirmado.');
+            const update = { estornoExtrasStatus: 'confirmado', estornoRealizado: true, valorEstornado: ag.valorExtrasEstornar, estornoConfirmadoEm: new Date().toISOString() };
+            const batch = db.batch();
+            batch.update(agRef, update);
+            batch.update(db.collection('estornos_extras').doc(agendamentoId), { status: 'confirmado', confirmadoEm: update.estornoConfirmadoEm });
+            await batch.commit();
+            resultado.agendamento = { ...ag, ...update };
+        } catch (err) {
+            await db.collection('estornos_extras').doc(agendamentoId).set({ ultimoErro: String(err.message).slice(0, 250), atualizadoEm: new Date().toISOString() }, { merge: true });
+        }
+    }
+    return resultado;
 }
 
 function asDate(value) {

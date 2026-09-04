@@ -4490,7 +4490,7 @@
                         ? `<span class="text-amber-300 font-bold">${String(c.proximoAgendamentoEm).replace('T', ' às ')}</span>`
                         : '<span class="text-zinc-600">Nenhum</span>';
 
-                    const tagsHtml = (c.tags || []).slice(0, 2).map(t => `<span class="px-1.5 py-0.5 rounded bg-zinc-800 text-[10px] text-zinc-300 border border-zinc-700">${t}</span>`).join(' ');
+                    const tagsHtml = (c.tags || []).slice(0, 2).map(t => `<span class="px-1.5 py-0.5 rounded bg-zinc-800 text-[10px] text-zinc-300 border border-zinc-700">${textoHtml(t)}</span>`).join(' ');
                     const statusBadge = c.status === 'ativo' 
                         ? '<span class="px-2.5 py-0.5 rounded-full bg-green-950 text-green-400 border border-green-800 text-[10px] font-bold">Ativo</span>'
                         : '<span class="px-2.5 py-0.5 rounded-full bg-zinc-900 text-zinc-400 border border-zinc-800 text-[10px] font-bold">Inativo</span>';
@@ -4506,7 +4506,7 @@
                                         ${iniciais}
                                     </div>
                                     <div class="min-w-0">
-                                        <div class="font-bold text-white text-sm truncate">${c.nome}</div>
+                                        <div class="font-bold text-white text-sm truncate">${textoHtml(c.nome)}</div>
                                         <div class="text-xs text-zinc-400 flex items-center gap-2 mt-0.5 flex-wrap">
                                             ${telLimpo ? `
                                                 <a href="https://wa.me/55${telLimpo}" target="_blank" class="text-green-400 hover:text-green-300 font-semibold inline-flex items-center gap-1">
@@ -4514,7 +4514,7 @@
                                                     <span>${telFmt}</span>
                                                 </a>
                                             ` : '<span class="text-zinc-600">Sem telefone</span>'}
-                                            ${c.email ? `<span class="text-zinc-500">• ${c.email}</span>` : ''}
+                                            ${c.email ? `<span class="text-zinc-500">• ${textoHtml(c.email)}</span>` : ''}
                                         </div>
                                     </div>
                                 </div>
@@ -4537,7 +4537,7 @@
                                         <svg class="w-3.5 h-3.5 text-[#D4AF37]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                         <span>Perfil</span>
                                     </button>
-                                    <button onclick="window.abrirModalWhatsRapido('${c.telefone}', '${c.nome.replace(/'/g, "\\'")}')" title="WhatsApp Rápido" class="px-2.5 py-1.5 bg-green-950/60 hover:bg-green-900 text-green-300 rounded-xl border border-green-700/50 transition cursor-pointer text-xs flex items-center justify-center gap-1 font-bold">
+                                    <button onclick="window.abrirModalWhatsRapido(${argumentoEvento(c.telefone)}, ${argumentoEvento(c.nome)})" title="WhatsApp Rápido" class="px-2.5 py-1.5 bg-green-950/60 hover:bg-green-900 text-green-300 rounded-xl border border-green-700/50 transition cursor-pointer text-xs flex items-center justify-center gap-1 font-bold">
                                         <svg class="w-3.5 h-3.5 fill-current text-green-400" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.634.077-1.782-.397-1.423-.588-2.339-2.029-2.41-2.124-.07-.095-.576-.767-.576-1.464 0-.697.362-1.041.491-1.184.13-.143.284-.179.378-.179.095 0 .19.002.272.006.088.004.206-.033.322.246.12.289.407.994.442 1.066.035.072.059.157.012.252-.047.095-.07.155-.14.237-.07.082-.148.183-.211.246-.07.07-.143.146-.061.288.082.141.365.602.784.975.54.481.996.63 1.137.7.142.07.225.059.308-.035.083-.095.355-.414.45-.556.095-.143.19-.119.32-.071.13.047.828.39 1.704.428.14.037.234.059.269.117.035.059.035.344-.109.749z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.891.524 3.662 1.438 5.18L2 22l4.981-1.393A9.957 9.957 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18.05c-1.63 0-3.147-.442-4.455-1.21l-.32-.189-3.305.945.923-3.235-.208-.334A8.008 8.008 0 014 12c0-4.411 3.589-8.05 8-8.05 4.411 0 8 3.639 8 8.05 0 4.411-3.589 8.05-8 8.05z"/></svg>
                                         <span>WhatsApp</span>
                                     </button>
@@ -4567,7 +4567,7 @@
                                         ${iniciais}
                                     </div>
                                     <div class="min-w-0">
-                                        <h4 class="font-bold text-white text-sm leading-tight truncate">${c.nome}</h4>
+                                        <h4 class="font-bold text-white text-sm leading-tight truncate">${textoHtml(c.nome)}</h4>
                                         <p class="text-[11px] text-zinc-400 mt-0.5">${telFmt}</p>
                                     </div>
                                 </div>
@@ -4593,7 +4593,7 @@
                                     <svg class="w-3.5 h-3.5 text-[#D4AF37]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                     <span>Perfil</span>
                                 </button>
-                                <button onclick="window.abrirModalWhatsRapido('${c.telefone}', '${c.nome.replace(/'/g, "\\'")}')" class="py-1.5 px-3 bg-green-950/60 hover:bg-green-900 text-green-300 rounded-xl border border-green-700/50 text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer">
+                                <button onclick="window.abrirModalWhatsRapido(${argumentoEvento(c.telefone)}, ${argumentoEvento(c.nome)})" class="py-1.5 px-3 bg-green-950/60 hover:bg-green-900 text-green-300 rounded-xl border border-green-700/50 text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer">
                                     <svg class="w-3.5 h-3.5 fill-current text-green-400" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.634.077-1.782-.397-1.423-.588-2.339-2.029-2.41-2.124-.07-.095-.576-.767-.576-1.464 0-.697.362-1.041.491-1.184.13-.143.284-.179.378-.179.095 0 .19.002.272.006.088.004.206-.033.322.246.12.289.407.994.442 1.066.035.072.059.157.012.252-.047.095-.07.155-.14.237-.07.082-.148.183-.211.246-.07.07-.143.146-.061.288.082.141.365.602.784.975.54.481.996.63 1.137.7.142.07.225.059.308-.035.083-.095.355-.414.45-.556.095-.143.19-.119.32-.071.13.047.828.39 1.704.428.14.037.234.059.269.117.035.059.035.344-.109.749z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.891.524 3.662 1.438 5.18L2 22l4.981-1.393A9.957 9.957 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18.05c-1.63 0-3.147-.442-4.455-1.21l-.32-.189-3.305.945.923-3.235-.208-.334A8.008 8.008 0 014 12c0-4.411 3.589-8.05 8-8.05 4.411 0 8 3.639 8 8.05 0 4.411-3.589 8.05-8 8.05z"/></svg>
                                     <span>WhatsApp</span>
                                 </button>
@@ -9014,18 +9014,18 @@
                     <div class="bg-black/80 border ${atingiuMeta ? 'border-amber-500 shadow-[0_0_15px_rgba(212,175,55,0.15)]' : 'border-zinc-800'} p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition hover:border-zinc-700">
                         <div class="flex items-center gap-3.5 flex-1 min-w-0">
                             <div class="w-12 h-12 rounded-xl bg-zinc-900 border ${atingiuMeta ? 'border-amber-500' : 'border-zinc-800'} flex items-center justify-center text-xl overflow-hidden flex-shrink-0">
-                                ${c.fotoUrl ? `<img src="${c.fotoUrl}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='👑'" alt="${c.nome}">` : '👑'}
+                                ${c.fotoUrl ? `<img src="${textoHtml(urlImagemSegura(c.fotoUrl))}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='👑'" alt="${textoHtml(c.nome)}">` : '👑'}
                             </div>
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-2 flex-wrap">
-                                    <h4 class="text-sm font-bold text-white truncate">${c.nome}</h4>
+                                    <h4 class="text-sm font-bold text-white truncate">${textoHtml(c.nome)}</h4>
                                     ${c.contasVinculadas > 1 ? `<span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-zinc-800 text-dourado border border-dourado/30" title="Contas vinculadas ao mesmo telefone unificadas automaticamente">🔗 ${c.contasVinculadas} contas unificadas</span>` : ''}
                                     ${atingiuMeta 
                                         ? `<span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500 text-black uppercase animate-pulse">🎉 Recompensa Pronta!</span>` 
                                         : `<span class="text-[10px] font-semibold text-zinc-400">${selos}/${meta} selos</span>`}
                                 </div>
                                 <div class="flex items-center gap-3 text-xs text-zinc-400 mt-0.5 flex-wrap">
-                                    ${c.telefone ? `<a href="${whatsHref}" target="_blank" class="hover:text-green-400 transition flex items-center gap-1 font-mono">📱 ${c.telefone}</a>` : '<span class="text-zinc-600">Sem telefone</span>'}
+                                    ${c.telefone ? `<a href="${whatsHref}" target="_blank" class="hover:text-green-400 transition flex items-center gap-1 font-mono">📱 ${textoHtml(c.telefone)}</a>` : '<span class="text-zinc-600">Sem telefone</span>'}
                                     <span class="text-zinc-600">•</span>
                                     <span class="text-zinc-500 text-[11px]">Total Histórico: <strong>${c.totalHistorico}</strong> cortes</span>
                                 </div>
@@ -9525,18 +9525,18 @@
                     <div class="bg-black/80 border ${c.ehHoje ? 'border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.2)]' : 'border-zinc-800'} p-3.5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition hover:border-zinc-700">
                         <div class="flex items-center gap-3 flex-1 min-w-0">
                             <div class="w-11 h-11 rounded-xl bg-purple-950/40 border border-purple-800/60 flex items-center justify-center text-xl overflow-hidden flex-shrink-0">
-                                ${c.fotoUrl ? `<img src="${c.fotoUrl}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='🎂'" alt="${c.nome}">` : '🎂'}
+                                ${c.fotoUrl ? `<img src="${textoHtml(urlImagemSegura(c.fotoUrl))}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='🎂'" alt="${textoHtml(c.nome)}">` : '🎂'}
                             </div>
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-2 flex-wrap">
-                                    <h5 class="text-sm font-bold text-white truncate">${c.nome}</h5>
+                                    <h5 class="text-sm font-bold text-white truncate">${textoHtml(c.nome)}</h5>
                                     ${badgeDias}
                                 </div>
                                 <div class="flex items-center gap-2.5 text-xs text-zinc-400 mt-0.5 flex-wrap">
                                     <span class="font-bold text-purple-300">🎂 ${c.dataFormatadaTexto}</span>
                                     ${c.idade ? `<span class="text-zinc-500">(${c.idade} anos)</span>` : ''}
                                     <span class="text-zinc-600">•</span>
-                                    ${c.telefone ? `<span class="font-mono text-zinc-400">📱 ${c.telefone}</span>` : '<span class="text-zinc-600">Sem WhatsApp</span>'}
+                                    ${c.telefone ? `<span class="font-mono text-zinc-400">📱 ${textoHtml(c.telefone)}</span>` : '<span class="text-zinc-600">Sem WhatsApp</span>'}
                                 </div>
                                 <div class="mt-1 flex items-center gap-2 flex-wrap">
                                     ${badgeStatusPresente}
@@ -9546,7 +9546,7 @@
                         </div>
 
                         <div class="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
-                            <button onclick="window.enviarParabensWhatsappAdmin('${c.userId}', '${c.nome.replace(/'/g, "\\'")}', '${c.telefone}', '${c.dataFormatadaTexto}')" class="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs uppercase transition cursor-pointer shadow flex items-center gap-1.5" title="Enviar Parabéns com Presente no WhatsApp">
+                            <button onclick="window.enviarParabensWhatsappAdmin(${argumentoEvento(c.userId)}, ${argumentoEvento(c.nome)}, ${argumentoEvento(c.telefone)}, ${argumentoEvento(c.dataFormatadaTexto)})" class="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs uppercase transition cursor-pointer shadow flex items-center gap-1.5" title="Enviar Parabéns com Presente no WhatsApp">
                                 <span>🎂</span>
                                 <span>Enviar Parabéns</span>
                             </button>

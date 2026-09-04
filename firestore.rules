@@ -7,7 +7,9 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isAuthenticated() && (
+      return isAuthenticated() &&
+        (!exists(/databases/$(database)/documents/administradores/$(request.auth.uid)) ||
+          get(/databases/$(database)/documents/administradores/$(request.auth.uid)).data.get('ativo', true) != false) && (
         ('admin' in request.auth.token && request.auth.token.admin == true) ||
         exists(/databases/$(database)/documents/administradores/$(request.auth.uid))
       );
@@ -196,6 +198,16 @@ service cloud.firestore {
       // Recibos e histórico de benefícios consumidos vinculados ao usuário
       allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
       allow write: if isAdmin();
+    }
+
+    match /estornos_extras/{id} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /assinaturas_historico/{id} {
+      allow read: if isAdmin();
+      allow write: if false;
     }
 
     match /_whatsapp_session/{docId} {

@@ -14,3 +14,7 @@ skills/
 .agents/
 server/tests/
 server/scripts/
+graphify-out/
+private-backups/
+**/*service-account*.json
+**/*.env*

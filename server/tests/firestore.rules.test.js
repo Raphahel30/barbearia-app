@@ -52,6 +52,12 @@ function adminDb() {
     return userDb('admin-1', 'gestor@example.com', { admin: true });
 }
 
+test('administrador inativo perde acesso mesmo com claim antigo', async () => {
+    await seed('administradores/admin-1', { ativo: false });
+    await assertFails(setDoc(doc(adminDb(), 'servicos/negado'), { nome: 'Não deve gravar' }));
+    await assertFails(getDocs(collection(adminDb(), 'clientes')));
+});
+
 async function seed(path, data) {
     await testEnv.withSecurityRulesDisabled(async context => {
         await setDoc(doc(context.firestore(), path), data);

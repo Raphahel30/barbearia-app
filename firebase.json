@@ -32,6 +32,10 @@
       "**/.*",
       "**/node_modules/**",
       "server/**",
+      "graphify-out/**",
+      "private-backups/**",
+      "**/*service-account*.json",
+      "**/*.env*",
       "api/**",
       "docs/**",
       "skills/**"

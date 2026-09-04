@@ -18,8 +18,14 @@ export async function vincularMensalista(db, identidade, auth, now = new Date())
         const atual = await tx.get(destino);
         if (atual.exists && assinaturaMensalEstaAtiva(atual.data(), now)) return { assinatura: atual.data(), vinculado: false };
         if (!email && !telefone) return { assinatura: atual.data() || null, vinculado: false, requerIdentidadeVerificada: true };
-        const todas = await tx.get(db.collection('assinaturasClientes'));
-        const candidatos = todas.docs.filter(doc => {
+        const consultas = [];
+        const base = db.collection('assinaturasClientes');
+        if (email) for (const campo of ['emailNormalizado', 'userEmail', 'email']) consultas.push(base.where(campo, '==', email).limit(11));
+        if (telefone) for (const campo of ['telefoneNormalizado', 'telefone']) consultas.push(base.where(campo, 'in', [telefone, `55${telefone}`, `+55${telefone}`]).limit(11));
+        const resultados = await Promise.all(consultas.map(q => tx.get(q)));
+        if (resultados.some(r => r.size === 11)) throw fail('Muitos cadastros correspondentes. Peça ao administrador para revisar duplicados.');
+        const encontrados = new Map(resultados.flatMap(r => r.docs.map(doc => [doc.id, doc])));
+        const candidatos = [...encontrados.values()].filter(doc => {
             const s = doc.data();
             if (doc.id === uid || s.migradoPara || !assinaturaMensalEstaAtiva(s, now)) return false;
             if (!(s.ativadoPorAdmin === true || doc.id.startsWith('mensal_'))) return false;

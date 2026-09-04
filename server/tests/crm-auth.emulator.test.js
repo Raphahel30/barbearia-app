@@ -38,6 +38,9 @@ test('Emulator: Autenticação de Administrador e Sincronização Segura do CRM'
         // Verifica usuário comum
         const ehAdminComum = await isEmailAdmin('cliente@gmail.com', 'cliente-uid-999', db);
         assert.equal(ehAdminComum, false, 'Usuário comum não deve ter privilégios de administrador');
+        await db.doc('administradores/admin-inativo').set({ email: 'inativo@example.test', ativo: false });
+        assert.equal(await isEmailAdmin('inativo@example.test', 'admin-inativo', db, true), false, 'Token antigo não supera bloqueio pelo UID');
+        assert.equal(await isEmailAdmin('inativo@example.test', 'uid-legado', db, true), false, 'Bloqueio por email também é respeitado');
 
         // ==========================================
         // 2. TESTE DE SINCRONIZAÇÃO SEGURA DO CRM
