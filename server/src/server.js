@@ -2732,20 +2732,37 @@ app.post('/api/webhook', async (req, res) => {
 
         const ts = tsPart.split('=')[1];
         const v1 = v1Part.split('=')[1];
+        const tsNum = Number(ts);
+
+        // Tolerância máxima de 5 minutos contra Replay Attacks
+        if (Number.isFinite(tsNum) && Math.abs(Math.floor(Date.now() / 1000) - tsNum) > 300) {
+            return res.status(401).json({ received: false, reason: 'timestamp_expired' });
+        }
+
         const signedManifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
         const expectedHmac = crypto.createHmac('sha256', MP_WEBHOOK_SECRET)
             .update(signedManifest)
             .digest('hex');
 
-        if (expectedHmac !== v1) {
-            console.warn(`[Webhook] Assinatura inválida — possível requisição não autorizada. x-request-id: ${xRequestId}`);
+        const bufExpected = Buffer.from(expectedHmac, 'utf8');
+        const bufActual = Buffer.from(String(v1), 'utf8');
+        if (bufExpected.length !== bufActual.length || !crypto.timingSafeEqual(bufExpected, bufActual)) {
+            console.warn(`[Webhook] Assinatura HMAC diverge. x-request-id: ${xRequestId}`);
             return res.status(401).json({ received: false, reason: 'invalid_signature' });
         }
 
         const topic = req.query.topic || req.query.type || req.body?.type;
-        const paymentId = req.query['data.id'] || req.query.id || req.body?.data?.id;
+        const rawPaymentId = req.query['data.id'] || req.query.id || req.body?.data?.id;
+        const paymentId = String(rawPaymentId || '').trim();
 
-        if (paymentId && (topic === 'payment' || req.body?.action?.includes('payment') || req.query.topic === 'payment' || req.query.type === 'payment' || !topic)) {
+        if (paymentId && /^\d+$/.test(paymentId) && (topic === 'payment' || req.body?.action?.includes('payment') || req.query.topic === 'payment' || req.query.type === 'payment' || !topic)) {
+            if (!activeAccessToken || activeAccessToken === 'SEU_ACCESS_TOKEN_AQUI' || activeAccessToken === 'DUMMY_TOKEN') {
+                await carregarConfiguracoesMercadoPagoFirestore();
+            }
+            if (!paymentClient) {
+                return res.status(503).json({ received: false, reason: 'payment_client_unavailable' });
+            }
+
             const response = await paymentClient.get({ id: paymentId });
             console.log(`[Webhook] ✅ Pagamento ${paymentId} status: ${response.status} (${response.status_detail})`);
 
@@ -2917,7 +2934,73 @@ async function executarAutoLimpezaPendenciasVencidas() {
     }
 }
 
+// ==========================================
+// WORKER ATIVO: CONCILIAÇÃO RÁPIDA DE PAGAMENTOS PENDENTES (15 SEGUNDOS)
+// Confirma agendamento mesmo que o cliente feche o site/app para ir ao banco pagar
+// ==========================================
+let reconciliacaoRapidaEmExecucao = false;
+export async function executarConciliacaoRapidaPagamentosPendentes() {
+    if (reconciliacaoRapidaEmExecucao || !firebaseAdminFirestore) return;
+
+    reconciliacaoRapidaEmExecucao = true;
+    try {
+        if (!activeAccessToken || activeAccessToken === 'SEU_ACCESS_TOKEN_AQUI' || activeAccessToken === 'DUMMY_TOKEN') {
+            await carregarConfiguracoesMercadoPagoFirestore();
+        }
+        if (!paymentClient || !activeAccessToken || activeAccessToken === 'SEU_ACCESS_TOKEN_AQUI' || activeAccessToken === 'DUMMY_TOKEN') {
+            return;
+        }
+
+        const agoraMillis = Date.now();
+        const limiteRecenteMillis = agoraMillis - 15 * 60 * 1000; // Últimos 15 minutos
+
+        const snap = await firebaseAdminFirestore.collection('pagamentos_pendentes')
+            .where('status', '==', 'pendente')
+            .limit(20)
+            .get();
+
+        if (snap.empty) return;
+
+        for (const docP of snap.docs) {
+            const dados = docP.data();
+            const pId = dados.paymentId || docP.id;
+            if (!pId || !/^\d+$/.test(String(pId))) continue;
+
+            let criadoEmMillis = 0;
+            if (dados.criadoEm) {
+                if (typeof dados.criadoEm.toMillis === 'function') criadoEmMillis = dados.criadoEm.toMillis();
+                else if (dados.criadoEm._seconds) criadoEmMillis = dados.criadoEm._seconds * 1000;
+                else criadoEmMillis = new Date(dados.criadoEm).getTime();
+            }
+
+            if (criadoEmMillis > 0 && criadoEmMillis < limiteRecenteMillis) continue;
+
+            try {
+                const mpRes = await paymentClient.get({ id: String(pId) });
+                if (mpRes && mpRes.status === 'approved') {
+                    console.log(`[Worker Background 15s] ⚡ Pagamento ${pId} detectado como APROVADO no Mercado Pago! Concluindo agendamento...`);
+                    await processarConclusaoPagamentoServidor(pId, mpRes, dados.metodo || 'pix_mercadopago');
+                } else if (mpRes && (mpRes.status === 'cancelled' || mpRes.status === 'rejected')) {
+                    console.log(`[Worker Background 15s] ℹ️ Pagamento ${pId} com status ${mpRes.status} no Mercado Pago.`);
+                    await docP.ref.set({
+                        status: mpRes.status,
+                        statusDetail: mpRes.status_detail || mpRes.status,
+                        atualizadoEm: new Date().toISOString()
+                    }, { merge: true });
+                }
+            } catch (errCheck) {
+                // Silencioso para não poluir logs em oscilações momentâneas de rede
+            }
+        }
+    } catch (e) {
+        console.warn('[Worker Background Erro]:', e.message);
+    } finally {
+        reconciliacaoRapidaEmExecucao = false;
+    }
+}
+
 if (isMainModule) {
+    setInterval(executarConciliacaoRapidaPagamentosPendentes, 15 * 1000).unref();
     setInterval(executarAutoLimpezaPendenciasVencidas, 3 * 60 * 1000).unref();
 }
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'emaus-barbearia-pwa-v4';
+const CACHE_NAME = 'emaus-barbearia-pwa-v5';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

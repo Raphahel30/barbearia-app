@@ -5710,22 +5710,35 @@
                 if (isPlano) {
                     const resultado = await atualizarSemanaPlanoNoServidor('/api/cliente/plano/cancelar-semana', id, semanaPlano || 0);
                     let mensagem = resultado.status === 'disponivel'
-                        ? 'Agendamento cancelado. O crédito desta semana está disponível para reagendamento.'
-                        : 'Agendamento cancelado. O crédito foi perdido pela regra de três horas de antecedência.';
+                        ? 'Agendamento cancelado com sucesso! Como cancelou com mais de 3 horas de antecedência, seu corte semanal está liberado para reagendamento.'
+                        : 'Agendamento do Plano Mensal cancelado. Conforme a regra de antecedência mínima de 3 horas, o corte desta semana foi perdido e não poderá ser reagendado.';
                     if (valorPago > 0) mensagem += '\nO cancelamento do plano não confirma estorno dos extras. Consulte a barbearia sobre esse valor.';
                     if (resultado.notificacaoPendente) mensagem += '\nO aviso automático pelo WhatsApp não foi confirmado.';
                     alert(mensagem);
-                    if (planoPerdeuCredito) {
-                        alertMsg = "Agendamento do Plano Mensal cancelado. Conforme a regra de antecedência mínima de 3 horas, o corte desta semana foi perdido e não poderá ser reagendado.";
-                    } else {
-                        alertMsg = "Agendamento do Plano Mensal cancelado com sucesso! Como cancelou com mais de 3 horas de antecedência, seu corte semanal está liberado para reagendamento.";
-                    }
-                } else if (elegivelEstorno) {
-                    alertMsg = `Agendamento cancelado com sucesso!${estornoMsg || ' Seu estorno será processado conforme os Termos e Condições.'}` ;
                 } else {
-                    alertMsg = "Agendamento cancelado com sucesso (sem estorno, conforme os Termos de cancelamento com menos de 3h).";
+                    const authHeaders = await obterHeadersApiAutenticada();
+                    const resp = await fetch(`${getBackendUrlAtivo()}/api/cliente/agendamento/cancelar`, {
+                        method: 'POST',
+                        headers: authHeaders,
+                        body: JSON.stringify({ agendamentoId: id })
+                    });
+                    const resultado = await resp.json();
+                    if (!resultado.success) {
+                        throw new Error(resultado.error || 'Não foi possível cancelar o agendamento.');
+                    }
+                    let alertMsg = "";
+                    if (resultado.estornoRealizado) {
+                        alertMsg = `Agendamento cancelado com sucesso! O estorno de R$ ${Number(resultado.valorEstornado || 0).toFixed(2)} foi processado via Mercado Pago.`;
+                    } else if (resultado.elegivelEstorno) {
+                        alertMsg = "Agendamento cancelado com sucesso! O estorno será conferido e efetuado pelo estabelecimento.";
+                    } else {
+                        alertMsg = "Agendamento cancelado com sucesso (sem estorno financeiro, conforme as regras para cancelamentos com menos de 3 horas ou serviços gratuitos).";
+                    }
+                    if (resultado.notificacaoPendente) {
+                        alertMsg += "\n(O aviso automático por WhatsApp não pôde ser confirmado no momento).";
+                    }
+                    alert(alertMsg);
                 }
-                alert(alertMsg + avisoNotificacao);
 
                 if (auth.currentUser) {
                     await carregarPainelCliente(auth.currentUser.uid);
