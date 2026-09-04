@@ -535,35 +535,42 @@ async function verificarAdminMiddleware(req, res, next) {
 }
 
 // Middleware de Chave Interna de Serviço para rotas de notificação automática
-// Aceita chamadas com header X-Internal-Key que batem com a variável de ambiente INTERNAL_SERVICE_KEY
-// Garante que apenas o próprio sistema (frontend) pode disparar notificações, bloqueando abusos externos
+// Aceita chamadas com header X-Internal-Key via comparação de tempo constante
+// OU autenticação de Administrador Firebase. Bloqueia relay aberto de spam por clientes.
 async function verificarInternalKeyMiddleware(req, res, next) {
     const INTERNAL_KEY = process.env.INTERNAL_SERVICE_KEY || '';
 
-    // Se não há chave configurada, exige que seja um admin autenticado
-    if (!INTERNAL_KEY) {
-        return verificarAdminMiddleware(req, res, next);
+    const providedKey = String(req.headers['x-internal-key'] || '');
+    if (providedKey && INTERNAL_KEY) {
+        const bufProvided = Buffer.from(providedKey, 'utf8');
+        const bufExpected = Buffer.from(INTERNAL_KEY, 'utf8');
+        if (bufProvided.length === bufExpected.length && crypto.timingSafeEqual(bufProvided, bufExpected)) {
+            return next();
+        }
     }
 
-    const providedKey = req.headers['x-internal-key'] || '';
-    if (providedKey && providedKey === INTERNAL_KEY) {
-        return next();
-    }
-
-    // Fallback: aceita token Firebase válido (admin ou usuário comum)
+    // Fallback restrito: Apenas Administrador autenticado no Firebase pode acionar notificações
     const authHeader = req.headers['authorization'] || '';
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
     if (token) {
         const decoded = await validarTokenFirebaseAdmin(token);
         if (decoded && decoded.email) {
-            req.authUser = decoded;
-            return next();
+            const ehAdmin = decoded.admin === true || await isEmailAdmin(decoded.email, decoded.uid || decoded.user_id);
+            if (ehAdmin) {
+                req.authUser = decoded;
+                req.ehAdmin = true;
+                return next();
+            }
+            return res.status(403).json({
+                success: false,
+                error: 'Acesso restrito. Clientes comuns não possuem permissão para disparar notificações.'
+            });
         }
     }
 
     return res.status(401).json({
         success: false,
-        error: 'Acesso negado. Chave de serviço ou token de autenticação inválido.'
+        error: 'Acesso negado. Chave de serviço ou credencial administrativa obrigatória.'
     });
 }
 
@@ -992,9 +999,17 @@ const MP_CLIENT_ID = process.env.MP_CLIENT_ID || '';
 const MP_CLIENT_SECRET = process.env.MP_CLIENT_SECRET || '';
 const MP_REDIRECT_URI = process.env.MP_REDIRECT_URI || 'https://barbearia-app-1bf5.onrender.com/api/auth/mercadopago/callback';
 
-// Retorna URL de autorização OAuth do Mercado Pago (Conectar com 1 Clique)
+// Retorna URL de autorização OAuth do Mercado Pago com State Criptográfico Anti-CSRF
 app.get('/api/auth/mercadopago/url', verificarAdminMiddleware, (req, res) => {
-    const authUrl = `https://auth.mercadopago.com/authorization?client_id=${MP_CLIENT_ID}&response_type=code&platform_id=mp&state=emaus_admin&redirect_uri=${encodeURIComponent(MP_REDIRECT_URI)}`;
+    const stateNonce = crypto.randomBytes(16).toString('hex');
+    const stateTs = Date.now().toString();
+    const statePayload = `${stateNonce}.${stateTs}`;
+    const stateHmac = crypto.createHmac('sha256', MP_CLIENT_SECRET || 'emaus_oauth_secret')
+        .update(statePayload)
+        .digest('hex');
+    const stateToken = `${statePayload}.${stateHmac}`;
+
+    const authUrl = `https://auth.mercadopago.com/authorization?client_id=${MP_CLIENT_ID}&response_type=code&platform_id=mp&state=${encodeURIComponent(stateToken)}&redirect_uri=${encodeURIComponent(MP_REDIRECT_URI)}`;
     return res.json({ url: authUrl });
 });
 
@@ -1005,6 +1020,31 @@ app.get('/api/auth/mercadopago/callback', async (req, res) => {
     if (error || !code) {
         console.error("Erro no retorno do OAuth Mercado Pago:", error, error_description);
         return res.redirect(`${APP_SITE_URL}/admin.html?mp_status=erro&msg=${encodeURIComponent(error_description || error || 'Autorizacao cancelada')}`);
+    }
+
+    // Validação estrita de segurança contra OAuth CSRF
+    let stateValido = false;
+    if (state && typeof state === 'string') {
+        const parts = state.split('.');
+        if (parts.length === 3) {
+            const [nonce, ts, hmac] = parts;
+            const tsNum = Number(ts);
+            if (Number.isFinite(tsNum) && Math.abs(Date.now() - tsNum) <= 15 * 60 * 1000) {
+                const expectedHmac = crypto.createHmac('sha256', MP_CLIENT_SECRET || 'emaus_oauth_secret')
+                    .update(`${nonce}.${ts}`)
+                    .digest('hex');
+                const bufExp = Buffer.from(expectedHmac, 'utf8');
+                const bufAct = Buffer.from(hmac, 'utf8');
+                if (bufExp.length === bufAct.length && crypto.timingSafeEqual(bufExp, bufAct)) {
+                    stateValido = true;
+                }
+            }
+        }
+    }
+
+    if (!stateValido) {
+        console.warn(`[OAuth CSRF Bloqueado] Tentativa com state inválido ou expirado: ${state}`);
+        return res.redirect(`${APP_SITE_URL}/admin.html?mp_status=erro&msg=${encodeURIComponent('Falha de segurança: Estado OAuth inválido ou expirado (CSRF bloqueado).')}`);
     }
 
     try {
@@ -1584,62 +1624,28 @@ app.post('/api/pagamento/cartao', verificarUsuarioMiddleware, async (req, res) =
             desconto_aniversario: Number(dadosPayload.descontoAniversario || 0)
         };
 
-        // Se o frontend enviou dados do cartão em vez de token prévio, geramos o token no Mercado Pago
-        if (!token && cardNumber) {
-            const cleanCardNumber = String(cardNumber).replace(/\s/g, '');
-            const cleanCpf = cpf ? String(cpf).replace(/\D/g, '') : '';
-            const expMonth = Number(cardExpirationMonth);
-            const expYearRaw = String(cardExpirationYear).trim();
-            const expYear = Number(expYearRaw.length === 2 ? `20${expYearRaw}` : expYearRaw);
-
-            const cardTokenResp = await fetch(`https://api.mercadopago.com/v1/card_tokens`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${activeAccessToken}`
-                },
-                body: JSON.stringify({
-                    card_number: cleanCardNumber,
-                    expiration_month: expMonth,
-                    expiration_year: expYear,
-                    security_code: String(securityCode).trim(),
-                    cardholder: {
-                        name: (cardholderName || 'CLIENTE BARBEARIA').toUpperCase(),
-                        identification: cleanCpf ? { type: 'CPF', number: cleanCpf } : undefined
-                    }
-                })
+        // Conformidade Estrita PCI-DSS:
+        // O servidor NUNCA deve receber nem processar PAN (número do cartão) ou CVV em texto plano.
+        // A tokenização deve ser realizada exclusivamente client-side via SDK do Mercado Pago.
+        if (cardNumber || securityCode) {
+            delete req.body.cardNumber;
+            delete req.body.securityCode;
+            delete req.body.cardExpirationMonth;
+            delete req.body.cardExpirationYear;
+            cardNumber = null;
+            securityCode = null;
+            return res.status(400).json({
+                error: 'O envio de dados brutos de cartão (PAN/CVV) diretamente ao servidor é proibido por conformidade PCI-DSS. Utilize o token seguro gerado pelo checkout.'
             });
-
-            const cardTokenData = await cardTokenResp.json();
-            if (cardTokenData && cardTokenData.id) {
-                token = cardTokenData.id;
-            } else {
-                console.error("Erro ao gerar card_token no Mercado Pago:", cardTokenData);
-                const msgErro = cardTokenData?.message || (cardTokenData?.cause && cardTokenData?.cause[0]?.description) || 'Dados do cartão inválidos.';
-                return res.status(400).json({ error: msgErro, details: cardTokenData });
-            }
         }
 
-        if (!token) {
-            return res.status(400).json({ error: 'Token do cartão ou dados do cartão são obrigatórios.' });
+        if (!token || typeof token !== 'string' || !token.trim()) {
+            return res.status(400).json({ error: 'Token do cartão seguro é obrigatório para processar o pagamento.' });
         }
 
         // Detecta bandeira padrão se não enviada
         if (!payment_method_id) {
-            const cleanNum = cardNumber ? String(cardNumber).replace(/\s/g, '') : '';
-            if (cleanNum.startsWith('4')) {
-                payment_method_id = tipoCartao === 'debito' ? 'debvisa' : 'visa';
-            } else if (/^(5[1-5]|2[2-7])/.test(cleanNum)) {
-                payment_method_id = tipoCartao === 'debito' ? 'debmaster' : 'master';
-            } else if (/^(4011|4312|4389|4514|4576|5041|5066|5090|6277|6362|6363|6500|6504|6505|6507|6509|6516|6550)/.test(cleanNum)) {
-                payment_method_id = tipoCartao === 'debito' ? 'debelo' : 'elo';
-            } else if (/^(606282|3841)/.test(cleanNum)) {
-                payment_method_id = 'hipercard';
-            } else if (/^(34|37)/.test(cleanNum)) {
-                payment_method_id = 'amex';
-            } else {
-                payment_method_id = tipoCartao === 'debito' ? 'debvisa' : 'visa';
-            }
+            payment_method_id = tipoCartao === 'debito' ? 'debvisa' : 'visa';
         }
 
         const isDebito = tipoCartao === 'debito' || payment_method_id.startsWith('deb');
