@@ -16,7 +16,28 @@ service cloud.firestore {
     match /usuarios/{userId} {
       // Proteção de dados pessoais (LGPD): apenas o próprio usuário ou administradores podem ler e gravar
       allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow create: if isAuthenticated() && (
+        isAdmin() || (
+          request.auth.uid == userId &&
+          request.resource.data.keys().hasOnly([
+            'uid', 'nome', 'email', 'telefone', 'dataNascimento', 'fotoUrl',
+            'criadoEm', 'atualizadoEm'
+          ]) &&
+          (!('uid' in request.resource.data) || request.resource.data.uid == request.auth.uid) &&
+          request.resource.data.email == request.auth.token.email
+        )
+      );
+      allow update: if isAuthenticated() && (
+        isAdmin() || (
+          request.auth.uid == userId &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'nome', 'telefone', 'dataNascimento', 'fotoUrl', 'atualizadoEm', 'anoUltimoResgateAniversario'
+          ]) &&
+          (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['anoUltimoResgateAniversario']) ||
+            request.resource.data.anoUltimoResgateAniversario == request.time.year())
+        )
+      );
+      allow delete: if isAdmin();
     }
 
     match /clientes/{clienteId} {
@@ -31,79 +52,21 @@ service cloud.firestore {
         resource.data.userId == request.auth.uid ||
         isAdmin()
       );
-      // Criação: exige que o userId pertença ao próprio usuário autenticado OU seja criado por administrador (balcão)
-      allow create: if isAuthenticated() && (
-        request.resource.data.userId == request.auth.uid ||
-        isAdmin()
-      );
-      // Apenas o próprio cliente dono do agendamento ou administrador pode alterar/cancelar
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid ||
-        resource.data.clienteEmail == request.auth.token.email ||
-        isAdmin()
-      );
+      // Criação, alteração e cancelamento são exclusivos do servidor (Admin SDK) ou administrador.
+      // Clientes utilizam as rotas autoritativas da API para confirmar e cancelar agendamentos.
+      allow create, update, delete: if isAdmin();
     }
 
     match /slots_agendamentos/{slotId} {
-      // Grade pública sem dados pessoais. A titularidade fica em slots_proprietarios.
       allow read: if true;
-      allow create: if isAuthenticated() &&
-        request.resource.data.keys().hasOnly([
-          'slotId', 'dataHora', 'barbeiroId', 'barbeiroNome',
-          'status', 'expiraEm', 'atualizadoEm'
-        ]) && (
-          isAdmin() || (
-            existsAfter(/databases/$(database)/documents/slots_proprietarios/$(slotId)) &&
-            getAfter(/databases/$(database)/documents/slots_proprietarios/$(slotId)).data.userId == request.auth.uid
-          )
-        );
-      allow update: if isAuthenticated() &&
-        request.resource.data.keys().hasOnly([
-          'slotId', 'dataHora', 'barbeiroId', 'barbeiroNome',
-          'status', 'expiraEm', 'atualizadoEm'
-        ]) && (
-          isAdmin() || (
-            exists(/databases/$(database)/documents/slots_proprietarios/$(slotId)) &&
-            get(/databases/$(database)/documents/slots_proprietarios/$(slotId)).data.userId == request.auth.uid
-          ) || (
-            resource.data.status in ['pendente', 'pendente_pagamento'] &&
-            resource.data.expiraEm is number &&
-            resource.data.expiraEm <= request.time.toMillis() &&
-            existsAfter(/databases/$(database)/documents/slots_proprietarios/$(slotId)) &&
-            getAfter(/databases/$(database)/documents/slots_proprietarios/$(slotId)).data.userId == request.auth.uid
-          )
-        );
-      allow delete: if isAuthenticated() && (
-        isAdmin() || (
-          exists(/databases/$(database)/documents/slots_proprietarios/$(slotId)) &&
-          get(/databases/$(database)/documents/slots_proprietarios/$(slotId)).data.userId == request.auth.uid
-        )
-      );
+      allow create, update: if isAdmin() && request.resource.data.keys().hasOnly([
+        'slotId', 'dataHora', 'barbeiroId', 'barbeiroNome', 'status', 'expiraEm', 'atualizadoEm'
+      ]);
+      allow delete: if isAdmin();
     }
-
     match /slots_proprietarios/{slotId} {
-      allow create: if isAuthenticated() && (
-        isAdmin() || (
-          request.resource.data.userId == request.auth.uid &&
-          request.resource.data.keys().hasOnly(['userId', 'paymentId', 'atualizadoEm'])
-        )
-      );
-      allow read, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || isAdmin()
-      );
-      allow update: if isAuthenticated() && (
-        isAdmin() || (
-          resource.data.userId == request.auth.uid &&
-          request.resource.data.userId == request.auth.uid &&
-          request.resource.data.keys().hasOnly(['userId', 'paymentId', 'atualizadoEm'])
-        ) || (
-          get(/databases/$(database)/documents/slots_agendamentos/$(slotId)).data.status in ['pendente', 'pendente_pagamento'] &&
-          get(/databases/$(database)/documents/slots_agendamentos/$(slotId)).data.expiraEm is number &&
-          get(/databases/$(database)/documents/slots_agendamentos/$(slotId)).data.expiraEm <= request.time.toMillis() &&
-          request.resource.data.userId == request.auth.uid &&
-          request.resource.data.keys().hasOnly(['userId', 'paymentId', 'atualizadoEm'])
-        )
-      );
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if isAdmin();
     }
 
     match /servicos/{servicoId} {
@@ -129,7 +92,8 @@ service cloud.firestore {
     match /assinaturasClientes/{userId} {
       // Cada cliente acessa apenas a própria assinatura; administradores gerenciam a base.
       allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      // Ativação, migração e consumo de semanas são sempre decididos pelo backend/Admin SDK.
+      allow write: if isAdmin();
     }
 
     match /produtos/{produtoId} {
@@ -169,9 +133,23 @@ service cloud.firestore {
     }
 
     match /fidelidadeClientes/{userId} {
-      // Leitura e gravação restritas ao próprio usuário ou admins
+      // Clientes podem apenas consumir uma recompensa existente; nunca criar ou acrescentar selos.
       allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow create, delete: if isAdmin();
+      allow update: if isAuthenticated() && (
+        isAdmin() || (
+          request.auth.uid == userId &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'selosAtuais', 'recompensasUtilizadas', 'recompensaDisponivel', 'atualizadoEm'
+          ]) &&
+          request.resource.data.selosAtuais is number &&
+          request.resource.data.selosAtuais >= 0 &&
+          resource.data.selosAtuais >= get(/databases/$(database)/documents/configuracoes/fidelidade).data.metaSelos &&
+          request.resource.data.selosAtuais == resource.data.selosAtuais - get(/databases/$(database)/documents/configuracoes/fidelidade).data.metaSelos &&
+          request.resource.data.recompensaDisponivel == (request.resource.data.selosAtuais >= get(/databases/$(database)/documents/configuracoes/fidelidade).data.metaSelos) &&
+          request.resource.data.recompensasUtilizadas == resource.data.get('recompensasUtilizadas', 0) + 1
+        )
+      );
     }
 
     match /galeria_cortes_clientes/{fotoId} {
@@ -200,23 +178,29 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    match /solicitacoes_pix_manual/{id} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
     match /pagamentos_pendentes/{paymentId} {
-      allow create: if isAuthenticated() && (
-        request.resource.data.userId == request.auth.uid ||
-        isAdmin()
-      );
-      allow read, delete: if isAuthenticated() && (
+      // Estado de processamento e dados do pedido são autoridade do servidor.
+      allow create, update, delete: if isAdmin();
+      allow read: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
         isAdmin()
       );
-      allow update: if isAuthenticated() && (
-        (
-          resource.data.userId == request.auth.uid &&
-          request.resource.data.userId == resource.data.userId &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'motivo', 'atualizadoEm'])
-        ) ||
-        isAdmin()
-      );
+    }
+
+    match /resgates_beneficios/{id} {
+      // Recibos e histórico de benefícios consumidos vinculados ao usuário
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    match /_whatsapp_session/{docId} {
+      // Sessões do WhatsApp Baileys gerenciadas internamente pelo servidor via Admin SDK
+      allow read, write: if false;
     }
   }
 }

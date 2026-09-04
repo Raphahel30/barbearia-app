@@ -3,5 +3,14 @@ firebase-adminsdk*.json
 .env*
 *.pem
 *.key
+*.zip
+*.md
+*.log
+firestore-debug.log
+firebase-debug.log
+ui-debug.log
 docs/
 skills/
+.agents/
+server/tests/
+server/scripts/

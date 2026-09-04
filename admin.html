@@ -621,6 +621,12 @@
 
             <!-- 2. ABA: AGENDA COMPLETA DE CLIENTES -->
             <section id="viewSchedule" class="space-y-4 hidden">
+                <details class="bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-sm">
+                    <summary class="cursor-pointer font-bold text-amber-300">Pix manual — solicitações sem reserva</summary>
+                    <p class="my-3 text-zinc-300">Confira o recebimento na conta antes de aprovar. O horário será verificado e reservado somente na aprovação. Rejeitar não realiza devolução do Pix.</p>
+                    <button id="btnAtualizarPixManual" type="button" class="bg-zinc-800 text-white px-4 py-2 rounded-lg">Atualizar solicitações</button>
+                    <div id="listaPixManual" class="space-y-3 mt-3" aria-live="polite"></div>
+                </details>
                 <!-- CABEÇALHO DA AGENDA COM SELETORES E ALTERNADOR DE MODO -->
                 <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-3 bg-zinc-950/90 p-4 rounded-2xl border border-zinc-800 shadow-lg">
                     <div>
@@ -2094,7 +2100,8 @@
                             
                             <!-- Coluna da Foto / Upload -->
                             <div class="md:col-span-5 flex flex-col items-center justify-center space-y-3 p-4 bg-black/80 rounded-2xl border border-dashed border-zinc-700 hover:border-dourado transition">
-                                <input type="file" id="inputFotoCorteArquivo" accept="image/*" capture="environment" class="hidden">
+                                <input type="file" id="inputFotoCorteCamera" accept="image/*" capture="environment" class="hidden">
+                                <input type="file" id="inputFotoCorteArquivo" accept="image/*" class="hidden">
                                 
                                 <div id="previewFotoCorteContainer" class="relative w-full aspect-square max-w-[220px] rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex items-center justify-center cursor-pointer shadow-inner" onclick="document.getElementById('inputFotoCorteArquivo')?.click()">
                                     <img id="imgPreviewFotoCorte" src="" alt="Preview do Corte" class="w-full h-full object-cover hidden">
@@ -2102,16 +2109,19 @@
                                         <div class="w-12 h-12 rounded-full bg-zinc-800 mx-auto flex items-center justify-center text-2xl text-dourado shadow">
                                             📷
                                         </div>
-                                        <p class="font-bold text-zinc-300 text-xs uppercase">Tirar ou Carregar Foto</p>
-                                        <p class="text-[10px] text-zinc-500">Toque aqui para abrir a câmera do celular</p>
+                                        <p class="font-bold text-zinc-300 text-xs uppercase">Adicionar Foto do Corte</p>
+                                        <p class="text-[10px] text-zinc-500">Escolha Câmera ou Galeria abaixo</p>
                                     </div>
                                 </div>
 
-                                <div class="flex gap-2 w-full max-w-[220px]">
-                                    <button type="button" onclick="document.getElementById('inputFotoCorteArquivo')?.click()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2 rounded-xl text-[11px] uppercase transition cursor-pointer border border-zinc-700 flex items-center justify-center gap-1">
-                                        <span>📷</span> <span>Trocar</span>
+                                <div class="grid grid-cols-2 gap-2 w-full max-w-[220px]">
+                                    <button type="button" onclick="document.getElementById('inputFotoCorteCamera')?.click()" class="bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2 rounded-xl text-[11px] uppercase transition cursor-pointer border border-zinc-700 flex items-center justify-center gap-1">
+                                        <span>📷</span> <span>Câmera</span>
                                     </button>
-                                    <button type="button" id="btnRemoverFotoCorteTemp" class="bg-red-950/80 hover:bg-red-900 text-red-300 p-2 rounded-xl text-xs transition cursor-pointer border border-red-800 hidden" title="Remover Foto">
+                                    <button type="button" onclick="document.getElementById('inputFotoCorteArquivo')?.click()" class="bg-dourado/10 hover:bg-dourado/20 text-dourado font-bold py-2 rounded-xl text-[11px] uppercase transition cursor-pointer border border-dourado/40 flex items-center justify-center gap-1">
+                                        <span>🖼️</span> <span>Galeria</span>
+                                    </button>
+                                    <button type="button" id="btnRemoverFotoCorteTemp" class="col-span-2 bg-red-950/80 hover:bg-red-900 text-red-300 p-2 rounded-xl text-xs transition cursor-pointer border border-red-800 hidden" title="Remover Foto">
                                         🗑️
                                     </button>
                                 </div>
@@ -2742,6 +2752,12 @@
                     </div>
                 </div>
 
+                <div>
+                    <label class="block text-xs uppercase font-bold text-zinc-400 mb-1">E-mail usado no login do cliente *</label>
+                    <input type="email" id="inputEmailNovoMensalista" placeholder="cliente@exemplo.com" required class="w-full bg-black text-white p-3 rounded-xl border border-zinc-700 text-xs focus:border-dourado outline-none">
+                    <p class="text-[10px] text-zinc-500 mt-1">O plano será vinculado com segurança a este e-mail quando o cliente entrar no site.</p>
+                </div>
+
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs uppercase font-bold text-zinc-400 mb-1">Plano Mensal *</label>
@@ -3059,6 +3075,7 @@
 
     <!-- SCRIPT FIREBASE E CONTROLE DO ADMIN -->
     <script type="module">
+        import { textoHtml, argumentoEvento, urlImagemSegura, criarCardFoto } from './assets/ui-safe.js';
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, getDocs, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, runTransaction, query, where, limit, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -3099,6 +3116,48 @@
                 return configWhatsappUrlGlobal.trim().replace(/\/+$/, '');
             }
             return BACKEND_URL;
+        }
+
+        document.getElementById('btnAtualizarPixManual').addEventListener('click', carregarPixManual);
+        async function carregarPixManual() {
+            const lista = document.getElementById('listaPixManual');
+            lista.textContent = 'Consultando solicitações...';
+            try {
+                const r = await fetch(`${getBackendUrlAtivo()}/api/admin/pix-manual`, { headers: await getAdminAuthHeaders() });
+                const data = await r.json();
+                if (!r.ok || !data.success) throw new Error(data.error || 'Consulta indisponível.');
+                lista.replaceChildren();
+                if (!data.solicitacoes.length) lista.textContent = 'Nenhuma solicitação pendente.';
+                for (const p of data.solicitacoes) {
+                    const card = document.createElement('div');
+                    card.className = 'p-3 border border-zinc-700 rounded-lg space-y-2';
+                    const texto = document.createElement('p');
+                    texto.textContent = `${p.cliente} | ${p.telefone} | ${p.servico} | ${p.dataHora} | Profissional solicitado: ${p.pedido.barbeiroId} | Pix informado: R$ ${Number(p.valorInformado).toFixed(2)} | Total: R$ ${Number(p.precoTotal).toFixed(2)}`;
+                    card.append(texto);
+                    for (const acao of ['aprovar', 'rejeitar']) {
+                        const botao = document.createElement('button');
+                        botao.type = 'button';
+                        botao.className = 'bg-zinc-800 text-white px-4 py-2 rounded-lg mr-2';
+                        botao.textContent = acao === 'aprovar' ? 'Pix conferido — aprovar e reservar' : 'Rejeitar solicitação';
+                        botao.onclick = async () => {
+                            if (!confirm(acao === 'aprovar' ? 'Você conferiu o recebimento deste valor na conta? A aprovação tentará reservar o horário agora.' : 'Rejeitar? Se o Pix foi recebido, combine a devolução com o cliente. Esta ação não faz estorno.')) return;
+                            botao.disabled = true;
+                            try {
+                                const res = await fetch(`${getBackendUrlAtivo()}/api/admin/pix-manual/${encodeURIComponent(p.id)}/decidir`, {
+                                    method: 'POST', headers: await getAdminAuthHeaders(), body: JSON.stringify({ acao, pagamentoConferido: acao === 'aprovar' })
+                                });
+                                const result = await res.json();
+                                if (!res.ok || !result.success) throw new Error(result.error || 'Não foi possível analisar.');
+                                alert(acao === 'aprovar' ? 'Solicitação aprovada. Consulte o agendamento na agenda e avise o cliente.' : 'Solicitação rejeitada. Nenhum estorno foi realizado.');
+                                await carregarPixManual();
+                            } catch (err) { alert(err.message + ' Se recebeu o Pix, combine outro horário ou a devolução com o cliente.'); }
+                            finally { botao.disabled = false; }
+                        };
+                        card.append(botao);
+                    }
+                    lista.append(card);
+                }
+            } catch (err) { lista.textContent = err.message; }
         }
 
         async function getAdminAuthHeaders() {
@@ -5014,7 +5073,7 @@
 
                 // Tenta buscar via endpoint do servidor ou Firestore
                 try {
-                    const res = await fetch(`/api/galeria/listar?clienteId=${encodeURIComponent(cliente.id)}&telefone=${encodeURIComponent(telLimpo)}`);
+                    const res = await fetch(`${getBackendUrlAtivo()}/api/galeria/listar?clienteId=${encodeURIComponent(cliente.id)}&telefone=${encodeURIComponent(telLimpo)}`, { headers: await getAdminAuthHeaders() });
                     const data = await res.json();
                     if (data.success && data.fotos) fotos = data.fotos;
                 } catch (e) {
@@ -5028,9 +5087,9 @@
 
                 container.innerHTML = fotos.map(f => `
                     <div class="relative group rounded-xl overflow-hidden border border-zinc-800 bg-zinc-950 aspect-square">
-                        <img src="${f.fotoUrl}" alt="Corte" class="w-full h-full object-cover">
+                        <img src="${textoHtml(urlImagemSegura(f.fotoUrl))}" alt="Corte" class="w-full h-full object-cover">
                         <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center p-2 text-center text-[10px] text-white">
-                            ${f.observacao || 'Corte'}
+                            ${textoHtml(f.observacao || 'Corte')}
                         </div>
                     </div>
                 `).join('');
@@ -5327,11 +5386,10 @@
                     }
                 });
 
-                // Limpeza silenciosa de duplicatas no Firestore
+                // Duplicatas são consolidadas apenas para exibição. A leitura desta aba
+                // nunca remove assinaturas; qualquer migração deve passar pelo backend.
                 if (docsObsoletosParaDeletar.length > 0) {
-                    for (const dId of docsObsoletosParaDeletar) {
-                        try { deleteDoc(doc(db, "assinaturasClientes", dId)).catch(() => {}); } catch (_) {}
-                    }
+                    console.info(`[Mensalistas] ${docsObsoletosParaDeletar.length} registro(s) legado(s) ocultado(s) da lista, sem exclusão.`);
                 }
 
                 const lista = Array.from(mapaPorChaveUnica.values());
@@ -5656,7 +5714,7 @@
                     uSnap.forEach(uDoc => {
                         const u = uDoc.data();
                         const nomeExibir = u.nome ? `${u.nome} (${u.telefone || u.email || 'Sem tel'})` : (u.email || uDoc.id);
-                        selectCli.innerHTML += `<option value="${uDoc.id}" data-nome="${u.nome || ''}" data-tel="${u.telefone || ''}">${nomeExibir}</option>`;
+                        selectCli.innerHTML += `<option value="${uDoc.id}" data-nome="${u.nome || ''}" data-tel="${u.telefone || ''}" data-email="${u.email || ''}">${nomeExibir}</option>`;
                     });
                 } catch (e) {
                     console.warn("Erro ao buscar usuários:", e);
@@ -5683,8 +5741,10 @@
                 const tel = opt.getAttribute('data-tel') || '';
                 const elNome = document.getElementById('inputNomeNovoMensalista');
                 const elTel = document.getElementById('inputTelNovoMensalista');
+                const elEmail = document.getElementById('inputEmailNovoMensalista');
                 if (nome && elNome) elNome.value = nome;
                 if (tel && elTel) elTel.value = tel;
+                if (elEmail) elEmail.value = opt.getAttribute('data-email') || '';
             }
         });
 
@@ -5707,6 +5767,7 @@
             const selectPlano = document.getElementById('selectPlanoNovoMensalista');
             const inputNome = document.getElementById('inputNomeNovoMensalista');
             const inputTel = document.getElementById('inputTelNovoMensalista');
+            const inputEmail = document.getElementById('inputEmailNovoMensalista');
             const inputData = document.getElementById('inputDataInicioMensalista');
             const selectMetodo = document.getElementById('selectMetodoPagtoMensalista');
             const inputValor = document.getElementById('inputValorCobradoMensalista');
@@ -5714,6 +5775,7 @@
 
             const clienteNome = inputNome?.value.trim();
             const clienteTel = inputTel?.value.trim();
+            const clienteEmail = inputEmail?.value.trim().toLowerCase() || '';
             const planoOpt = selectPlano?.options[selectPlano.selectedIndex];
             const planoNome = planoOpt ? planoOpt.getAttribute('data-nome') : 'Plano Mensal';
             const planoPreco = parseFloat(inputValor?.value || planoOpt?.getAttribute('data-preco') || 0);
@@ -5726,7 +5788,7 @@
                 if (rawServicos) servicosInclusosPlano = JSON.parse(decodeURIComponent(rawServicos));
             } catch (_) {}
 
-            if (!clienteNome || !clienteTel || !selectPlano?.value) {
+            if (!clienteNome || !clienteTel || !clienteEmail || !clienteEmail.includes('@') || !selectPlano?.value) {
                 if (msgStatus) {
                     msgStatus.className = "text-center text-xs p-2 rounded-lg bg-red-950 text-red-400 border border-red-800";
                     msgStatus.innerText = "Preencha todos os campos obrigatórios!";
@@ -5786,6 +5848,7 @@
                     headers: await getAdminAuthHeaders(),
                     body: JSON.stringify({
                         userId,
+                        userEmail: clienteEmail,
                         cliente: clienteNome,
                         telefone: clienteTel,
                         planoId: selectPlano.value,
@@ -6619,7 +6682,9 @@
                 transacoes.sort((a, b) => (b.dataHora || '').localeCompare(a.dataHora || ''));
                 listaTransacoesMesCache = transacoes;
 
-                const faturamentoBruto = (totalPlanos + totalAgendamentos);
+                // Os ramos estornados não entram nos totais de recebimentos acima.
+                // Recompõe o bruto antes de subtrair estornos uma única vez.
+                const faturamentoBruto = (totalPlanos + totalAgendamentos + totalEstornos);
                 const lucroLiquidoReal = faturamentoBruto - totalEstornos - totalGastos;
 
                 const statBruto = document.getElementById('statMesFaturamentoBruto');
@@ -7338,22 +7403,22 @@
 
                 // 1. LINHA DA TABELA DESKTOP
                 htmlDesktop += `
-                    <tr id="linhaAgendamento_${id}" class="hover:bg-zinc-900/50 transition border-b border-zinc-800/40">
+                    <tr id="linhaAgendamento_${textoHtml(id)}" class="hover:bg-zinc-900/50 transition border-b border-zinc-800/40">
                         <td class="p-3.5 font-bold text-white">
                             <div class="flex items-center gap-2.5">
-                                ${uData?.fotoUrl ? `<img src="${uData.fotoUrl}" alt="${nomeClienteFinal}" class="w-8 h-8 rounded-full object-cover border border-[#D4AF37]/40 bg-zinc-900 flex-shrink-0" onerror="this.remove()">` : ''}
+                                ${uData?.fotoUrl ? `<img src="${textoHtml(urlImagemSegura(uData.fotoUrl))}" alt="${textoHtml(nomeClienteFinal)}" class="w-8 h-8 rounded-full object-cover border border-[#D4AF37]/40 bg-zinc-900 flex-shrink-0" onerror="this.remove()">` : ''}
                                 <div>
-                                    <span>${nomeClienteFinal}</span>
-                                    ${ag.barbeiroNome && ag.barbeiroNome !== 'Barbearia EMAÚS' && ag.barbeiroNome !== 'Qualquer Profissional' ? `<span class="block text-[10px] text-amber-400 font-semibold mt-0.5">${ag.barbeiroNome}</span>` : ''}
+                                    <span>${textoHtml(nomeClienteFinal)}</span>
+                                    ${ag.barbeiroNome && ag.barbeiroNome !== 'Barbearia EMAÚS' && ag.barbeiroNome !== 'Qualquer Profissional' ? `<span class="block text-[10px] text-amber-400 font-semibold mt-0.5">${textoHtml(ag.barbeiroNome)}</span>` : ''}
                                 </div>
                             </div>
                         </td>
                         <td class="p-3.5">
-                            <span class="text-zinc-300 font-mono">${telefoneClienteFinal || 'N/A'}</span>
-                            ${telLimpo ? `<a href="${linkZap}" target="_blank" class="ml-2 inline-flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-2 py-0.5 rounded text-[11px] font-bold transition shadow-sm"><svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.634.077-1.782-.397-1.423-.588-2.339-2.029-2.41-2.124-.07-.095-.576-.767-.576-1.464 0-.697.362-1.041.491-1.184.13-.143.284-.179.378-.179.095 0 .19.002.272.006.088.004.206-.033.322.246.12.289.407.994.442 1.066.035.072.059.157.012.252-.047.095-.07.155-.14.237-.07.082-.148.183-.211.246-.07.07-.143.146-.061.288.082.141.365.602.784.975.54.481.996.63 1.137.7.142.07.225.059.308-.035.083-.095.355-.414.45-.556.095-.143.19-.119.32-.071.13.047.828.39 1.704.428.14.037.234.059.269.117.035.059.035.344-.109.749z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.891.524 3.662 1.438 5.18L2 22l4.981-1.393A9.957 9.957 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18.05c-1.63 0-3.147-.442-4.455-1.21l-.32-.189-3.305.945.923-3.235-.208-.334A8.008 8.008 0 014 12c0-4.411 3.589-8.05 8-8.05 4.411 0 8 3.639 8 8.05 0 4.411-3.589 8.05-8 8.05z"/></svg><span>WhatsApp</span></a>` : ''}
+                            <span class="text-zinc-300 font-mono">${textoHtml(telefoneClienteFinal || 'N/A')}</span>
+                            ${telLimpo ? `<a href="${textoHtml(linkZap)}" target="_blank" class="ml-2 inline-flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-2 py-0.5 rounded text-[11px] font-bold transition shadow-sm"><svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.634.077-1.782-.397-1.423-.588-2.339-2.029-2.41-2.124-.07-.095-.576-.767-.576-1.464 0-.697.362-1.041.491-1.184.13-.143.284-.179.378-.179.095 0 .19.002.272.006.088.004.206-.033.322.246.12.289.407.994.442 1.066.035.072.059.157.012.252-.047.095-.07.155-.14.237-.07.082-.148.183-.211.246-.07.07-.143.146-.061.288.082.141.365.602.784.975.54.481.996.63 1.137.7.142.07.225.059.308-.035.083-.095.355-.414.45-.556.095-.143.19-.119.32-.071.13.047.828.39 1.704.428.14.037.234.059.269.117.035.059.035.344-.109.749z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.891.524 3.662 1.438 5.18L2 22l4.981-1.393A9.957 9.957 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18.05c-1.63 0-3.147-.442-4.455-1.21l-.32-.189-3.305.945.923-3.235-.208-.334A8.008 8.008 0 014 12c0-4.411 3.589-8.05 8-8.05 4.411 0 8 3.639 8 8.05 0 4.411-3.589 8.05-8 8.05z"/></svg><span>WhatsApp</span></a>` : ''}
                         </td>
                         <td class="p-3.5">
-                            <div class="font-bold text-white">${ag.servico || 'Corte'}</div>
+                            <div class="font-bold text-white">${textoHtml(ag.servico || 'Corte')}</div>
                             <div class="text-xs text-zinc-400">Total: <strong class="text-zinc-200 font-semibold">R$ ${precoTotal.toFixed(2)}</strong></div>
                         </td>
                         <td class="p-3.5 text-white font-medium">${dataFormatada}</td>
@@ -7365,19 +7430,19 @@
                             </div>
                         </td>
                         <td class="p-3.5 text-right whitespace-nowrap">
-                            <div id="botoesAcao_${id}" class="inline-flex items-center gap-1.5 flex-wrap justify-end">
-                                <button onclick="window.abrirCameraCorteParaAgendamento('${(nomeClienteFinal || '').replace(/'/g, "\\'")}', '${(telefoneClienteFinal || '').replace(/'/g, "\\'")}', '${(ag.servico || '').replace(/'/g, "\\'")}', '${(ag.barbeiroNome || 'Aldo Rodrigues').replace(/'/g, "\\'")}', '${ag.userId || ''}')" class="bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-black border border-amber-500/40 px-2.5 py-1 rounded text-xs font-bold transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95" title="Tirar foto do corte do cliente">
+                            <div id="botoesAcao_${textoHtml(id)}" class="inline-flex items-center gap-1.5 flex-wrap justify-end">
+                                <button onclick="window.abrirCameraCorteParaAgendamento(${argumentoEvento(nomeClienteFinal)}, ${argumentoEvento(telefoneClienteFinal)}, ${argumentoEvento(ag.servico)}, ${argumentoEvento(ag.barbeiroNome || 'Aldo Rodrigues')}, ${argumentoEvento(ag.userId)})" class="bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-black border border-amber-500/40 px-2.5 py-1 rounded text-xs font-bold transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95" title="Tirar foto do corte do cliente">
                                     <svg class="w-3.5 h-3.5 text-[#D4AF37]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                                     <span class="hidden sm:inline">Foto</span>
                                 </button>
                                 ${(!ehConcluido && !ehFalta && !ehCancelado) ? `
-                                    <button onclick="confirmarPresencaAdmin('${id}')" id="btnPresenca_${id}" class="bg-green-600 hover:bg-green-700 text-white px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer" title="Confirmar comparecimento">✓ Compareceu</button>
-                                    <button onclick="marcarFaltaAdmin('${id}')" id="btnFalta_${id}" class="bg-amber-700 hover:bg-amber-800 text-white px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer" title="Marcar que o cliente não compareceu">✕ Faltou</button>
-                                    <button onclick="excluirAgendamentoAdmin('${id}')" id="btnExcluir_${id}" class="bg-red-600/80 hover:bg-red-600 text-white px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer" title="Cancelar este agendamento">
+                                    <button onclick="confirmarPresencaAdmin(${argumentoEvento(id)})" id="btnPresenca_${textoHtml(id)}" class="bg-green-600 hover:bg-green-700 text-white px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer" title="Confirmar comparecimento">✓ Compareceu</button>
+                                    <button onclick="marcarFaltaAdmin(${argumentoEvento(id)})" id="btnFalta_${textoHtml(id)}" class="bg-amber-700 hover:bg-amber-800 text-white px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer" title="Marcar que o cliente não compareceu">✕ Faltou</button>
+                                    <button onclick="excluirAgendamentoAdmin(${argumentoEvento(id)})" id="btnExcluir_${textoHtml(id)}" class="bg-red-600/80 hover:bg-red-600 text-white px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer" title="Cancelar este agendamento">
                                         Cancelar
                                     </button>
                                 ` : `
-                                    <button onclick="excluirAgendamentoAdmin('${id}')" id="btnExcluir_${id}" class="bg-zinc-900 hover:bg-red-950 hover:text-red-300 text-zinc-400 px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer border border-zinc-800 hover:border-red-800 flex items-center gap-1" title="Apagar este registro histórico do sistema">
+                                    <button onclick="excluirAgendamentoAdmin(${argumentoEvento(id)})" id="btnExcluir_${textoHtml(id)}" class="bg-zinc-900 hover:bg-red-950 hover:text-red-300 text-zinc-400 px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer border border-zinc-800 hover:border-red-800 flex items-center gap-1" title="Apagar este registro histórico do sistema">
                                         <svg class="w-3.5 h-3.5 text-zinc-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                         <span>Apagar</span>
                                     </button>
@@ -7389,19 +7454,19 @@
 
                 // 2. CARD MOBILE (100% Encaixado / Zero Rolagem Lateral)
                 htmlMobile += `
-                    <div id="cardMobileAg_${id}" class="card-dark p-3.5 rounded-2xl border border-zinc-800 hover:border-[#D4AF37]/40 transition space-y-2.5 shadow-xl w-full max-w-full overflow-hidden">
+                    <div id="cardMobileAg_${textoHtml(id)}" class="card-dark p-3.5 rounded-2xl border border-zinc-800 hover:border-[#D4AF37]/40 transition space-y-2.5 shadow-xl w-full max-w-full overflow-hidden">
                         <!-- Topo: Horário Dourado + Nome + Status -->
                         <div class="flex justify-between items-start gap-2">
                             <div class="flex items-center gap-2.5 min-w-0 flex-1">
                                 <div class="px-2.5 py-1 rounded-xl bg-[#D4AF37]/10 border border-[#D4AF37]/40 text-[#D4AF37] font-bold text-sm flex items-center justify-center font-mono flex-shrink-0 shadow-sm">
-                                    ${horaExibicao}
+                                    ${textoHtml(horaExibicao)}
                                 </div>
                                 <div class="min-w-0 flex-1">
                                     <h4 class="font-bold text-white text-sm leading-tight truncate">
-                                        ${nomeClienteFinal}
+                                        ${textoHtml(nomeClienteFinal)}
                                     </h4>
                                     <p class="text-[11px] text-zinc-400 mt-0.5 truncate">
-                                        ${ag.servico || 'Corte'} ${ag.barbeiroNome && ag.barbeiroNome !== 'Barbearia EMAÚS' && ag.barbeiroNome !== 'Qualquer Profissional' ? `• <span class="text-zinc-300 font-semibold">${ag.barbeiroNome}</span>` : ''}
+                                        ${textoHtml(ag.servico || 'Corte')} ${ag.barbeiroNome && ag.barbeiroNome !== 'Barbearia EMAÚS' && ag.barbeiroNome !== 'Qualquer Profissional' ? `• <span class="text-zinc-300 font-semibold">${textoHtml(ag.barbeiroNome)}</span>` : ''}
                                     </p>
                                 </div>
                             </div>
@@ -7417,7 +7482,7 @@
                                 <div class="mt-1">${saldoRestanteBadge}</div>
                             </div>
                             ${telLimpo ? `
-                                <a href="${linkZap}" target="_blank" class="bg-green-600/90 hover:bg-green-600 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold transition inline-flex items-center gap-1 shadow-md flex-shrink-0">
+                                <a href="${textoHtml(linkZap)}" target="_blank" class="bg-green-600/90 hover:bg-green-600 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold transition inline-flex items-center gap-1 shadow-md flex-shrink-0">
                                     <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.634.077-1.782-.397-1.423-.588-2.339-2.029-2.41-2.124-.07-.095-.576-.767-.576-1.464 0-.697.362-1.041.491-1.184.13-.143.284-.179.378-.179.095 0 .19.002.272.006.088.004.206-.033.322.246.12.289.407.994.442 1.066.035.072.059.157.012.252-.047.095-.07.155-.14.237-.07.082-.148.183-.211.246-.07.07-.143.146-.061.288.082.141.365.602.784.975.54.481.996.63 1.137.7.142.07.225.059.308-.035.083-.095.355-.414.45-.556.095-.143.19-.119.32-.071.13.047.828.39 1.704.428.14.037.234.059.269.117.035.059.035.344-.109.749z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.891.524 3.662 1.438 5.18L2 22l4.981-1.393A9.957 9.957 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18.05c-1.63 0-3.147-.442-4.455-1.21l-.32-.189-3.305.945.923-3.235-.208-.334A8.008 8.008 0 014 12c0-4.411 3.589-8.05 8-8.05 4.411 0 8 3.639 8 8.05 0 4.411-3.589 8.05-8 8.05z"/></svg>
                                     <span>WhatsApp</span>
                                 </a>
@@ -7426,22 +7491,22 @@
 
                         <!-- Ações Rápidas no Rodapé -->
                         <div class="flex items-center gap-1.5 pt-1 border-t border-zinc-800/60">
-                            <button onclick="window.abrirCameraCorteParaAgendamento('${(nomeClienteFinal || '').replace(/'/g, "\\'")}', '${(telefoneClienteFinal || '').replace(/'/g, "\\'")}', '${(ag.servico || '').replace(/'/g, "\\'")}', '${(ag.barbeiroNome || 'Aldo Rodrigues').replace(/'/g, "\\'")}', '${ag.userId || ''}')" class="px-2 py-2 bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-black border border-amber-500/40 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 shadow-sm" title="Tirar foto do corte">
+                            <button onclick="window.abrirCameraCorteParaAgendamento(${argumentoEvento(nomeClienteFinal)}, ${argumentoEvento(telefoneClienteFinal)}, ${argumentoEvento(ag.servico)}, ${argumentoEvento(ag.barbeiroNome || 'Aldo Rodrigues')}, ${argumentoEvento(ag.userId)})" class="px-2 py-2 bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-black border border-amber-500/40 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 shadow-sm" title="Tirar foto do corte">
                                 <svg class="w-3.5 h-3.5 text-[#D4AF37]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                                 <span>Foto</span>
                             </button>
                             ${(!ehConcluido && !ehFalta && !ehCancelado) ? `
-                                <button onclick="confirmarPresencaAdmin('${id}')" id="btnPresencaMob_${id}" class="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 shadow-sm">
+                                <button onclick="confirmarPresencaAdmin(${argumentoEvento(id)})" id="btnPresencaMob_${textoHtml(id)}" class="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 shadow-sm">
                                     ✓ Compareceu
                                 </button>
-                                <button onclick="marcarFaltaAdmin('${id}')" id="btnFaltaMob_${id}" class="py-2 px-2.5 bg-amber-800 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center">
+                                <button onclick="marcarFaltaAdmin(${argumentoEvento(id)})" id="btnFaltaMob_${textoHtml(id)}" class="py-2 px-2.5 bg-amber-800 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center">
                                     ✕ Faltou
                                 </button>
-                                <button onclick="excluirAgendamentoAdmin('${id}')" id="btnExcluirMob_${id}" class="py-2 px-2.5 bg-red-950 hover:bg-red-900 text-red-400 border border-red-800 rounded-xl text-xs font-bold transition flex items-center justify-center" title="Cancelar Agendamento">
+                                <button onclick="excluirAgendamentoAdmin(${argumentoEvento(id)})" id="btnExcluirMob_${textoHtml(id)}" class="py-2 px-2.5 bg-red-950 hover:bg-red-900 text-red-400 border border-red-800 rounded-xl text-xs font-bold transition flex items-center justify-center" title="Cancelar Agendamento">
                                     <svg class="w-3.5 h-3.5 text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                 </button>
                             ` : `
-                                <button onclick="excluirAgendamentoAdmin('${id}')" id="btnExcluirMob_${id}" class="flex-1 py-2 bg-zinc-900 hover:bg-red-950 hover:text-red-300 text-zinc-400 border border-zinc-800 hover:border-red-800 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5">
+                                <button onclick="excluirAgendamentoAdmin(${argumentoEvento(id)})" id="btnExcluirMob_${textoHtml(id)}" class="flex-1 py-2 bg-zinc-900 hover:bg-red-950 hover:text-red-300 text-zinc-400 border border-zinc-800 hover:border-red-800 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5">
                                     <svg class="w-3.5 h-3.5 text-zinc-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                     <span>Apagar Registro</span>
                                 </button>
@@ -7668,9 +7733,10 @@
 
                         // Notifica no WhatsApp sobre o estorno efetuado
                         if (telefone) {
+                            const authHdrs = await getAdminAuthHeaders();
                             fetch(`${getBackendUrlAtivo()}/api/whatsapp/notificar-cancelamento`, {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
+                                headers: authHdrs,
                                 body: JSON.stringify({
                                     cliente: cliente,
                                     telefone: telefone,
@@ -7835,9 +7901,10 @@
                 if (telCliente) {
                     const controllerZap = new AbortController();
                     const timeoutIdZap = setTimeout(() => controllerZap.abort(), 5000);
+                    const authHdrs = await getAdminAuthHeaders();
                     fetch(`${getBackendUrlAtivo()}/api/whatsapp/notificar-cancelamento`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: authHdrs,
                         signal: controllerZap.signal,
                         body: JSON.stringify({
                             cliente: cliente,
@@ -10028,7 +10095,9 @@
                 btnConectarOAuth.disabled = true;
                 btnConectarOAuth.innerHTML = `<span>⏳ Abrindo Mercado Pago...</span>`;
                 try {
-                    const res = await fetch(`${getBackendUrlAtivo()}/api/auth/mercadopago/url`);
+                    const res = await fetch(`${getBackendUrlAtivo()}/api/auth/mercadopago/url`, {
+                        headers: await getAdminAuthHeaders()
+                    });
                     const data = await res.json();
                     if (data.url) {
                         window.location.href = data.url;
@@ -10430,7 +10499,9 @@
 
             try {
                 const backendUrl = getBackendUrlAtivo();
-                const res = await fetch(`${backendUrl}/api/whatsapp/status`);
+                const res = await fetch(`${backendUrl}/api/whatsapp/status`, {
+                    headers: await getAdminAuthHeaders()
+                });
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
 
@@ -10571,7 +10642,9 @@
                 qrPollingInterval = setInterval(async () => {
                     tentativas++;
                     try {
-                        const res = await fetch(`${backendUrl}/api/whatsapp/status`);
+                        const res = await fetch(`${backendUrl}/api/whatsapp/status`, {
+                            headers: await getAdminAuthHeaders()
+                        });
                         const data = await res.json();
 
                         if (data.qrCode) {
@@ -11313,14 +11386,23 @@
         }
 
         const inputFotoCorteArquivo = document.getElementById('inputFotoCorteArquivo');
+        const inputFotoCorteCamera = document.getElementById('inputFotoCorteCamera');
         const imgPreviewFotoCorte = document.getElementById('imgPreviewFotoCorte');
         const placeholderFotoCorte = document.getElementById('placeholderFotoCorte');
         const btnRemoverFotoCorteTemp = document.getElementById('btnRemoverFotoCorteTemp');
         const formRegistroFotoCorte = document.getElementById('formRegistroFotoCorte');
 
-        inputFotoCorteArquivo?.addEventListener('change', async (e) => {
+        async function processarArquivoFotoCorte(e) {
             const file = e.target.files?.[0];
             if (!file) return;
+            if (!String(file.type || '').startsWith('image/')) {
+                e.target.value = '';
+                return alert('Selecione um arquivo de imagem válido.');
+            }
+            if (file.size > 8 * 1024 * 1024) {
+                e.target.value = '';
+                return alert('A foto deve ter no máximo 8 MB.');
+            }
             try {
                 const base64 = await comprimirImagemBase64(file, 540, 0.65);
                 fotoCorteBase64Temp = base64;
@@ -11334,7 +11416,10 @@
             } catch (err) {
                 alert("Erro ao carregar a foto: " + err.message);
             }
-        });
+        }
+
+        inputFotoCorteArquivo?.addEventListener('change', processarArquivoFotoCorte);
+        inputFotoCorteCamera?.addEventListener('change', processarArquivoFotoCorte);
 
         btnRemoverFotoCorteTemp?.addEventListener('click', () => {
             fotoCorteBase64Temp = "";
@@ -11345,6 +11430,7 @@
             if (placeholderFotoCorte) placeholderFotoCorte.classList.remove('hidden');
             if (btnRemoverFotoCorteTemp) btnRemoverFotoCorteTemp.classList.add('hidden');
             if (inputFotoCorteArquivo) inputFotoCorteArquivo.value = "";
+            if (inputFotoCorteCamera) inputFotoCorteCamera.value = "";
             if (window.vibrarDispositivo) window.vibrarDispositivo('clique');
         });
 
@@ -11454,24 +11540,24 @@
                 : lista.slice(0, 9);
 
             if (filtrados.length === 0) {
-                listaSugestoesClientesGaleria.innerHTML = `<p class="text-zinc-500 text-[11px] col-span-full py-2 text-center">Nenhum cliente encontrado para "${termo}". Você pode preencher os campos abaixo manualmente.</p>`;
+                listaSugestoesClientesGaleria.innerHTML = `<p class="text-zinc-500 text-[11px] col-span-full py-2 text-center">Nenhum cliente encontrado para "${textoHtml(termo)}". Você pode preencher os campos abaixo manualmente.</p>`;
                 return;
             }
 
             let html = "";
             filtrados.forEach(c => {
-                const nomeEscaped = (c.nome || '').replace(/'/g, "\\'");
-                const telEscaped = (c.telefone || '').replace(/'/g, "\\'");
-                const idEscaped = (c.id || '').replace(/'/g, "\\'");
+                const nomeEscaped = argumentoEvento(c.nome);
+                const telEscaped = argumentoEvento(c.telefone);
+                const idEscaped = argumentoEvento(c.id);
                 
                 html += `
-                    <div onclick="window.selecionarClienteGaleria('${idEscaped}', '${nomeEscaped}', '${telEscaped}')" class="bg-black/60 hover:bg-zinc-900 border border-zinc-800 hover:border-dourado/60 p-2.5 rounded-xl cursor-pointer transition flex items-center gap-2.5 text-left group">
+                    <div onclick="window.selecionarClienteGaleria(${idEscaped}, ${nomeEscaped}, ${telEscaped})" class="bg-black/60 hover:bg-zinc-900 border border-zinc-800 hover:border-dourado/60 p-2.5 rounded-xl cursor-pointer transition flex items-center gap-2.5 text-left group">
                         <div class="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xs flex-shrink-0 group-hover:border-dourado transition overflow-hidden">
-                            ${c.fotoUrl ? `<img src="${c.fotoUrl}" class="w-full h-full object-cover">` : '👤'}
+                            ${urlImagemSegura(c.fotoUrl) ? `<img src="${textoHtml(urlImagemSegura(c.fotoUrl))}" class="w-full h-full object-cover">` : '👤'}
                         </div>
                         <div class="min-w-0 flex-1">
-                            <p class="font-bold text-white text-xs truncate group-hover:text-dourado transition">${c.nome}</p>
-                            <p class="text-[10px] text-zinc-400 font-mono truncate">${c.telefone || 'Sem WhatsApp'}</p>
+                            <p class="font-bold text-white text-xs truncate group-hover:text-dourado transition">${textoHtml(c.nome)}</p>
+                            <p class="text-[10px] text-zinc-400 font-mono truncate">${textoHtml(c.telefone || 'Sem WhatsApp')}</p>
                         </div>
                     </div>
                 `;
@@ -11495,7 +11581,7 @@
             if (inputTel) inputTel.value = telefone || '';
             
             if (labelClienteSelecionadoGaleria) {
-                labelClienteSelecionadoGaleria.innerHTML = `Cliente selecionado: <strong class="text-white">${nome}</strong> (${telefone || 'Sem WhatsApp'})`;
+                labelClienteSelecionadoGaleria.innerHTML = `Cliente selecionado: <strong class="text-white">${textoHtml(nome)}</strong> (${textoHtml(telefone || 'Sem WhatsApp')})`;
             }
 
             filtrarFotosPorClienteId(id, nome);
@@ -11582,8 +11668,15 @@
                     dataHoraFormatada
                 };
 
-                // Salva diretamente na coleção galeria_cortes_clientes
-                await addDoc(collection(db, "galeria_cortes_clientes"), payloadFoto);
+                const resposta = await fetch(`${getBackendUrlAtivo()}/api/galeria/salvar`, {
+                    method: 'POST',
+                    headers: await getAdminAuthHeaders(),
+                    body: JSON.stringify(payloadFoto)
+                });
+                const resultado = await resposta.json().catch(() => ({}));
+                if (!resposta.ok || resultado.success !== true) {
+                    throw new Error(resultado.error || 'Não foi possível salvar a foto.');
+                }
 
                 if (msgStatus) {
                     msgStatus.className = "text-xs text-center font-bold text-green-400";
@@ -11617,7 +11710,15 @@
         window.excluirFotoCorteGaleria = async function(fotoId, clienteNome) {
             if (!confirm(`Deseja realmente apagar esta foto do corte de ${clienteNome || 'este cliente'}?`)) return;
             try {
-                await deleteDoc(doc(db, "galeria_cortes_clientes", fotoId));
+                const resposta = await fetch(`${getBackendUrlAtivo()}/api/galeria/excluir`, {
+                    method: 'POST',
+                    headers: await getAdminAuthHeaders(),
+                    body: JSON.stringify({ id: fotoId })
+                });
+                const resultado = await resposta.json().catch(() => ({}));
+                if (!resposta.ok || resultado.success !== true) {
+                    throw new Error(resultado.error || 'Não foi possível excluir a foto.');
+                }
                 if (window.vibrarDispositivo) window.vibrarDispositivo('sucesso');
                 exibirToastNotificacao("🗑️ Foto Apagada", "A foto foi removida do álbum.", "info");
                 carregarFotosGaleriaAdmin();
@@ -11708,40 +11809,9 @@
                 return;
             }
 
-            let html = "";
-            listaFotos.forEach(f => {
-                const estilo = f.estiloCorte || 'Corte Barbearia';
-                const barbeiro = f.barbeiroNome || 'Aldo Rodrigues';
-                const data = f.dataHoraFormatada || (f.dataCriacao ? new Date(f.dataCriacao).toLocaleDateString('pt-BR') : '');
-                const nomeClienteEscaped = (f.clienteNome || 'Cliente').replace(/'/g, "\\'");
-
-                html += `
-                    <div class="bg-gradient-to-b from-zinc-900 to-black p-3 rounded-2xl border border-zinc-800 hover:border-dourado/60 transition space-y-2.5 shadow-lg group">
-                        <div class="relative w-full aspect-square rounded-xl overflow-hidden bg-black border border-zinc-800">
-                            <img src="${f.fotoUrl}" alt="${estilo}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
-                            <button onclick="window.excluirFotoCorteGaleria('${f.id}', '${nomeClienteEscaped}')" class="absolute top-2 right-2 bg-red-950/90 hover:bg-red-900 text-red-300 p-1.5 rounded-lg border border-red-800 text-xs shadow-md transition cursor-pointer" title="Excluir Foto">
-                                🗑️
-                            </button>
-                        </div>
-
-                        <div class="space-y-1 text-left">
-                            <div class="flex items-center justify-between gap-1 text-[10px] text-zinc-400">
-                                <span class="font-bold text-dourado truncate">👤 ${f.clienteNome || 'Cliente'}</span>
-                                <span class="font-mono flex-shrink-0">${data}</span>
-                            </div>
-                            <h4 class="font-bold text-white text-xs truncate" title="${estilo}">
-                                ${estilo}
-                            </h4>
-                            <p class="text-[10px] text-zinc-400 flex items-center gap-1 truncate">
-                                <span>💈</span> ${barbeiro}
-                            </p>
-                            ${f.observacao ? `<p class="text-[10px] text-zinc-500 italic truncate" title="${f.observacao}">"${f.observacao}"</p>` : ''}
-                        </div>
-                    </div>
-                `;
-            });
-
-            grid.innerHTML = html;
+            grid.replaceChildren(...listaFotos.map(f => criarCardFoto(f, {
+                onExcluir: () => window.excluirFotoCorteGaleria(String(f.id), String(f.clienteNome || 'Cliente'))
+            })));
         }
 
         function carregarGaleriaAdmin() {
@@ -11750,7 +11820,7 @@
                 let optsHtml = `<option value="Aldo Rodrigues">Aldo Rodrigues</option>`;
                 (listaBarbeirosAdminCache || []).forEach(b => {
                     if (b.nome && b.nome !== 'Aldo Rodrigues') {
-                        optsHtml += `<option value="${b.nome}">${b.nome}</option>`;
+                        optsHtml += `<option value="${textoHtml(b.nome)}">${textoHtml(b.nome)}</option>`;
                     }
                 });
                 selectBarbeiro.innerHTML = optsHtml;

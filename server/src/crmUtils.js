@@ -2,10 +2,68 @@ export function normalizarTelefoneCRMServidor(valor) {
     return String(valor || '').replace(/\D/g, '');
 }
 
+export function normalizarEmailCRMServidor(valor) {
+    return String(valor || '').trim().toLowerCase();
+}
+
+function variantesTelefoneIdentidade(valor) {
+    const telefone = normalizarTelefoneCRMServidor(valor);
+    if (!telefone) return new Set();
+    const variantes = new Set([telefone]);
+    if (telefone.startsWith('55') && (telefone.length === 12 || telefone.length === 13)) {
+        variantes.add(telefone.slice(2));
+    } else if (telefone.length === 10 || telefone.length === 11) {
+        variantes.add(`55${telefone}`);
+    }
+    return variantes;
+}
+
+function telefonesRepresentamMesmaPessoa(a, b) {
+    const variantesA = variantesTelefoneIdentidade(a);
+    const variantesB = variantesTelefoneIdentidade(b);
+    return [...variantesA].some(valor => variantesB.has(valor));
+}
+
 export function assinaturaMensalEstaAtiva(assinatura, agora = new Date()) {
     if (!assinatura || String(assinatura.status || '').trim().toLowerCase() !== 'ativo') return false;
     const valorFim = assinatura.dataFim?.toDate ? assinatura.dataFim.toDate() : new Date(assinatura.dataFim || 0);
     return !Number.isNaN(valorFim.getTime()) && valorFim >= agora;
+}
+
+export function selecionarAssinaturaClienteServidor(assinaturas, identidade, agora = new Date()) {
+    const uid = String(identidade?.uid || '').trim();
+    const email = normalizarEmailCRMServidor(identidade?.email);
+    const telefone = normalizarTelefoneCRMServidor(identidade?.telefone);
+    const candidatos = (Array.isArray(assinaturas) ? assinaturas : [])
+        .map(item => ({ ...item, id: String(item?.id || '').trim() }))
+        .map(assinatura => {
+            const porUid = Boolean(uid && (assinatura.id === uid || String(assinatura.userId || '').trim() === uid));
+            const porEmail = Boolean(email && normalizarEmailCRMServidor(assinatura.userEmail || assinatura.email) === email);
+            const porTelefone = Boolean(telefone && telefonesRepresentamMesmaPessoa(assinatura.telefone || assinatura.telefoneNormalizado, telefone));
+            return {
+                assinatura,
+                porUid,
+                porEmail,
+                porTelefone,
+                prioridade: porUid ? 3 : (porEmail ? 2 : (porTelefone ? 1 : 0)),
+                ativa: assinaturaMensalEstaAtiva(assinatura, agora)
+            };
+        })
+        .filter(item => item.prioridade > 0 && (!item.assinatura.migradoPara || item.assinatura.migradoPara === uid));
+
+    const diretasAtivas = candidatos.filter(item => item.porUid && item.ativa);
+    if (diretasAtivas.length > 0) {
+        return { assinatura: diretasAtivas[0].assinatura, ambiguo: false };
+    }
+
+    const ativas = candidatos.filter(item => item.ativa);
+    if (ativas.length === 1) return { assinatura: ativas[0].assinatura, ambiguo: false };
+    if (ativas.length > 1) return { assinatura: null, ambiguo: true };
+
+    const direta = candidatos.find(item => item.porUid);
+    if (direta) return { assinatura: direta.assinatura, ambiguo: false };
+    if (candidatos.length === 1) return { assinatura: candidatos[0].assinatura, ambiguo: false };
+    return { assinatura: null, ambiguo: candidatos.length > 1 };
 }
 
 export function consolidarClientesDuplicadosCRMServidor(clientes) {

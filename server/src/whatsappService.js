@@ -8,7 +8,7 @@ import path from 'path';
 // ============================================================================
 // ESTADO GLOBAL DO SERVIÇO DE WHATSAPP (EXCLUSIVO RENDER)
 // ============================================================================
-const WA_SESSION_DIR = path.resolve(process.cwd(), '.wa_session');
+const WA_SESSION_DIR = path.resolve(process.env.WA_SESSION_DIR || path.join(process.cwd(), '.wa_session'));
 
 let sock = null;
 let isConnecting = false;

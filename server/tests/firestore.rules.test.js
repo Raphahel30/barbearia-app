@@ -99,9 +99,19 @@ describe('usuários e CRM', () => {
 });
 
 describe('agendamentos e slots', () => {
-    test('cliente cria apenas agendamento vinculado ao próprio UID', async () => {
+    test('solicitações Pix são privadas e decisões são exclusivas da API', async () => {
+        await seed('solicitacoes_pix_manual/pedido', { userId: 'alice', status: 'pendente' });
+        await assertSucceeds(getDoc(doc(userDb('alice'), 'solicitacoes_pix_manual/pedido')));
+        await assertSucceeds(getDoc(doc(adminDb(), 'solicitacoes_pix_manual/pedido')));
+        await assertFails(getDoc(doc(userDb('bob'), 'solicitacoes_pix_manual/pedido')));
+        await assertFails(updateDoc(doc(userDb('alice'), 'solicitacoes_pix_manual/pedido'), { status: 'aprovado' }));
+        await assertFails(updateDoc(doc(adminDb(), 'solicitacoes_pix_manual/pedido'), { status: 'aprovado' }));
+        await assertFails(setDoc(doc(userDb('alice'), 'agendamentos/forjado'), { userId: 'alice', status: 'confirmado', taxaReservaPaga: 100 }));
+        await assertSucceeds(setDoc(doc(adminDb(), 'agendamentos/balcao'), { userId: 'alice', status: 'confirmado' }));
+    });
+    test('cliente não cria agendamento direto nem para o próprio UID', async () => {
         const alice = userDb('alice');
-        await assertSucceeds(setDoc(doc(alice, 'agendamentos/ag-1'), {
+        await assertFails(setDoc(doc(alice, 'agendamentos/ag-1'), {
             userId: 'alice', clienteEmail: 'alice@example.com', dataHora: '2026-09-10T10:00'
         }));
         await assertFails(setDoc(doc(alice, 'agendamentos/ag-2'), {
@@ -109,13 +119,16 @@ describe('agendamentos e slots', () => {
         }));
     });
 
-    test('cliente altera e exclui o próprio agendamento, mas não o de terceiro', async () => {
+    test('cliente não pode alterar nem excluir agendamentos diretamente no Firestore; somente admin', async () => {
         await seed('agendamentos/alice-ag', { userId: 'alice', clienteEmail: 'alice@example.com' });
         await seed('agendamentos/bob-ag', { userId: 'bob', clienteEmail: 'bob@example.com' });
         const alice = userDb('alice');
-        await assertSucceeds(updateDoc(doc(alice, 'agendamentos/alice-ag'), { status: 'cancelado' }));
+        await assertFails(updateDoc(doc(alice, 'agendamentos/alice-ag'), { status: 'cancelado' }));
+        await assertFails(deleteDoc(doc(alice, 'agendamentos/alice-ag')));
         await assertFails(updateDoc(doc(alice, 'agendamentos/bob-ag'), { status: 'cancelado' }));
         await assertFails(deleteDoc(doc(alice, 'agendamentos/bob-ag')));
+        await assertSucceeds(updateDoc(doc(adminDb(), 'agendamentos/alice-ag'), { status: 'cancelado' }));
+        await assertSucceeds(deleteDoc(doc(adminDb(), 'agendamentos/alice-ag')));
     });
 
     test('cliente lê somente a própria agenda e administrador possui controle total', async () => {
@@ -127,7 +140,7 @@ describe('agendamentos e slots', () => {
         await assertSucceeds(deleteDoc(doc(adminDb(), 'agendamentos/ag-1')));
     });
 
-    test('slot é público, mas só o dono ou administrador pode liberá-lo', async () => {
+    test('cliente não reserva ou libera slot diretamente; grade permanece pública', async () => {
         const alice = userDb('alice');
         const batch = writeBatch(alice);
         batch.set(doc(alice, 'slots_agendamentos/slot-alice'), {
@@ -142,7 +155,9 @@ describe('agendamentos e slots', () => {
         batch.set(doc(alice, 'slots_proprietarios/slot-alice'), {
             userId: 'alice', paymentId: null, atualizadoEm: '2026-09-01T10:00:00Z'
         });
-        await assertSucceeds(batch.commit());
+        await assertFails(batch.commit());
+        await seed('slots_agendamentos/slot-alice', { dataHora: '2026-09-10T10:00', status: 'confirmado' });
+        await seed('slots_proprietarios/slot-alice', { userId: 'alice' });
         await assertSucceeds(getDoc(doc(anonymousDb(), 'slots_agendamentos/slot-alice')));
         await assertFails(getDoc(doc(anonymousDb(), 'slots_proprietarios/slot-alice')));
         await assertFails(getDoc(doc(userDb('bob'), 'slots_proprietarios/slot-alice')));
@@ -150,7 +165,15 @@ describe('agendamentos e slots', () => {
         const liberar = writeBatch(alice);
         liberar.delete(doc(alice, 'slots_agendamentos/slot-alice'));
         liberar.delete(doc(alice, 'slots_proprietarios/slot-alice'));
-        await assertSucceeds(liberar.commit());
+        await assertFails(liberar.commit());
+    });
+
+    test('nem administrador grava dados pessoais no slot público', async () => {
+        const publico = { slotId: 'seguro', dataHora: '2026-09-10T10:00', status: 'confirmado', barbeiroId: 'principal' };
+        await assertSucceeds(setDoc(doc(adminDb(), 'slots_agendamentos/seguro'), publico));
+        for (const campo of ['userId', 'cliente', 'telefone', 'paymentId']) {
+            await assertFails(setDoc(doc(adminDb(), 'slots_agendamentos/seguro'), { ...publico, [campo]: 'privado' }));
+        }
     });
 
     test('slot público rejeita dados pessoais mesmo quando o proprietário é válido', async () => {
@@ -167,7 +190,7 @@ describe('agendamentos e slots', () => {
         await assertFails(batch.commit());
     });
 
-    test('outro cliente só pode assumir um slot pendente depois da expiração', async () => {
+    test('cliente não pode assumir slot diretamente mesmo após expiração', async () => {
         const agora = Date.now();
         const dadosPublicos = expiraEm => ({
             slotId: 'slot-teste', dataHora: '2026-09-10T13:00', barbeiroId: 'principal',
@@ -193,7 +216,7 @@ describe('agendamentos e slots', () => {
 
         await seed('slots_agendamentos/slot-expirado', { ...dadosPublicos(agora - 60_000), slotId: 'slot-expirado' });
         await seed('slots_proprietarios/slot-expirado', { userId: 'alice', paymentId: 'pag-alice' });
-        await assertSucceeds(tentarAssumir('slot-expirado'));
+        await assertFails(tentarAssumir('slot-expirado'));
     });
 });
 
@@ -238,19 +261,66 @@ describe('dados privados, financeiros e administrativos', () => {
         }
     });
 
-    test('pagamento pendente pertence ao usuário e administrador pode gerenciar', async () => {
+    test('cliente lê seu pagamento mas não cria, reprocessa, altera nem exclui', async () => {
         const alice = userDb('alice');
-        await assertSucceeds(setDoc(doc(alice, 'pagamentos_pendentes/p-1'), {
+        await assertFails(setDoc(doc(alice, 'pagamentos_pendentes/p-1'), {
             userId: 'alice', status: 'pendente'
         }));
+        await seed('pagamentos_pendentes/p-1', { userId: 'alice', status: 'processado' });
+        await assertSucceeds(getDoc(doc(alice, 'pagamentos_pendentes/p-1')));
         await assertFails(getDoc(doc(userDb('bob'), 'pagamentos_pendentes/p-1')));
         await assertFails(updateDoc(doc(userDb('bob'), 'pagamentos_pendentes/p-1'), { userId: 'bob', status: 'cancelado' }));
-        await assertSucceeds(updateDoc(doc(alice, 'pagamentos_pendentes/p-1'), { status: 'cancelado' }));
+        await assertFails(updateDoc(doc(alice, 'pagamentos_pendentes/p-1'), { status: 'pendente' }));
+        await assertFails(updateDoc(doc(alice, 'pagamentos_pendentes/p-1'), { dados: { preco: 0 } }));
+        await assertFails(deleteDoc(doc(alice, 'pagamentos_pendentes/p-1')));
         await assertSucceeds(deleteDoc(doc(adminDb(), 'pagamentos_pendentes/p-1')));
+    });
+
+    test('resgates de benefícios pertencem ao cliente e whatsapp session é inacessível no client SDK', async () => {
+        const alice = userDb('alice');
+        const bob = userDb('bob');
+        const admin = adminDb();
+        const anon = anonymousDb();
+
+        // resgates_beneficios
+        await seed('resgates_beneficios/resgate-1', { userId: 'alice', pontos: 10 });
+        await assertSucceeds(getDoc(doc(alice, 'resgates_beneficios/resgate-1')));
+        await assertFails(getDoc(doc(bob, 'resgates_beneficios/resgate-1')));
+        await assertFails(getDoc(doc(anon, 'resgates_beneficios/resgate-1')));
+        await assertSucceeds(getDoc(doc(admin, 'resgates_beneficios/resgate-1')));
+        await assertFails(setDoc(doc(alice, 'resgates_beneficios/resgate-2'), { userId: 'alice', pontos: 10 }));
+        await assertSucceeds(setDoc(doc(admin, 'resgates_beneficios/resgate-2'), { userId: 'alice', pontos: 10 }));
+
+        // _whatsapp_session
+        await seed('_whatsapp_session/creds', { me: 'bot' });
+        await assertFails(getDoc(doc(anon, '_whatsapp_session/creds')));
+        await assertFails(getDoc(doc(alice, '_whatsapp_session/creds')));
+        await assertFails(getDoc(doc(admin, '_whatsapp_session/creds')));
+        await assertFails(setDoc(doc(alice, '_whatsapp_session/creds'), { hack: true }));
+        await assertFails(setDoc(doc(admin, '_whatsapp_session/creds'), { hack: true }));
     });
 });
 
 describe('assinaturas, fidelidade, galeria e promoções', () => {
+    test('cliente não ativa plano, altera semanas nem forja um agendamento mensal', async () => {
+        const alice = userDb('alice');
+        await assertFails(setDoc(doc(alice, 'assinaturasClientes/alice'), { status: 'ativo' }));
+        await seed('assinaturasClientes/alice', { status: 'ativo', semanas: {} });
+        await assertFails(updateDoc(doc(alice, 'assinaturasClientes/alice'), { 'semanas.1.status': 'disponivel' }));
+        await assertFails(setDoc(doc(alice, 'agendamentos/plano-forjado'), { userId: 'alice', isPlano: true }));
+    });
+    test('cadastro normal é permitido, mas perfil não aceita privilégios', async () => {
+        const alice = userDb('alice');
+        await assertSucceeds(setDoc(doc(alice, 'usuarios/alice'), { nome: 'Alice', email: 'alice@example.com', telefone: '11999999999', dataNascimento: '' }));
+        await assertFails(updateDoc(doc(alice, 'usuarios/alice'), { admin: true }));
+    });
+    test('fidelidade não permite aumentar selos e permite o consumo exato da meta', async () => {
+        const alice = userDb('alice');
+        await seed('configuracoes/fidelidade', { metaSelos: 10 });
+        await seed('fidelidadeClientes/alice', { selosAtuais: 10, recompensaDisponivel: true, recompensasUtilizadas: 0 });
+        await assertFails(updateDoc(doc(alice, 'fidelidadeClientes/alice'), { selosAtuais: 100 }));
+        await assertSucceeds(updateDoc(doc(alice, 'fidelidadeClientes/alice'), { selosAtuais: 0, recompensaDisponivel: false, recompensasUtilizadas: 1 }));
+    });
     test('assinatura e fidelidade ficam restritas ao dono e administrador', async () => {
         for (const path of ['assinaturasClientes/alice', 'fidelidadeClientes/alice']) {
             await seed(path, { ativo: true });

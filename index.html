@@ -1086,8 +1086,9 @@
                         <p>Chave Celular: <strong class="text-dourado font-mono text-xs">11953789095</strong></p>
                     </div>
                     <button id="btnConfirmarPixManual" type="button" class="w-full min-h-[44px] bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl text-xs uppercase cursor-pointer transition shadow-lg">
-                        Já fiz o Pix Manual, Confirmar!
+                        Já fiz o Pix — solicitar aprovação
                     </button>
+                    <p class="text-sm text-amber-300">O horário só será reservado após a conferência e aprovação do administrador.</p>
                 </div>
             </div>
 
@@ -1634,6 +1635,18 @@
         </div>
     </div>
 
+    <!-- Fallback manual: exibido somente quando o backend confirma que o WhatsApp não está conectado -->
+    <div id="avisoWhatsappManual" role="status" aria-live="polite" class="hidden fixed left-3 right-3 bottom-4 sm:left-auto sm:right-5 sm:w-[390px] z-[70] bg-zinc-900 border border-amber-500/70 rounded-2xl p-4 shadow-2xl">
+        <button id="btnFecharWhatsappManual" type="button" aria-label="Fechar aviso" class="absolute top-2 right-3 text-zinc-400 hover:text-white text-xl font-bold cursor-pointer">&times;</button>
+        <div class="pr-6 space-y-2">
+            <p class="text-xs font-extrabold text-amber-400 uppercase tracking-wider">WhatsApp automático indisponível</p>
+            <p id="textoWhatsappManual" class="text-xs text-zinc-300 leading-relaxed">Se desejar, avise a barbearia enviando a mensagem já preparada.</p>
+            <a id="btnEnviarWhatsappManual" href="#" target="_blank" rel="noopener noreferrer" class="w-full min-h-[44px] bg-green-600 hover:bg-green-500 text-white font-extrabold py-2.5 px-4 rounded-xl uppercase tracking-wider text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-2">
+                📲 Avisar a barbearia pelo WhatsApp
+            </a>
+        </div>
+    </div>
+
     <!-- BANNER FLUTUANTE DE PIX PENDENTE EM SEGUNDO PLANO -->
     <div id="bannerPixPendenteGlobal" class="hidden fixed bottom-20 sm:bottom-6 right-3 left-3 sm:left-auto sm:right-6 sm:max-w-md z-50 bg-zinc-950/95 border-2 border-dourado/80 rounded-2xl p-3.5 sm:p-4 shadow-[0_12px_40px_rgba(0,0,0,0.9)] backdrop-blur-md transition-all">
         <div class="flex items-start gap-3">
@@ -1747,8 +1760,9 @@
     </footer>
 
     <script type="module">
+        import { textoHtml, urlImagemSegura, criarCardFoto } from './assets/ui-safe.js';
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, sendEmailVerification, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, getDocs, query, where, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -2792,46 +2806,10 @@
                     return;
                 }
 
-                let html = "";
-                fotos.forEach((foto, idx) => {
-                    const estilo = foto.estiloCorte || foto.titulo || 'Corte EMAÚS Barbearia';
-                    const barbeiro = foto.barbeiroNome || 'Aldo Rodrigues';
-                    const dataFormatada = foto.dataHoraFormatada || (foto.dataCriacao ? new Date(foto.dataCriacao).toLocaleDateString('pt-BR') : 'Data não informada');
-                    const obs = foto.observacao ? `"${foto.observacao}"` : '';
-
-                    html += `
-                        <div class="bg-gradient-to-b from-zinc-900 to-black p-3 rounded-2xl border border-zinc-800 hover:border-amber-500/60 transition-all space-y-2.5 shadow-xl group">
-                            <div class="relative w-full aspect-square rounded-xl overflow-hidden bg-black border border-zinc-800 cursor-pointer" onclick="window.abrirModalVisualizarFotoCorte(${idx})">
-                                <img src="${foto.fotoUrl}" alt="${estilo}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
-                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                                    <span class="bg-amber-500 text-black font-extrabold px-3 py-1 rounded-full text-[10px] uppercase shadow-lg flex items-center gap-1">
-                                        🔍 Ampliar & Baixar
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div class="space-y-1 text-left">
-                                <div class="flex items-center justify-between gap-1 text-[10px] text-zinc-400">
-                                    <span class="text-dourado font-bold truncate flex items-center gap-1">
-                                        <span>💈</span> ${barbeiro}
-                                    </span>
-                                    <span class="font-mono flex-shrink-0">📅 ${dataFormatada}</span>
-                                </div>
-                                <h4 class="font-bold text-white text-xs truncate" title="${estilo}">
-                                    ${estilo}
-                                </h4>
-                                ${obs ? `<p class="text-[10px] text-zinc-500 italic truncate">${obs}</p>` : ''}
-                            </div>
-
-                            <button type="button" onclick="window.baixarFotoCorteCliente('${foto.fotoUrl}', 'corte-emaus-${idx + 1}.jpg')" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2 rounded-xl text-[11px] uppercase transition cursor-pointer border border-zinc-700 flex items-center justify-center gap-1.5 shadow-sm active:scale-95">
-                                <svg class="w-3.5 h-3.5 fill-none stroke-current stroke-2 text-[#D4AF37]" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                                <span>Baixar Foto (HD)</span>
-                            </button>
-                        </div>
-                    `;
-                });
-
-                grid.innerHTML = html;
+                grid.replaceChildren(...fotos.map((foto, idx) => criarCardFoto(foto, {
+                    onVisualizar: () => window.abrirModalVisualizarFotoCorte(idx),
+                    onBaixar: url => window.baixarFotoCorteCliente(url, `corte-emaus-${idx + 1}.jpg`)
+                })));
             } catch (errFotos) {
                 console.warn("[EMAÚS:GALERIA] Erro ao carregar fotos da galeria:", errFotos);
                 grid.innerHTML = `<p class="text-xs text-red-400 text-center py-4 col-span-full">Erro ao carregar fotos. Tente novamente.</p>`;
@@ -2851,7 +2829,7 @@
             const obsEl = document.getElementById('modalVisualizarObservacao');
             const btnBaixar = document.getElementById('btnBaixarFotoCorteModal');
 
-            if (img) img.src = foto.fotoUrl || '';
+            if (img) img.src = urlImagemSegura(foto.fotoUrl);
             if (titulo) titulo.innerText = foto.estiloCorte || foto.titulo || 'Corte EMAÚS Barbearia';
             if (barbeiro) barbeiro.innerText = foto.barbeiroNome || 'Aldo Rodrigues';
             if (dataEl) dataEl.innerText = foto.dataHoraFormatada || (foto.dataCriacao ? new Date(foto.dataCriacao).toLocaleDateString('pt-BR') : '');
@@ -2874,6 +2852,7 @@
         };
 
         window.baixarFotoCorteCliente = function(fotoUrl, nomeArquivo = 'meu-corte-emaus.jpg') {
+            fotoUrl = urlImagemSegura(fotoUrl);
             if (!fotoUrl) return;
             try {
                 const link = document.createElement('a');
@@ -3060,35 +3039,7 @@
                 await setDoc(doc(db, "usuarios", auth.currentUser.uid), dadosAtualizados, { merge: true });
                 dadosUsuarioAtual = { ...dadosUsuarioAtual, ...dadosAtualizados };
 
-                // Sincroniza imediatamente com a assinatura VIP do cliente (se houver)
-                try {
-                    const assRef = doc(db, "assinaturasClientes", auth.currentUser.uid);
-                    const assSnap = await getDoc(assRef);
-                    if (assSnap.exists()) {
-                        await updateDoc(assRef, {
-                            cliente: novoNome,
-                            telefone: novoTelefone,
-                            atualizadoEm: new Date().toISOString()
-                        });
-                    }
-                } catch (eAss) { console.warn("Aviso ao sincronizar assinatura:", eAss); }
-
-                // Sincroniza agendamentos ativos do cliente
-                try {
-                    const qAgs = query(collection(db, "agendamentos"), where("userId", "==", auth.currentUser.uid));
-                    const agsSnap = await getDocs(qAgs);
-                    const updates = [];
-                    agsSnap.forEach(dAg => {
-                        const agData = dAg.data();
-                        if (agData.status === 'confirmado' || agData.status === 'pendente') {
-                            updates.push(updateDoc(doc(db, "agendamentos", dAg.id), {
-                                cliente: novoNome,
-                                telefone: novoTelefone
-                            }));
-                        }
-                    });
-                    if (updates.length > 0) await Promise.all(updates);
-                } catch (eAg) { console.warn("Aviso ao sincronizar agendamentos:", eAg); }
+                // Agendamentos preservam os dados registrados; o perfil é usado em novas reservas.
 
                 if (dadosUsuarioAtual) {
                     dadosUsuarioAtual.nome = novoNome;
@@ -3735,119 +3686,33 @@
             if (listaPlanosClienteDiv) listaPlanosClienteDiv.innerHTML = "<p class='text-xs text-zinc-500'>A carregar planos...</p>";
 
             try {
-                // 1. Verifica se o cliente tem um plano ativo
+                // 1. O backend resolve a assinatura pelo UID autenticado e, quando
+                // necessário, vincula com segurança um cadastro manual pelo telefone/e-mail exatos.
                 let assinatura = null;
-                const assinaturaSnap = await getDoc(doc(db, "assinaturasClientes", userId));
-
-                if (assinaturaSnap.exists()) {
-                    assinatura = assinaturaSnap.data();
-                } else {
-                    // 1.1 Se não encontrou pelo UID direto, tenta autovinculação inteligente multi-critério
-                    try {
-                        let telefoneCliente = (dadosUsuarioAtual && dadosUsuarioAtual.telefone) ? dadosUsuarioAtual.telefone : "";
-                        let nomeCliente = (dadosUsuarioAtual && dadosUsuarioAtual.nome) ? dadosUsuarioAtual.nome : (auth.currentUser ? (auth.currentUser.displayName || "") : "");
-                        let emailCliente = auth.currentUser ? (auth.currentUser.email || "") : "";
-
-                        if (!telefoneCliente || !nomeCliente) {
-                            try {
-                                const uDoc = await getDoc(doc(db, "usuarios", userId));
-                                if (uDoc.exists()) {
-                                    const uData = uDoc.data();
-                                    if (!telefoneCliente) telefoneCliente = uData.telefone || "";
-                                    if (!nomeCliente) nomeCliente = uData.nome || "";
-                                    if (!emailCliente) emailCliente = uData.email || "";
-                                }
-                            } catch (_) {}
-                        }
-
-                        const candidatosIds = [];
-                        const telLimpo = telefoneCliente ? String(telefoneCliente).replace(/\D/g, '') : '';
-                        if (telLimpo) {
-                            candidatosIds.push(`vip_${telLimpo}`);
-                            if (telLimpo.startsWith('55') && telLimpo.length > 11) {
-                                candidatosIds.push(`vip_${telLimpo.slice(2)}`);
-                            } else if (!telLimpo.startsWith('55') && telLimpo.length >= 10) {
-                                candidatosIds.push(`vip_55${telLimpo}`);
-                            }
-                            if (telLimpo.length >= 9) candidatosIds.push(`vip_${telLimpo.slice(-9)}`);
-                            if (telLimpo.length >= 8) candidatosIds.push(`vip_${telLimpo.slice(-8)}`);
-                        }
-
-                        // 1.2 Busca por IDs candidatos
-                        for (const cId of [...new Set(candidatosIds)]) {
-                            try {
-                                const vipSnap = await getDoc(doc(db, "assinaturasClientes", cId));
-                                if (vipSnap.exists()) {
-                                    const dadosVip = vipSnap.data();
-                                    const dadosMigrados = {
-                                        ...dadosVip,
-                                        userId: userId,
-                                        cliente: nomeCliente || dadosVip.cliente || 'Cliente VIP',
-                                        telefone: telefoneCliente || dadosVip.telefone || '',
-                                        sincronizadoEm: new Date().toISOString(),
-                                        atualizadoEm: new Date().toISOString()
-                                    };
-                                    await setDoc(doc(db, "assinaturasClientes", userId), dadosMigrados, { merge: true });
-                                    try { await deleteDoc(doc(db, "assinaturasClientes", cId)); } catch (_) {}
-                                    assinatura = dadosMigrados;
-                                    break;
-                                }
-                            } catch (_) {}
-                        }
-
-                        // 1.3 Se ainda não encontrou, realiza varredura com matcher inteligente
-                        if (!assinatura) {
-                            try {
-                                const allSubSnap = await getDocs(collection(db, "assinaturasClientes"));
-                                const normN = (str) => String(str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-                                const uNomeNorm = normN(nomeCliente);
-
-                                for (const sDoc of allSubSnap.docs) {
-                                    const sData = sDoc.data();
-                                    const sId = sDoc.id;
-                                    if (sId === userId) continue;
-
-                                    let matched = false;
-                                    if (sData.userId === userId) matched = true;
-                                    if (!matched && emailCliente && (sData.userEmail || sData.email)) {
-                                        if (String(sData.userEmail || sData.email).toLowerCase().trim() === emailCliente.toLowerCase().trim()) matched = true;
-                                    }
-                                    if (!matched && telLimpo) {
-                                        const sTel = String(sData.telefone || (sId.startsWith('vip_') ? sId.replace(/^vip_/, '') : '')).replace(/\D/g, '');
-                                        if (sTel && (sTel === telLimpo || sTel.slice(-8) === telLimpo.slice(-8))) matched = true;
-                                    }
-                                    if (!matched && uNomeNorm && uNomeNorm.length > 4 && sData.cliente) {
-                                        if (normN(sData.cliente) === uNomeNorm) matched = true;
-                                    }
-
-                                    if (matched) {
-                                        const dadosMigrados = {
-                                            ...sData,
-                                            userId: userId,
-                                            cliente: nomeCliente || sData.cliente || 'Cliente VIP',
-                                            telefone: telefoneCliente || sData.telefone || '',
-                                            sincronizadoEm: new Date().toISOString(),
-                                            atualizadoEm: new Date().toISOString()
-                                        };
-                                        await setDoc(doc(db, "assinaturasClientes", userId), dadosMigrados, { merge: true });
-                                        if (sId.startsWith('vip_')) {
-                                            try { await deleteDoc(doc(db, "assinaturasClientes", sId)); } catch (_) {}
-                                        }
-                                        for (const cId of [...new Set(candidatosIds)]) {
-                                            try { await deleteDoc(doc(db, "assinaturasClientes", cId)); } catch (_) {}
-                                        }
-                                        assinatura = dadosMigrados;
-                                        break;
-                                    }
-                                }
-                            } catch (eScan) {
-                                console.warn("Aviso na varredura de assinaturas:", eScan);
-                            }
-                        }
-                    } catch (eAutoLink) {
-                        console.warn("Aviso ao autovincular plano:", eAutoLink);
+                let consultaServidorConcluida = false;
+                try {
+                    const token = await auth.currentUser.getIdToken();
+                    const resposta = await fetch(`${getBackendUrlAtivo()}/api/cliente/minha-assinatura`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const resultado = await resposta.json().catch(() => ({}));
+                    if (!resposta.ok || resultado.success !== true) {
+                        const erroConsulta = new Error(resultado.error || 'Falha ao consultar o plano mensal.');
+                        erroConsulta.respostaDoServidor = resposta.status !== 404;
+                        throw erroConsulta;
                     }
+                    assinatura = resultado.assinatura || null;
+                    consultaServidorConcluida = true;
+                } catch (erroServidor) {
+                    if (erroServidor.respostaDoServidor) throw erroServidor;
+                    console.warn('Consulta segura do plano indisponível; usando leitura direta pelo UID:', erroServidor.message);
                 }
+
+                if (!consultaServidorConcluida) {
+                    const assinaturaSnap = await getDoc(doc(db, "assinaturasClientes", userId));
+                    if (assinaturaSnap.exists()) assinatura = assinaturaSnap.data();
+                }
+
 
                 if (assinatura) {
                     const info = processarCicloPlano(assinatura);
@@ -4107,6 +3972,24 @@
                     dadosAssinaturaAtiva = null;
                     if (cardVipAg) cardVipAg.classList.add('hidden');
                     meuPlanoAtivoDiv.innerHTML = `<p class="text-xs text-zinc-400">Você ainda não possui nenhum plano mensal ativo.</p>`;
+                    if (auth.currentUser?.email && !auth.currentUser.emailVerified) {
+                        meuPlanoAtivoDiv.innerHTML = '<p class="text-xs text-amber-300">Se o administrador cadastrou seu plano pelo e-mail, confirme esse endereço para vinculá-lo com segurança. Depois da confirmação, saia e entre novamente.</p>';
+                        const verificarEmail = document.createElement('button');
+                        verificarEmail.type = 'button';
+                        verificarEmail.className = 'mt-3 px-4 py-2 rounded-lg bg-amber-400 text-black font-bold';
+                        verificarEmail.textContent = 'Enviar confirmação de e-mail';
+                        verificarEmail.addEventListener('click', async () => {
+                            verificarEmail.disabled = true;
+                            try {
+                                await sendEmailVerification(auth.currentUser);
+                                verificarEmail.textContent = 'Enviado. Confira sua caixa de entrada e spam.';
+                            } catch {
+                                verificarEmail.textContent = 'Não foi possível enviar. Tente novamente mais tarde.';
+                                verificarEmail.disabled = false;
+                            }
+                        });
+                        meuPlanoAtivoDiv.appendChild(verificarEmail);
+                    }
                 }
 
                 // 2. Carrega lista de planos disponíveis para assinatura
@@ -5764,17 +5647,7 @@
                 if (targetAgId) {
                     await window.cancelarAgendamento(targetAgId);
                 } else {
-                    // Se o agendamento já não existe mais, reseta a semana na assinatura diretamente
-                    if (confirm(`Deseja liberar o corte da Semana ${numSemana} para reagendamento?`)) {
-                        const updateObj = {};
-                        updateObj[`semanas.${numSemana}.status`] = 'disponivel';
-                        updateObj[`semanas.${numSemana}.agendamentoId`] = null;
-                        updateObj[`semanas.${numSemana}.agendamentoData`] = null;
-                        await updateDoc(doc(db, "assinaturasClientes", auth.currentUser.uid), updateObj);
-                        alert(`Corte da Semana ${numSemana} liberado com sucesso para reagendar!`);
-                        await carregarPainelCliente(auth.currentUser.uid);
-                        await carregarPainelPlanosCliente(auth.currentUser.uid);
-                    }
+                    alert('O agendamento vinculado não foi encontrado. Por segurança, peça ao administrador para liberar esta semana.');
                 }
             } catch (err) {
                 alert("Erro ao cancelar agendamento do plano: " + err.message);
@@ -5800,7 +5673,6 @@
             const dataHora = ag.dataHora || '';
             let semanaPlano = ag.semanaPlano || '';
             const isPlano = !!ag.isPlano;
-            const idPagamento = ag.idPagamento || '';
             const valorPago = Number(ag.taxaReservaPaga !== undefined ? ag.taxaReservaPaga : (isPlano ? 0 : 10.00));
 
             const agora = new Date();
@@ -5808,7 +5680,6 @@
             const diffHoras = (dataAg.getTime() - agora.getTime()) / (1000 * 60 * 60);
 
             let msgConfirmacao = "";
-            let elegivelEstorno = false;
             let planoPerdeuCredito = false;
 
             if (isPlano) {
@@ -5820,10 +5691,8 @@
                     msgConfirmacao = `⚠️ ATENÇÃO - CANCELAMENTO COM 3 HORAS OU MENOS (${diffHoras > 0 ? diffHoras.toFixed(1) + 'h restantes' : 'horário já iniciado'}):\n\nConforme as regras do Plano Mensal, ao cancelar com 3 horas ou menos de antecedência, você PERDERÁ o corte desta semana (não será possível reagendar nesta semana).\n\nDeseja realmente cancelar o agendamento e perder o crédito desta semana?`;
                 }
             } else if (diffHoras >= 3) {
-                elegivelEstorno = true;
-                msgConfirmacao = `Deseja cancelar o agendamento de "${servico}" em ${dataHora.replace('T', ' às ')}?\n\n✅ Como faltam mais de 3 horas para o atendimento (${diffHoras.toFixed(1)}h de antecedência), o sistema efetuará o ESTORNO AUTOMÁTICO de R$ ${valorPago.toFixed(2)} direto para a sua conta via Mercado Pago!`;
+                msgConfirmacao = `Deseja cancelar o agendamento de "${servico}" em ${dataHora.replace('T', ' às ')}?\n\n✅ Como faltam mais de 3 horas para o atendimento (${diffHoras.toFixed(1)}h de antecedência), o sistema efetuará o cancelamento.`;
             } else {
-                elegivelEstorno = false;
                 msgConfirmacao = `Atenção: Você está cancelando com menos de 3 horas de antecedência (${diffHoras > 0 ? diffHoras.toFixed(1) + 'h restantes' : 'horário já iniciado'}).\n\n⚠️ Conforme os Termos e Condições, cancelamentos com menos de 3 horas de antecedência NÃO possuem direito a reembolso do valor pago (R$ ${valorPago.toFixed(2)}).\n\nDeseja cancelar o agendamento mesmo assim?`;
             }
 
@@ -5838,129 +5707,14 @@
             }
 
             try {
-                let estornoMsg = "";
-
-                // 1. Executa estorno automático pelo Mercado Pago se elegível (+3h para avulso)
-                if (!isPlano && elegivelEstorno && idPagamento && idPagamento !== 'manual' && idPagamento !== 'plano_vip' && valorPago > 0) {
-                    try {
-                        let clientAuthHeaders = { 'Content-Type': 'application/json' };
-                        try {
-                            if (auth.currentUser) {
-                                const idToken = await auth.currentUser.getIdToken();
-                                clientAuthHeaders['Authorization'] = `Bearer ${idToken}`;
-                            }
-                        } catch (eAuth) { console.warn("Aviso ao obter token do cliente:", eAuth); }
-
-                        const respEstorno = await fetch(`${getBackendUrlAtivo()}/api/pagamento/estorno`, {
-                            method: 'POST',
-                            headers: clientAuthHeaders,
-                            body: JSON.stringify({
-                                paymentId: idPagamento,
-                                amount: valorPago,
-                                reason: `Cancelamento de agendamento por cliente (+3h antecedência: ${cliente} - ${servico})`
-                            })
-                        });
-                        const resEstData = await respEstorno.json();
-                        if (resEstData.success) {
-                            estornoMsg = `\n\n💸 ESTORNO AUTOMÁTICO CONCLUÍDO: O valor de R$ ${valorPago.toFixed(2)} foi devolvido com sucesso para a sua conta pelo Mercado Pago!`;
-                        } else {
-                            console.warn("Estorno automático via Mercado Pago:", resEstData.error || resEstData.message);
-                            estornoMsg = `\n\nℹ️ O agendamento foi cancelado com sucesso. O estorno da taxa de R$ ${valorPago.toFixed(2)} será conferido e efetuado pelo estabelecimento.`;
-                        }
-                    } catch (errEst) {
-                        console.error("Erro na requisição de estorno:", errEst);
-                    }
-                }
-
-                // 2. Devolve produtos ao estoque caso existam (atômico)
-                if (ag && Array.isArray(ag.produtos) && ag.produtos.length > 0) {
-                    await restaurarProdutosAgendamentoBackend(id);
-                    carregarProdutosCliente().catch(e => console.warn(e));
-                }
-
-                // 3. Marca como cancelado/reembolsado no Firestore (preservando o extrato e histórico financeiro)
-                await updateDoc(doc(db, "agendamentos", id), {
-                    status: (elegivelEstorno && valorPago > 0) ? 'reembolsado' : 'cancelado',
-                    canceladoEm: new Date().toISOString(),
-                    canceladoPor: 'cliente',
-                    estornoRealizado: Boolean(elegivelEstorno && valorPago > 0),
-                    valorEstornado: (elegivelEstorno && valorPago > 0) ? valorPago : 0,
-                    motivoCancelamento: elegivelEstorno ? 'Cancelado pelo cliente (+3h de antecedência - Estorno automático efetuado)' : 'Cancelado pelo cliente (<3h de antecedência)',
-                    atualizadoEm: new Date().toISOString()
-                });
-
-                // 3.1 Libera o slot atômico para outros clientes poderem agendar imediatamente
-                const slotIdLiberar = ag?.slotId || normalizarSlotId(ag?.dataHora, ag?.barbeiroId || 'principal');
-                await liberarSlotAgendamento(slotIdLiberar);
-
-                // 3. Atualiza o crédito do plano VIP
-                if (isPlano && auth.currentUser) {
-                    try {
-                        let numSemanaTarget = semanaPlano;
-                        const subSnap = await getDoc(doc(db, "assinaturasClientes", auth.currentUser.uid));
-                        if (subSnap.exists()) {
-                            const subData = subSnap.data();
-                            const semanasObj = subData.semanas || {};
-                            if (!numSemanaTarget) {
-                                for (let sKey of Object.keys(semanasObj)) {
-                                    if (semanasObj[sKey].agendamentoId === id || semanasObj[sKey].status === 'agendado') {
-                                        numSemanaTarget = sKey;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-
-                        if (numSemanaTarget) {
-                            const updateObj = {};
-                            if (planoPerdeuCredito) {
-                                // Cancelamento com 3h ou menos: PERDE o corte da semana
-                                updateObj[`semanas.${numSemanaTarget}.status`] = 'falta';
-                                updateObj[`semanas.${numSemanaTarget}.canceladoEm`] = new Date().toISOString();
-                                updateObj[`semanas.${numSemanaTarget}.motivo`] = 'Cancelado pelo cliente com 3h ou menos de antecedência';
-                            } else {
-                                // Cancelamento com mais de 3h: LIBERA o corte da semana para reagendar
-                                updateObj[`semanas.${numSemanaTarget}.status`] = 'disponivel';
-                                updateObj[`semanas.${numSemanaTarget}.agendamentoId`] = null;
-                                updateObj[`semanas.${numSemanaTarget}.agendamentoData`] = null;
-                            }
-                            await updateDoc(doc(db, "assinaturasClientes", auth.currentUser.uid), updateObj);
-                        }
-                    } catch (errP) { console.warn("Erro ao atualizar semana na assinatura:", errP); }
-                }
-
-                // 4. Notificação automática via WhatsApp para o barbeiro e cliente
-                try {
-                    let telCliente = "";
-                    if (auth.currentUser) {
-                        const uDoc = await getDoc(doc(db, "usuarios", auth.currentUser.uid));
-                        if (uDoc.exists()) telCliente = uDoc.data().telefone || "";
-                    }
-                    const authHdrs = { 'Content-Type': 'application/json' };
-                    try {
-                        const tkn = auth?.currentUser ? await auth.currentUser.getIdToken() : null;
-                        if (tkn) authHdrs['Authorization'] = `Bearer ${tkn}`;
-                    } catch (_) {}
-                    await fetch(`${getBackendUrlAtivo()}/api/whatsapp/notificar-cancelamento`, {
-                        method: 'POST',
-                        headers: authHdrs,
-                        body: JSON.stringify({
-                            cliente: cliente,
-                            telefone: telCliente,
-                            servico: servico,
-                            dataHora: dataHora,
-                            canceladoPor: 'cliente',
-                            estornoRealizado: !!estornoMsg,
-                            valorEstornado: valorPago,
-                            isPlano: !!isPlano,
-                            planoPerdeuCredito: planoPerdeuCredito,
-                            whatsappBarbeiro: MEU_WHATSAPP
-                        })
-                    });
-                } catch (eZap) { console.warn("Aviso WhatsApp cancelamento:", eZap.message); }
-
-                let alertMsg = "";
                 if (isPlano) {
+                    const resultado = await atualizarSemanaPlanoNoServidor('/api/cliente/plano/cancelar-semana', id, semanaPlano || 0);
+                    let mensagem = resultado.status === 'disponivel'
+                        ? 'Agendamento cancelado. O crédito desta semana está disponível para reagendamento.'
+                        : 'Agendamento cancelado. O crédito foi perdido pela regra de três horas de antecedência.';
+                    if (valorPago > 0) mensagem += '\nO cancelamento do plano não confirma estorno dos extras. Consulte a barbearia sobre esse valor.';
+                    if (resultado.notificacaoPendente) mensagem += '\nO aviso automático pelo WhatsApp não foi confirmado.';
+                    alert(mensagem);
                     if (planoPerdeuCredito) {
                         alertMsg = "Agendamento do Plano Mensal cancelado. Conforme a regra de antecedência mínima de 3 horas, o corte desta semana foi perdido e não poderá ser reagendado.";
                     } else {
@@ -5971,7 +5725,7 @@
                 } else {
                     alertMsg = "Agendamento cancelado com sucesso (sem estorno, conforme os Termos de cancelamento com menos de 3h).";
                 }
-                alert(alertMsg);
+                alert(alertMsg + avisoNotificacao);
 
                 if (auth.currentUser) {
                     await carregarPainelCliente(auth.currentUser.uid);
@@ -6255,6 +6009,13 @@
             if (modalSucesso) modalSucesso.classList.remove('hidden');
             if (window.vibrarDispositivo) window.vibrarDispositivo('sucesso');
 
+            verificarEPrepararFallbackWhatsapp('produto', {
+                cliente: nome,
+                telefone,
+                produtos: `${quantidade}x ${produto.nome}${produto.volumeUnidade ? ` (${produto.volumeUnidade})` : ''}`,
+                valor: totalPagar
+            });
+
             carregarProdutosCliente().catch(e => console.warn(e));
         }
 
@@ -6311,17 +6072,7 @@
 
         document.getElementById('btnReabrirModalPixPendente')?.addEventListener('click', reabrirModalPixPendente);
         document.getElementById('btnCancelarPixPendente')?.addEventListener('click', async () => {
-            if (confirm("Deseja realmente cancelar este pagamento Pix pendente?")) {
-                const pendente = obterPixPendenteLocalStorage();
-                if (pendente && pendente.paymentId) {
-                    try {
-                        await setDoc(doc(db, "pagamentos_pendentes", String(pendente.paymentId)), {
-                            status: 'cancelado',
-                            motivo: 'cancelado_pelo_usuario_no_modal',
-                            atualizadoEm: new Date().toISOString()
-                        }, { merge: true });
-                    } catch (e) {}
-                }
+            if (confirm("Deseja fechar este Pix pendente? Não pague o código se desistiu. Fechar a janela não cancela um pagamento já realizado; ele continuará sendo confirmado pelo servidor.")) {
                 limparPixPendenteLocalStorage();
                 fecharModalPagamento();
                 fecharModalCompraProduto();
@@ -6366,6 +6117,101 @@
                 }
             });
         }
+
+        let verificacaoFallbackWhatsappAtual = 0;
+
+        function ocultarFallbackWhatsappManual() {
+            verificacaoFallbackWhatsappAtual += 1;
+            const aviso = document.getElementById('avisoWhatsappManual');
+            const botao = document.getElementById('btnEnviarWhatsappManual');
+            if (aviso) aviso.classList.add('hidden');
+            if (botao) botao.href = '#';
+        }
+
+        function normalizarNumeroWhatsappManual(numero) {
+            let digitos = String(numero || '').replace(/\D/g, '');
+            if (digitos.startsWith('0')) digitos = digitos.replace(/^0+/, '');
+            if (digitos.length === 10 || digitos.length === 11) digitos = `55${digitos}`;
+            return digitos.length >= 12 && digitos.length <= 15 ? digitos : '';
+        }
+
+        function formatarValorWhatsappManual(valor) {
+            const numero = Number(valor || 0);
+            return numero.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function montarMensagemFallbackWhatsapp(tipo, dados = {}) {
+            const cliente = dados.cliente || 'Cliente não informado';
+            const telefone = dados.telefone ? `\nTelefone: ${dados.telefone}` : '';
+
+            if (tipo === 'produto') {
+                return `Olá! Acabei de realizar uma compra na EMAÚS Barbearia e gostaria de avisar sobre o pedido.\n\n` +
+                    `Cliente: ${cliente}${telefone}\n` +
+                    `Produto(s): ${dados.produtos || 'Pedido realizado pelo site'}\n` +
+                    `Valor pago: ${formatarValorWhatsappManual(dados.valor)}\n\n` +
+                    `O pagamento foi aprovado no site. Esta mensagem é apenas um aviso porque o WhatsApp automático estava desconectado.`;
+            }
+
+            if (tipo === 'plano') {
+                return `Olá! Acabei de assinar um plano mensal na EMAÚS Barbearia e gostaria de avisar sobre a ativação.\n\n` +
+                    `Cliente: ${cliente}${telefone}\n` +
+                    `Plano: ${dados.plano || 'Plano mensal'}\n` +
+                    `Valor pago: ${formatarValorWhatsappManual(dados.valor)}\n\n` +
+                    `A assinatura foi ativada no site. Esta mensagem é apenas um aviso porque o WhatsApp automático estava desconectado.`;
+            }
+
+            const dataHora = dados.dataHora ? String(dados.dataHora).replace('T', ' às ') : 'Não informado';
+            const barbeiro = dados.barbeiroNome ? `\nBarbeiro: ${dados.barbeiroNome}` : '';
+            return `Olá! Meu agendamento foi confirmado na EMAÚS Barbearia e gostaria de avisar sobre o horário.\n\n` +
+                `Cliente: ${cliente}${telefone}\n` +
+                `Serviço: ${dados.servico || 'Não informado'}${barbeiro}\n` +
+                `Data/Horário: ${dataHora}\n\n` +
+                `O horário já foi reservado no site. Esta mensagem é apenas um aviso porque o WhatsApp automático estava desconectado.`;
+        }
+
+        async function verificarEPrepararFallbackWhatsapp(tipo, dados = {}) {
+            const idVerificacao = ++verificacaoFallbackWhatsappAtual;
+            const aviso = document.getElementById('avisoWhatsappManual');
+            const botao = document.getElementById('btnEnviarWhatsappManual');
+            const texto = document.getElementById('textoWhatsappManual');
+            if (!aviso || !botao) return;
+
+            aviso.classList.add('hidden');
+            botao.href = '#';
+
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 5000);
+            try {
+                const resposta = await fetch(`${getBackendUrlAtivo()}/api/whatsapp/status-publico?t=${Date.now()}`, {
+                    cache: 'no-store',
+                    signal: controller.signal
+                });
+                if (!resposta.ok) return;
+
+                const statusInfo = await resposta.json();
+                const status = String(statusInfo?.status || '').toLowerCase();
+                const estadosSemConexao = new Set(['disconnected', 'connecting', 'qr_ready']);
+                if (!estadosSemConexao.has(status) || idVerificacao !== verificacaoFallbackWhatsappAtual) return;
+
+                const numeroDestino = normalizarNumeroWhatsappManual(dados.barbeiroWhatsapp || MEU_WHATSAPP);
+                if (!numeroDestino) return;
+
+                const mensagem = montarMensagemFallbackWhatsapp(tipo, dados);
+                botao.href = `https://wa.me/${numeroDestino}?text=${encodeURIComponent(mensagem)}`;
+                if (texto) {
+                    const descricao = tipo === 'produto' ? 'sua compra' : (tipo === 'plano' ? 'sua assinatura' : 'seu agendamento');
+                    texto.innerText = `O envio automático está desconectado. Se desejar, avise a barbearia sobre ${descricao}.`;
+                }
+                aviso.classList.remove('hidden');
+            } catch (erro) {
+                // Estado desconhecido não autoriza o fallback: mantém o botão oculto.
+                console.warn('Não foi possível confirmar o estado do WhatsApp; fallback manual mantido oculto:', erro.message);
+            } finally {
+                clearTimeout(timeout);
+            }
+        }
+
+        document.getElementById('btnFecharWhatsappManual')?.addEventListener('click', ocultarFallbackWhatsappManual);
 
         // Função de envio de notificação 100% automática via WhatsApp Bot
         async function dispararNotificacaoAutomaticaWhatsApp(dados) {
@@ -6661,17 +6507,20 @@
                         console.warn("Mercado Pago retornou sem QR Code:", data.error);
                         if (elLoading) elLoading.classList.add('hidden');
                         if (elActive) elActive.classList.add('hidden');
-                        if (elFallback) elFallback.classList.remove('hidden');
+                        const permiteManual = data.manualPixAvailable === true && tipo === 'agendamento' && !dados.isPlano && !dados.isPlanoMensalistaComExtras;
+                        if (elFallback) elFallback.classList.toggle('hidden', !permiteManual);
+                        if (!permiteManual) alert(data.error || 'Não foi possível confirmar a geração do Pix. Verifique seus pagamentos antes de tentar novamente.');
                     }
                 } catch (err) {
                     console.error("Erro na requisição do Pix:", err);
                     if (elLoading) elLoading.classList.add('hidden');
                     if (elActive) elActive.classList.add('hidden');
-                    if (elFallback) elFallback.classList.remove('hidden');
+                    if (elFallback) elFallback.classList.add('hidden');
+                    alert('Não foi possível obter uma resposta segura do pagamento. Confira seus pagamentos antes de tentar novamente ou fale com a barbearia.');
                 }
         }
 
-        function exibirModalSucessoAgendamento(servico, dataHora, cliente, precoTotal = 0, valorPago = 0, isPlano = false) {
+        function exibirModalSucessoAgendamento(servico, dataHora, cliente, precoTotal = 0, valorPago = 0, isPlano = false, dadosExtras = {}) {
             fecharModalPagamento();
             const modalSucesso = document.getElementById('modalConfirmacaoSucesso');
             const elServico = document.getElementById('sucessoServicoNome');
@@ -6705,11 +6554,21 @@
                 modalSucesso.classList.remove('hidden');
                 if (window.vibrarDispositivo) window.vibrarDispositivo('sucesso');
             }
+
+            verificarEPrepararFallbackWhatsapp('agendamento', {
+                cliente,
+                telefone: dadosExtras.telefone || '',
+                servico,
+                dataHora,
+                barbeiroNome: dadosExtras.barbeiroNome || '',
+                barbeiroWhatsapp: dadosExtras.barbeiroWhatsapp || ''
+            });
         }
 
         function fecharModalSucessoAgendamento() {
             const modalSucesso = document.getElementById('modalConfirmacaoSucesso');
             if (modalSucesso) modalSucesso.classList.add('hidden');
+            ocultarFallbackWhatsappManual();
             limparPixPendenteLocalStorage();
             if (auth?.currentUser) {
                 carregarPainelCliente(auth.currentUser.uid).catch(() => {});
@@ -6731,6 +6590,9 @@
 
         // Conclusão com Sucesso no Firestore e Notificação WhatsApp (Unificado com Background Poller)
         async function concluirPagamentoComSucesso(paymentId = 'manual', metodo = 'pix_manual', dadosOverride = null, tipoOverride = null) {
+            if (!paymentId || paymentId === 'manual') {
+                return solicitarAprovacaoPixManual(dadosOverride || dadosPagamentoPendente, tipoOverride || tipoPagamentoAtual);
+            }
             if (isSalvandoAgendamento) {
                 console.warn("⚠️ Processamento já em andamento. Ignorando chamada concorrente.");
                 return;
@@ -6792,7 +6654,7 @@
                                 limparPixPendenteLocalStorage();
                                 fecharModalPagamento();
                                 const dExist = queryPayment.docs[0].data();
-                                exibirModalSucessoAgendamento(dExist.servico || servico, dExist.dataHora || dataHoraCompleta, dExist.cliente || nomeCliente, dExist.preco || precoTotalNum, dExist.taxaReservaPaga || valorEfetivoPago, !!dExist.isPlano);
+                                exibirModalSucessoAgendamento(dExist.servico || servico, dExist.dataHora || dataHoraCompleta, dExist.cliente || nomeCliente, dExist.preco || precoTotalNum, dExist.taxaReservaPaga || valorEfetivoPago, !!dExist.isPlano, { telefone: dExist.telefone || telefoneCliente, barbeiroNome: dExist.barbeiroNome || '', barbeiroWhatsapp: dExist.barbeiroWhatsapp || '' });
                                 carregarPainelCliente(uidFinal);
                                 isSalvandoAgendamento = false;
                                 return;
@@ -6816,7 +6678,7 @@
                         console.warn("⚠️ Agendamento já registrado no Firestore. Evitando duplicação.");
                         limparPixPendenteLocalStorage();
                         fecharModalPagamento();
-                        exibirModalSucessoAgendamento(servico, dataHoraCompleta, nomeCliente, precoTotalNum, valorEfetivoPago, false);
+                        exibirModalSucessoAgendamento(servico, dataHoraCompleta, nomeCliente, precoTotalNum, valorEfetivoPago, false, { telefone: telefoneCliente, barbeiroNome: barbeiroSelecionadoCliente?.nome || '', barbeiroWhatsapp: barbeiroSelecionadoCliente?.whatsapp || '' });
                         carregarPainelCliente(uidFinal);
                         isSalvandoAgendamento = false;
                         return;
@@ -6824,6 +6686,9 @@
 
                     // A reserva atômica do horário vem ANTES de qualquer efeito colateral
                     // (estoque, fidelidade ou consumo do plano).
+                    if (paymentId && paymentId !== 'manual') {
+                        throw new Error('Pagamento confirmado. O servidor ainda está finalizando o agendamento; atualize a agenda em instantes. Não é necessário pagar novamente.');
+                    }
 
                     // 2. Se for agendamento feito por Assinante de Plano, consome o corte da semana
                     if (dadosEfetivos.isPlano) {
@@ -6838,6 +6703,7 @@
                             idPagamento: 'plano_vip',
                             metodoPagamento: 'Plano Mensal VIP',
                             isPlano: true,
+                            semanaPlano: Number(dadosEfetivos.semanaPlano || window.semanaAgendamentoMensalistaSelecionada || 0),
                             extras: extras || [],
                             produtos: listaProdutosAg,
                             barbeiroId: barbeiroSelecionadoCliente?.id || 'qualquer',
@@ -6849,18 +6715,10 @@
                         };
 
                         try {
-                            const resSlotPlano = await reservarSlotAgendamentoAtomico(db, dadosNovoAgPlano, null);
+                            const resSlotPlano = await agendarPlanoNoServidor(dataHoraCompleta, dadosNovoAgPlano.semanaPlano);
                             console.log("✅ [Reserva Atômica Plano] Slot travado com sucesso:", resSlotPlano.slotId);
 
                             // Só consome o benefício depois que o horário foi realmente garantido.
-                            const corteConsumido = await consumirCorteSemanalAssinatura(uidFinal);
-                            if (!corteConsumido) {
-                                await liberarSlotAgendamento(resSlotPlano.slotId);
-                                try { await deleteDoc(doc(db, "agendamentos", resSlotPlano.agDocId)); } catch (_) {}
-                                alert("Não foi possível validar o corte do seu plano para esta semana. O agendamento foi cancelado.");
-                                isSalvandoAgendamento = false;
-                                return;
-                            }
 
                             // Produtos adicionados a benefícios gratuitos ficam apenas como
                             // reserva para pagamento no balcão; estoque não é debitado pelo cliente.
@@ -6890,7 +6748,7 @@
                         carregarPainelCliente(uidFinal);
                         carregarPainelPlanosCliente(uidFinal);
 
-                        exibirModalSucessoAgendamento(servico, dataHoraCompleta, nomeCliente, precoTotalNum, 0, true);
+                        exibirModalSucessoAgendamento(servico, dataHoraCompleta, nomeCliente, precoTotalNum, 0, true, { telefone: telefoneCliente, barbeiroNome: barbeiroSelecionadoCliente?.nome || '', barbeiroWhatsapp: barbeiroSelecionadoCliente?.whatsapp || '' });
 
                         dispararNotificacaoAutomaticaWhatsApp({
                             cliente: nomeCliente,
@@ -6958,11 +6816,7 @@
                             const novaDisponibilidade = novosSelos >= meta;
 
                             await setDoc(doc(db, "fidelidadeClientes", uidFinal), {
-                                userId: uidFinal,
-                                clienteNome: nomeCliente,
-                                clienteTelefone: telefoneCliente,
                                 selosAtuais: novosSelos,
-                                totalHistorico: dadosFidelidadeCliente.totalHistorico || selosAtuais,
                                 recompensasUtilizadas: novasRecompensasUsadas,
                                 recompensaDisponivel: novaDisponibilidade,
                                 atualizadoEm: new Date().toISOString()
@@ -7008,7 +6862,7 @@
                     carregarFidelidadeCliente(uidFinal).catch(e => console.warn(e));
 
                     // Abre a tela de agradecimento e confirmação com valores
-                    exibirModalSucessoAgendamento(servico, dataHoraCompleta, nomeCliente, precoTotalNum, valorEfetivoPago, false);
+                    exibirModalSucessoAgendamento(servico, dataHoraCompleta, nomeCliente, precoTotalNum, valorEfetivoPago, false, { telefone: telefoneCliente, barbeiroNome: barbeiroSelecionadoCliente?.nome || '', barbeiroWhatsapp: barbeiroSelecionadoCliente?.whatsapp || '' });
 
                     // Disparo automático via WhatsApp Bot em background apenas se foi pagamento manual (para Pix/Cartão online o backend já enviou)
                     if (!paymentId || paymentId === 'manual') {
@@ -7029,51 +6883,24 @@
 
                 } else if (tipoEfetivo === 'plano' && dadosEfetivos?.plano) {
                     const plano = dadosEfetivos.plano;
-                    const dataPagamento = new Date();
-                    const dataFim = new Date();
-                    dataFim.setDate(dataPagamento.getDate() + 30);
-
-                    await setDoc(doc(db, "assinaturasClientes", uidFinal), {
-                        userId: uidFinal,
-                        cliente: nomeCliente,
-                        telefone: telefoneCliente,
-                        nomePlano: plano.nome,
-                        precoPlano: plano.preco,
-                        servicosInclusos: plano.servicosInclusos || [],
-                        dataPagamento: dataPagamento.toISOString(),
-                        dataFim: dataFim.toISOString(),
-                        idPagamento: String(paymentId),
-                        metodoPagamento: metodo,
-                        status: 'ativo',
-                        atualizadoEm: new Date().toISOString()
-                    });
-
-                    // Dispara notificação automática de compra de plano no WhatsApp (Barbeiro + Cliente)
-                    try {
-                        const authHdrsPlano = { 'Content-Type': 'application/json' };
-                        try {
-                            const tkn = auth?.currentUser ? await auth.currentUser.getIdToken() : null;
-                            if (tkn) authHdrsPlano['Authorization'] = `Bearer ${tkn}`;
-                        } catch (_) {}
-                        fetch(`${getBackendUrlAtivo()}/api/whatsapp/notificar-compra-plano`, {
-                            method: 'POST',
-                            headers: authHdrsPlano,
-                            body: JSON.stringify({
-                                cliente: nomeCliente,
-                                telefone: telefoneCliente,
-                                plano: {
-                                    nome: plano.nome,
-                                    preco: plano.preco
-                                },
-                                metodoPagamento: metodo,
-                                whatsappBarbeiro: MEU_WHATSAPP
-                            })
-                        }).catch(e => console.warn("Aviso WhatsApp compra plano:", e));
-                    } catch (eZap) { console.warn(eZap); }
+                    // O plano é ativado somente pelo servidor após confirmação do pagamento.
+                    const consulta = await fetch(`${getBackendUrlAtivo()}/api/cliente/minha-assinatura`, { headers: await obterHeadersApiAutenticada() });
+                    const resultado = await consulta.json().catch(() => ({}));
+                    if (!consulta.ok || resultado.assinatura?.status !== 'ativo' || String(resultado.assinatura?.idPagamento || '') !== String(paymentId)) {
+                        throw new Error('Pagamento recebido. A ativação do plano ainda está sendo sincronizada; atualize a aba Planos em instantes.');
+                    }
 
                     limparPixPendenteLocalStorage();
                     fecharModalPagamento();
                     alert(`🎉 Parabéns, ${nomeCliente}! Sua assinatura do ${plano.nome} foi ativada com sucesso! Você tem 1 corte semanal 100% gratuito pelos próximos 30 dias.`);
+
+                    verificarEPrepararFallbackWhatsapp('plano', {
+                        cliente: nomeCliente,
+                        telefone: telefoneCliente,
+                        plano: plano.nome,
+                        valor: plano.preco,
+                        barbeiroWhatsapp: MEU_WHATSAPP
+                    });
                     
                     await carregarPainelPlanosCliente(user.uid);
                     await carregarPainelCliente(user.uid);
@@ -7138,152 +6965,67 @@
             });
         }
 
-        // Agendamento VIP Gratuito (Isento - Anti-Duplicação Integrada)
-        async function executarAgendamentoVipGratuito(dados) {
-            if (isSalvandoAgendamento) {
-                console.warn("⚠️ Agendamento VIP já em andamento.");
-                throw new Error("Já existe uma confirmação em andamento. Aguarde alguns segundos.");
+        async function tokenizarCartaoNoNavegador(numero, nome, mes, ano, cvv, cpf, debito) {
+            if (!window.MercadoPago) throw new Error('Não foi possível carregar o pagamento seguro. Atualize a página.');
+            const resposta = await fetch(`${getBackendUrlAtivo()}/api/pagamento/configuracao-publica`, { cache: 'no-store' });
+            const config = await resposta.json().catch(() => ({}));
+            if (!resposta.ok || !config.publicKey) throw new Error('Cartão ainda não configurado. Use Pix ou avise a barbearia.');
+            const mp = new window.MercadoPago(config.publicKey, { locale: 'pt-BR' });
+            const metodos = await mp.getPaymentMethods({ bin: String(numero).replace(/\D/g, '').slice(0, 8) });
+            const metodo = (metodos.results || []).find(item => item.payment_type_id === (debito ? 'debit_card' : 'credit_card'));
+            if (!metodo) throw new Error('Este cartão não aceita a modalidade selecionada.');
+            const card = await mp.createCardToken({
+                cardNumber: String(numero).replace(/\D/g, ''), cardholderName: nome,
+                cardExpirationMonth: String(mes), cardExpirationYear: String(ano).length === 2 ? `20${ano}` : String(ano),
+                securityCode: String(cvv), identificationType: 'CPF', identificationNumber: String(cpf).replace(/\D/g, '')
+            });
+            if (!card?.id) throw new Error('Não foi possível validar o cartão. Confira os dados.');
+            return { token: card.id, payment_method_id: metodo.id, issuer_id: metodo.issuer?.id };
+        }
+
+        async function atualizarSemanaPlanoNoServidor(rota, agendamentoId, semana) {
+            const user = auth.currentUser;
+            if (!user) throw new Error('Sua sessão expirou. Entre novamente.');
+            const token = await user.getIdToken();
+            const resposta = await fetch(`${getBackendUrlAtivo()}${rota}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ agendamentoId, semana: Number(semana) })
+            });
+            const resultado = await resposta.json().catch(() => ({}));
+            if (!resposta.ok || resultado.success !== true) {
+                throw new Error(resultado.error || 'Não foi possível atualizar o crédito do plano.');
             }
+            return resultado;
+        }
+
+        // Agendamento VIP Gratuito (Isento - Anti-Duplicação Integrada)
+        async function agendarPlanoNoServidor(dataHora, semana) {
+            const resposta = await fetch(`${getBackendUrlAtivo()}/api/cliente/plano/agendar`, {
+                method: 'POST',
+                headers: await obterHeadersApiAutenticada(),
+                body: JSON.stringify({ dataHora, semana: Number(semana), barbeiroId: barbeiroSelecionadoCliente?.id || 'qualquer' })
+            });
+            const resultado = await resposta.json().catch(() => ({}));
+            if (!resposta.ok || resultado.success !== true) throw new Error(resultado.error || 'Não foi possível confirmar o agendamento.');
+            return resultado.agendamento;
+        }
+
+        async function executarAgendamentoVipGratuito(dados) {
+            if (isSalvandoAgendamento) throw new Error('Já existe uma confirmação em andamento.');
             isSalvandoAgendamento = true;
-
-            const { servico, data, horario, beneficio, subtotalExtras, extras } = dados;
-            const msgStatus = document.getElementById('msgStatusModalMensalista') || document.getElementById('msgStatus');
             try {
-                const user = auth.currentUser;
-                if (!user) throw new Error("Sua sessão expirou. Entre novamente para agendar.");
-
-                let nomeCliente = user.email;
-                let telefoneCliente = "";
-                try {
-                    const userDoc = await getDoc(doc(db, "usuarios", user.uid));
-                    if (userDoc.exists()) {
-                        const uData = userDoc.data();
-                        nomeCliente = uData.nome || user.email;
-                        telefoneCliente = uData.telefone || "";
-                    }
-                } catch (e) { console.error(e); }
-
-                const dataHoraCompleta = `${data}T${horario}`;
-                const valorCobrarExtras = Number(subtotalExtras || 0);
-
-                // Idempotência & Concorrência: Checa se o usuário já possui ou se outro cliente acabou de reservar
-                const [queryConcorrenciaVip, slotsConcorrenciaVip] = await Promise.all([
-                    getDocs(query(collection(db, "agendamentos"), where("userId", "==", user.uid), where("dataHora", "==", dataHoraCompleta))),
-                    getDocs(query(collection(db, "slots_agendamentos"), where("dataHora", "==", dataHoraCompleta)))
-                ]);
-                let jaExisteVip = false;
-                let slotOcupadoOutro = false;
-                const barbeiroAlvoId = (modoMultiBarbeiroCliente && barbeiroSelecionadoCliente) ? barbeiroSelecionadoCliente.id : 'qualquer';
-
-                queryConcorrenciaVip.forEach(d => {
-                    const agData = d.data();
-                    if (agData.status === 'confirmado' || agData.status === 'pendente') jaExisteVip = true;
+                if (!auth.currentUser) throw new Error('Sua sessão expirou. Entre novamente.');
+                if (Number(dados.subtotalExtras || 0) > 0 || (dados.extras || []).length) throw new Error('Os serviços extras devem passar pelo pagamento.');
+                const ag = await agendarPlanoNoServidor(`${dados.data}T${dados.horario}`, dados.beneficio?.semana);
+                await Promise.all([carregarPainelCliente(auth.currentUser.uid), carregarPainelPlanosCliente(auth.currentUser.uid)]);
+                exibirModalSucessoAgendamento(ag.servico, ag.dataHora, ag.cliente, 0, 0, true, {
+                    telefone: ag.telefone, barbeiroNome: ag.barbeiroNome, barbeiroWhatsapp: ag.barbeiroWhatsapp
                 });
-                slotsConcorrenciaVip.forEach(d => {
-                    const slot = d.data();
-                    if (slot.status === 'cancelado' || slot.status === 'expirado') return;
-                    if (modoMultiBarbeiroCliente && barbeiroAlvoId !== 'qualquer') {
-                        if (slot.barbeiroId === barbeiroAlvoId) slotOcupadoOutro = true;
-                    } else if (!modoMultiBarbeiroCliente) slotOcupadoOutro = true;
-                });
-
-                if (jaExisteVip) {
-                    console.warn("⚠️ Agendamento VIP já registrado no Firestore. Evitando duplicação.");
-                    carregarPainelCliente(user.uid);
-                    carregarPainelPlanosCliente(user.uid);
-                    exibirModalSucessoAgendamento(`${servico} (Plano Mensal - Semana ${beneficio.semana})`, dataHoraCompleta, nomeCliente, valorCobrarExtras, 0, true);
-                    return;
-                }
-
-                if (slotOcupadoOutro) {
-                    const selectHora = document.getElementById('selectHorarioAgendamentoMensalista');
-                    const avisoBloqueio = document.getElementById('avisoDataBloqueadaMensalista');
-                    await carregarGradeHorariosPadrao(data, selectHora, avisoBloqueio);
-                    throw new Error("Este horário acabou de ser reservado. Escolha outro horário disponível.");
-                }
-
-                // A consulta acima melhora a UX, mas a decisão final é feita atomicamente no Firestore.
-                const reservaPlano = await reservarSlotAgendamentoAtomico(db, {
-                    userId: user.uid,
-                    cliente: nomeCliente,
-                    telefone: telefoneCliente,
-                    servico: `${servico} (Plano Mensal - Semana ${beneficio.semana})`,
-                    preco: valorCobrarExtras,
-                    taxaReservaPaga: 0.00,
-                    modalidadePagamento: 'plano_vip',
-                    idPagamento: 'plano_vip',
-                    metodoPagamento: 'plano_vip',
-                    isPlano: true,
-                    semanaPlano: beneficio.semana,
-                    extras: extras || [],
-                    barbeiroId: barbeiroSelecionadoCliente?.id || 'qualquer',
-                    barbeiroNome: barbeiroSelecionadoCliente?.nome || 'Barbearia EMAÚS',
-                    barbeiroWhatsapp: barbeiroSelecionadoCliente?.whatsapp || '',
-                    status: 'confirmado',
-                    dataHora: dataHoraCompleta,
-                    criadoEm: new Date()
-                });
-
-                const updateObj = {};
-                updateObj[`semanas.${beneficio.semana}`] = {
-                    status: 'agendado',
-                    agendamentoId: reservaPlano.agDocId,
-                    agendamentoData: dataHoraCompleta,
-                    servico: servico,
-                    atualizadoEm: new Date().toISOString()
-                };
-                await updateDoc(doc(db, "assinaturasClientes", user.uid), updateObj);
-
-                if (msgStatus) {
-                    msgStatus.className = "text-center text-xs p-2.5 rounded-xl bg-green-950 text-green-400 border border-green-800 font-bold";
-                    msgStatus.innerText = "✨ Agendamento do plano confirmado com sucesso!";
-                    msgStatus.classList.remove('hidden');
-                }
-
-                const elDataV = document.getElementById('dataAtendimento');
-                const elGradeV = document.getElementById('horarioGrade');
-                const elServV = document.getElementById('servico');
-                if (elDataV) elDataV.value = "";
-                if (elGradeV) elGradeV.innerHTML = "<option value=''>Selecione a data primeiro</option>";
-                if (elServV) elServV.value = "";
-                renderizarOpcoesExtras();
-
-                await carregarPainelCliente(user.uid);
-                await carregarPainelPlanosCliente(user.uid);
-
-                exibirModalSucessoAgendamento(`${servico} (Plano Mensal - Semana ${beneficio.semana})`, dataHoraCompleta, nomeCliente, valorCobrarExtras, 0, true);
-
-                // Disparo automático via WhatsApp Bot (Sem abrir tela manual)
-                dispararNotificacaoAutomaticaWhatsApp({
-                    cliente: nomeCliente,
-                    telefone: telefoneCliente,
-                    servico: servico,
-                    dataHora: dataHoraCompleta,
-                    preco: valorCobrarExtras,
-                    taxaReservaPaga: 0,
-                    isPlano: true,
-                    semanaPlano: beneficio.semana,
-                    barbeiroNome: barbeiroSelecionadoCliente?.nome || '',
-                    barbeiroWhatsapp: barbeiroSelecionadoCliente?.whatsapp || ''
-                });
-
-            } catch (err) {
-                console.error("Erro ao registrar agendamento VIP:", err);
-                if (msgStatus) {
-                    const horarioIndisponivel = err?.message === "HORARIO_JA_RESERVADO" || err?.message === "HORARIO_EM_PAGAMENTO_POR_OUTRO";
-                    msgStatus.className = "text-center text-xs p-2.5 rounded-xl bg-red-950 text-red-400 border border-red-800";
-                    msgStatus.innerText = horarioIndisponivel
-                        ? "Este horário acabou de ser reservado. Escolha outro horário disponível."
-                        : "Não foi possível confirmar o agendamento: " + (err?.message || "erro inesperado");
-                    msgStatus.classList.remove('hidden');
-                }
-                throw err;
             } finally {
                 isSalvandoAgendamento = false;
             }
         }
-
-        // Função auxiliar para validar formulário de agendamento geral
         async function validarFormAgendamento() {
             const servicoSelect = document.getElementById('servico');
             const data = document.getElementById('dataAtendimento')?.value || '';
@@ -7496,206 +7238,92 @@
             });
         }
 
+        let tentativaResgateGratuito = null;
         async function executarAgendamentoFidelidadeGratuito(dados) {
-            if (isSalvandoAgendamento) {
-                console.warn("⚠️ Processamento em andamento.");
-                return;
-            }
-            isSalvandoAgendamento = true;
-
+            if (isSalvandoAgendamento) return;
             const user = auth.currentUser;
-            if (!user) {
-                isSalvandoAgendamento = false;
-                alert("Por favor, faça login para agendar.");
-                return;
-            }
-
-            const btnConfirmar = document.getElementById('btnConfirmarFidelidadeGratis');
-            if (btnConfirmar) {
-                btnConfirmar.disabled = true;
-                btnConfirmar.innerHTML = `<span>⏳ Confirmando Atendimento Fidelidade...</span>`;
-            }
-
-            let nomeCliente = user.email;
-            let telefoneCliente = "Não informado";
+            if (!user) { alert("Por favor, faça login para agendar."); return; }
+            isSalvandoAgendamento = true;
+            const botao = document.getElementById('btnConfirmarFidelidadeGratis');
+            if (botao) botao.disabled = true;
             try {
-                const userDoc = await getDoc(doc(db, "usuarios", user.uid));
-                if (userDoc.exists()) {
-                    nomeCliente = userDoc.data().nome || user.email;
-                    telefoneCliente = userDoc.data().telefone || "Não informado";
+                const pedido = {
+                    data: dados.data, horario: dados.horario, servicoBase: dados.servicoBase,
+                    extras: dados.extras || [], produtos: dados.produtos || [],
+                    isFidelidade: dados.isFidelidade === true, isAniversario: dados.isAniversario === true,
+                    barbeiroId: barbeiroSelecionadoCliente?.id || 'qualquer'
+                };
+                const assinatura = JSON.stringify({ uid: user.uid, ...pedido });
+                if (tentativaResgateGratuito?.assinatura !== assinatura) {
+                    tentativaResgateGratuito = { assinatura, requestId: crypto.randomUUID() };
                 }
-            } catch (e) { console.error(e); }
-
-            try {
-                const { servico, data, horario, extras, produtos } = dados;
-                const dataHoraCompleta = `${data}T${horario}`;
-                const msgStatus = document.getElementById('msgStatus');
-
-                // Idempotência e concorrência pré-agendamento
-                const [queryConcorrencia, slotsConcorrencia] = await Promise.all([
-                    getDocs(query(collection(db, "agendamentos"), where("userId", "==", user.uid), where("dataHora", "==", dataHoraCompleta))),
-                    getDocs(query(collection(db, "slots_agendamentos"), where("dataHora", "==", dataHoraCompleta)))
-                ]);
-
-                let jaExiste = false;
-                let slotOcupadoOutro = false;
-                const barbeiroAlvoId = (modoMultiBarbeiroCliente && barbeiroSelecionadoCliente) ? barbeiroSelecionadoCliente.id : 'qualquer';
-
-                queryConcorrencia.forEach(d => {
-                    const agData = d.data();
-                    if (agData.status === 'confirmado' || agData.status === 'pendente') jaExiste = true;
+                const resposta = await fetch(`${getBackendUrlAtivo()}/api/cliente/agendar-gratuito`, {
+                    method: 'POST', headers: await obterHeadersApiAutenticada(),
+                    body: JSON.stringify({ ...pedido, requestId: tentativaResgateGratuito.requestId })
                 });
-                slotsConcorrencia.forEach(d => {
-                    const slot = d.data();
-                    if (slot.status === 'cancelado' || slot.status === 'expirado') return;
-                    if (modoMultiBarbeiroCliente && barbeiroAlvoId !== 'qualquer') {
-                        if (slot.barbeiroId === barbeiroAlvoId) slotOcupadoOutro = true;
-                    } else if (!modoMultiBarbeiroCliente) slotOcupadoOutro = true;
-                });
-
-                if (jaExiste) {
-                    console.warn("⚠️ Agendamento de fidelidade já registrado.");
-                    await carregarPainelCliente(user.uid);
-                    await carregarFidelidadeCliente(user.uid);
-                    exibirModalSucessoAgendamento(`${servico} (🎁 Fidelidade VIP)`, dataHoraCompleta, nomeCliente, 0, 0, false);
-                    return;
+                const resultado = await resposta.json().catch(() => ({}));
+                if (!resposta.ok || resultado.success !== true) throw new Error(resultado.error || 'Não foi possível confirmar o benefício.');
+                const ag = resultado.agendamento;
+                if (ag.status !== 'confirmado') {
+                    tentativaResgateGratuito = null;
+                    throw new Error('Esta tentativa já foi registrada e não está mais ativa. Consulte seus agendamentos antes de tentar novamente.');
                 }
-
-                if (slotOcupadoOutro) {
-                    alert("⚠️ Este horário acabou de ser reservado por outro cliente. Por favor, escolha outro horário disponível.");
-                    isSalvandoAgendamento = false;
-                    const selectHorario = document.getElementById('horarioGrade');
-                    const avisoBloqueio = document.getElementById('avisoDataBloqueada');
-                    await carregarGradeHorariosPadrao(data, selectHorario, avisoBloqueio);
-                    return;
+                const status = document.getElementById('msgStatus');
+                if (status) {
+                    status.className = 'mt-2 text-center text-sm font-bold text-green-400';
+                    status.textContent = 'Agendamento gratuito confirmado!';
                 }
-
-                // 1. Determina o título e RESERVA O SLOT + AGENDAMENTO atomicamente.
-                let sufixoTitulo = "(🎁 Fidelidade VIP)";
-                if (dados.isFidelidade && dados.isAniversario) {
-                    sufixoTitulo = "(🎁 Fidelidade VIP & 🎂 Aniversário)";
-                } else if (dados.isAniversario) {
-                    sufixoTitulo = "(🎂 Presente de Aniversário)";
-                }
-
-                const reservaFidelidade = await reservarSlotAgendamentoAtomico(db, {
-                    userId: user.uid,
-                    cliente: nomeCliente,
-                    telefone: telefoneCliente,
-                    servico: `${servico} ${sufixoTitulo}`,
-                    preco: 0.00,
-                    taxaReservaPaga: 0.00,
-                    modalidadePagamento: 'fidelidade_resgate',
-                    idPagamento: 'fidelidade_resgate',
-                    metodoPagamento: dados.isAniversario ? 'Presente de Aniversário' : 'Fidelidade VIP (Recompensa)',
-                    isFidelidade: !!dados.isFidelidade,
-                    recompensaFidelidade: dados.descricaoFidelidade || '',
-                    descontoFidelidade: dados.descontoFidelidade || 0,
-                    isAniversario: !!dados.isAniversario,
-                    recompensaAniversario: dados.descricaoAniversario || '',
-                    descontoAniversario: dados.descontoAniversario || 0,
-                    extras: extras || [],
-                    produtos: produtos || [],
-                    barbeiroId: barbeiroSelecionadoCliente?.id || 'qualquer',
-                    barbeiroNome: barbeiroSelecionadoCliente?.nome || 'Barbearia EMAÚS',
-                    barbeiroWhatsapp: barbeiroSelecionadoCliente?.whatsapp || '',
-                    status: 'confirmado',
-                    dataHora: dataHoraCompleta,
-                    criadoEm: new Date()
-                });
-
-                // Produtos vinculados a resgates gratuitos são cobrados/baixados no balcão.
-
-                // 3. Debita os selos da fidelidade se foi aplicada
-                if (dados.isFidelidade) {
-                    const meta = Math.max(1, Number(configFidelidadeCliente.metaSelos || 10));
-                    const selosAtuais = Number(dadosFidelidadeCliente.selosAtuais || 0);
-                    const novosSelos = Math.max(0, selosAtuais - meta);
-                    const novasRecompensasUsadas = Number(dadosFidelidadeCliente.recompensasUtilizadas || 0) + 1;
-                    const novaDisponibilidade = novosSelos >= meta;
-
-                    await setDoc(doc(db, "fidelidadeClientes", user.uid), {
-                        userId: user.uid,
-                        clienteNome: nomeCliente,
-                        clienteTelefone: telefoneCliente,
-                        selosAtuais: novosSelos,
-                        totalHistorico: dadosFidelidadeCliente.totalHistorico || selosAtuais,
-                        recompensasUtilizadas: novasRecompensasUsadas,
-                        recompensaDisponivel: novaDisponibilidade,
-                        atualizadoEm: new Date().toISOString()
-                    }, { merge: true });
-
-                    dadosFidelidadeCliente.selosAtuais = novosSelos;
-                    dadosFidelidadeCliente.recompensasUtilizadas = novasRecompensasUsadas;
-                    dadosFidelidadeCliente.recompensaDisponivel = novaDisponibilidade;
-                }
-
-                // 4. Registra o resgate de aniversário no cadastro do cliente (1x ao ano)
-                if (dados.isAniversario) {
-                    const anoAtual = new Date().getFullYear();
-                    await setDoc(doc(db, "usuarios", user.uid), {
-                        anoUltimoResgateAniversario: anoAtual,
-                        atualizadoEm: new Date().toISOString()
-                    }, { merge: true });
-
-                    dadosAniversarioCliente.anoUltimoResgate = anoAtual;
-                    dadosAniversarioCliente.jaResgatouEsteAno = true;
-                    dadosAniversarioCliente.beneficioAtivo = false;
-                }
-
-                if (msgStatus) {
-                    msgStatus.className = "mt-2 text-center text-sm font-bold text-green-400";
-                    msgStatus.innerText = "🎉 Agendamento Gratuito Confirmado com Sucesso!";
-                }
-
-                // Limpa campos
-                const elData = document.getElementById('dataAtendimento');
-                const elGrade = document.getElementById('horarioGrade');
-                const elServ = document.getElementById('servico');
-                if (elData) elData.value = "";
-                if (elGrade) elGrade.innerHTML = "<option value=''>Selecione a data primeiro</option>";
-                if (elServ) elServ.value = "";
+                document.getElementById('dataAtendimento').value = '';
+                document.getElementById('horarioGrade').innerHTML = "<option value=''>Selecione a data primeiro</option>";
+                document.getElementById('servico').value = '';
                 renderizarOpcoesExtras();
+                // A confirmação não depende do sucesso das consultas de atualização da tela.
+                await Promise.allSettled([carregarPainelCliente(user.uid), carregarFidelidadeCliente(user.uid)]);
                 atualizarLabelPrecoTotal();
-
-                await carregarPainelCliente(user.uid);
-                await carregarFidelidadeCliente(user.uid);
-
-                exibirModalSucessoAgendamento(`${servico} (🎁 Fidelidade VIP)`, dataHoraCompleta, nomeCliente, 0, 0, false);
-
-                // Disparo WhatsApp Bot
-                dispararNotificacaoAutomaticaWhatsApp({
-                    cliente: nomeCliente,
-                    telefone: telefoneCliente,
-                    servico: `${servico} (🎁 Fidelidade VIP)`,
-                    dataHora: dataHoraCompleta,
-                    preco: 0,
-                    taxaReservaPaga: 0,
-                    modalidade: 'fidelidade_resgate',
-                    produtos: produtos || [],
-                    isPlano: false,
-                    barbeiroNome: barbeiroSelecionadoCliente?.nome || '',
-                    barbeiroWhatsapp: barbeiroSelecionadoCliente?.whatsapp || ''
+                exibirModalSucessoAgendamento(ag.servico, ag.dataHora, ag.cliente, 0, 0, false, {
+                    telefone: ag.telefone, barbeiroNome: ag.barbeiroNome, barbeiroWhatsapp: ag.barbeiroWhatsapp
                 });
-
+                if (resultado.notificacaoPendente) alert('Agendamento confirmado. A notificação por WhatsApp não foi confirmada.');
             } catch (err) {
-                console.error("Erro ao registrar agendamento de fidelidade:", err);
-                alert("Erro ao confirmar agendamento de fidelidade: " + err.message);
+                alert('Não foi possível concluir a confirmação: ' + err.message);
             } finally {
                 isSalvandoAgendamento = false;
-                if (btnConfirmar) {
-                    btnConfirmar.disabled = false;
-                    btnConfirmar.innerHTML = `<span class="text-base">🎉</span><span id="labelTextoBtnFidelidadeGratis">Confirmar Atendimento Fidelidade (100% Grátis)</span>`;
-                }
+                if (botao) botao.disabled = false;
             }
         }
 
-        // Confirmação Manual do Pix (Fallback)
+        let tentativaPixManual = null;
+        async function solicitarAprovacaoPixManual(dados, tipo) {
+            if (isSalvandoAgendamento) return;
+            if (!auth.currentUser) { alert('Entre na sua conta para enviar a solicitação.'); return; }
+            if (tipo !== 'agendamento' || dados?.isPlano || dados?.isPlanoMensalistaComExtras) {
+                alert('Para planos e produtos, use o pagamento online ou entre em contato com a barbearia para conferência manual. Nenhuma compra foi confirmada.');
+                return;
+            }
+            isSalvandoAgendamento = true;
+            try {
+                const pedido = { ...dados, barbeiroId: barbeiroSelecionadoCliente?.id || 'qualquer' };
+                const chave = JSON.stringify({ uid: auth.currentUser.uid, pedido });
+                if (tentativaPixManual?.chave !== chave) tentativaPixManual = { chave, requestId: crypto.randomUUID() };
+                const r = await fetch(`${getBackendUrlAtivo()}/api/cliente/pix-manual`, {
+                    method: 'POST', headers: await obterHeadersApiAutenticada(),
+                    body: JSON.stringify({ ...pedido, requestId: tentativaPixManual.requestId })
+                });
+                const resultado = await r.json().catch(() => ({}));
+                if (!r.ok || !resultado.success) throw new Error(resultado.error || 'Não foi possível enviar a solicitação.');
+                fecharModalPagamento();
+                alert(resultado.solicitacao.status === 'pendente'
+                    ? 'Solicitação enviada para conferência do Pix. O horário NÃO está reservado: ele será confirmado somente após a aprovação do administrador, se ainda estiver disponível.'
+                    : 'Esta solicitação já foi analisada. Consulte seus agendamentos ou entre em contato com a barbearia.');
+            } catch (err) { alert('Solicitação não enviada: ' + err.message); }
+            finally { isSalvandoAgendamento = false; }
+        }
+
+        // Pix manual solicita análise; nunca confirma pagamento ou reserva pelo navegador.
         const btnConfirmarPixManual = document.getElementById('btnConfirmarPixManual');
         if (btnConfirmarPixManual) {
             btnConfirmarPixManual.addEventListener('click', async () => {
-                fecharModalPagamento();
-                await concluirPagamentoComSucesso('manual', 'pix_manual');
+                await solicitarAprovacaoPixManual(dadosPagamentoPendente, tipoPagamentoAtual);
             });
         }
 
@@ -7781,15 +7409,12 @@
                         ? `${dadosPagamentoPendente.data}T${dadosPagamentoPendente.horario}`
                         : undefined;
 
+                    const cartaoSeguro = await tokenizarCartaoNoNavegador(cartaoNumero, cartaoNome, expMonth, expYear, cartaoCvv, cartaoCpf, isDebito);
                     const response = await fetch(`${getBackendUrlAtivo()}/api/pagamento/cartao`, {
                         method: 'POST',
                         headers: await obterHeadersApiAutenticada(),
                         body: JSON.stringify({
-                            cardNumber: cartaoNumero,
-                            cardholderName: cartaoNome,
-                            cardExpirationMonth: expMonth,
-                            cardExpirationYear: expYear,
-                            securityCode: cartaoCvv,
+                            ...cartaoSeguro,
                             cpf: cartaoCpf,
                             transaction_amount: valorFinalCobrado,
                             installments: parcelas,
@@ -8565,15 +8190,12 @@ const tabProdPix = document.getElementById('tabProdPix');
             }
 
             try {
+                const cartaoSeguro = await tokenizarCartaoNoNavegador(cartaoNumero, cartaoNome, expMonth, expYear, cartaoCvv, cartaoCpf, isDebito);
                 const response = await fetch(`${getBackendUrlAtivo()}/api/pagamento/cartao`, {
                     method: 'POST',
                     headers: await obterHeadersApiAutenticada(),
                     body: JSON.stringify({
-                        cardNumber: cartaoNumero,
-                        cardholderName: cartaoNome,
-                        cardExpirationMonth: expMonth,
-                        cardExpirationYear: expYear,
-                        securityCode: cartaoCvv,
+                        ...cartaoSeguro,
                         cpf: cartaoCpf,
                         transaction_amount: totalPagarFinal,
                         installments: parcelas,
@@ -8607,6 +8229,13 @@ const tabProdPix = document.getElementById('tabProdPix');
 
                     if (modalSucessoCompraProduto) modalSucessoCompraProduto.classList.remove('hidden');
                     if (window.vibrarDispositivo) window.vibrarDispositivo('sucesso');
+
+                    verificarEPrepararFallbackWhatsapp('produto', {
+                        cliente: nome,
+                        telefone,
+                        produtos: `${quantidadeCompraProduto}x ${produtoSelecionadoCompra.nome}${produtoSelecionadoCompra.volumeUnidade ? ` (${produtoSelecionadoCompra.volumeUnidade})` : ''}`,
+                        valor: totalPagarFinal
+                    });
 
                     carregarProdutosCliente();
                 } else {
@@ -8662,6 +8291,7 @@ const tabProdPix = document.getElementById('tabProdPix');
         if (btnFecharSucessoCompraProduto) {
             btnFecharSucessoCompraProduto.addEventListener('click', () => {
                 if (modalSucessoCompraProduto) modalSucessoCompraProduto.classList.add('hidden');
+                ocultarFallbackWhatsappManual();
             });
         }
 

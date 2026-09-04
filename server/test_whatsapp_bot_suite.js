@@ -1,13 +1,20 @@
-process.env.INTERNAL_SERVICE_KEY = process.env.INTERNAL_SERVICE_KEY || 'test-internal-service-key';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import crypto from 'node:crypto';
+process.env.NODE_ENV = 'test';
+process.env.INTERNAL_SERVICE_KEY = 'test-internal-service-key';
+const sessionTeste = fs.mkdtempSync(path.join(os.tmpdir(), 'emaus-whatsapp-test-'));
+process.env.WA_SESSION_DIR = sessionTeste;
 
-import { 
+const {
     iniciarWhatsApp, 
     obterStatusWhatsApp, 
     desconectarWhatsApp, 
     enviarMensagemWhatsApp,
     gerarCodigoPareamentoWhatsApp
-} from './src/whatsappService.js';
-import app from './src/server.js';
+} = await import('./src/whatsappService.js');
+const { default: app } = await import('./src/server.js');
 import http from 'http';
 
 console.log('\n================================================================');
@@ -84,10 +91,38 @@ async function runTests() {
         return { status: res.status, data: json };
     }
 
-    // 2.1 GET /api/whatsapp/status (Público)
-    const statusApi = await apiRequest('/api/whatsapp/status');
-    assert(statusApi.status === 200, 'GET /api/whatsapp/status responde 200 OK');
-    assert(statusApi.data && typeof statusApi.data.status === 'string', 'GET /api/whatsapp/status retorna dados estruturados');
+    const statusApi = await apiRequest('/api/whatsapp/status-publico');
+    assert(statusApi.status === 200, 'Status público mínimo responde 200 OK');
+    assert(statusApi.data && typeof statusApi.data.status === 'string', 'Status público retorna o estado da conexão');
+    assert(!('qrCode' in statusApi.data) && !('pairingCode' in statusApi.data) && !('userNumber' in statusApi.data), 'Status público não expõe credenciais da sessão');
+    for (const arquivo of ['/firebase-service-account.json', '/server/src/server.js', '/package.json', '/firestore.rules', '/barbearia-app-main-corrigido.zip', '/.env']) {
+        const resposta = await fetch(`${baseUrl}${arquivo}`, { method: 'HEAD' });
+        assert(resposta.status === 404, `Arquivo interno não é publicado: ${arquivo}`);
+    }
+    for (const pagina of ['/', '/admin', '/assets/tailwind.css', '/assets/ui-safe.js', '/manifest.json']) {
+        const resposta = await fetch(`${baseUrl}${pagina}`, { method: 'HEAD' });
+        assert(resposta.status === 200, `Arquivo público continua acessível: ${pagina}`);
+    }
+    process.env.MP_WEBHOOK_SECRET = '';
+    const semConfiguracao = await apiRequest('/api/webhook', 'POST', { type: 'test' });
+    assert(semConfiguracao.status === 503, 'Webhook sem configuração falha fechado');
+    process.env.MP_WEBHOOK_SECRET = 'test-webhook-secret';
+    const semAssinatura = await apiRequest('/api/webhook', 'POST', { type: 'test' });
+    assert(semAssinatura.status === 401, 'Webhook rejeita assinatura ausente');
+    const ts = String(Math.floor(Date.now() / 1000));
+    const hmac = crypto.createHmac('sha256', process.env.MP_WEBHOOK_SECRET).update(`id:test-id;request-id:test-request;ts:${ts};`).digest('hex');
+    const assinado = await apiRequest('/api/webhook?data.id=test-id', 'POST', { type: 'test' }, { 'x-request-id': 'test-request', 'x-signature': `ts=${ts},v1=${hmac}` });
+    assert(assinado.status === 200, 'Webhook aceita assinatura válida sem realizar cobrança');
+    const invalido = await apiRequest('/api/webhook?data.id=test-id', 'POST', { type: 'test' }, { 'x-request-id': 'test-request', 'x-signature': `ts=${ts},v1=${'0'.repeat(64)}` });
+    assert(invalido.status === 401, 'Webhook rejeita assinatura falsa');
+    for (const rota of ['/api/whatsapp/status', '/api/galeria/listar', '/api/auth/mercadopago/url']) {
+        const privado = await apiRequest(rota);
+        assert(privado.status === 401, `${rota} exige autenticação`);
+    }
+    for (const rota of ['/api/cliente/plano/agendar', '/api/cliente/plano/cancelar-semana', '/api/cliente/agendar-gratuito', '/api/cliente/agendamento/cancelar', '/api/galeria/salvar']) {
+        const privado = await apiRequest(rota, 'POST', {});
+        assert(privado.status === 401, `${rota} exige autenticação`);
+    }
 
     // 2.2 Rotas que exigem Autenticação Admin ou Chave Interna (verificar bloqueio sem token/chave)
     const rotasProtegidas = [
@@ -105,6 +140,9 @@ async function runTests() {
         { path: '/api/whatsapp/notificar-compra-plano', method: 'POST', body: { cliente: 'Teste' } },
         { path: '/api/whatsapp/notificar-compra-produto', method: 'POST', body: { cliente: 'Teste' } },
         { path: '/api/pagamento/pix', method: 'POST', body: {} },
+        { path: '/api/cliente/pix-manual', method: 'POST', body: {} },
+        { path: '/api/admin/pix-manual', method: 'GET' },
+        { path: '/api/admin/pix-manual/invalido/decidir', method: 'POST', body: {} },
         { path: '/api/pagamento/cartao', method: 'POST', body: {} },
         { path: '/api/pagamento/status/pagamento-falso', method: 'GET' },
         { path: '/api/produtos/restaurar-agendamento', method: 'POST', body: { agendamentoId: 'ag-falso' } },
@@ -218,6 +256,7 @@ async function runTests() {
     assert(resCompraProduto.status === 200 && resCompraProduto.data.success === true, 'POST /api/whatsapp/notificar-compra-produto processa com sucesso');
 
     server.close(() => {
+        fs.rmSync(sessionTeste, { recursive: true, force: true });
         console.log('\n================================================================');
         console.log(`📊 RESULTADO FINAL DOS TESTES: ${passedTests} Passaram | ${failedTests} Falharam`);
         console.log('================================================================\n');

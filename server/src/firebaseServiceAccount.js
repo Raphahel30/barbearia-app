@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 let serviceAccount = {};
 
 // 1. Tenta carregar da variável de ambiente FIREBASE_SERVICE_ACCOUNT (JSON puro ou Base64)
-if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+if (process.env.NODE_ENV !== 'test' && process.env.FIREBASE_SERVICE_ACCOUNT) {
     try {
         const raw = process.env.FIREBASE_SERVICE_ACCOUNT.trim();
         if (raw.startsWith('{')) {
@@ -23,7 +23,7 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT) {
 }
 
 // 1.1 Suporte a variáveis de ambiente individuais (Render, Vercel, Railway)
-if ((!serviceAccount || !serviceAccount.private_key) && (process.env.FIREBASE_PRIVATE_KEY || process.env.FIREBASE_CLIENT_EMAIL)) {
+if (process.env.NODE_ENV !== 'test' && (!serviceAccount || !serviceAccount.private_key) && (process.env.FIREBASE_PRIVATE_KEY || process.env.FIREBASE_CLIENT_EMAIL)) {
     serviceAccount = {
         project_id: process.env.FIREBASE_PROJECT_ID || 'agendamento-barbearia-e8ffb',
         client_email: process.env.FIREBASE_CLIENT_EMAIL,
@@ -32,7 +32,7 @@ if ((!serviceAccount || !serviceAccount.private_key) && (process.env.FIREBASE_PR
 }
 
 // 2. Fallback para desenvolvimento local via arquivo .json seguro (ignorado no git)
-if (!serviceAccount || !serviceAccount.private_key) {
+if (process.env.NODE_ENV !== 'test' && (!serviceAccount || !serviceAccount.private_key)) {
     const localPaths = [
         path.join(__dirname, 'firebase-service-account.json'),
         path.join(__dirname, '..', 'firebase-service-account.json'),

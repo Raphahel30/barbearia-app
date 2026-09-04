@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-dotenv.config(); // DEVE ser chamado ANTES de qualquer uso de process.env (inclusive Firebase Admin SDK)
+if (process.env.NODE_ENV !== 'test') dotenv.config(); // Testes não carregam credenciais do .env.
 
 import express from 'express';
 import cors from 'cors';
@@ -28,9 +28,18 @@ const isMainModule = process.argv[1]
     : false;
 
 import serviceAccount from './firebaseServiceAccount.js';
+import { arquivoPublicoPermitido } from './publicFiles.js';
+import { validarCheckout } from './monthlyCheckout.js';
+import { prepararConsumoBeneficios } from './bookingBenefits.js';
+import { agendarBeneficioGratuito } from './freeBooking.js';
+import { solicitarPixManual, decidirPixManual } from './manualBooking.js';
+import { agendarPlanoMensal, cancelarPlanoMensal, validarSemanaPlano } from './monthlyBooking.js';
+import { cancelarAgendamentoAvulso } from './singleBooking.js';
+import { vincularMensalista } from './monthlyIdentity.js';
 import {
     assinaturaMensalEstaAtiva,
     consolidarClientesDuplicadosCRMServidor,
+    normalizarEmailCRMServidor,
     normalizarTelefoneCRMServidor
 } from './crmUtils.js';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
@@ -41,9 +50,13 @@ let firebaseAdminApp = null;
 let firebaseAdminAuth = null;
 let firebaseAdminFirestore = null;
 
-if (serviceAccount && serviceAccount.private_key) {
+const emulatorLocal = process.env.EMAUS_LOCAL_EMULATOR === '1';
+if (emulatorLocal && (process.env.NODE_ENV !== 'test' || process.env.GCLOUD_PROJECT !== 'demo-emaus-local' || process.env.FIRESTORE_EMULATOR_HOST !== '127.0.0.1:8080' || process.env.FIREBASE_AUTH_EMULATOR_HOST !== '127.0.0.1:9099')) {
+    throw new Error('Configuração insegura do ambiente local. Use npm run dev:emulator.');
+}
+if (emulatorLocal || (serviceAccount && serviceAccount.private_key)) {
     try {
-        firebaseAdminApp = getApps().length ? getApps()[0] : initializeApp({
+        firebaseAdminApp = emulatorLocal ? initializeApp({ projectId: 'demo-emaus-local' }, 'emaus-local-api') : getApps().length ? getApps()[0] : initializeApp({
             credential: cert(serviceAccount)
         });
         firebaseAdminAuth = getAuth(firebaseAdminApp);
@@ -325,7 +338,15 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Servir arquivos estáticos do frontend (admin.html, index.html, imagens, assets) localmente
-app.use(express.static(path.resolve(__dirname, '../../')));
+// Somente arquivos explicitamente públicos, nunca credenciais, backups ou código.
+const servirArquivoPublico = express.static(path.resolve(__dirname, '../../'), { dotfiles: 'deny' });
+app.use((req, res, next) => {
+    const aliases = { '/': '/index.html', '/index': '/index.html', '/admin': '/admin.html', '/termos': '/termos.html', '/redefinir-senha': '/redefinir-senha.html', '/__/auth/action': '/redefinir-senha.html' };
+    const destino = aliases[req.path] || req.path;
+    if (!arquivoPublicoPermitido(destino)) return next();
+    if (aliases[req.path]) req.url = destino + (req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '');
+    return servirArquivoPublico(req, res, next);
+});
 
 // Rota mock para silenciar 404 de scripts da Vercel em ambiente local
 app.all(['/_vercel/insights/script.js', '/_vercel/speed-insights/script.js', '/_vercel/*'], (req, res) => {
@@ -383,12 +404,21 @@ app.use('/api/whatsapp/', limiterWhatsApp);
 
 // Verifica o cadastro administrativo por UID. Custom claim `admin` é validada
 // diretamente pelos middlewares antes deste fallback de migração.
-async function isEmailAdmin(email, uid = null) {
-    if (firebaseAdminFirestore) {
+export async function isEmailAdmin(email, uid = null, db = null) {
+    const firestore = db || firebaseAdminFirestore;
+    if (firestore) {
         try {
             if (uid) {
-                const docSnap = await firebaseAdminFirestore.collection('administradores').doc(uid).get();
+                const docSnap = await firestore.collection('administradores').doc(uid).get();
                 if (docSnap.exists) return true;
+            }
+            if (email) {
+                const emailNormalizado = String(email).trim().toLowerCase();
+                const snap = await firestore.collection('administradores')
+                    .where('email', '==', emailNormalizado)
+                    .limit(1)
+                    .get();
+                if (!snap.empty) return true;
             }
         } catch (e) {
             console.warn('[AdminCheck] Aviso ao consultar administradores no Firestore:', e.message);
@@ -588,6 +618,158 @@ async function verificarUsuarioMiddleware(req, res, next) {
     }
 }
 
+
+
+app.get('/api/cliente/minha-assinatura', verificarUsuarioMiddleware, async (req, res) => {
+    try {
+        if (!firebaseAdminFirestore || !firebaseAdminAuth) return res.status(503).json({ success: false, error: 'Banco indisponível.' });
+        const identidade = await firebaseAdminAuth.getUser(req.authUser.uid || req.authUser.user_id);
+        const resultado = await vincularMensalista(firebaseAdminFirestore, identidade, firebaseAdminAuth);
+        return res.json({ success: true, ...resultado });
+    } catch (err) {
+        return res.status(err.statusCode || 500).json({ success: false, error: err.statusCode ? err.message : 'Não foi possível consultar o plano. Tente novamente.' });
+    }
+});
+
+app.post('/api/cliente/pix-manual', verificarUsuarioMiddleware, async (req, res) => {
+    try {
+        if (!firebaseAdminFirestore) return res.status(503).json({ error: 'Banco indisponível.' });
+        const solicitacao = await solicitarPixManual(firebaseAdminFirestore, req.authUser.uid || req.authUser.user_id, req.body || {});
+        return res.json({ success: true, solicitacao });
+    } catch (err) { return res.status(Number(err.statusCode) || 500).json({ error: err.statusCode ? err.message : 'Não foi possível enviar a solicitação.' }); }
+});
+
+app.get('/api/admin/pix-manual', verificarAdminMiddleware, async (req, res) => {
+    try {
+        if (!firebaseAdminFirestore) return res.status(503).json({ error: 'Banco indisponível.' });
+        const snap = await firebaseAdminFirestore.collection('solicitacoes_pix_manual').where('status', '==', 'pendente').limit(100).get();
+        return res.json({ success: true, solicitacoes: snap.docs.map(d => ({ ...d.data(), id: d.id })) });
+    } catch (_) { return res.status(500).json({ error: 'Não foi possível consultar solicitações.' }); }
+});
+
+app.post('/api/admin/pix-manual/:id/decidir', verificarAdminMiddleware, async (req, res) => {
+    try {
+        if (!firebaseAdminFirestore) return res.status(503).json({ error: 'Banco indisponível.' });
+        if (req.body?.acao === 'aprovar' && req.body?.pagamentoConferido !== true) return res.status(400).json({ error: 'Confira o recebimento do Pix antes de aprovar.' });
+        const resultado = await decidirPixManual(firebaseAdminFirestore, req.params.id, req.adminUser.uid || req.adminUser.user_id, req.body?.acao);
+        return res.json({ success: true, ...resultado });
+    } catch (err) { return res.status(Number(err.statusCode) || (err.code === 'BENEFICIO_INDISPONIVEL' ? 409 : 500)).json({ error: err.statusCode || err.code === 'BENEFICIO_INDISPONIVEL' ? err.message : 'Não foi possível decidir a solicitação.' }); }
+});
+
+app.post('/api/cliente/agendar-gratuito', verificarUsuarioMiddleware, async (req, res) => {
+    try {
+        if (!firebaseAdminFirestore) return res.status(503).json({ success: false, error: 'Banco de dados indisponível.' });
+        const ag = await agendarBeneficioGratuito(firebaseAdminFirestore, req.authUser.uid || req.authUser.user_id, req.body || {});
+        let notificacaoPendente = false;
+        if (!ag.alreadyRecorded) {
+            try {
+                const destino = await resolverNumeroBarbeiro(ag.barbeiroWhatsapp);
+                const mensagem = `*EMAÚS — Agendamento com benefício*\nCliente: ${ag.cliente}\nServiço: ${ag.servico}\nHorário: ${ag.dataHora}\nProfissional: ${ag.barbeiroNome}`;
+                const envios = [];
+                if (destino) envios.push(await enviarMensagemWhatsApp(destino, mensagem));
+                if (ag.telefone) envios.push(await enviarMensagemWhatsApp(ag.telefone, mensagem));
+                notificacaoPendente = !envios.length || envios.some(e => !e?.success || e?.simulated);
+            } catch (_) { notificacaoPendente = true; }
+        }
+        return res.json({ success: true, agendamento: ag, notificacaoPendente });
+    } catch (err) {
+        const status = err.code === 'BENEFICIO_INDISPONIVEL' ? 409 : Number(err.statusCode) || 500;
+        return res.status(status).json({ success: false, error: status === 500 ? 'Não foi possível confirmar o benefício.' : err.message });
+    }
+});
+
+app.post('/api/cliente/plano/agendar', verificarUsuarioMiddleware, async (req, res) => {
+    try {
+        if (!firebaseAdminFirestore) return res.status(503).json({ success: false, error: 'Banco de dados indisponível.' });
+        const uid = String(req.authUser.uid || req.authUser.user_id || '');
+        const agendamento = await agendarPlanoMensal(firebaseAdminFirestore, uid, req.body || {});
+        if (!agendamento.alreadyRecorded) {
+            try {
+                const destino = await resolverNumeroBarbeiro(agendamento.barbeiroWhatsapp);
+                const mensagem = `*EMAÚS — Agendamento do Plano Mensal*\nCliente: ${agendamento.cliente}\nHorário: ${agendamento.dataHora}\nSemana: ${agendamento.semanaPlano}`;
+                if (destino) await enviarMensagemWhatsApp(destino, mensagem);
+            } catch (e) { console.warn('[Plano] Agendado; aviso WhatsApp não enviado:', e.message); }
+        }
+        return res.json({ success: true, agendamento });
+    } catch (err) {
+        const status = Number(err.statusCode) || 500;
+        return res.status(status).json({ success: false, error: status === 500 ? 'Não foi possível agendar o plano.' : err.message });
+    }
+});
+
+app.post('/api/cliente/plano/cancelar-semana', verificarUsuarioMiddleware, async (req, res) => {
+    try {
+        if (!firebaseAdminFirestore) return res.status(503).json({ success: false, error: 'Banco de dados indisponível.' });
+        const uid = String(req.authUser.uid || req.authUser.user_id || '');
+        const resultado = await cancelarPlanoMensal(firebaseAdminFirestore, uid, req.body?.agendamentoId);
+        let notificacaoPendente = false;
+        if (!resultado.alreadyRecorded) {
+            try {
+                const ag = resultado.agendamento;
+                const destino = await resolverNumeroBarbeiro(ag.barbeiroWhatsapp);
+                const credito = resultado.status === 'disponivel' ? 'Crédito semanal liberado.' : 'Crédito perdido pela regra de três horas.';
+                const mensagem = `*EMAÚS — Cancelamento do Plano*\nCliente: ${ag.cliente}\nHorário: ${ag.dataHora}\n${credito}\nEste aviso não confirma estorno de serviços extras.`;
+                const envios = [];
+                if (destino) envios.push(await enviarMensagemWhatsApp(destino, mensagem));
+                if (ag.telefone) envios.push(await enviarMensagemWhatsApp(ag.telefone, mensagem));
+                notificacaoPendente = !envios.length || envios.some(e => !e?.success || e?.simulated);
+            } catch (e) {
+                notificacaoPendente = true;
+                console.warn('[Plano] Cancelado; aviso WhatsApp não confirmado:', e.message);
+            }
+        }
+        return res.json({ success: true, status: resultado.status, alreadyRecorded: resultado.alreadyRecorded, notificacaoPendente });
+    } catch (err) {
+        const status = Number(err.statusCode) || 500;
+        return res.status(status).json({ success: false, error: status === 500 ? 'Não foi possível cancelar o plano.' : err.message });
+    }
+});
+
+app.post('/api/cliente/agendamento/cancelar', verificarUsuarioMiddleware, async (req, res) => {
+    try {
+        if (!firebaseAdminFirestore) return res.status(503).json({ success: false, error: 'Banco de dados indisponível.' });
+        const uid = String(req.authUser.uid || req.authUser.user_id || '');
+        const agendamentoId = String(req.body?.agendamentoId || '').trim();
+
+        const resultado = await cancelarAgendamentoAvulso(firebaseAdminFirestore, uid, agendamentoId, {
+            processarEstorno: (pid, valor, motivo, chave) => executarEstornoMercadoPagoInterno(pid, valor, chave)
+        });
+
+        let notificacaoPendente = false;
+        if (!resultado.alreadyRecorded) {
+            try {
+                const ag = resultado.agendamento;
+                const destino = await resolverNumeroBarbeiro(ag.barbeiroWhatsapp);
+                const infoEstorno = resultado.estornoRealizado
+                    ? `Estorno de R$ ${resultado.valorEstornado.toFixed(2)} efetuado via Mercado Pago.`
+                    : (resultado.elegivelEstorno && Number(ag.taxaReservaPaga || ag.precoPago || 0) > 0 ? 'Estorno a conferir pelo estabelecimento.' : 'Sem estorno financeiro (<3h ou gratuito).');
+                const mensagem = `*EMAÚS — Cancelamento de Agendamento*\nCliente: ${ag.cliente || 'Cliente'}\nHorário: ${ag.dataHora}\nServiço: ${ag.servico || 'Corte'}\n${infoEstorno}`;
+                const envios = [];
+                if (destino) envios.push(await enviarMensagemWhatsApp(destino, mensagem));
+                if (ag.telefone) envios.push(await enviarMensagemWhatsApp(ag.telefone, mensagem));
+                notificacaoPendente = !envios.length || envios.some(e => !e?.success || e?.simulated);
+            } catch (e) {
+                notificacaoPendente = true;
+                console.warn('[Agendamento Avulso] Cancelado; aviso WhatsApp não confirmado:', e.message);
+            }
+        }
+
+        return res.json({
+            success: true,
+            status: resultado.status,
+            alreadyRecorded: resultado.alreadyRecorded,
+            estornoRealizado: resultado.estornoRealizado,
+            valorEstornado: resultado.valorEstornado,
+            elegivelEstorno: resultado.elegivelEstorno,
+            motivoCancelamento: resultado.motivoCancelamento,
+            notificacaoPendente
+        });
+    } catch (err) {
+        const status = Number(err.statusCode) || 500;
+        return res.status(status).json({ success: false, error: status === 500 ? 'Não foi possível cancelar o agendamento.' : err.message });
+    }
+});
+
 app.post('/api/admin/conceder', verificarAdminMiddleware, async (req, res) => {
     try {
         const email = String(req.body?.email || '').trim().toLowerCase();
@@ -669,7 +851,7 @@ if (isMainModule) {
     // Keep-alive interno para manter o Render acordado 24/7 (URL configurável via SELF_URL)
     setInterval(() => {
         https.get(`${SELF_URL}/health`, () => {}).on('error', () => {});
-    }, 10 * 60 * 1000);
+    }, 10 * 60 * 1000).unref();
 
 }
 
@@ -786,7 +968,7 @@ async function carregarConfiguracoesMercadoPagoFirestore() {
 }
 
 // Inicializa o token do Mercado Pago na inicialização
-carregarConfiguracoesMercadoPagoFirestore();
+if (process.env.NODE_ENV !== 'test') carregarConfiguracoesMercadoPagoFirestore();
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
@@ -811,7 +993,7 @@ const MP_CLIENT_SECRET = process.env.MP_CLIENT_SECRET || '';
 const MP_REDIRECT_URI = process.env.MP_REDIRECT_URI || 'https://barbearia-app-1bf5.onrender.com/api/auth/mercadopago/callback';
 
 // Retorna URL de autorização OAuth do Mercado Pago (Conectar com 1 Clique)
-app.get('/api/auth/mercadopago/url', (req, res) => {
+app.get('/api/auth/mercadopago/url', verificarAdminMiddleware, (req, res) => {
     const authUrl = `https://auth.mercadopago.com/authorization?client_id=${MP_CLIENT_ID}&response_type=code&platform_id=mp&state=emaus_admin&redirect_uri=${encodeURIComponent(MP_REDIRECT_URI)}`;
     return res.json({ url: authUrl });
 });
@@ -1132,8 +1314,9 @@ app.post('/api/pagamento/pix', verificarUsuarioMiddleware, async (req, res) => {
         }
 
         if (!activeAccessToken || activeAccessToken === 'SEU_ACCESS_TOKEN_AQUI') {
-            return res.status(500).json({ 
-                error: 'Access Token do Mercado Pago não configurado no servidor. Salve as credenciais no painel admin.' 
+            return res.status(503).json({
+                error: 'Mercado Pago não conectado. É possível solicitar conferência de Pix manual.',
+                manualPixAvailable: true
             });
         }
 
@@ -1184,6 +1367,22 @@ app.post('/api/pagamento/pix', verificarUsuarioMiddleware, async (req, res) => {
             };
         }
 
+        if (tipoFinal !== 'produto') {
+            try {
+                dadosPayload = await validarCheckout(
+                    firebaseAdminFirestore,
+                    dadosPayload,
+                    tipoFinal,
+                    transaction_amount,
+                    ''
+                );
+            } catch (errPreco) {
+                return res.status(errPreco.statusCode || 400).json({
+                    error: errPreco.message || 'Valor ou benefício inválido.'
+                });
+            }
+        }
+
         const metadataMp = {
             tipo: tipoFinal,
             servico: String(dadosPayload.servico || description || 'Corte').slice(0, 100),
@@ -1201,7 +1400,12 @@ app.post('/api/pagamento/pix', verificarUsuarioMiddleware, async (req, res) => {
             preco_total: Number(dadosPayload.preco || 0),
             modalidade: String(dadosPayload.modalidade || '').slice(0, 30),
             is_fidelidade: Boolean(dadosPayload.isFidelidade),
-            is_aniversario: Boolean(dadosPayload.isAniversario)
+            is_aniversario: Boolean(dadosPayload.isAniversario),
+            precificado_pelo_servidor: Boolean(dadosPayload.precificadoPeloServidor),
+            meta_selos_resgate: Number(dadosPayload.metaSelosResgate || 0),
+            ano_resgate_aniversario: Number(dadosPayload.anoResgateAniversario || 0),
+            desconto_fidelidade: Number(dadosPayload.descontoFidelidade || 0),
+            desconto_aniversario: Number(dadosPayload.descontoAniversario || 0)
         };
 
         const notificationUrl = `${SELF_URL || 'https://barbearia-app-1bf5.onrender.com'}/api/webhook`;
@@ -1338,6 +1542,23 @@ app.post('/api/pagamento/cartao', verificarUsuarioMiddleware, async (req, res) =
             };
         }
 
+        if (tipoFinal !== 'produto') {
+            try {
+                const modoCartao = (tipoCartao === 'debito' || payment_method_id?.includes('deb')) ? 'debito' : 'credito';
+                dadosPayload = await validarCheckout(
+                    firebaseAdminFirestore,
+                    dadosPayload,
+                    tipoFinal,
+                    transaction_amount,
+                    modoCartao
+                );
+            } catch (errPreco) {
+                return res.status(errPreco.statusCode || 400).json({
+                    error: errPreco.message || 'Valor ou benefício inválido.'
+                });
+            }
+        }
+
         const metadataMp = {
             tipo: tipoFinal,
             servico: String(dadosPayload.servico || description || 'Corte').slice(0, 100),
@@ -1355,7 +1576,12 @@ app.post('/api/pagamento/cartao', verificarUsuarioMiddleware, async (req, res) =
             preco_total: Number(dadosPayload.preco || 0),
             modalidade: String(dadosPayload.modalidade || '').slice(0, 30),
             is_fidelidade: Boolean(dadosPayload.isFidelidade),
-            is_aniversario: Boolean(dadosPayload.isAniversario)
+            is_aniversario: Boolean(dadosPayload.isAniversario),
+            precificado_pelo_servidor: Boolean(dadosPayload.precificadoPeloServidor),
+            meta_selos_resgate: Number(dadosPayload.metaSelosResgate || 0),
+            ano_resgate_aniversario: Number(dadosPayload.anoResgateAniversario || 0),
+            desconto_fidelidade: Number(dadosPayload.descontoFidelidade || 0),
+            desconto_aniversario: Number(dadosPayload.descontoAniversario || 0)
         };
 
         // Se o frontend enviou dados do cartão em vez de token prévio, geramos o token no Mercado Pago
@@ -1550,6 +1776,13 @@ app.get('/api/pagamento/status/:id', verificarUsuarioMiddleware, async (req, res
         return res.status(500).json({ error: error.message || 'Erro ao consultar status.' });
     }
 });
+
+async function executarEstornoMercadoPagoInterno(paymentId, valor, chave) {
+    if (!activeAccessToken || !/^\d+$/.test(String(paymentId)) || !Number.isFinite(valor) || valor <= 0) throw new Error('Estorno indisponível; requer conferência.');
+    const result = await refundClient.create({ payment_id: paymentId, body: { amount: valor }, requestOptions: { idempotencyKey: chave } });
+    if (!result?.id || result.status !== 'approved' || Math.round(Number(result.amount) * 100) !== Math.round(valor * 100)) throw new Error('Devolução não confirmada pelo Mercado Pago.');
+    return { success: true, refundId: result.id, amount: result.amount };
+}
 
 // Endpoint to process automatic refund (Devolução Pix ou Estorno Cartão)
 app.post('/api/pagamento/estorno', verificarAuthEstornoMiddleware, async (req, res) => {
@@ -1914,6 +2147,10 @@ async function debitarEstoqueERegistrarVendaBackend(itemVenda, paymentId, metodo
                 transaction.get(prodRef),
                 transaction.get(compraRef)
             ]);
+            if (origem === 'carrinho_agendamento') {
+                const agenda = await transaction.get(firebaseAdminFirestore.collection('agendamentos').doc(cleanPaymentId));
+                if (!agenda.exists || agenda.data().status !== 'confirmado') throw new Error('Agendamento não permite debitar estoque.');
+            }
 
             // Idempotência por Document ID determinístico: se já foi gravada, não debita novamente!
             if (compraDoc.exists) {
@@ -1970,53 +2207,19 @@ async function debitarEstoqueERegistrarVendaBackend(itemVenda, paymentId, metodo
 
 app.post('/api/produtos/restaurar-agendamento', verificarUsuarioMiddleware, async (req, res) => {
     try {
-        const agendamentoId = String(req.body?.agendamentoId || '').trim();
-        if (!agendamentoId || !firebaseAdminFirestore) {
-            return res.status(400).json({ success: false, error: 'Agendamento inválido.' });
-        }
-        const agSnap = await firebaseAdminFirestore.collection('agendamentos').doc(agendamentoId).get();
-        if (!agSnap.exists) {
-            return res.status(404).json({ success: false, error: 'Agendamento não encontrado.' });
-        }
-        const ag = agSnap.data();
-        const uid = req.authUser.uid || req.authUser.user_id;
-        if (!req.ehAdmin && ag.userId !== uid) {
-            return res.status(403).json({ success: false, error: 'Agendamento não pertence ao usuário.' });
-        }
-
-        const compras = await firebaseAdminFirestore.collection('comprasProdutos')
-            .where('paymentId', '==', agendamentoId)
-            .get();
-        let restaurados = 0;
-        for (const compraDoc of compras.docs) {
-            await firebaseAdminFirestore.runTransaction(async transaction => {
-                const compraRef = compraDoc.ref;
-                const compraAtual = await transaction.get(compraRef);
-                if (!compraAtual.exists || compraAtual.data().estoqueRestauradoEm) return;
-                const compra = compraAtual.data();
-                const produtoRef = firebaseAdminFirestore.collection('produtos').doc(String(compra.produtoId || ''));
-                const produtoAtual = await transaction.get(produtoRef);
-                if (produtoAtual.exists) {
-                    transaction.update(produtoRef, {
-                        estoque: Number(produtoAtual.data().estoque || 0) + Number(compra.quantidade || 0),
-                        atualizadoEm: new Date().toISOString()
-                    });
-                }
-                transaction.update(compraRef, {
-                    status: 'estornado',
-                    estoqueRestauradoEm: new Date().toISOString()
-                });
-                restaurados++;
-            });
-        }
-        return res.json({ success: true, restaurados });
-    } catch (err) {
-        console.error('[Restaurar Produtos Agendamento] Erro:', err.message);
-        return res.status(500).json({ success: false, error: 'Erro ao restaurar estoque.' });
-    }
+        const id = String(req.body?.agendamentoId || '');
+        if (!id || id.includes('/') || !firebaseAdminFirestore) return res.status(400).json({ success: false, error: 'Agendamento inválido.' });
+        const snap = await firebaseAdminFirestore.collection('agendamentos').doc(id).get();
+        if (!snap.exists) return res.status(404).json({ success: false });
+        const ag = snap.data(), uid = req.authUser.uid || req.authUser.user_id;
+        if (ag.userId !== uid) return res.status(403).json({ success: false });
+        if (!['cancelado', 'reembolsado', 'cancelado_barbeiro'].includes(ag.status)) return res.status(409).json({ success: false, error: 'Cancele pela API de agendamento. Estoque não é devolvido isoladamente.' });
+        return res.json({ success: Boolean(ag.estoqueRestauradoEm && !ag.estoqueRequerConferencia), restaurados: 0, alreadyRecorded: true,
+            requerConferencia: !ag.estoqueRestauradoEm || !!ag.estoqueRequerConferencia });
+    } catch (_) { return res.status(500).json({ success: false, error: 'Consulta indisponível.' }); }
 });
 
-// Devolução Atômica de Estoque no Servidor (Cancelamento / Estorno)
+// Helper legado
 async function restaurarEstoqueProdutoBackend(prodId, qtd) {
     if (!firebaseAdminFirestore || !prodId || qtd <= 0) return;
     try {
@@ -2038,7 +2241,7 @@ async function restaurarEstoqueProdutoBackend(prodId, qtd) {
 }
 
 // Processamento Centralizado e Idempotente de Pagamentos no Servidor (Background / Webhook)
-async function processarConclusaoPagamentoServidor(paymentId, mpPaymentData = null, metodoPagamento = 'pix_mercadopago') {
+export async function processarConclusaoPagamentoServidor(paymentId, mpPaymentData = null, metodoPagamento = 'pix_mercadopago') {
     const cleanId = String(paymentId).trim();
     if (!cleanId || !firebaseAdminFirestore) {
         console.warn(`[Pagamento Servidor] Ignorando conclusão: cleanId="${cleanId}", firestore=${!!firebaseAdminFirestore}`);
@@ -2133,7 +2336,12 @@ async function processarConclusaoPagamentoServidor(paymentId, mpPaymentData = nu
                 valorCobrado: Number(meta.valor_cobrado || mpPaymentData?.transaction_amount || 0),
                 modalidade: meta.modalidade || '',
                 isFidelidade: Boolean(meta.is_fidelidade),
-                isAniversario: Boolean(meta.is_aniversario)
+                isAniversario: Boolean(meta.is_aniversario),
+                precificadoPeloServidor: Boolean(meta.precificado_pelo_servidor),
+                metaSelosResgate: Number(meta.meta_selos_resgate || 0),
+                anoResgateAniversario: Number(meta.ano_resgate_aniversario || 0),
+                descontoFidelidade: Number(meta.desconto_fidelidade || 0),
+                descontoAniversario: Number(meta.desconto_aniversario || 0)
             };
         } else if (!dados) {
             dados = {};
@@ -2145,7 +2353,7 @@ async function processarConclusaoPagamentoServidor(paymentId, mpPaymentData = nu
             const agDocSnap = await agDocRef.get();
 
             // Checagem de Idempotência em agendamentos
-            if (agDocSnap.exists && agDocSnap.data().status === 'confirmado') {
+            if (agDocSnap.exists && ['confirmado', 'cancelado', 'reembolsado', 'cancelado_barbeiro'].includes(agDocSnap.data().status)) {
                 console.log(`[Pagamento Servidor] ℹ️ Agendamento ${cleanId} já está confirmado.`);
                 await pendenteRef.set({ status: 'processado', processadoEm: new Date().toISOString() }, { merge: true });
                 return { success: true, alreadyProcessed: true };
@@ -2181,6 +2389,8 @@ async function processarConclusaoPagamentoServidor(paymentId, mpPaymentData = nu
                 modalidadePagamento: modalidade || (valorEfetivoPago >= precoTotalNum ? 'total' : 'taxa'),
                 idPagamento: cleanId,
                 metodoPagamento: metodoPagamento,
+                isPlano: isPlano === true,
+                semanaPlano: isPlano ? Number(dados.semanaPlano) : null,
                 isFidelidade: !!isFidelidade,
                 recompensaFidelidade: descricaoFidelidade || '',
                 descontoFidelidade: descontoFidelidade || 0,
@@ -2201,11 +2411,23 @@ async function processarConclusaoPagamentoServidor(paymentId, mpPaymentData = nu
             const slotId = `slot_${dataHoraCompleta}_${barbeiroId || 'principal'}`;
             try {
                 await firebaseAdminFirestore.runTransaction(async (t) => {
+                    // --- FASE 1: LEITURAS (todas as leituras devem preceder qualquer escrita) ---
+                    const agendaAtual = await t.get(agDocRef);
+                    if (agendaAtual.exists && ['cancelado', 'reembolsado', 'cancelado_barbeiro'].includes(agendaAtual.data().status)) {
+                        throw new Error('Pagamento já vinculado a agendamento cancelado. Requer conferência.');
+                    }
                     const slotRef = firebaseAdminFirestore.collection('slots_agendamentos').doc(slotId);
                     const slotDoc = await t.get(slotRef);
+                    const donoRef = firebaseAdminFirestore.collection('slots_proprietarios').doc(slotId);
+                    const dono = await t.get(donoRef);
+                    const subRef = isPlano ? firebaseAdminFirestore.collection('assinaturasClientes').doc(uidFinal) : null;
+                    if (subRef) {
+                        if (!dados.checkoutMensalValidado) throw new Error('Checkout mensal sem validação. Requer conferência.');
+                        validarSemanaPlano((await t.get(subRef)).data(), Number(dados.semanaPlano), dataHoraCompleta);
+                    }
                     if (slotDoc.exists) {
                         const sData = slotDoc.data();
-                        const pertenceAoMesmoPagamento = String(sData.paymentId || '') === cleanId;
+                        const pertenceAoMesmoPagamento = String(dono.data()?.paymentId || sData.paymentId || '') === cleanId;
                         if (!pertenceAoMesmoPagamento && (sData.status === 'confirmado' || sData.status === 'pendente' || sData.status === 'pendente_pagamento')) {
                             const erroConflito = new Error('HORARIO_JA_RESERVADO');
                             erroConflito.code = 'HORARIO_JA_RESERVADO';
@@ -2213,15 +2435,30 @@ async function processarConclusaoPagamentoServidor(paymentId, mpPaymentData = nu
                         }
                     }
 
+                    // Consumo seguro e atômico de benefícios (fidelidade / aniversário)
+                    let consumirBeneficios = () => {};
+                    if (dados.isFidelidade || dados.isAniversario) {
+                        consumirBeneficios = await prepararConsumoBeneficios(firebaseAdminFirestore, t, cleanId, dados);
+                    }
+
+                    // --- FASE 2: ESCRITAS (todas as escritas após todas as leituras) ---
+                    consumirBeneficios();
+
                     t.set(slotRef, {
                         slotId: slotId,
                         dataHora: dataHoraCompleta,
                         barbeiroId: barbeiroId || 'principal',
                         barbeiroNome: barbeiroNome || 'Barbearia EMAÚS',
-                        userId: uidFinal,
-                        cliente: nomeFinal,
-                        telefone: telFinal,
                         status: 'confirmado',
+                        expiraEm: null,
+                        atualizadoEm: new Date().toISOString()
+                    });
+                    if (subRef) t.update(subRef, { [`semanas.${Number(dados.semanaPlano)}`]: {
+                        status: 'agendado', agendamentoId: cleanId, agendamentoData: dataHoraCompleta, atualizadoEm: new Date().toISOString()
+                    } });
+
+                    t.set(firebaseAdminFirestore.collection('slots_proprietarios').doc(slotId), {
+                        userId: uidFinal,
                         paymentId: cleanId,
                         atualizadoEm: new Date().toISOString()
                     }, { merge: true });
@@ -2240,6 +2477,13 @@ async function processarConclusaoPagamentoServidor(paymentId, mpPaymentData = nu
                         conflitoHorarioEm: new Date().toISOString(),
                         conflitoDataHora: dataHoraCompleta,
                         conflitoSlotId: slotId,
+                        requerResolucaoManual: true
+                    }, { merge: true });
+                } else if (eTx.code === 'BENEFICIO_INDISPONIVEL' || eTx.message?.includes('Benefício') || eTx.message?.includes('Fidelidade') || eTx.message?.includes('aniversário') || eTx.message?.includes('Saldo de fidelidade')) {
+                    await pendenteRef.set({
+                        status: 'conflito_beneficio',
+                        conflitoBeneficioEm: new Date().toISOString(),
+                        motivoConflito: eTx.message,
                         requerResolucaoManual: true
                     }, { merge: true });
                 }
@@ -2267,34 +2511,7 @@ async function processarConclusaoPagamentoServidor(paymentId, mpPaymentData = nu
                 }
             }
 
-            // Debita fidelidade se aplicável
-            if (isFidelidade && userId) {
-                try {
-                    const fidRef = firebaseAdminFirestore.collection('fidelidadeClientes').doc(userId);
-                    const fidSnap = await fidRef.get();
-                    if (fidSnap.exists) {
-                        const selosAtuais = Number(fidSnap.data().selosAtuais || 0);
-                        const novasReq = Number(fidSnap.data().recompensasUtilizadas || 0) + 1;
-                        await fidRef.set({
-                            selosAtuais: Math.max(0, selosAtuais - 10),
-                            recompensasUtilizadas: novasReq,
-                            recompensaDisponivel: false,
-                            atualizadoEm: new Date().toISOString()
-                        }, { merge: true });
-                    }
-                } catch (eFid) { console.warn('[Pagamento Servidor] Aviso ao atualizar fidelidade:', eFid.message); }
-            }
-
-            // Marca aniversário se aplicável
-            if (isAniversario && userId) {
-                try {
-                    const userRef = firebaseAdminFirestore.collection('usuarios').doc(userId);
-                    await userRef.set({
-                        anoUltimoResgateAniversario: new Date().getFullYear(),
-                        atualizadoEm: new Date().toISOString()
-                    }, { merge: true });
-                } catch (eAniv) { console.warn('[Pagamento Servidor] Aviso ao atualizar aniversário:', eAniv.message); }
-            }
+            // Fidelidade e aniversário já foram consumidos na transação do agendamento.
 
             // Dispara notificação de WhatsApp
             try {
@@ -2497,33 +2714,32 @@ app.post('/api/mercadopago/reembolsar-pagamento', verificarAdminMiddleware, asyn
 app.post('/api/webhook', async (req, res) => {
     try {
         const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET || '';
+        if (!MP_WEBHOOK_SECRET) {
+            return res.status(503).json({ received: false, reason: 'webhook_not_configured' });
+        }
 
-        // Valida assinatura se o secret estiver configurado
-        if (MP_WEBHOOK_SECRET) {
-            const xSignature = req.headers['x-signature'] || '';
-            const xRequestId = req.headers['x-request-id'] || '';
-            const dataId = req.query['data.id'] || req.body?.data?.id || '';
+        const xSignature = req.headers['x-signature'] || '';
+        const xRequestId = req.headers['x-request-id'] || '';
+        const dataId = req.query['data.id'] || req.body?.data?.id || '';
 
-            // Monta o manifesto de validação conforme docs oficiais do Mercado Pago
-            const manifest = `id:${dataId};request-id:${xRequestId};ts:${xSignature.split(',').find(p => p.startsWith('ts='))?.split('=')?.[1] || ''};`;
-            const signatureParts = xSignature.split(',');
-            const tsPart = signatureParts.find(p => p.trim().startsWith('ts='));
-            const v1Part = signatureParts.find(p => p.trim().startsWith('v1='));
+        const signatureParts = xSignature.split(',');
+        const tsPart = signatureParts.find(p => p.trim().startsWith('ts='));
+        const v1Part = signatureParts.find(p => p.trim().startsWith('v1='));
 
-            if (tsPart && v1Part) {
-                const ts = tsPart.split('=')[1];
-                const v1 = v1Part.split('=')[1];
-                const signedManifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
-                const expectedHmac = crypto.createHmac('sha256', MP_WEBHOOK_SECRET)
-                    .update(signedManifest)
-                    .digest('hex');
+        if (!tsPart || !v1Part) {
+            return res.status(401).json({ received: false, reason: 'missing_signature' });
+        }
 
-                if (expectedHmac !== v1) {
-                    console.warn(`[Webhook] Assinatura inválida — possível requisição não autorizada. x-request-id: ${xRequestId}`);
-                    // Retorna 401 para o Mercado Pago reenviar o webhook na próxima tentativa
-                    return res.status(401).json({ received: false, reason: 'invalid_signature' });
-                }
-            }
+        const ts = tsPart.split('=')[1];
+        const v1 = v1Part.split('=')[1];
+        const signedManifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
+        const expectedHmac = crypto.createHmac('sha256', MP_WEBHOOK_SECRET)
+            .update(signedManifest)
+            .digest('hex');
+
+        if (expectedHmac !== v1) {
+            console.warn(`[Webhook] Assinatura inválida — possível requisição não autorizada. x-request-id: ${xRequestId}`);
+            return res.status(401).json({ received: false, reason: 'invalid_signature' });
         }
 
         const topic = req.query.topic || req.query.type || req.body?.type;
@@ -2701,14 +2917,26 @@ async function executarAutoLimpezaPendenciasVencidas() {
     }
 }
 
-setInterval(executarAutoLimpezaPendenciasVencidas, 3 * 60 * 1000);
+if (isMainModule) {
+    setInterval(executarAutoLimpezaPendenciasVencidas, 3 * 60 * 1000).unref();
+}
 
 // ==========================================
 // ROTAS DE AUTOMAÇÃO DO WHATSAPP (BOT)
 // ==========================================
 
-// Retorna status atual da conexão e QR Code se disponível
-app.get('/api/whatsapp/status', async (req, res) => {
+// Retorna apenas status da conexão para clientes sem vazar credenciais ou QR Code
+app.get('/api/whatsapp/status-publico', async (req, res) => {
+    try {
+        const waStatus = await obterStatusWhatsApp();
+        return res.json({ status: waStatus?.status || 'disconnected' });
+    } catch (e) {
+        return res.json({ status: 'disconnected' });
+    }
+});
+
+// Retorna status atual da conexão e QR Code se disponível (apenas admin)
+app.get('/api/whatsapp/status', verificarAdminMiddleware, async (req, res) => {
     try {
         const statusInfo = await obterStatusWhatsApp();
         return res.json(statusInfo);
@@ -3360,8 +3588,8 @@ app.all('/api/whatsapp/disparar-lembretes-4h', verificarAdminMiddleware, async (
 // ==========================================
 // ROTAS DE GALERIA DE CORTES (FIREBASE ADMIN)
 // ==========================================
-// Salvar foto requer token de usuário autenticado (barbeiro logado no painel)
-app.post('/api/galeria/salvar', verificarAuthEstornoMiddleware, async (req, res) => {
+// Salvar foto requer privilégios de administrador autenticado (barbeiro logado no painel)
+app.post('/api/galeria/salvar', verificarAdminMiddleware, async (req, res) => {
     try {
         const { clienteId, clienteNome, clienteTelefone, barbeiroNome, estiloCorte, observacao, fotoUrl } = req.body;
         if (!clienteNome || !fotoUrl) {
@@ -3397,7 +3625,7 @@ app.post('/api/galeria/salvar', verificarAuthEstornoMiddleware, async (req, res)
     }
 });
 
-app.get('/api/galeria/listar', async (req, res) => {
+app.get('/api/galeria/listar', verificarAdminMiddleware, async (req, res) => {
     try {
         const { clienteId, telefone } = req.query;
         if (!firebaseAdminFirestore) {
@@ -3496,7 +3724,24 @@ app.post('/api/admin/mensalistas/ativar', verificarAdminMiddleware, async (req, 
         if (!firebaseAdminFirestore) {
             return res.status(500).json({ success: false, error: 'Firestore Admin SDK não inicializado.' });
         }
-        const userId = String(req.body?.userId || '').trim();
+        let userId = String(req.body?.userId || '').trim();
+        const userEmail = normalizarEmailCRMServidor(req.body?.userEmail || req.body?.email);
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail) || userId.includes('/')) return res.status(400).json({ success: false, error: 'Informe um e-mail válido do cliente.' });
+        let vinculadoUid = null;
+        try {
+            const conta = await firebaseAdminAuth.getUserByEmail(userEmail);
+            if (userId && userId !== conta.uid && !userId.startsWith('mensal_')) return res.status(409).json({ success: false, error: 'O cliente selecionado não corresponde ao e-mail. Confira o cadastro.' });
+            userId = conta.uid;
+            vinculadoUid = conta.uid;
+        } catch (e) {
+            if (e.code !== 'auth/user-not-found') throw e;
+            // O identificador de uma conta existente nunca é ocupado por e-mail de outra pessoa.
+            if (userId) {
+                try { await firebaseAdminAuth.getUser(userId); return res.status(409).json({ success: false, error: 'O e-mail não corresponde à conta selecionada.' }); }
+                catch (err) { if (err.code !== 'auth/user-not-found') throw err; }
+            }
+            userId = 'mensal_' + crypto.createHash('sha256').update(userEmail).digest('hex').slice(0, 32);
+        }
         const cliente = String(req.body?.cliente || '').trim();
         const telefone = String(req.body?.telefone || '').trim();
         const planoId = String(req.body?.planoId || '').trim();
@@ -3512,6 +3757,9 @@ app.post('/api/admin/mensalistas/ativar', verificarAdminMiddleware, async (req, 
         const assinaturaRef = firebaseAdminFirestore.collection('assinaturasClientes').doc(userId);
         const assinatura = {
             userId,
+            userEmail,
+            emailNormalizado: userEmail,
+            vinculadoUid,
             cliente,
             telefone,
             planoId,
@@ -3587,210 +3835,374 @@ app.post('/api/admin/mensalistas/sincronizar', verificarAdminMiddleware, async (
     }
 });
 
+export async function executarBatchEmLotes(firestore, itens, operacaoFn, tamanhoLote = 400) {
+    if (!Array.isArray(itens) || itens.length === 0) return;
+    for (let i = 0; i < itens.length; i += tamanhoLote) {
+        const pedaco = itens.slice(i, i + tamanhoLote);
+        const batch = firestore.batch();
+        for (const item of pedaco) {
+            operacaoFn(batch, item);
+        }
+        await batch.commit();
+    }
+}
+
+export async function sincronizarEListarBaseCRM(firestore, persistirAlteracoes = true) {
+    const [clientesSnap, uSnap, agSnap, subSnap] = await Promise.all([
+        firestore.collection('clientes').get(),
+        firestore.collection('usuarios').get(),
+        firestore.collection('agendamentos').get(),
+        firestore.collection('assinaturasClientes').get().catch(() => ({ docs: [], forEach: () => {} }))
+    ]);
+
+    const mapaAgendamentos = new Map();
+    const clientesDeAgendamentos = new Map();
+
+    agSnap.forEach(d => {
+        const ag = d.data();
+        const tel = normalizarTelefoneCRMServidor(ag.telefone || ag.clienteTelefone || ag.tel);
+        const email = normalizarEmailCRMServidor(ag.clienteEmail || ag.email);
+        const uid = String(ag.userId || ag.clienteId || '').trim();
+        const nome = String(ag.clienteNome || ag.cliente || ag.nome || '').trim();
+
+        const chaves = [tel, email, uid].filter(Boolean);
+        if (chaves.length === 0) return;
+
+        const cancelado = ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro';
+        const preco = Number(ag.preco) || Number(ag.valorPago) || 0;
+        const dataHora = ag.dataHora || null;
+
+        chaves.forEach(ch => {
+            if (!mapaAgendamentos.has(ch)) {
+                mapaAgendamentos.set(ch, {
+                    total: 0,
+                    concluidos: 0,
+                    cancelados: 0,
+                    gastoCentavos: 0,
+                    ultimoAtendimento: null
+                });
+            }
+            const s = mapaAgendamentos.get(ch);
+            s.total++;
+            if (cancelado) {
+                s.cancelados++;
+            } else {
+                s.concluidos++;
+                s.gastoCentavos += Math.round(preco * 100);
+            }
+            if (dataHora && (!s.ultimoAtendimento || dataHora > s.ultimoAtendimento)) {
+                s.ultimoAtendimento = dataHora;
+            }
+        });
+
+        if (tel && !clientesDeAgendamentos.has(tel)) {
+            clientesDeAgendamentos.set(tel, {
+                id: `cli_ag_${tel}`,
+                nome: nome || 'Cliente',
+                telefone: ag.telefone || ag.clienteTelefone || tel,
+                telefoneNormalizado: tel,
+                email: email,
+                emailNormalizado: email,
+                createdAt: ag.dataHora || ag.createdAt || new Date().toISOString()
+            });
+        }
+    });
+
+    const assinantesVipSet = new Set();
+    const assinaturasAtivasMap = new Map();
+    const assinaturasPorId = new Map();
+    const assinaturasPorTelefone = new Map();
+
+    subSnap.forEach(d => {
+        const sub = d.data();
+        const assinaturaComId = { id: d.id, ...sub };
+        const tel = normalizarTelefoneCRMServidor(sub.telefone || sub.clienteTelefone);
+        const idKey = String(sub.userId || d.id);
+        assinaturasPorId.set(idKey, assinaturaComId);
+        if (tel) assinaturasPorTelefone.set(tel, assinaturaComId);
+
+        if (assinaturaMensalEstaAtiva(sub)) {
+            if (tel) {
+                assinantesVipSet.add(tel);
+                assinaturasAtivasMap.set(tel, assinaturaComId);
+            }
+            if (d.id) {
+                assinantesVipSet.add(d.id);
+                assinaturasAtivasMap.set(d.id, assinaturaComId);
+            }
+            if (sub.userId) {
+                assinantesVipSet.add(String(sub.userId));
+                assinaturasAtivasMap.set(String(sub.userId), assinaturaComId);
+            }
+        }
+    });
+
+    // 1. Carrega clientes existentes preservando notas manuais e tags customizadas
+    let listaClientesRaw = [];
+    const chavesExistentes = new Set();
+
+    clientesSnap.forEach(doc => {
+        const c = { id: doc.id, ...doc.data() };
+        listaClientesRaw.push(c);
+        chavesExistentes.add(`id:${c.id}`);
+        const tel = normalizarTelefoneCRMServidor(c.telefone || c.telefoneNormalizado);
+        const em = normalizarEmailCRMServidor(c.email || c.emailNormalizado);
+        if (tel) chavesExistentes.add(`tel:${tel}`);
+        if (em) chavesExistentes.add(`email:${em}`);
+    });
+
+    // 2. Adiciona usuários da coleção 'usuarios' que ainda não estão no CRM
+    uSnap.forEach(d => {
+        const u = d.data();
+        const telLimpo = normalizarTelefoneCRMServidor(u.telefone || u.tel);
+        const emailLimpo = normalizarEmailCRMServidor(u.email);
+        const jaExiste = chavesExistentes.has(`id:${d.id}`)
+            || (telLimpo && chavesExistentes.has(`tel:${telLimpo}`))
+            || (emailLimpo && chavesExistentes.has(`email:${emailLimpo}`));
+
+        if (jaExiste) return;
+
+        const stats = (telLimpo && mapaAgendamentos.get(telLimpo))
+            || (emailLimpo && mapaAgendamentos.get(emailLimpo))
+            || mapaAgendamentos.get(d.id)
+            || { total: 0, concluidos: 0, cancelados: 0, gastoCentavos: 0, ultimoAtendimento: null };
+
+        const isVip = assinantesVipSet.has(telLimpo) || assinantesVipSet.has(d.id);
+        const assinaturaAtiva = assinaturasAtivasMap.get(d.id) || (telLimpo && assinaturasAtivasMap.get(telLimpo)) || null;
+        const tags = Array.isArray(u.tags) ? [...u.tags] : [];
+        if (isVip && !tags.some(tag => String(tag).toLowerCase() === 'vip')) tags.push('VIP');
+        if (stats.total >= 3 && !tags.some(tag => String(tag).toLowerCase() === 'frequente')) tags.push('Frequente');
+
+        const clienteDoc = {
+            id: d.id,
+            nome: u.nome || u.displayName || 'Cliente',
+            nomeNormalizado: String(u.nome || u.displayName || 'Cliente').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim(),
+            telefone: u.telefone || '',
+            telefoneNormalizado: telLimpo,
+            email: u.email || '',
+            emailNormalizado: emailLimpo,
+            status: 'ativo',
+            tags,
+            observacoes: u.observacoes || '',
+            dataNascimento: u.dataNascimento || '',
+            ultimoAgendamentoEm: stats.ultimoAtendimento || null,
+            totalAgendamentos: stats.total,
+            totalConcluidos: stats.concluidos,
+            totalCancelados: stats.cancelados,
+            totalGastoCentavos: stats.gastoCentavos,
+            isVip,
+            planoAtivoId: assinaturaAtiva?.id || null,
+            planoStatus: assinaturaAtiva ? 'ativo' : 'inativo',
+            nomePlanoAtivo: assinaturaAtiva?.nomePlano || null,
+            planoDataFim: assinaturaAtiva?.dataFim || null,
+            createdAt: u.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        listaClientesRaw.push(clienteDoc);
+        chavesExistentes.add(`id:${d.id}`);
+        if (telLimpo) chavesExistentes.add(`tel:${telLimpo}`);
+        if (emailLimpo) chavesExistentes.add(`email:${emailLimpo}`);
+    });
+
+    // 3. Adiciona clientes de agendamentos avulsos/balcão
+    clientesDeAgendamentos.forEach((cliAg, tel) => {
+        const jaExiste = chavesExistentes.has(`id:${cliAg.id}`)
+            || chavesExistentes.has(`tel:${tel}`)
+            || (cliAg.emailNormalizado && chavesExistentes.has(`email:${cliAg.emailNormalizado}`));
+        if (jaExiste) return;
+
+        const stats = mapaAgendamentos.get(tel) || { total: 0, concluidos: 0, cancelados: 0, gastoCentavos: 0, ultimoAtendimento: null };
+        const assinaturaAtiva = assinaturasAtivasMap.get(tel) || null;
+        const isVip = Boolean(assinaturaAtiva);
+        const tags = [];
+        if (isVip) tags.push('VIP');
+        if (stats.total >= 3) tags.push('Frequente');
+
+        const clienteDoc = {
+            id: cliAg.id,
+            nome: cliAg.nome || 'Cliente',
+            nomeNormalizado: String(cliAg.nome || 'Cliente').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim(),
+            telefone: cliAg.telefone || '',
+            telefoneNormalizado: tel,
+            email: cliAg.email || '',
+            emailNormalizado: cliAg.emailNormalizado || '',
+            status: 'ativo',
+            tags,
+            observacoes: '',
+            dataNascimento: '',
+            ultimoAgendamentoEm: stats.ultimoAtendimento || null,
+            totalAgendamentos: stats.total,
+            totalConcluidos: stats.concluidos,
+            totalCancelados: stats.cancelados,
+            totalGastoCentavos: stats.gastoCentavos,
+            isVip,
+            planoAtivoId: assinaturaAtiva?.id || null,
+            planoStatus: assinaturaAtiva ? 'ativo' : 'inativo',
+            nomePlanoAtivo: assinaturaAtiva?.nomePlano || null,
+            planoDataFim: assinaturaAtiva?.dataFim || null,
+            createdAt: cliAg.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        listaClientesRaw.push(clienteDoc);
+        chavesExistentes.add(`id:${cliAg.id}`);
+        chavesExistentes.add(`tel:${tel}`);
+        if (cliAg.emailNormalizado) chavesExistentes.add(`email:${cliAg.emailNormalizado}`);
+    });
+
+    // 4. Adiciona mensalistas que não constavam nas coleções anteriores
+    subSnap.forEach(d => {
+        const sub = d.data();
+        const assinatura = { id: d.id, ...sub };
+        const clienteId = String(assinatura.userId || d.id);
+        const telLimpo = normalizarTelefoneCRMServidor(assinatura.telefone || assinatura.clienteTelefone);
+        const emailLimpo = normalizarEmailCRMServidor(assinatura.userEmail || assinatura.email);
+
+        const jaExiste = chavesExistentes.has(`id:${clienteId}`)
+            || (telLimpo && chavesExistentes.has(`tel:${telLimpo}`))
+            || (emailLimpo && chavesExistentes.has(`email:${emailLimpo}`));
+        if (jaExiste) return;
+
+        const ativo = assinaturaMensalEstaAtiva(assinatura);
+        const clienteDoc = {
+            id: clienteId,
+            nome: assinatura.cliente || 'Cliente Mensalista',
+            nomeNormalizado: String(assinatura.cliente || 'Cliente Mensalista').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim(),
+            telefone: assinatura.telefone || '',
+            telefoneNormalizado: telLimpo,
+            email: assinatura.userEmail || assinatura.email || '',
+            emailNormalizado: emailLimpo,
+            status: 'ativo',
+            tags: ativo ? ['VIP'] : [],
+            isVip: ativo,
+            planoAtivoId: ativo ? assinatura.id : null,
+            planoStatus: ativo ? 'ativo' : String(assinatura.status || 'inativo').toLowerCase(),
+            nomePlanoAtivo: assinatura.nomePlano || null,
+            planoDataFim: assinatura.dataFim || null,
+            assinaturaAtiva: ativo ? assinatura : null,
+            totalAgendamentos: 0,
+            totalConcluidos: 0,
+            totalCancelados: 0,
+            totalGastoCentavos: 0,
+            createdAt: assinatura.dataPagamento || assinatura.atualizadoEm || new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        listaClientesRaw.push(clienteDoc);
+        chavesExistentes.add(`id:${clienteId}`);
+        if (telLimpo) chavesExistentes.add(`tel:${telLimpo}`);
+        if (emailLimpo) chavesExistentes.add(`email:${emailLimpo}`);
+    });
+
+    // 5. Atualiza status de assinatura e estatísticas acumuladas preservando notas e tags customizadas
+    const listaAtualizada = listaClientesRaw.map(cliente => {
+        const tel = normalizarTelefoneCRMServidor(cliente.telefone || cliente.telefoneNormalizado);
+        const em = normalizarEmailCRMServidor(cliente.email || cliente.emailNormalizado);
+        const idStr = String(cliente.id);
+
+        const assinatura = assinaturasPorId.get(idStr) || (tel && assinaturasPorTelefone.get(tel));
+        const stats = (tel && mapaAgendamentos.get(tel)) || (em && mapaAgendamentos.get(em)) || mapaAgendamentos.get(idStr);
+
+        let clienteModificado = { ...cliente };
+
+        if (stats) {
+            clienteModificado.totalAgendamentos = Math.max(Number(clienteModificado.totalAgendamentos) || 0, stats.total);
+            clienteModificado.totalConcluidos = Math.max(Number(clienteModificado.totalConcluidos) || 0, stats.concluidos);
+            clienteModificado.totalCancelados = Math.max(Number(clienteModificado.totalCancelados) || 0, stats.cancelados);
+            clienteModificado.totalGastoCentavos = Math.max(Number(clienteModificado.totalGastoCentavos) || 0, stats.gastoCentavos);
+            if (stats.ultimoAtendimento && (!clienteModificado.ultimoAgendamentoEm || stats.ultimoAtendimento > clienteModificado.ultimoAgendamentoEm)) {
+                clienteModificado.ultimoAgendamentoEm = stats.ultimoAtendimento;
+            }
+        }
+
+        const tags = Array.isArray(clienteModificado.tags) ? [...clienteModificado.tags] : [];
+        const tagsSemVip = tags.filter(t => String(t).trim().toLowerCase() !== 'vip');
+
+        if (assinatura) {
+            const ativo = assinaturaMensalEstaAtiva(assinatura);
+            if (ativo) tagsSemVip.push('VIP');
+            clienteModificado = {
+                ...clienteModificado,
+                tags: tagsSemVip,
+                isVip: ativo,
+                planoAtivoId: ativo ? assinatura.id : null,
+                planoStatus: ativo ? 'ativo' : String(assinatura.status || 'inativo').toLowerCase(),
+                nomePlanoAtivo: ativo ? (assinatura.nomePlano || 'Plano Mensal') : null,
+                planoDataFim: ativo ? (assinatura.dataFim || null) : null,
+                assinaturaAtiva: ativo ? assinatura : null
+            };
+        } else if (clienteModificado.planoAtivoId) {
+            clienteModificado = {
+                ...clienteModificado,
+                tags: tagsSemVip,
+                isVip: false,
+                planoAtivoId: null,
+                planoStatus: 'inativo',
+                nomePlanoAtivo: null,
+                planoDataFim: null,
+                assinaturaAtiva: null
+            };
+        }
+
+        return clienteModificado;
+    });
+
+    // 6. Consolida duplicados sem perda de informações
+    let listaFinal = consolidarClientesDuplicadosCRMServidor(listaAtualizada);
+
+    // 7. Persiste no Firestore em lotes particionados (<= 400 docs por batch)
+    if (persistirAlteracoes) {
+        const itensParaSalvar = listaFinal.map(c => ({
+            id: String(c.id),
+            dados: {
+                nome: c.nome || 'Cliente',
+                nomeNormalizado: String(c.nome || 'Cliente').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim(),
+                telefone: c.telefone || '',
+                telefoneNormalizado: normalizarTelefoneCRMServidor(c.telefone || c.telefoneNormalizado),
+                email: c.email || '',
+                emailNormalizado: normalizarEmailCRMServidor(c.email || c.emailNormalizado),
+                status: c.status || 'ativo',
+                tags: Array.isArray(c.tags) ? c.tags : [],
+                observacoes: c.observacoes || '',
+                dataNascimento: c.dataNascimento || '',
+                ultimoAgendamentoEm: c.ultimoAgendamentoEm || null,
+                totalAgendamentos: Number(c.totalAgendamentos) || 0,
+                totalConcluidos: Number(c.totalConcluidos) || 0,
+                totalCancelados: Number(c.totalCancelados) || 0,
+                totalGastoCentavos: Number(c.totalGastoCentavos) || 0,
+                isVip: Boolean(c.isVip),
+                planoAtivoId: c.planoAtivoId || null,
+                planoStatus: c.planoStatus || 'inativo',
+                nomePlanoAtivo: c.nomePlanoAtivo || null,
+                planoDataFim: c.planoDataFim || null,
+                updatedAt: new Date().toISOString()
+            }
+        }));
+
+        await executarBatchEmLotes(firestore, itensParaSalvar, (batch, item) => {
+            const ref = firestore.collection('clientes').doc(item.id);
+            batch.set(ref, item.dados, { merge: true });
+        }, 400);
+    }
+
+    // 8. Ordena pela última atividade
+    listaFinal.sort((a, b) => {
+        const dtA = a.ultimoAgendamentoEm || a.createdAt || '';
+        const dtB = b.ultimoAgendamentoEm || b.createdAt || '';
+        return dtB.localeCompare(dtA);
+    });
+
+    return listaFinal;
+}
+
 app.get('/api/crm/clientes/listar', verificarAdminMiddleware, async (req, res) => {
     try {
         if (!firebaseAdminFirestore) {
             return res.status(500).json({ success: false, error: 'Firestore Admin SDK não inicializado.' });
         }
-
-        // 1. Tenta buscar da coleção 'clientes'
-        const clientesSnap = await firebaseAdminFirestore.collection('clientes').get();
-        let lista = [];
-        clientesSnap.forEach(doc => {
-            lista.push({ id: doc.id, ...doc.data() });
-        });
-
-        // 2. Completa a coleção a partir de 'usuarios' e 'agendamentos'. Isso é
-        // necessário mesmo quando alguns mensalistas já existem no CRM.
-        {
-            const [uSnap, agSnap, subSnap] = await Promise.all([
-                firebaseAdminFirestore.collection('usuarios').get(),
-                firebaseAdminFirestore.collection('agendamentos').get(),
-                firebaseAdminFirestore.collection('assinaturasClientes').get().catch(() => ({ forEach: () => {} }))
-            ]);
-
-            const mapaAgendamentos = new Map();
-            agSnap.forEach(d => {
-                const ag = d.data();
-                const tel = String(ag.telefone || ag.clienteTelefone || ag.tel || '').replace(/\D/g, '');
-                const email = (ag.clienteEmail || ag.email || '').toLowerCase().trim();
-                const uid = ag.userId || ag.clienteId;
-                const chave = tel || email || uid;
-                if (!chave) return;
-
-                if (!mapaAgendamentos.has(chave)) {
-                    mapaAgendamentos.set(chave, {
-                        total: 0,
-                        concluidos: 0,
-                        cancelados: 0,
-                        gastoCentavos: 0,
-                        ultimoAtendimento: null
-                    });
-                }
-                const stats = mapaAgendamentos.get(chave);
-                stats.total++;
-                if (ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro') {
-                    stats.cancelados++;
-                } else {
-                    stats.concluidos++;
-                    const preco = Number(ag.preco) || Number(ag.valorPago) || 0;
-                    stats.gastoCentavos += Math.round(preco * 100);
-                }
-                if (ag.dataHora) {
-                    if (!stats.ultimoAtendimento || ag.dataHora > stats.ultimoAtendimento) {
-                        stats.ultimoAtendimento = ag.dataHora;
-                    }
-                }
-            });
-
-            const assinantesVipSet = new Set();
-            const assinaturasAtivasMap = new Map();
-            subSnap.forEach(d => {
-                const sub = d.data();
-                if (!assinaturaMensalEstaAtiva(sub)) return;
-                const assinaturaComId = { id: d.id, ...sub };
-                const tel = String(sub.telefone || sub.clienteTelefone || '').replace(/\D/g, '');
-                if (tel) {
-                    assinantesVipSet.add(tel);
-                    assinaturasAtivasMap.set(tel, assinaturaComId);
-                }
-                if (d.id) {
-                    assinantesVipSet.add(d.id);
-                    assinaturasAtivasMap.set(d.id, assinaturaComId);
-                }
-            });
-
-            const chavesClientesExistentes = new Set();
-            lista.forEach(cliente => {
-                chavesClientesExistentes.add(`id:${cliente.id}`);
-                const telefone = normalizarTelefoneCRMServidor(cliente.telefone || cliente.telefoneNormalizado);
-                const email = String(cliente.email || cliente.emailNormalizado || '').trim().toLowerCase();
-                if (telefone) chavesClientesExistentes.add(`tel:${telefone}`);
-                if (email) chavesClientesExistentes.add(`email:${email}`);
-            });
-            const batch = firebaseAdminFirestore.batch();
-            let gravacoesPendentes = 0;
-            uSnap.forEach(d => {
-                const u = d.data();
-                const telLimpo = String(u.telefone || u.tel || '').replace(/\D/g, '');
-                const emailLimpo = (u.email || '').toLowerCase().trim();
-                const jaExiste = chavesClientesExistentes.has(`id:${d.id}`)
-                    || (telLimpo && chavesClientesExistentes.has(`tel:${telLimpo}`))
-                    || (emailLimpo && chavesClientesExistentes.has(`email:${emailLimpo}`));
-                if (jaExiste) return;
-                const stats = mapaAgendamentos.get(telLimpo) || mapaAgendamentos.get(emailLimpo) || mapaAgendamentos.get(d.id) || { total: 0, concluidos: 0, cancelados: 0, gastoCentavos: 0, ultimoAtendimento: null };
-
-                const isVip = assinantesVipSet.has(telLimpo) || assinantesVipSet.has(d.id);
-                const assinaturaAtiva = assinaturasAtivasMap.get(d.id) || assinaturasAtivasMap.get(telLimpo) || null;
-                const tags = Array.isArray(u.tags) ? [...u.tags] : [];
-                if (isVip && !tags.some(tag => String(tag).toLowerCase() === 'vip')) tags.push('VIP');
-                if (stats.total >= 3 && !tags.some(tag => String(tag).toLowerCase() === 'frequente')) tags.push('Frequente');
-
-                const clienteDoc = {
-                    nome: u.nome || u.displayName || 'Cliente',
-                    nomeNormalizado: String(u.nome || u.displayName || 'Cliente').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim(),
-                    telefone: u.telefone || '',
-                    telefoneNormalizado: telLimpo,
-                    email: u.email || '',
-                    emailNormalizado: emailLimpo,
-                    status: 'ativo',
-                    tags,
-                    observacoes: u.observacoes || '',
-                    ultimoAgendamentoEm: stats.ultimoAtendimento || null,
-                    totalAgendamentos: stats.total,
-                    totalConcluidos: stats.concluidos,
-                    totalCancelados: stats.cancelados,
-                    totalGastoCentavos: stats.gastoCentavos,
-                    isVip,
-                    planoAtivoId: assinaturaAtiva?.id || null,
-                    planoStatus: assinaturaAtiva ? 'ativo' : 'inativo',
-                    nomePlanoAtivo: assinaturaAtiva?.nomePlano || null,
-                    planoDataFim: assinaturaAtiva?.dataFim || null,
-                    createdAt: u.createdAt || new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                };
-
-                const ref = firebaseAdminFirestore.collection('clientes').doc(d.id);
-                batch.set(ref, clienteDoc, { merge: true });
-                gravacoesPendentes += 1;
-                lista.push({ id: d.id, ...clienteDoc });
-                chavesClientesExistentes.add(`id:${d.id}`);
-                if (telLimpo) chavesClientesExistentes.add(`tel:${telLimpo}`);
-                if (emailLimpo) chavesClientesExistentes.add(`email:${emailLimpo}`);
-            });
-
-            if (gravacoesPendentes > 0) {
-                await batch.commit().catch(e => console.warn('Aviso batch clientes:', e.message));
-            }
-        }
-
-        // Enriquece sempre o CRM com a fonte oficial de assinaturas, mesmo quando
-        // a coleção clientes já existe. Isso evita perfil mensalista desatualizado.
-        const assinaturasSnapAtual = await firebaseAdminFirestore.collection('assinaturasClientes').get();
-        const assinaturasPorId = new Map();
-        const assinaturasPorTelefone = new Map();
-        assinaturasSnapAtual.forEach(documento => {
-            const assinatura = { id: documento.id, ...documento.data() };
-            assinaturasPorId.set(String(assinatura.userId || documento.id), assinatura);
-            const telefone = normalizarTelefoneCRMServidor(assinatura.telefone || assinatura.clienteTelefone);
-            if (telefone) assinaturasPorTelefone.set(telefone, assinatura);
-        });
-
-        const idsPresentes = new Set();
-        lista = lista.map(cliente => {
-            const telefone = normalizarTelefoneCRMServidor(cliente.telefone || cliente.telefoneNormalizado);
-            const assinatura = assinaturasPorId.get(String(cliente.id)) || assinaturasPorTelefone.get(telefone);
-            idsPresentes.add(String(cliente.id));
-            if (!assinatura) {
-                if (!cliente.planoAtivoId) return cliente;
-                return { ...cliente, isVip: false, planoAtivoId: null, assinaturaAtiva: null };
-            }
-            const ativo = assinaturaMensalEstaAtiva(assinatura);
-            const tags = Array.isArray(cliente.tags) ? [...cliente.tags] : [];
-            const tagsSemVip = tags.filter(tag => String(tag).trim().toLowerCase() !== 'vip');
-            if (ativo) tagsSemVip.push('VIP');
-            return {
-                ...cliente,
-                tags: tagsSemVip,
-                isVip: ativo,
-                planoAtivoId: ativo ? assinatura.id : null,
-                planoStatus: ativo ? 'ativo' : String(assinatura.status || 'inativo').toLowerCase(),
-                assinaturaAtiva: ativo ? assinatura : null
-            };
-        });
-
-        assinaturasSnapAtual.forEach(documento => {
-            const assinatura = { id: documento.id, ...documento.data() };
-            const clienteId = String(assinatura.userId || documento.id);
-            if (!assinaturaMensalEstaAtiva(assinatura) || idsPresentes.has(clienteId)) return;
-            lista.push({
-                id: clienteId,
-                nome: assinatura.cliente || 'Cliente Mensalista',
-                telefone: assinatura.telefone || '',
-                telefoneNormalizado: normalizarTelefoneCRMServidor(assinatura.telefone),
-                email: assinatura.userEmail || assinatura.email || '',
-                status: 'ativo',
-                tags: ['VIP'],
-                isVip: true,
-                planoAtivoId: assinatura.id,
-                assinaturaAtiva: assinatura,
-                totalAgendamentos: 0,
-                totalGastoCentavos: 0,
-                createdAt: assinatura.dataPagamento || assinatura.atualizadoEm || ''
-            });
-        });
-
-        // Consolida cadastros repetidos sem apagar documentos ou históricos.
-        lista = consolidarClientesDuplicadosCRMServidor(lista);
-
-        // Ordena pela última atividade
-        lista.sort((a, b) => {
-            const dtA = a.ultimoAgendamentoEm || a.createdAt || '';
-            const dtB = b.ultimoAgendamentoEm || b.createdAt || '';
-            return dtB.localeCompare(dtA);
-        });
-
-        return res.json({ success: true, clientes: lista });
+        const clientes = await sincronizarEListarBaseCRM(firebaseAdminFirestore, false);
+        return res.json({ success: true, clientes });
     } catch (e) {
         console.error('Erro em /api/crm/clientes/listar:', e);
         return res.status(500).json({ success: false, error: e.message });
@@ -3808,7 +4220,7 @@ app.post('/api/crm/clientes/salvar', verificarAdminMiddleware, async (req, res) 
             return res.status(400).json({ success: false, error: 'Nome e telefone são obrigatórios.' });
         }
 
-        const telLimpo = String(telefone).replace(/\D/g, '');
+        const telLimpo = normalizarTelefoneCRMServidor(telefone);
         const docId = id || (`cli_${telLimpo || Date.now()}`);
 
         const dadosCliente = {
@@ -3817,7 +4229,7 @@ app.post('/api/crm/clientes/salvar', verificarAdminMiddleware, async (req, res) 
             telefone: telefone.trim(),
             telefoneNormalizado: telLimpo,
             email: email ? email.trim() : '',
-            emailNormalizado: email ? email.toLowerCase().trim() : '',
+            emailNormalizado: normalizarEmailCRMServidor(email),
             dataNascimento: dataNascimento || '',
             status: status || 'ativo',
             tags: Array.isArray(tags) ? tags : [],
@@ -3844,109 +4256,8 @@ app.post('/api/crm/clientes/sincronizar', verificarAdminMiddleware, async (req, 
         if (!firebaseAdminFirestore) {
             return res.status(500).json({ success: false, error: 'Firestore Admin SDK não inicializado.' });
         }
-
-        const [uSnap, agSnap, subSnap] = await Promise.all([
-            firebaseAdminFirestore.collection('usuarios').get(),
-            firebaseAdminFirestore.collection('agendamentos').get(),
-            firebaseAdminFirestore.collection('assinaturasClientes').get().catch(() => ({ forEach: () => {} }))
-        ]);
-
-        const mapaAgendamentos = new Map();
-        agSnap.forEach(d => {
-            const ag = d.data();
-            const tel = String(ag.telefone || ag.clienteTelefone || ag.tel || '').replace(/\D/g, '');
-            const email = (ag.clienteEmail || ag.email || '').toLowerCase().trim();
-            const uid = ag.userId || ag.clienteId;
-            const chave = tel || email || uid;
-            if (!chave) return;
-
-            if (!mapaAgendamentos.has(chave)) {
-                mapaAgendamentos.set(chave, {
-                    total: 0,
-                    concluidos: 0,
-                    cancelados: 0,
-                    gastoCentavos: 0,
-                    ultimoAtendimento: null
-                });
-            }
-            const stats = mapaAgendamentos.get(chave);
-            stats.total++;
-            if (ag.status === 'cancelado' || ag.status === 'cancelado_barbeiro') {
-                stats.cancelados++;
-            } else {
-                stats.concluidos++;
-                const preco = Number(ag.preco) || Number(ag.valorPago) || 0;
-                stats.gastoCentavos += Math.round(preco * 100);
-            }
-            if (ag.dataHora) {
-                if (!stats.ultimoAtendimento || ag.dataHora > stats.ultimoAtendimento) {
-                    stats.ultimoAtendimento = ag.dataHora;
-                }
-            }
-        });
-
-        const assinantesVipSet = new Set();
-        const assinaturasAtivasMap = new Map();
-        subSnap.forEach(d => {
-            const sub = d.data();
-            if (!assinaturaMensalEstaAtiva(sub)) return;
-            const assinaturaComId = { id: d.id, ...sub };
-            const tel = String(sub.telefone || sub.clienteTelefone || '').replace(/\D/g, '');
-            if (tel) {
-                assinantesVipSet.add(tel);
-                assinaturasAtivasMap.set(tel, assinaturaComId);
-            }
-            if (d.id) {
-                assinantesVipSet.add(d.id);
-                assinaturasAtivasMap.set(d.id, assinaturaComId);
-            }
-        });
-
-        const batch = firebaseAdminFirestore.batch();
-        const listaSinc = [];
-
-        uSnap.forEach(d => {
-            const u = d.data();
-            const telLimpo = String(u.telefone || u.tel || '').replace(/\D/g, '');
-            const emailLimpo = (u.email || '').toLowerCase().trim();
-            const stats = mapaAgendamentos.get(telLimpo) || mapaAgendamentos.get(emailLimpo) || mapaAgendamentos.get(d.id) || { total: 0, concluidos: 0, cancelados: 0, gastoCentavos: 0, ultimoAtendimento: null };
-
-            const isVip = assinantesVipSet.has(telLimpo) || assinantesVipSet.has(d.id);
-            const assinaturaAtiva = assinaturasAtivasMap.get(d.id) || assinaturasAtivasMap.get(telLimpo) || null;
-            const tags = Array.isArray(u.tags) ? [...u.tags] : [];
-            if (isVip && !tags.some(tag => String(tag).toLowerCase() === 'vip')) tags.push('VIP');
-            if (stats.total >= 3 && !tags.some(tag => String(tag).toLowerCase() === 'frequente')) tags.push('Frequente');
-
-            const clienteDoc = {
-                nome: u.nome || u.displayName || 'Cliente',
-                nomeNormalizado: String(u.nome || u.displayName || 'Cliente').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim(),
-                telefone: u.telefone || '',
-                telefoneNormalizado: telLimpo,
-                email: u.email || '',
-                emailNormalizado: emailLimpo,
-                status: 'ativo',
-                tags,
-                observacoes: u.observacoes || '',
-                ultimoAgendamentoEm: stats.ultimoAtendimento || null,
-                totalAgendamentos: stats.total,
-                totalConcluidos: stats.concluidos,
-                totalCancelados: stats.cancelados,
-                totalGastoCentavos: stats.gastoCentavos,
-                isVip,
-                planoAtivoId: assinaturaAtiva?.id || null,
-                planoStatus: assinaturaAtiva ? 'ativo' : 'inativo',
-                nomePlanoAtivo: assinaturaAtiva?.nomePlano || null,
-                planoDataFim: assinaturaAtiva?.dataFim || null,
-                updatedAt: new Date().toISOString()
-            };
-
-            const ref = firebaseAdminFirestore.collection('clientes').doc(d.id);
-            batch.set(ref, clienteDoc, { merge: true });
-            listaSinc.push({ id: d.id, ...clienteDoc });
-        });
-
-        await batch.commit();
-        return res.json({ success: true, total: listaSinc.length, clientes: listaSinc });
+        const clientes = await sincronizarEListarBaseCRM(firebaseAdminFirestore, true);
+        return res.json({ success: true, total: clientes.length, clientes });
     } catch (e) {
         console.error('Erro em /api/crm/clientes/sincronizar:', e);
         return res.status(500).json({ success: false, error: e.message });
