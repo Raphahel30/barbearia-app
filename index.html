@@ -5671,8 +5671,8 @@
             const cliente = ag.cliente || 'Cliente';
             const servico = ag.servico || 'Corte';
             const dataHora = ag.dataHora || '';
-            let semanaPlano = ag.semanaPlano || '';
-            const isPlano = !!ag.isPlano;
+            let semanaPlano = Number(ag.semanaPlano || (String(ag.servico || '').match(/Semana\s*(\d+)/i)?.[1] || 0));
+            const isPlano = !!ag.isPlano || (String(ag.servico || '').toLowerCase().includes('plano mensal'));
             const valorPago = Number(ag.taxaReservaPaga !== undefined ? ag.taxaReservaPaga : (isPlano ? 0 : 10.00));
 
             const agora = new Date();
@@ -5744,7 +5744,14 @@
                     await carregarPainelCliente(auth.currentUser.uid);
                     await carregarPainelPlanosCliente(auth.currentUser.uid);
                 }
-            } catch (e) { alert("Erro ao cancelar agendamento: " + e.message); }
+            } catch (e) {
+                alert("Erro ao cancelar agendamento: " + e.message);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = "Cancelar";
+                }
+            }
         };
 
         // ==========================================
