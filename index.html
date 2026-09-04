@@ -5539,7 +5539,8 @@
                             const valorPagoExib = Number(ag.taxaReservaPaga !== undefined ? ag.taxaReservaPaga : (ag.isPlano ? 0 : 10));
                             const valorRestante = Math.max(0, precoTotal - valorPagoExib);
 
-                            const dataAgObj = new Date(ag.dataHora);
+                            const horarioAg = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(ag.dataHora || '') ? `${ag.dataHora}:00-03:00` : ag.dataHora;
+                        const dataAgObj = new Date(horarioAg);
                             const diffHorasAg = (dataAgObj.getTime() - new Date().getTime()) / (1000 * 60 * 60);
 
                             let badgeCancelamentoInfo = "";

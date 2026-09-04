@@ -335,19 +335,22 @@
             <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
 
             <!-- BANNER DE ALERTA: ATENDIMENTOS PENDENTES APÓS 2 HORAS -->
-            <div id="bannerAlertasAdmin" class="hidden bg-amber-950/90 border border-amber-500 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 text-amber-200 shadow-2xl">
-                <div class="flex items-center gap-3">
-                    <span class="text-3xl animate-bounce">⚠️</span>
+            <div id="bannerAlertasAdmin" class="hidden bg-amber-950/90 border border-amber-500 p-4 rounded-2xl flex flex-col items-start gap-3 text-amber-200 shadow-2xl">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
+                    <div class="flex items-center gap-3">
+                        <span class="text-3xl animate-bounce">⚠️</span>
+                        <div>
+                            <p id="textoAlerta2Horas" class="font-bold text-white text-sm">Existem atendimentos realizados há mais de 2 horas aguardando confirmação!</p>
+                            <p id="subtextoAlerta2Horas" class="text-xs text-amber-300/80">Confirme se o cliente compareceu ou faltou para manter o controle dos planos e o faturamento atualizados.</p>
+                        </div>
+                    </div>
                     <div>
-                        <p id="textoAlerta2Horas" class="font-bold text-white text-sm">Existem atendimentos realizados há mais de 2 horas aguardando confirmação!</p>
-                        <p class="text-xs text-amber-300/80">Confirme se o cliente compareceu ou faltou para manter o controle dos planos e o faturamento atualizados.</p>
+                        <button id="btnVerAgendaAlerta" onclick="mudarAba('schedule')" class="bg-dourado hover:bg-[#C5A028] text-black font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap shadow-lg">
+                            Ver na Agenda
+                        </button>
                     </div>
                 </div>
-                <div>
-                    <button onclick="mudarAba('schedule')" class="bg-dourado hover:bg-[#C5A028] text-black font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap shadow-lg">
-                        Ver na Agenda
-                    </button>
-                </div>
+                <div id="listaPendentes2HorasDetalhe" class="w-full space-y-2 pt-2 border-t border-amber-500/30"></div>
             </div>
 
             <!-- 1. ABA: VISÃO GERAL & MÉTRICAS FINANCEIRAS -->
@@ -3097,13 +3100,30 @@
             ? 'http://localhost:3000'
             : 'https://barbearia-app-1bf5.onrender.com';
 
-        function obterDataHojeLocal() {
-            const d = new Date();
-            const ano = d.getFullYear();
-            const mes = String(d.getMonth() + 1).padStart(2, '0');
-            const dia = String(d.getDate()).padStart(2, '0');
-            return `${ano}-${mes}-${dia}`;
+        function obterDataHojeBrasilia() {
+            return new Intl.DateTimeFormat('sv-SE', {
+                timeZone: 'America/Sao_Paulo',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }).format(new Date());
         }
+        function obterAgoraIsoBrasilia(d = new Date()) {
+            return new Intl.DateTimeFormat('sv-SE', {
+                timeZone: 'America/Sao_Paulo',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).format(d).replace(' ', 'T');
+        }
+        function obterDataHojeLocal() {
+            return obterDataHojeBrasilia();
+        }
+        window.obterDataHojeBrasilia = obterDataHojeBrasilia;
+        window.obterAgoraIsoBrasilia = obterAgoraIsoBrasilia;
         window.obterDataHojeLocal = obterDataHojeLocal;
 
         let configWhatsappUrlGlobal = "https://barbearia-app-1bf5.onrender.com";
@@ -3398,7 +3418,7 @@
                         // Ignora intenções de pagamento pendentes não confirmadas
                         if (ag.status === 'pendente' || ag.status === 'pendente_pagamento') return;
 
-                        const agoraIso = new Date().toISOString().slice(0, 16);
+                        const agoraIso = (typeof obterAgoraIsoBrasilia === 'function') ? obterAgoraIsoBrasilia() : new Date().toISOString().slice(0, 16);
                         if (ag.dataHora && ag.dataHora >= agoraIso) {
                             if (podeDispararNotificacaoAdmin('novo_agendamento', docId)) {
                                 const horaFmt = (ag.dataHora || '').replace('T', ' às ');
@@ -6209,14 +6229,15 @@
         };
 
         function atualizarMetricasOverviewComDados(lista) {
-            const agora = new Date().toISOString().slice(0, 16);
-            const limite2Horas = new Date(Date.now() - 2 * 3600000).toISOString().slice(0, 16);
+            const agora = (typeof obterAgoraIsoBrasilia === 'function') ? obterAgoraIsoBrasilia() : new Date().toISOString().slice(0, 16);
+            const limite2Horas = (typeof obterAgoraIsoBrasilia === 'function') ? obterAgoraIsoBrasilia(new Date(Date.now() - 2 * 3600000)) : new Date(Date.now() - 2 * 3600000).toISOString().slice(0, 16);
             const hojeStr = (typeof obterDataHojeLocal === 'function') ? obterDataHojeLocal() : new Date().toLocaleDateString('pt-BR').split('/').reverse().join('-');
 
             let faturamentoFuturo = 0;
             let faturamentoRecebido = 0;
             let total = 0;
             let pendentes2Horas = 0;
+            const listaPendentes2Horas = [];
 
             const listaHojeDiv = document.getElementById('listaAtendimentosHoje');
             let atendimentosHojeList = [];
@@ -6233,6 +6254,7 @@
 
                 if (ag.dataHora <= limite2Horas && ag.status === 'confirmado') {
                     pendentes2Horas++;
+                    listaPendentes2Horas.push(ag);
                 }
 
                 if (!ehEstornado) {
@@ -6331,14 +6353,79 @@
 
             const bannerAlertas = document.getElementById('bannerAlertasAdmin');
             const textoAlerta = document.getElementById('textoAlerta2Horas');
+            const subtextoAlerta = document.getElementById('subtextoAlerta2Horas');
+            const listaDetalheDiv = document.getElementById('listaPendentes2HorasDetalhe');
+            const btnVerAgenda = document.getElementById('btnVerAgendaAlerta');
+
             if (bannerAlertas) {
                 if (pendentes2Horas > 0) {
                     bannerAlertas.classList.remove('hidden');
+
+                    const temDeHoje = listaPendentes2Horas.some(ag => (ag.dataHora || '').startsWith(hojeStr));
+                    const temDeAntes = listaPendentes2Horas.some(ag => !(ag.dataHora || '').startsWith(hojeStr));
+
                     if (textoAlerta) {
-                        textoAlerta.innerText = `Atenção: Existem ${pendentes2Horas} atendimento(s) realizados há mais de 2 horas aguardando confirmação de presença!`;
+                        if (!temDeHoje && temDeAntes) {
+                            textoAlerta.innerText = `Atenção: Existe ${pendentes2Horas} atendimento(s) de dia anterior aguardando confirmação de presença!`;
+                        } else if (temDeHoje && !temDeAntes) {
+                            textoAlerta.innerText = `Atenção: Existe ${pendentes2Horas} atendimento(s) de hoje realizado há mais de 2 horas aguardando confirmação!`;
+                        } else {
+                            textoAlerta.innerText = `Atenção: Existem ${pendentes2Horas} atendimento(s) realizados aguardando confirmação de presença!`;
+                        }
+                    }
+
+                    if (subtextoAlerta) {
+                        subtextoAlerta.innerText = "Confirme abaixo se o cliente compareceu ou faltou para manter o controle dos planos e faturamento atualizados.";
+                    }
+
+                    if (btnVerAgenda && listaPendentes2Horas.length > 0) {
+                        const primData = (listaPendentes2Horas[0].dataHora || '').split('T')[0];
+                        btnVerAgenda.onclick = () => {
+                            mudarAba('schedule');
+                            selecionarDiaCalendarioAdmin(primData);
+                        };
+                        const [pA, pM, pD] = primData.split('-');
+                        btnVerAgenda.innerText = `Ver na Agenda (${pD}/${pM})`;
+                    }
+
+                    if (listaDetalheDiv) {
+                        let htmlPendentes = '<div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-1">';
+                        listaPendentes2Horas.forEach(ag => {
+                            const [anoP, mesP, diaP] = (ag.dataHora || '').split('T')[0].split('-');
+                            const horaP = (ag.dataHora || '').split('T')[1] || '--:--';
+                            const dataFmt = `${diaP}/${mesP}`;
+                            const uData = (ag.userId && mapaUsuariosAdmin.get(ag.userId)) || (ag.email && mapaUsuariosAdmin.get(ag.email.toLowerCase().trim()));
+                            const nomeC = uData?.nome || ag.cliente || 'Cliente';
+                            const ehDeHojeItem = (ag.dataHora || '').startsWith(hojeStr);
+
+                            htmlPendentes += `
+                                <div class="bg-black/80 border border-amber-500/40 p-2.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs shadow-md">
+                                    <div class="min-w-0 flex-1">
+                                        <div class="font-bold text-white flex items-center gap-1.5 truncate">
+                                            <span>${textoHtml(nomeC)}</span>
+                                            ${ag.isPlano ? '<span class="text-dourado text-[10px] bg-amber-950/80 border border-amber-700/60 px-1.5 py-0.5 rounded-full font-bold">👑 VIP</span>' : ''}
+                                            <span class="text-[10px] px-1.5 py-0.5 rounded font-bold ${ehDeHojeItem ? 'bg-amber-900/60 text-amber-200' : 'bg-red-950 text-red-300 border border-red-800/60'}">
+                                                ${ehDeHojeItem ? 'Hoje' : 'Dia Anterior (' + dataFmt + ')'}
+                                            </span>
+                                        </div>
+                                        <div class="text-zinc-400 text-[11px] mt-0.5">
+                                            📅 <strong class="text-amber-300 font-mono">${dataFmt} às ${horaP}</strong> • ${textoHtml(ag.servico || 'Corte')}
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 flex-shrink-0 self-end sm:self-center">
+                                        <button onclick="confirmarPresencaAdmin('${textoHtml(ag.id)}')" class="bg-green-600 hover:bg-green-700 text-white px-2.5 py-1.5 rounded-lg font-bold text-[11px] transition shadow cursor-pointer flex items-center gap-1" title="Marcar que o cliente compareceu">✓ Compareceu</button>
+                                        <button onclick="marcarFaltaAdmin('${textoHtml(ag.id)}')" class="bg-red-700 hover:bg-red-800 text-white px-2 py-1.5 rounded-lg font-bold text-[11px] transition shadow cursor-pointer flex items-center gap-1" title="Marcar falta">✕ Faltou</button>
+                                        <button onclick="mudarAba('schedule'); selecionarDiaCalendarioAdmin('${(ag.dataHora || '').split('T')[0]}');" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-2 py-1.5 rounded-lg text-[11px] transition shadow cursor-pointer" title="Ver este dia na agenda">📅 Ver Dia</button>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        htmlPendentes += '</div>';
+                        listaDetalheDiv.innerHTML = htmlPendentes;
                     }
                 } else {
                     bannerAlertas.classList.add('hidden');
+                    if (listaDetalheDiv) listaDetalheDiv.innerHTML = '';
                 }
             }
 
@@ -7145,6 +7232,7 @@
                         </div>
                     `;
                 } else if (infoAg && infoAg.total > 0) {
+                    const temPendentesPassados = (dataIso < hojeIsoStr) && (infoAg.pendentes > 0);
                     badgesHtml = `
                         <div class="mt-1 space-y-1">
                             <span class="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-green-950/90 text-green-300 border border-green-800/80 w-full truncate">
@@ -7154,6 +7242,11 @@
                             ${infoAg.vips > 0 ? `
                                 <span class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-purple-950/80 text-purple-300 border border-purple-800/60 w-full truncate">
                                     👑 ${infoAg.vips} VIP
+                                </span>
+                            ` : ''}
+                            ${temPendentesPassados ? `
+                                <span class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-950 text-amber-300 border border-amber-500/70 w-full truncate animate-pulse">
+                                    ⚠️ ${infoAg.pendentes} a confirmar
                                 </span>
                             ` : ''}
                         </div>

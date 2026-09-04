@@ -1,3 +1,4 @@
+process.env.TZ = process.env.TZ || 'America/Sao_Paulo';
 import dotenv from 'dotenv';
 if (process.env.NODE_ENV !== 'test') dotenv.config(); // Testes não carregam credenciais do .env.
 
@@ -204,7 +205,8 @@ async function verificarLembretes4hAgenda() {
 
             if (!ag.dataHora || !ag.telefone) continue;
 
-            const dataAg = new Date(ag.dataHora);
+            const horarioAg = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(ag.dataHora) ? `${ag.dataHora}:00-03:00` : ag.dataHora;
+            const dataAg = new Date(horarioAg);
             if (isNaN(dataAg.getTime())) continue;
 
             const diffMin = (dataAg.getTime() - agora.getTime()) / (60 * 1000);
@@ -982,6 +984,31 @@ async function carregarConfiguracoesMercadoPagoFirestore() {
 if (process.env.NODE_ENV !== 'test') carregarConfiguracoesMercadoPagoFirestore();
 
 // Health check endpoint
+
+// Rota de Sincronizacao de Horario Oficial (Brasilia / America/Sao_Paulo)
+app.get('/api/horario-oficial', (req, res) => {
+    const now = new Date();
+    const isoBrasilia = new Intl.DateTimeFormat('sv-SE', {
+        timeZone: 'America/Sao_Paulo',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    }).format(now).replace(' ', 'T');
+
+    res.json({
+        success: true,
+        fusoHorario: 'America/Sao_Paulo',
+        offset: '-03:00',
+        horarioBrasilia: isoBrasilia,
+        timestampEpochMs: now.getTime(),
+        servidorIsoUtc: now.toISOString()
+    });
+});
+
 app.get('/api/health', async (req, res) => {
     if (!activeAccessToken || activeAccessToken === 'SEU_ACCESS_TOKEN_AQUI') {
         await carregarConfiguracoesMercadoPagoFirestore();
@@ -3690,7 +3717,7 @@ app.post('/api/galeria/salvar', verificarAdminMiddleware, async (req, res) => {
         }
 
         const agora = new Date();
-        const dataHoraFormatada = `${String(agora.getDate()).padStart(2, '0')}/${String(agora.getMonth() + 1).padStart(2, '0')}/${agora.getFullYear()} às ${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`;
+        const dataHoraFormatada = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).format(agora).replace(', ', ' às ');
         const telLimpo = clienteTelefone ? clienteTelefone.replace(/\D/g, '') : '';
 
         const docData = {
