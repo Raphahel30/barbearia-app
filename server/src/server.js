@@ -12,7 +12,8 @@ import {
     obterStatusWhatsApp, 
     desconectarWhatsApp, 
     enviarMensagemWhatsApp,
-    gerarCodigoPareamentoWhatsApp
+    gerarCodigoPareamentoWhatsApp,
+    configurarPersistenciaWhatsApp
 } from './whatsappService.js';
 
 import fs from 'fs';
@@ -63,6 +64,7 @@ if (emulatorLocal || (serviceAccount && serviceAccount.private_key)) {
         });
         firebaseAdminAuth = getAuth(firebaseAdminApp);
         firebaseAdminFirestore = getFirestore(firebaseAdminApp);
+        configurarPersistenciaWhatsApp(firebaseAdminFirestore);
         console.log('✅ [Firebase Admin SDK & Firestore] Inicializado com sucesso!');
     } catch (e) {
         console.warn('Aviso na inicialização do Firebase Admin SDK:', e.message);
@@ -243,10 +245,10 @@ async function verificarLembretes4hAgenda() {
                     if (envio.success) {
                         await marcarLembrete4hEnviado(ag.id, token);
                         disparos.push({ id: ag.id, cliente: ag.cliente, telefone: ag.telefone, hora: ag.dataHora, status: 'enviado' });
-                        console.log(`⏰ Lembrete 4h enviado com sucesso para ${ag.cliente} (${ag.telefone})`);
+                        console.log('⏰ Lembrete 4h enviado com sucesso.');
                     }
                 } catch (errEnv) {
-                    console.error(`Erro ao enviar lembrete 4h para ${ag.cliente}:`, errEnv.message);
+                    console.error('Erro ao enviar lembrete 4h:', errEnv.message);
                 }
             }
         }
@@ -352,7 +354,7 @@ app.use((req, res, next) => {
 });
 
 // Rota mock para silenciar 404 de scripts da Vercel em ambiente local
-app.all(['/_vercel/insights/script.js', '/_vercel/speed-insights/script.js', '/_vercel/*'], (req, res) => {
+app.all(['/_vercel/insights/script.js', '/_vercel/speed-insights/script.js', /^\/_vercel\//], (req, res) => {
     res.type('application/javascript').send('/* vercel analytics disabled locally */');
 });
 
@@ -523,7 +525,7 @@ async function verificarAdminMiddleware(req, res, next) {
 
         const ehAdmin = await isEmailAdmin(decoded.email, decoded.uid || decoded.user_id, null, decoded.admin === true);
         if (!ehAdmin) {
-            console.warn(`[Segurança] Tentativa de acesso não autorizado por: ${decoded.email}`);
+            console.warn('[Segurança] Tentativa de acesso administrativo não autorizado.');
             return res.status(403).json({
                 success: false,
                 error: 'Acesso restrito. Este usuário não possui privilégios de Administrador.'
@@ -963,7 +965,7 @@ async function carregarConfiguracoesMercadoPagoFirestore() {
                 client = new MercadoPagoConfig({ accessToken: activeAccessToken, options: { timeout: 10000 } });
                 paymentClient = new Payment(client);
                 refundClient = new PaymentRefund(client);
-                console.log(`💳 [Mercado Pago] Token sincronizado com sucesso de pagamento_privado: ${activeAccessToken.slice(0, 10)}...`);
+                console.log('💳 [Mercado Pago] Token sincronizado com sucesso de pagamento_privado.');
             } else {
                 activeAccessToken = '';
                 client = new MercadoPagoConfig({ accessToken: 'DUMMY_TOKEN', options: { timeout: 10000 } });
@@ -1011,15 +1013,10 @@ app.get('/api/horario-oficial', (req, res) => {
 });
 
 app.get('/api/health', async (req, res) => {
-    if (!activeAccessToken || activeAccessToken === 'SEU_ACCESS_TOKEN_AQUI') {
-        await carregarConfiguracoesMercadoPagoFirestore();
-    }
     const waStatus = obterStatusWhatsApp();
     res.json({ 
         status: 'ok', 
         message: 'EMAUS Barbearia Backend Online',
-        hasToken: Boolean(activeAccessToken && activeAccessToken !== 'SEU_ACCESS_TOKEN_AQUI'),
-        tokenType: activeAccessToken.startsWith('TEST') ? 'TEST' : (activeAccessToken.startsWith('APP_USR') ? 'PROD' : 'UNKNOWN'),
         whatsapp: {
             status: waStatus.status
         }
@@ -1119,7 +1116,7 @@ app.get('/api/auth/mercadopago/callback', async (req, res) => {
         paymentClient = new Payment(client);
         refundClient = new PaymentRefund(client);
 
-        console.log(`✅ [Mercado Pago OAuth] Conta vinculada com sucesso! User ID: ${tokenData.user_id}`);
+        console.log('✅ [Mercado Pago OAuth] Conta vinculada com sucesso.');
 
         // Salva no Firestore
         try {
@@ -1168,11 +1165,10 @@ app.get('/api/auth/mercadopago/callback', async (req, res) => {
 });
 
 // Status da conexão OAuth do Mercado Pago
-app.get('/api/auth/mercadopago/status', (req, res) => {
+app.get('/api/auth/mercadopago/status', verificarAdminMiddleware, (req, res) => {
     res.json({
         connected: Boolean(activeAccessToken && activeAccessToken.length > 20 && activeAccessToken !== 'SEU_ACCESS_TOKEN_AQUI'),
-        tokenType: activeAccessToken.startsWith('TEST') ? 'TEST' : (activeAccessToken.startsWith('APP_USR') ? 'PROD' : 'NONE'),
-        tokenPreview: activeAccessToken && activeAccessToken.length > 10 ? activeAccessToken.slice(0, 10) + '...' : null
+        tokenType: activeAccessToken.startsWith('TEST') ? 'TEST' : (activeAccessToken.startsWith('APP_USR') ? 'PROD' : 'NONE')
     });
 });
 
@@ -1257,7 +1253,7 @@ app.post('/api/configuracoes/mercadopago', verificarAdminMiddleware, (req, res) 
         client = new MercadoPagoConfig({ accessToken: activeAccessToken, options: { timeout: 10000 } });
         paymentClient = new Payment(client);
         refundClient = new PaymentRefund(client);
-        console.log(`[Config] Access Token atualizado via Admin: ${activeAccessToken.slice(0, 10)}...`);
+        console.log('[Config] Access Token atualizado via Admin.');
         return res.json({ success: true, message: 'Token atualizado com sucesso no backend.' });
     }
     return res.status(400).json({ error: 'Token invalido.' });
@@ -2505,7 +2501,7 @@ export async function processarConclusaoPagamentoServidor(paymentId, mpPaymentDa
                         slotId: slotId
                     }, { merge: true });
                 });
-                console.log(`[Pagamento Servidor] ✅ Agendamento e Slot ${slotId} confirmados atomicamente para ${nomeFinal}!`);
+                console.log(`[Pagamento Servidor] ✅ Agendamento e slot ${slotId} confirmados atomicamente.`);
             } catch (eTx) {
                 console.warn('[Backend Slot Transaction]:', eTx.message);
                 if (eTx.code === 'HORARIO_JA_RESERVADO' || eTx.message === 'HORARIO_JA_RESERVADO') {
@@ -2648,7 +2644,7 @@ export async function processarConclusaoPagamentoServidor(paymentId, mpPaymentDa
                 status: 'ativo'
             });
 
-            console.log(`[Pagamento Servidor] ✅ Assinatura Mensal ativada com sucesso para ${nomeFinal}!`);
+            console.log('[Pagamento Servidor] ✅ Assinatura mensal ativada com sucesso.');
 
             try {
                 const numBarbeiro = await resolverNumeroBarbeiro();

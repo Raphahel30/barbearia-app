@@ -130,7 +130,7 @@ async function runTests() {
     assert(assinado.status === 200, 'Webhook aceita assinatura válida sem realizar cobrança');
     const invalido = await apiRequest('/api/webhook?data.id=test-id', 'POST', { type: 'test' }, { 'x-request-id': 'test-request', 'x-signature': `ts=${ts},v1=${'0'.repeat(64)}` });
     assert(invalido.status === 401, 'Webhook rejeita assinatura falsa');
-    for (const rota of ['/api/whatsapp/status', '/api/galeria/listar', '/api/auth/mercadopago/url']) {
+    for (const rota of ['/api/whatsapp/status', '/api/galeria/listar', '/api/auth/mercadopago/url', '/api/auth/mercadopago/status']) {
         const privado = await apiRequest(rota);
         assert(privado.status === 401, `${rota} exige autenticação`);
     }

@@ -4,6 +4,7 @@ import pino from 'pino';
 import QRCode from 'qrcode';
 import fs from 'fs';
 import path from 'path';
+import { useFirestoreAuthState } from './firestoreAuthState.js';
 
 // ============================================================================
 // ESTADO GLOBAL DO SERVIÇO DE WHATSAPP (EXCLUSIVO RENDER)
@@ -19,8 +20,20 @@ let connectedNumber = null;
 let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 5;
 let reconnectTimer = null;
+let firestoreDb = null;
+let limparSessaoPersistida = null;
 
 const logger = pino({ level: 'silent' }); // Silencia logs de debug do Baileys para máxima velocidade
+
+export function configurarPersistenciaWhatsApp(db) {
+    firestoreDb = db || null;
+}
+
+function telefoneMascarado(numero) {
+    const digitos = String(numero || '').replace(/\D/g, '');
+    if (digitos.length < 4) return '***';
+    return `***${digitos.slice(-4)}`;
+}
 
 // ============================================================================
 // CONSULTA DE STATUS EM TEMPO REAL
@@ -132,6 +145,10 @@ export async function desconectarWhatsApp() {
                 console.warn('[WhatsApp Bot] Aviso ao apagar pasta de sessão:', errRm.message);
             }
         }
+        if (limparSessaoPersistida) {
+            await limparSessaoPersistida();
+            limparSessaoPersistida = null;
+        }
 
         connectionStatus = 'disconnected';
         connectedNumber = null;
@@ -169,7 +186,7 @@ export async function enviarMensagemWhatsApp(numeroDestino, texto) {
     const agora = Date.now();
     const ultimoEnvio = mapaMensagensRecentes.get(chaveMsg) || 0;
     if (agora - ultimoEnvio < 30000) {
-        console.log(`[WhatsApp Bot] ⚠️ Mensagem duplicada ignorada para +${cleanNumber} (enviada há ${((agora - ultimoEnvio)/1000).toFixed(1)}s).`);
+        console.log(`[WhatsApp Bot] ⚠️ Mensagem duplicada ignorada para ${telefoneMascarado(cleanNumber)}.`);
         return { success: true, duplicated: true };
     }
     mapaMensagensRecentes.set(chaveMsg, agora);
@@ -182,16 +199,16 @@ export async function enviarMensagemWhatsApp(numeroDestino, texto) {
     }
 
     if (!sock || connectionStatus !== 'connected') {
-        console.log(`[WhatsApp Simulado / Offline] Para: ${cleanNumber} | Texto: ${String(texto).slice(0, 60)}...`);
+        console.log(`[WhatsApp Bot] Envio não realizado para ${telefoneMascarado(cleanNumber)}: serviço desconectado.`);
         return { success: false, error: 'Robô do WhatsApp desconectado no momento.' };
     }
 
     try {
         await sock.sendMessage(jid, { text: texto });
-        console.log(`[WhatsApp Bot] 📨 Mensagem enviada com sucesso para +${cleanNumber}`);
+        console.log(`[WhatsApp Bot] 📨 Mensagem enviada com sucesso para ${telefoneMascarado(cleanNumber)}.`);
         return { success: true };
     } catch (err) {
-        console.error(`[WhatsApp Bot] ❌ Erro ao disparar mensagem para +${cleanNumber}:`, err.message);
+        console.error(`[WhatsApp Bot] ❌ Falha no envio para ${telefoneMascarado(cleanNumber)}:`, err.message);
         return { success: false, error: err.message };
     }
 }
@@ -210,8 +227,13 @@ async function _conectar({ gerarQr = true, numeroPairing = null, forceNewCredsIf
     currentPairingCode = null;
 
     try {
-        // Carrega estado de autenticação exclusivamente do disco do Render
-        const { state: authState, saveCreds } = await useMultiFileAuthState(WA_SESSION_DIR);
+        // Em produção, persiste a sessão no Firestore para sobreviver a deploys e reinícios do Render.
+        // O disco local permanece como fallback para testes e desenvolvimento sem Firebase Admin.
+        const authStore = firestoreDb
+            ? await useFirestoreAuthState(firestoreDb, '_whatsapp_session', forceNewCredsIfUnregistered)
+            : await useMultiFileAuthState(WA_SESSION_DIR);
+        const { state: authState, saveCreds } = authStore;
+        limparSessaoPersistida = authStore.clearSession || null;
         const isRegistered = !!authState.creds?.registered;
 
         // Se foi solicitado iniciar APENAS se já existir sessão salva (ex: boot do servidor)
@@ -291,7 +313,7 @@ async function _conectar({ gerarQr = true, numeroPairing = null, forceNewCredsIf
                     reconnectAttempts = 0;
                     _limparReconexao();
                     connectedNumber = sock.user?.id?.split(':')[0] || sock.user?.id?.split('@')[0] || null;
-                    console.log(`[WhatsApp Bot] ✅ Conectado com sucesso no Render! Barbeiro: +${connectedNumber}`);
+                    console.log(`[WhatsApp Bot] ✅ Conectado com sucesso no Render: ${telefoneMascarado(connectedNumber)}.`);
                     settleWithResult({ success: true, status: 'connected', userNumber: connectedNumber });
                 }
 
@@ -310,7 +332,11 @@ async function _conectar({ gerarQr = true, numeroPairing = null, forceNewCredsIf
                         if (fs.existsSync(WA_SESSION_DIR)) {
                             try { fs.rmSync(WA_SESSION_DIR, { recursive: true, force: true }); } catch (_) {}
                         }
-                        console.log('[WhatsApp Bot] Logout do usuário detectado. Sessão apagada do Render.');
+                        if (limparSessaoPersistida) {
+                            await limparSessaoPersistida();
+                            limparSessaoPersistida = null;
+                        }
+                        console.log('[WhatsApp Bot] Logout detectado. Sessão persistida apagada.');
                     } else if (shouldReconnect && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
                         connectionStatus = 'connecting';
                         reconnectAttempts++;
@@ -335,7 +361,7 @@ async function _conectar({ gerarQr = true, numeroPairing = null, forceNewCredsIf
                 try {
                     const code = await sock.requestPairingCode(numeroPairing);
                     currentPairingCode = code;
-                    console.log(`[WhatsApp Bot] 🔑 Código de pareamento gerado com sucesso: ${code}`);
+                    console.log('[WhatsApp Bot] 🔑 Código de pareamento gerado com sucesso.');
                     isConnecting = false;
                     settleWithResult({ success: true, pairingCode: code });
                 } catch (pairingErr) {
