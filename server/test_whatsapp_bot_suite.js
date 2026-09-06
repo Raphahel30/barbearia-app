@@ -95,6 +95,21 @@ async function runTests() {
     assert(statusApi.status === 200, 'Status público mínimo responde 200 OK');
     assert(statusApi.data && typeof statusApi.data.status === 'string', 'Status público retorna o estado da conexão');
     assert(!('qrCode' in statusApi.data) && !('pairingCode' in statusApi.data) && !('userNumber' in statusApi.data), 'Status público não expõe credenciais da sessão');
+
+    const camposWhatsappPrivados = ['qrCode', 'pairingCode', 'userNumber', 'connectedUser'];
+    const contemCampoWhatsappPrivado = (valor) => {
+        if (!valor || typeof valor !== 'object') return false;
+        if (Object.keys(valor).some(chave => camposWhatsappPrivados.includes(chave))) return true;
+        return Object.values(valor).some(contemCampoWhatsappPrivado);
+    };
+    for (const rotaPublica of ['/health', '/api/health']) {
+        const resposta = await apiRequest(rotaPublica);
+        assert(resposta.status === 200, `${rotaPublica} responde 200 OK`);
+        assert(
+            !contemCampoWhatsappPrivado(resposta.data),
+            `${rotaPublica} não expõe QR Code, código de pareamento ou telefone`
+        );
+    }
     for (const arquivo of ['/firebase-service-account.json', '/server/src/server.js', '/package.json', '/firestore.rules', '/barbearia-app-main-corrigido.zip', '/.env']) {
         const resposta = await fetch(`${baseUrl}${arquivo}`, { method: 'HEAD' });
         assert(resposta.status === 404, `Arquivo interno não é publicado: ${arquivo}`);

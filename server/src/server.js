@@ -837,8 +837,7 @@ app.get('/', (req, res) => {
         uptime: `${Math.floor(process.uptime())}s`,
         timestamp: new Date().toISOString(),
         whatsapp: {
-            status: waStatus.status,
-            connectedUser: waStatus.userNumber
+            status: waStatus.status
         }
     });
 });
@@ -849,7 +848,9 @@ app.get('/health', async (req, res) => {
         status: 'ok',
         uptime: process.uptime(),
         timestamp: new Date().toISOString(),
-        whatsapp: waStatus
+        whatsapp: {
+            status: waStatus.status
+        }
     });
 });
 
@@ -1020,8 +1021,7 @@ app.get('/api/health', async (req, res) => {
         hasToken: Boolean(activeAccessToken && activeAccessToken !== 'SEU_ACCESS_TOKEN_AQUI'),
         tokenType: activeAccessToken.startsWith('TEST') ? 'TEST' : (activeAccessToken.startsWith('APP_USR') ? 'PROD' : 'UNKNOWN'),
         whatsapp: {
-            status: waStatus.status,
-            connectedUser: waStatus.userNumber
+            status: waStatus.status
         }
     });
 });
