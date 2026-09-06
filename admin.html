@@ -640,6 +640,9 @@
                     </div>
                     
                     <div class="flex flex-wrap items-center gap-2">
+                        <button id="btnAbrirModalNovoAgendamentoManual" type="button" class="bg-dourado hover:bg-[#C5A028] text-black px-3 py-2 rounded-xl text-xs font-extrabold transition cursor-pointer flex items-center gap-1.5 shadow-lg">
+                            <span>＋</span><span>Novo Agendamento</span>
+                        </button>
                         <!-- Alternador de Visualização: Mês vs Lista Geral -->
                         <div class="inline-flex p-1 bg-black rounded-xl border border-zinc-800">
                             <button id="btnModoCalendarioAgenda" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer bg-dourado text-black shadow-sm" title="Visualizar grade do mês">
@@ -2519,6 +2522,82 @@
             </section>
 
         </main>
+
+        <!-- NOVO AGENDAMENTO CRIADO PELO BARBEIRO -->
+        <div id="modalNovoAgendamentoManual" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
+            <div class="bg-zinc-950 border border-amber-500/60 p-5 sm:p-7 rounded-3xl max-w-2xl w-full space-y-5 shadow-2xl my-6">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <span class="text-[10px] font-extrabold text-amber-300 uppercase tracking-widest">Agenda administrativa</span>
+                        <h2 class="text-xl font-extrabold text-white uppercase mt-1">Novo Agendamento</h2>
+                        <p class="text-xs text-zinc-400 mt-1">O horário será confirmado imediatamente, sem cobrança online.</p>
+                    </div>
+                    <button id="btnFecharModalNovoAgendamentoManual" type="button" class="text-zinc-400 hover:text-white text-2xl leading-none">&times;</button>
+                </div>
+
+                <form id="formNovoAgendamentoManual" class="space-y-4 text-xs">
+                    <div>
+                        <label class="block font-bold text-zinc-300 uppercase mb-1.5">Cliente</label>
+                        <select id="selectClienteAgendamentoManual" required class="w-full px-3 py-2.5 bg-black rounded-xl border border-zinc-700 text-white focus:outline-none focus:border-dourado">
+                            <option value="">Selecione um cliente...</option>
+                        </select>
+                    </div>
+                    <div id="camposNovoClienteAgendamentoManual" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-3 bg-black/50 border border-zinc-800 rounded-xl p-3">
+                        <div>
+                            <label class="block font-bold text-zinc-400 mb-1">Nome do cliente</label>
+                            <input id="inputNomeNovoClienteAgendamento" maxlength="100" class="w-full px-3 py-2 bg-zinc-950 rounded-lg border border-zinc-700 text-white" placeholder="Nome completo">
+                        </div>
+                        <div>
+                            <label class="block font-bold text-zinc-400 mb-1">WhatsApp</label>
+                            <input id="inputTelefoneNovoClienteAgendamento" inputmode="tel" class="w-full px-3 py-2 bg-zinc-950 rounded-lg border border-zinc-700 text-white" placeholder="(11) 99999-9999">
+                        </div>
+                    </div>
+
+                    <label class="flex items-start gap-2.5 bg-purple-950/30 border border-purple-700/50 rounded-xl p-3 cursor-pointer">
+                        <input id="checkUsarPlanoAgendamentoManual" type="checkbox" class="mt-0.5 accent-amber-500">
+                        <span><strong class="text-purple-300 block">Usar crédito do plano mensal</strong><span class="text-zinc-400">Disponível somente para cliente com assinatura ativa.</span></span>
+                    </label>
+
+                    <div id="camposServicoAgendamentoManual" class="space-y-3">
+                        <div>
+                            <label class="block font-bold text-zinc-300 uppercase mb-1.5">Serviço principal</label>
+                            <select id="selectServicoAgendamentoManual" class="w-full px-3 py-2.5 bg-black rounded-xl border border-zinc-700 text-white"></select>
+                        </div>
+                        <div>
+                            <label class="block font-bold text-zinc-300 uppercase mb-1.5">Adicionais opcionais</label>
+                            <div id="listaExtrasAgendamentoManual" class="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-black rounded-xl border border-zinc-800 p-3 max-h-36 overflow-y-auto"></div>
+                        </div>
+                    </div>
+
+                    <div id="campoSemanaPlanoAgendamentoManual" class="hidden">
+                        <label class="block font-bold text-purple-300 uppercase mb-1.5">Semana do plano</label>
+                        <select id="selectSemanaPlanoAgendamentoManual" class="w-full px-3 py-2.5 bg-black rounded-xl border border-purple-700 text-white">
+                            <option value="1">Semana 1</option><option value="2">Semana 2</option><option value="3">Semana 3</option><option value="4">Semana 4</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div><label class="block font-bold text-zinc-300 uppercase mb-1.5">Data</label><input id="inputDataAgendamentoManual" type="date" required class="w-full px-3 py-2.5 bg-black rounded-xl border border-zinc-700 text-white"></div>
+                        <div><label class="block font-bold text-zinc-300 uppercase mb-1.5">Horário</label><select id="selectHorarioAgendamentoManual" required class="w-full px-3 py-2.5 bg-black rounded-xl border border-zinc-700 text-white"></select></div>
+                        <div><label class="block font-bold text-zinc-300 uppercase mb-1.5">Barbeiro</label><select id="selectBarbeiroAgendamentoManual" class="w-full px-3 py-2.5 bg-black rounded-xl border border-zinc-700 text-white"></select></div>
+                    </div>
+
+                    <div id="campoPagamentoAgendamentoManual">
+                        <label class="block font-bold text-zinc-300 uppercase mb-1.5">Pagamento</label>
+                        <select id="selectPagamentoAgendamentoManual" class="w-full px-3 py-2.5 bg-black rounded-xl border border-zinc-700 text-white">
+                            <option value="pagar_local">Pendente — pagar na barbearia</option><option value="pago">Já pago</option><option value="cortesia">Cortesia</option>
+                        </select>
+                    </div>
+                    <div><label class="block font-bold text-zinc-300 uppercase mb-1.5">Observação interna</label><textarea id="inputObservacaoAgendamentoManual" maxlength="500" rows="2" class="w-full px-3 py-2.5 bg-black rounded-xl border border-zinc-700 text-white" placeholder="Opcional — não aparece para o cliente"></textarea></div>
+                    <label class="flex items-center gap-2 text-zinc-300"><input id="checkNotificarWhatsappAgendamentoManual" type="checkbox" class="accent-amber-500"> Avisar o cliente pelo WhatsApp</label>
+                    <p id="msgNovoAgendamentoManual" class="min-h-[18px] text-center font-bold"></p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button id="btnCancelarNovoAgendamentoManual" type="button" class="bg-zinc-800 hover:bg-zinc-700 text-white py-3 rounded-xl font-bold uppercase">Cancelar</button>
+                        <button id="btnSalvarNovoAgendamentoManual" type="submit" class="bg-dourado hover:bg-[#C5A028] text-black py-3 rounded-xl font-extrabold uppercase">Confirmar horário</button>
+                    </div>
+                </form>
+            </div>
+        </div>
         </div>
     </div>
 
@@ -4984,6 +5063,7 @@
 
         document.getElementById('btnPerfilNovoAgendamento')?.addEventListener('click', () => {
             if (!clienteSelecionadoCRM) return;
+            window.clientePreSelecionadoAgendamentoManual = clienteSelecionadoCRM.id;
             window.fecharModalPerfilCliente();
             window.mudarAba('schedule');
             // Pré-seleciona cliente no modal de agendamento manual se existir
@@ -12290,6 +12370,183 @@
 
             grid.innerHTML = html;
         }
+
+        // ================================================================
+        // AGENDAMENTO CRIADO PELO BARBEIRO / ADMINISTRADOR
+        // ================================================================
+        const modalAgendamentoManual = document.getElementById('modalNovoAgendamentoManual');
+        const formAgendamentoManual = document.getElementById('formNovoAgendamentoManual');
+        const selectClienteAgendamentoManual = document.getElementById('selectClienteAgendamentoManual');
+        const checkPlanoAgendamentoManual = document.getElementById('checkUsarPlanoAgendamentoManual');
+
+        function adicionarOpcaoSelect(select, value, label) {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = label;
+            select.appendChild(option);
+        }
+
+        function clienteManualSelecionado() {
+            return listaClientesCRMCache.find(c => String(c.id) === String(selectClienteAgendamentoManual?.value));
+        }
+
+        function atualizarCamposClienteAgendamentoManual() {
+            const novo = selectClienteAgendamentoManual?.value === '__novo';
+            document.getElementById('camposNovoClienteAgendamentoManual')?.classList.toggle('hidden', !novo);
+            if (novo && checkPlanoAgendamentoManual?.checked) checkPlanoAgendamentoManual.checked = false;
+            atualizarModoPlanoAgendamentoManual();
+        }
+
+        function atualizarModoPlanoAgendamentoManual() {
+            const usarPlano = checkPlanoAgendamentoManual?.checked === true;
+            document.getElementById('camposServicoAgendamentoManual')?.classList.toggle('hidden', usarPlano);
+            document.getElementById('campoSemanaPlanoAgendamentoManual')?.classList.toggle('hidden', !usarPlano);
+            document.getElementById('campoPagamentoAgendamentoManual')?.classList.toggle('hidden', usarPlano);
+        }
+
+        function popularHorariosAgendamentoManual() {
+            const select = document.getElementById('selectHorarioAgendamentoManual');
+            if (!select) return;
+            select.innerHTML = '';
+            const cfg = window.configExpedienteCache || {};
+            const paraMinutos = valor => { const [h, m] = String(valor || '00:00').split(':').map(Number); return h * 60 + m; };
+            const inicio = paraMinutos(cfg.abertura || '08:00');
+            const fim = paraMinutos(cfg.fechamento || '20:00');
+            const intervalo = Number(cfg.intervaloMin || 60);
+            const data = document.getElementById('inputDataAgendamentoManual')?.value || '';
+            const barbeiro = document.getElementById('selectBarbeiroAgendamentoManual')?.value || 'qualquer';
+            const ocupados = new Set((window.listaAgendamentosMemoria || []).filter(ag =>
+                ag.dataHora?.startsWith(data) && !['cancelado', 'cancelado_barbeiro', 'reembolsado', 'expirado'].includes(ag.status) &&
+                (barbeiro === 'qualquer' || String(ag.barbeiroId || 'qualquer') === barbeiro)
+            ).map(ag => ag.dataHora.slice(11)));
+            for (let minutos = inicio; minutos <= fim && intervalo > 0; minutos += intervalo) {
+                const hora = `${String(Math.floor(minutos / 60)).padStart(2, '0')}:${String(minutos % 60).padStart(2, '0')}`;
+                const emPausa = cfg.temPausa && minutos >= paraMinutos(cfg.pausaInicio) && minutos < paraMinutos(cfg.pausaFim);
+                if (!emPausa && !ocupados.has(hora)) adicionarOpcaoSelect(select, hora, hora);
+            }
+            if (!select.options.length) adicionarOpcaoSelect(select, '', 'Nenhum horário disponível');
+        }
+
+        async function abrirModalAgendamentoManual() {
+            if (!modalAgendamentoManual) return;
+            if (!listaClientesCRMCache.length && typeof window.carregarClientesCRMAdmin === 'function') await window.carregarClientesCRMAdmin(true);
+            if (!listaServicosAdminCache.length) await carregarServicosAdmin();
+            if (!listaBarbeirosAdminCache.length) await carregarBarbeirosAdmin();
+
+            selectClienteAgendamentoManual.innerHTML = '<option value="">Selecione um cliente...</option>';
+            [...listaClientesCRMCache].sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR')).forEach(c =>
+                adicionarOpcaoSelect(selectClienteAgendamentoManual, c.id, `${c.nome || 'Cliente'}${c.telefone ? ' — ' + formatarTelefoneBR(c.telefone) : ''}${c.isVip ? ' 👑' : ''}`)
+            );
+            adicionarOpcaoSelect(selectClienteAgendamentoManual, '__novo', '＋ Cadastrar cliente rapidamente');
+
+            const selectServico = document.getElementById('selectServicoAgendamentoManual');
+            selectServico.innerHTML = '';
+            listaServicosAdminCache.filter(s => s.ativo !== false && s.status !== 'inativo').forEach(s =>
+                adicionarOpcaoSelect(selectServico, s.id, `${s.nome} — R$ ${Number(s.preco || 0).toFixed(2)}`)
+            );
+            const extras = document.getElementById('listaExtrasAgendamentoManual');
+            extras.innerHTML = '';
+            listaServicosAdminCache.filter(s => s.ativo !== false && s.status !== 'inativo').forEach(s => {
+                const label = document.createElement('label');
+                label.className = 'flex items-center gap-2 p-2 rounded-lg bg-zinc-950 border border-zinc-800 cursor-pointer';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox'; checkbox.value = s.id; checkbox.className = 'extra-agendamento-manual accent-amber-500';
+                const texto = document.createElement('span');
+                texto.textContent = `${s.nome} (+ R$ ${Number(s.preco || 0).toFixed(2)})`;
+                label.append(checkbox, texto); extras.appendChild(label);
+            });
+
+            const selectBarbeiro = document.getElementById('selectBarbeiroAgendamentoManual');
+            selectBarbeiro.innerHTML = '';
+            adicionarOpcaoSelect(selectBarbeiro, 'qualquer', modoMultiBarbeiroAtivo ? 'Qualquer profissional disponível' : 'Agenda principal');
+            if (modoMultiBarbeiroAtivo) listaBarbeirosAdminCache.filter(b => b.ativo !== false && b.status !== 'inativo').forEach(b => adicionarOpcaoSelect(selectBarbeiro, b.id, b.nome || 'Barbeiro'));
+
+            const data = document.getElementById('inputDataAgendamentoManual');
+            data.min = (typeof obterDataHojeLocal === 'function') ? obterDataHojeLocal() : new Date().toISOString().slice(0, 10);
+            data.value = dataFiltroAgendaSelecionada || data.min;
+            if (window.clientePreSelecionadoAgendamentoManual) {
+                selectClienteAgendamentoManual.value = String(window.clientePreSelecionadoAgendamentoManual);
+                window.clientePreSelecionadoAgendamentoManual = null;
+            }
+            checkPlanoAgendamentoManual.checked = false;
+            atualizarCamposClienteAgendamentoManual();
+            popularHorariosAgendamentoManual();
+            document.getElementById('msgNovoAgendamentoManual').textContent = '';
+            modalAgendamentoManual.classList.remove('hidden');
+        }
+
+        function fecharModalAgendamentoManual() {
+            modalAgendamentoManual?.classList.add('hidden');
+            formAgendamentoManual?.reset();
+        }
+
+        document.getElementById('btnAbrirModalNovoAgendamentoManual')?.addEventListener('click', abrirModalAgendamentoManual);
+        document.getElementById('btnFecharModalNovoAgendamentoManual')?.addEventListener('click', fecharModalAgendamentoManual);
+        document.getElementById('btnCancelarNovoAgendamentoManual')?.addEventListener('click', fecharModalAgendamentoManual);
+        selectClienteAgendamentoManual?.addEventListener('change', atualizarCamposClienteAgendamentoManual);
+        document.getElementById('inputDataAgendamentoManual')?.addEventListener('change', popularHorariosAgendamentoManual);
+        document.getElementById('selectBarbeiroAgendamentoManual')?.addEventListener('change', popularHorariosAgendamentoManual);
+        document.getElementById('selectServicoAgendamentoManual')?.addEventListener('change', event => {
+            document.querySelectorAll('.extra-agendamento-manual').forEach(cb => {
+                cb.disabled = cb.value === event.target.value;
+                if (cb.disabled) cb.checked = false;
+            });
+        });
+        checkPlanoAgendamentoManual?.addEventListener('change', () => {
+            if (checkPlanoAgendamentoManual.checked) {
+                const cliente = clienteManualSelecionado();
+                if (!cliente?.assinaturaAtiva && !cliente?.planoAtivoId) {
+                    checkPlanoAgendamentoManual.checked = false;
+                    const msg = document.getElementById('msgNovoAgendamentoManual');
+                    msg.className = 'min-h-[18px] text-center font-bold text-amber-400';
+                    msg.textContent = 'Este cliente não possui plano mensal ativo.';
+                }
+            }
+            atualizarModoPlanoAgendamentoManual();
+        });
+
+        formAgendamentoManual?.addEventListener('submit', async event => {
+            event.preventDefault();
+            const msg = document.getElementById('msgNovoAgendamentoManual');
+            const botao = document.getElementById('btnSalvarNovoAgendamentoManual');
+            const usarPlano = checkPlanoAgendamentoManual.checked;
+            const cliente = clienteManualSelecionado();
+            const clienteNovo = selectClienteAgendamentoManual.value === '__novo';
+            const servicoId = document.getElementById('selectServicoAgendamentoManual').value;
+            const extraIds = [...document.querySelectorAll('.extra-agendamento-manual:checked')].map(cb => cb.value).filter(id => id !== servicoId);
+            const data = document.getElementById('inputDataAgendamentoManual').value;
+            const horario = document.getElementById('selectHorarioAgendamentoManual').value;
+            if (!horario) { msg.textContent = 'Escolha um horário disponível.'; return; }
+            try {
+                botao.disabled = true; botao.textContent = 'Confirmando...';
+                msg.className = 'min-h-[18px] text-center font-bold text-zinc-300'; msg.textContent = 'Validando o horário no servidor...';
+                const resposta = await fetch(`${getBackendUrlAtivo()}/api/admin/agendamentos/manual`, {
+                    method: 'POST', headers: await getAdminAuthHeaders(),
+                    body: JSON.stringify({
+                        requestId: crypto.randomUUID(),
+                        clienteId: clienteNovo ? '' : selectClienteAgendamentoManual.value,
+                        planoClienteId: cliente?.assinaturaAtiva?.userId || cliente?.planoAtivoId || cliente?.id,
+                        clienteNovo: clienteNovo ? { nome: document.getElementById('inputNomeNovoClienteAgendamento').value, telefone: document.getElementById('inputTelefoneNovoClienteAgendamento').value } : null,
+                        servicoId, extraIds, dataHora: `${data}T${horario}`,
+                        barbeiroId: document.getElementById('selectBarbeiroAgendamentoManual').value,
+                        pagamento: document.getElementById('selectPagamentoAgendamentoManual').value,
+                        usarPlano, semanaPlano: Number(document.getElementById('selectSemanaPlanoAgendamentoManual').value),
+                        observacao: document.getElementById('inputObservacaoAgendamentoManual').value,
+                        notificarWhatsapp: document.getElementById('checkNotificarWhatsappAgendamentoManual').checked
+                    })
+                });
+                const resultado = await resposta.json();
+                if (!resposta.ok || !resultado.success) throw new Error(resultado.error || 'Não foi possível confirmar o horário.');
+                fecharModalAgendamentoManual();
+                await buscarAgendamentosFirestore(true);
+                exibirToastNotificacao('✅ Horário confirmado', resultado.notificacaoPendente ? 'Agendamento criado. O aviso no WhatsApp ficou pendente.' : 'Agendamento criado com sucesso!', 'sucesso');
+            } catch (erro) {
+                msg.className = 'min-h-[18px] text-center font-bold text-red-400';
+                msg.textContent = erro.message;
+            } finally {
+                botao.disabled = false; botao.textContent = 'Confirmar horário';
+            }
+        });
     </script>
 </body>
 </html>

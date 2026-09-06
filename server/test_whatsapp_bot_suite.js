@@ -134,6 +134,8 @@ async function runTests() {
         const privado = await apiRequest(rota);
         assert(privado.status === 401, `${rota} exige autenticação`);
     }
+    const agendamentoAdminSemToken = await apiRequest('/api/admin/agendamentos/manual', 'POST', {});
+    assert(agendamentoAdminSemToken.status === 401, '/api/admin/agendamentos/manual exige autenticação administrativa');
     for (const rota of ['/api/cliente/plano/agendar', '/api/cliente/plano/cancelar-semana', '/api/cliente/agendar-gratuito', '/api/cliente/agendamento/cancelar', '/api/galeria/salvar']) {
         const privado = await apiRequest(rota, 'POST', {});
         assert(privado.status === 401, `${rota} exige autenticação`);
